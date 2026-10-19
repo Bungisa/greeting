@@ -42,6 +42,70 @@ const GEMINI_FALLBACK_MODELS = [
   'gemini-flash-latest',
 ] as const;
 const modelCooldownUntil = new Map<string, number>();
+let roundRobinModelCursor = 0;
+
+// ==================== HIGH-CONCURRENCY MULTI-USER CACHE & DEDUPLICATION ====================
+interface CacheRecord<T> {
+  value: T;
+  expiresAt: number;
+}
+const MAX_CACHE_ENTRIES = 600;
+const DEFAULT_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+const responseCache = new Map<string, CacheRecord<unknown>>();
+const inflightRequests = new Map<string, Promise<unknown>>();
+
+function getCachedValue<T>(key: string): T | null {
+  const entry = responseCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    responseCache.delete(key);
+    return null;
+  }
+  return entry.value as T;
+}
+
+function setCachedValue<T>(key: string, value: T, ttlMs = DEFAULT_CACHE_TTL_MS): void {
+  if (responseCache.size >= MAX_CACHE_ENTRIES) {
+    const oldestKey = responseCache.keys().next().value;
+    if (oldestKey) responseCache.delete(oldestKey);
+  }
+  responseCache.set(key, {
+    value,
+    expiresAt: Date.now() + ttlMs,
+  });
+}
+
+async function withHighTrafficDedupe<T>(
+  cacheKey: string,
+  worker: () => Promise<T>,
+  shouldCache?: (res: T) => boolean,
+  ttlMs = DEFAULT_CACHE_TTL_MS
+): Promise<T> {
+  const cached = getCachedValue<T>(cacheKey);
+  if (cached !== null) {
+    return cached;
+  }
+
+  const existingInflight = inflightRequests.get(cacheKey) as Promise<T> | undefined;
+  if (existingInflight) {
+    return existingInflight;
+  }
+
+  const promise = (async () => {
+    try {
+      const result = await worker();
+      if (!shouldCache || shouldCache(result)) {
+        setCachedValue(cacheKey, result, ttlMs);
+      }
+      return result;
+    } finally {
+      inflightRequests.delete(cacheKey);
+    }
+  })();
+
+  inflightRequests.set(cacheKey, promise);
+  return promise;
+}
 
 async function generateContentWithQuotaFallback(
   ai: GoogleGenAI,
@@ -52,7 +116,11 @@ async function generateContentWithQuotaFallback(
   }
 ): Promise<string | null> {
   const now = Date.now();
-  for (const modelName of GEMINI_FALLBACK_MODELS) {
+  const totalModels = GEMINI_FALLBACK_MODELS.length;
+  const startIdx = roundRobinModelCursor++ % totalModels;
+
+  for (let offset = 0; offset < totalModels; offset++) {
+    const modelName = GEMINI_FALLBACK_MODELS[(startIdx + offset) % totalModels];
     const cooldown = modelCooldownUntil.get(modelName) || 0;
     if (now < cooldown) {
       continue;
@@ -112,7 +180,7 @@ async function generateContentWithQuotaFallback(
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       if (msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED') || msg.includes('quota')) {
-        modelCooldownUntil.set(modelName, Date.now() + 30 * 60 * 1000);
+        modelCooldownUntil.set(modelName, Date.now() + 15 * 60 * 1000);
         continue;
       }
     }
@@ -228,14 +296,19 @@ app.post('/api/moha/chat', async (req, res) => {
 
   if (ai) {
     try {
-      const systemInstruction = `You are Moha AI, the official Tanzanian TIE (Tanzania Institute of Education) & NECTA Assistant for ${effectiveCls} ${effectiveSubject}.
+      const chatCacheKey = !image
+        ? `chat:${effectiveCls}:${effectiveSubject}:${effectiveTopic}:${userPrompt.toLowerCase().slice(0, 220)}`
+        : '';
+
+      const runChatGeneration = async () => {
+        const systemInstruction = `You are Moha AI, the official Tanzanian TIE (Tanzania Institute of Education) & NECTA Assistant for ${effectiveCls} ${effectiveSubject}.
 Specified Class: ${effectiveCls}
 Specified Subject: ${effectiveSubject}
 Specified Topic: ${effectiveTopic} (${effectiveSubTopic})
 Official TIE Syllabus Competences for ${effectiveCls} ${effectiveSubject}:
 ${syllabusTopics.map((t) => `- ${t}`).join('\n')}${siteResourcesContext}${learnedContext}
 
-CRITICAL TOPIC & CLASS ACCURACY RULES:
+CRITICAL TOPIC, CLASS & MATHJAX RULES:
 1. You MUST strictly generate questions, examples, and explanations ONLY for the specified Class (${effectiveCls}), Subject (${effectiveSubject}), and Topic (${effectiveTopic}). Never give generic questions from a different topic!
 2. Integrate content directly from the Official TIE ${effectiveCls} ${effectiveSubject} Textbook, Official TIE Syllabus, NECTA Past Papers, and Google Search.
 3. Arrange every answer into 3 clear, numbered sections:
@@ -243,37 +316,46 @@ CRITICAL TOPIC & CLASS ACCURACY RULES:
    **2. 📐 Step-by-Step Working / Main Points:** Use numbered steps (Step 1, Step 2, Step 3) or clear bullet points (•).
    **3. ✅ NECTA Marking Tip & Website Resources:** Show how marks are awarded (e.g., [02 Marks]) and cite the relevant TIE Books, Syllabuses, and Past Papers available on the Elimika website.
 4. LESSON NOTES RULE: Never put Lesson Notes or study notes inside a table. Format Lesson Notes with clean numbered headings, well-spaced paragraphs, bullet points (•), and step-by-step worked examples.
-5. Write math, physics, or chemistry formulas clearly in $...$ or $$...$$.`;
+5. STRICT MATHJAX RULE: ALWAYS format all mathematical expressions, equations, fractions (\\frac{a}{b}), square roots (\\sqrt{x}), exponents (x^2), subscripts (a_1), logarithms (\\log_{10}(x)), trigonometry (\\sin\\theta, \\cos\\theta), derivatives (\\frac{dy}{dx}), integrals (\\int), vectors, and physics/chemistry formulas using LaTeX MathJax delimiters ($...$ for inline math and $$...$$ for display equations).`;
 
-      const recentHistoryParts = history
-        .filter((h) => !h.text.includes('official-tie-doc') && h.id !== 'msg-welcome')
-        .slice(-6)
-        .map((h) => `${h.role === 'user' ? 'Student/Teacher' : 'Moha AI'}: ${h.text}`)
-        .join('\n\n');
+        const recentHistoryParts = history
+          .filter((h) => !h.text.includes('official-tie-doc') && h.id !== 'msg-welcome')
+          .slice(-6)
+          .map((h) => `${h.role === 'user' ? 'Student/Teacher' : 'Moha AI'}: ${h.text}`)
+          .join('\n\n');
 
-      const fullPromptText = recentHistoryParts
-        ? `Previous conversation context:\n${recentHistoryParts}\n\nCurrent Request (Class: ${effectiveCls}, Subject: ${effectiveSubject}, Topic: ${effectiveTopic}):\n${userPrompt}`
-        : `Class: ${effectiveCls} | Subject: ${effectiveSubject} | Specified Topic: ${effectiveTopic} (${effectiveSubTopic})\nRequest: ${userPrompt}`;
+        const fullPromptText = recentHistoryParts
+          ? `Previous conversation context:\n${recentHistoryParts}\n\nCurrent Request (Class: ${effectiveCls}, Subject: ${effectiveSubject}, Topic: ${effectiveTopic}):\n${userPrompt}`
+          : `Class: ${effectiveCls} | Subject: ${effectiveSubject} | Specified Topic: ${effectiveTopic} (${effectiveSubTopic})\nRequest: ${userPrompt}`;
 
-      const parts: Array<{ text?: string; inlineData?: { mimeType: string; data: string } }> = [];
-      if (image && image.base64Data && image.mimeType) {
-        parts.push({
-          inlineData: {
-            mimeType: image.mimeType,
-            data: image.base64Data,
+        const parts: Array<{ text?: string; inlineData?: { mimeType: string; data: string } }> = [];
+        if (image && image.base64Data && image.mimeType) {
+          parts.push({
+            inlineData: {
+              mimeType: image.mimeType,
+              data: image.base64Data,
+            },
+          });
+        }
+        parts.push({ text: fullPromptText });
+
+        return generateContentWithQuotaFallback(ai, {
+          contents: { parts },
+          config: {
+            systemInstruction,
+            temperature: 0.35,
           },
+          useGoogleSearch: !image,
         });
-      }
-      parts.push({ text: fullPromptText });
+      };
 
-      const replyText = await generateContentWithQuotaFallback(ai, {
-        contents: { parts },
-        config: {
-          systemInstruction,
-          temperature: 0.35,
-        },
-        useGoogleSearch: !image,
-      });
+      const replyText = chatCacheKey
+        ? await withHighTrafficDedupe(
+            chatCacheKey,
+            runChatGeneration,
+            (val) => Boolean(val && val.length > 0)
+          )
+        : await runChatGeneration();
 
       if (replyText && replyText.length > 0) {
         return res.json({
@@ -360,51 +442,57 @@ app.post('/api/moha/generate-doc', async (req, res) => {
           return res.json({ html: docHtml, source: 'gemini' });
         }
       } else if (type === 'lessonnotes') {
-        const jsonText = await generateContentWithQuotaFallback(ai, {
-          contents: `Create comprehensive official Tanzanian TIE Lesson Notes for Class: ${meta.cls}, Subject: ${meta.subject}, Main Topic: ${meta.topic}, Sub-Topic: ${meta.subTopic}. Integrate concepts from the TIE textbook, official syllabus, and past examination papers (${resourceSummary}). Include 3 detailed keyConcepts, 2 step-by-step workedExamples, and 3 NECTA-style practiceQuestions with marking hints.`,
-          config: {
-            responseMimeType: 'application/json',
-            responseSchema: {
-              type: Type.OBJECT,
-              properties: {
-                keyConcepts: {
-                  type: Type.ARRAY,
-                  items: {
-                    type: Type.OBJECT,
-                    properties: {
-                      heading: { type: Type.STRING },
-                      explanation: { type: Type.STRING },
+        const docCacheKey = `doc:lessonnotes:${meta.cls}:${meta.subject}:${meta.topic}:${meta.subTopic}`;
+        const jsonText = await withHighTrafficDedupe(
+          docCacheKey,
+          () =>
+            generateContentWithQuotaFallback(ai, {
+              contents: `Create comprehensive official Tanzanian TIE Lesson Notes for Class: ${meta.cls}, Subject: ${meta.subject}, Main Topic: ${meta.topic}, Sub-Topic: ${meta.subTopic}. Integrate concepts from the TIE textbook, official syllabus, and past examination papers (${resourceSummary}). Include 3 detailed keyConcepts, 2 step-by-step workedExamples, and 3 NECTA-style practiceQuestions with marking hints. STRICT MATHJAX RULE: Format all mathematical expressions, formulas, fractions (\\frac{a}{b}), roots (\\sqrt{x}), exponents (x^2), logarithms (\\log_{10}(x)), and scientific equations inside $...$ inline LaTeX delimiters.`,
+              config: {
+                responseMimeType: 'application/json',
+                responseSchema: {
+                  type: Type.OBJECT,
+                  properties: {
+                    keyConcepts: {
+                      type: Type.ARRAY,
+                      items: {
+                        type: Type.OBJECT,
+                        properties: {
+                          heading: { type: Type.STRING },
+                          explanation: { type: Type.STRING },
+                        },
+                        required: ['heading', 'explanation'],
+                      },
                     },
-                    required: ['heading', 'explanation'],
-                  },
-                },
-                workedExamples: {
-                  type: Type.ARRAY,
-                  items: {
-                    type: Type.OBJECT,
-                    properties: {
-                      problem: { type: Type.STRING },
-                      solution: { type: Type.STRING },
+                    workedExamples: {
+                      type: Type.ARRAY,
+                      items: {
+                        type: Type.OBJECT,
+                        properties: {
+                          problem: { type: Type.STRING },
+                          solution: { type: Type.STRING },
+                        },
+                        required: ['problem', 'solution'],
+                      },
                     },
-                    required: ['problem', 'solution'],
-                  },
-                },
-                practiceQuestions: {
-                  type: Type.ARRAY,
-                  items: {
-                    type: Type.OBJECT,
-                    properties: {
-                      question: { type: Type.STRING },
-                      answerHint: { type: Type.STRING },
+                    practiceQuestions: {
+                      type: Type.ARRAY,
+                      items: {
+                        type: Type.OBJECT,
+                        properties: {
+                          question: { type: Type.STRING },
+                          answerHint: { type: Type.STRING },
+                        },
+                        required: ['question', 'answerHint'],
+                      },
                     },
-                    required: ['question', 'answerHint'],
                   },
+                  required: ['keyConcepts', 'workedExamples', 'practiceQuestions'],
                 },
               },
-              required: ['keyConcepts', 'workedExamples', 'practiceQuestions'],
-            },
-          },
-        });
+            }),
+          (val) => Boolean(val && val.length > 10)
+        );
         if (jsonText) {
           const parsed = JSON.parse(jsonText);
           const docHtml = buildInstantOfficialDocument('lessonnotes', meta, parsed);
@@ -505,36 +593,43 @@ app.post('/api/moha/quiz', async (req, res) => {
 
   if (ai) {
     try {
-      const jsonText = await generateContentWithQuotaFallback(ai, {
-        contents: `Generate 4 concrete problem-solving / workout questions for Tanzanian ${cls} ${subject} ${selectedTopicText}.
+      const quizCacheKey = `quiz:${cls}:${subject}:${topic || 'ALL'}:${subTopic || 'ALL'}:${sourceFilter}`;
+      const jsonText = await withHighTrafficDedupe(
+        quizCacheKey,
+        () =>
+          generateContentWithQuotaFallback(ai, {
+            contents: `Generate 4 concrete problem-solving / workout questions for Tanzanian ${cls} ${subject} ${selectedTopicText}.
 ${sourceConstraintText}
 ${availableContentSummary}
 IMPORTANT RULES:
 1. Every question MUST be a real problem to solve (e.g. calculation, equation solving, scientific problem, map/accounting workout, or structured past paper problem) from either the TIE Textbook or a NECTA Past Paper.
-2. Provide 4 clear options, correctIndex (0 to 3), a step-by-step worked solution in "explanation" (Step 1 -> Step 2 -> Final Answer), the "topic", the "subTopic", and the "sourceRef" (e.g. "📘 TIE ${cls} ${subject} Textbook" or "📄 NECTA ${cls} ${subject} Past Paper").`,
-        config: {
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                question: { type: Type.STRING },
-                options: {
-                  type: Type.ARRAY,
-                  items: { type: Type.STRING },
+2. STRICT MATHJAX RULE: Format all mathematical expressions, equations, fractions (\\frac{a}{b}), roots (\\sqrt{x}), exponents (x^2), logarithms (\\log_{10}(x)), integrals, derivatives, and scientific formulas inside $...$ inline LaTeX delimiters in "question", "options", and "explanation".
+3. Provide 4 clear options, correctIndex (0 to 3), a step-by-step worked solution in "explanation" (Step 1 -> Step 2 -> Final Answer), the "topic", the "subTopic", and the "sourceRef" (e.g. "📘 TIE ${cls} ${subject} Textbook" or "📄 NECTA ${cls} ${subject} Past Paper").`,
+            config: {
+              responseMimeType: 'application/json',
+              responseSchema: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    question: { type: Type.STRING },
+                    options: {
+                      type: Type.ARRAY,
+                      items: { type: Type.STRING },
+                    },
+                    correctIndex: { type: Type.INTEGER },
+                    explanation: { type: Type.STRING },
+                    topic: { type: Type.STRING },
+                    subTopic: { type: Type.STRING },
+                    sourceRef: { type: Type.STRING },
+                  },
+                  required: ['question', 'options', 'correctIndex', 'explanation', 'topic', 'subTopic', 'sourceRef'],
                 },
-                correctIndex: { type: Type.INTEGER },
-                explanation: { type: Type.STRING },
-                topic: { type: Type.STRING },
-                subTopic: { type: Type.STRING },
-                sourceRef: { type: Type.STRING },
               },
-              required: ['question', 'options', 'correctIndex', 'explanation', 'topic', 'subTopic', 'sourceRef'],
             },
-          },
-        },
-      });
+          }),
+        (val) => Boolean(val && val.length > 10)
+      );
       if (jsonText) {
         const questions = JSON.parse(jsonText);
         if (Array.isArray(questions) && questions.length > 0) {
@@ -852,28 +947,34 @@ app.post('/api/moha/flashcards', async (req, res) => {
 
   if (ai) {
     try {
-      const jsonText = await generateContentWithQuotaFallback(ai, {
-        contents: `Generate 5 high-yield revision flashcards for Tanzanian ${cls} ${subject} covering these official TIE syllabus topics: ${syllabusTopics.join(
-          '; '
-        )}. Each flashcard must have an id, topic, front (clear question or concept prompt), back (concise TIE/NECTA model answer), and formulaOrKeyPoint.`,
-        config: {
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                id: { type: Type.STRING },
-                topic: { type: Type.STRING },
-                front: { type: Type.STRING },
-                back: { type: Type.STRING },
-                formulaOrKeyPoint: { type: Type.STRING },
+      const flashcardCacheKey = `flashcards:${cls}:${subject}`;
+      const jsonText = await withHighTrafficDedupe(
+        flashcardCacheKey,
+        () =>
+          generateContentWithQuotaFallback(ai, {
+            contents: `Generate 5 high-yield revision flashcards for Tanzanian ${cls} ${subject} covering these official TIE syllabus topics: ${syllabusTopics.join(
+              '; '
+            )}. Each flashcard must have an id, topic, front (clear question or concept prompt), back (concise TIE/NECTA model answer), and formulaOrKeyPoint. STRICT MATHJAX RULE: Format all mathematical expressions, formulas, fractions (\\frac{a}{b}), exponents (x^2), roots (\\sqrt{x}), and scientific equations inside $...$ inline LaTeX delimiters.`,
+            config: {
+              responseMimeType: 'application/json',
+              responseSchema: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    id: { type: Type.STRING },
+                    topic: { type: Type.STRING },
+                    front: { type: Type.STRING },
+                    back: { type: Type.STRING },
+                    formulaOrKeyPoint: { type: Type.STRING },
+                  },
+                  required: ['id', 'topic', 'front', 'back', 'formulaOrKeyPoint'],
+                },
               },
-              required: ['id', 'topic', 'front', 'back', 'formulaOrKeyPoint'],
             },
-          },
-        },
-      });
+          }),
+        (val) => Boolean(val && val.length > 10)
+      );
       if (jsonText) {
         const cards = JSON.parse(jsonText);
         if (Array.isArray(cards) && cards.length > 0) {

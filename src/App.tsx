@@ -53,6 +53,8 @@ import { OfflineIndicator, PWAInstallButton } from './components/PWAInstallButto
 import { StemArenaGame } from './components/StemArenaGame';
 import { BioscienceWorkbench } from './components/BioscienceWorkbench';
 import { VeoVideoStudio } from './components/VeoVideoStudio';
+import { ElimikaPlayHub, PlayGameRoute } from './components/ElimikaPlayHub';
+import { MathText, renderMathTextToHtml, typesetMathInElement } from './utils/mathRenderer';
 
 declare global {
   interface Window {
@@ -323,8 +325,13 @@ function formatMwalimuHtml(raw: string): string {
   if (!raw) return '';
   if (raw.includes('official-tie-doc')) return raw;
 
+  // Collapse multi-line display math blocks ($$...$$) onto single lines so line splitting never breaks LaTeX
+  const collapsedDisplayMath = raw.replace(/\$\$([\s\S]+?)\$\$/g, (_m, inner) => {
+    return `$$${String(inner).replace(/\n+/g, ' ').trim()}$$`;
+  });
+
   // Convert Markdown pipe tables into clean bordered HTML tables
-  const lines = raw.split('\n');
+  const lines = collapsedDisplayMath.split('\n');
   const outLines: string[] = [];
   let i = 0;
 
@@ -341,7 +348,7 @@ function formatMwalimuHtml(raw: string): string {
           r
             .slice(1, -1)
             .split('|')
-            .map((cell) => escapeHtml(cell.trim()).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'));
+            .map((cell) => renderMathTextToHtml(cell.trim()));
 
         const headers = parseRow(tableLines[0]);
         const isSep = /^[:\-\s|]+$/.test(tableLines[1].slice(1, -1));
@@ -357,7 +364,7 @@ function formatMwalimuHtml(raw: string): string {
       }
     }
 
-    const formattedLine = escapeHtml(lines[i]).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    const formattedLine = renderMathTextToHtml(lines[i]);
     const trimmed = formattedLine.trim();
     if (/^<strong>[1-9]\.\s/.test(trimmed)) {
       outLines.push(
@@ -382,6 +389,7 @@ export default function App() {
 
   // Navigation & View Mode
   const [activePage, setActivePage] = useState<'papers' | 'books' | 'syllabus' | 'daily_quiz' | 'moha' | 'game'>('papers');
+  const [playRoute, setPlayRoute] = useState<PlayGameRoute>('hub');
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [selectedClass, setSelectedClass] = useState<string>('');
   const [selectedSubject, setSelectedSubject] = useState<string>('');
@@ -732,39 +740,64 @@ export default function App() {
       openDailyQuizPage();
     } else if (window.location.hash === '#moha') {
       openMwalimuModal();
+    } else if (window.location.hash === '#play') {
+      setPlayRoute('hub');
+      setActivePage('game');
+    } else if (window.location.hash === '#treasure-hunt') {
+      setPlayRoute('treasure_hunt');
+      setActivePage('game');
+    } else if (window.location.hash === '#escape-classroom') {
+      setPlayRoute('escape_classroom');
+      setActivePage('game');
+    } else if (window.location.hash === '#stem-arena') {
+      setPlayRoute('stem_arena');
+      setActivePage('game');
     }
 
     const onHashChange = () => {
       const ch = parseChallengeFromLocation();
       if (ch) {
         loadSharedChallengeFromUrl(ch.id, ch.cls, ch.sub, ch.topic, ch.by);
+      } else if (window.location.hash === '#play') {
+        setPlayRoute('hub');
+        setActivePage('game');
+      } else if (window.location.hash === '#treasure-hunt') {
+        setPlayRoute('treasure_hunt');
+        setActivePage('game');
+      } else if (window.location.hash === '#escape-classroom') {
+        setPlayRoute('escape_classroom');
+        setActivePage('game');
+      } else if (window.location.hash === '#stem-arena') {
+        setPlayRoute('stem_arena');
+        setActivePage('game');
       }
     };
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
-  // Render KaTeX math formulas & keep latest message visible above the pinned input box
+  // Render MathJax 3 & KaTeX math formulas across Chat, Quiz, Daily Quiz, Flashcards & Lesson Notes Studio
   useEffect(() => {
-    if (activePage !== 'moha' || mohaViewMode !== 'chat' || !chatContainerRef.current) return;
-    chatContainerRef.current.scrollTo({
-      top: chatContainerRef.current.scrollHeight,
-      behavior: 'smooth',
-    });
-    if (window.renderMathInElement) {
-      try {
-        window.renderMathInElement(chatContainerRef.current, {
-          delimiters: [
-            { left: '$$', right: '$$', display: true },
-            { left: '$', right: '$', display: false },
-          ],
-          throwOnError: false,
-        });
-      } catch {
-        // ignore katex render error
-      }
+    if (activePage === 'moha' && mohaViewMode === 'chat' && chatContainerRef.current) {
+      chatContainerRef.current.scrollTo({
+        top: chatContainerRef.current.scrollHeight,
+        behavior: 'smooth',
+      });
+      typesetMathInElement(chatContainerRef.current);
     }
-  }, [mohaMessages, mohaOpen, mohaViewMode, activePage]);
+    typesetMathInElement(document.body);
+  }, [
+    mohaMessages,
+    mohaOpen,
+    mohaViewMode,
+    activePage,
+    quizItems,
+    quizSelectedAnswers,
+    flashcards,
+    activeFlashcardIdx,
+    flashcardFlipped,
+    studioPreviewHtml,
+  ]);
 
   // Integrated Website Resources Context for active Class & Subject (plus cross-subject fallback)
   const activeSiteResources = React.useMemo<SiteResourceContext>(() => {
@@ -2218,12 +2251,15 @@ export default function App() {
               Lesson Notes &amp; Studio
             </button>
             <button
-              onClick={() => setActivePage('game')}
+              onClick={() => {
+                setPlayRoute('hub');
+                setActivePage('game');
+              }}
               className={`hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 cursor-pointer flex items-center gap-1 ${
                 activePage === 'game' ? 'text-emerald-700 font-bold underline underline-offset-4' : ''
               }`}
             >
-              <span>🎮 STEM Game</span>
+              <span>🎮 Elimika Play</span>
             </button>
           </nav>
 
@@ -2318,6 +2354,15 @@ export default function App() {
                 >
                   <span>🎯 Daily Solving Quiz</span>
                   <ExternalLink className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => {
+                    setPlayRoute('hub');
+                    setActivePage('game');
+                  }}
+                  className="px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm border border-slate-800 bg-slate-900 hover:bg-slate-800 text-amber-300 shadow-sm transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
+                >
+                  <span>🎮 Elimika Play (3 Games)</span>
                 </button>
               </div>
 
@@ -3616,7 +3661,7 @@ export default function App() {
                           </div>
 
                           <div className="font-bold text-sm text-slate-900 leading-relaxed">
-                            {q.question}
+                            <MathText text={q.question} />
                           </div>
 
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -3642,7 +3687,7 @@ export default function App() {
                                   <span className="w-5 h-5 rounded-md bg-slate-100 text-slate-800 font-black flex items-center justify-center shrink-0 text-[11px]">
                                     {optionLetter}
                                   </span>
-                                  <span>{opt}</span>
+                                  <MathText text={opt} />
                                 </button>
                               );
                             })}
@@ -3664,7 +3709,7 @@ export default function App() {
                                   Ask Moha AI Tutor →
                                 </button>
                               </div>
-                              <div className="leading-relaxed font-medium">{q.explanation}</div>
+                              <MathText as="div" text={q.explanation} className="leading-relaxed font-medium" />
                             </div>
                           )}
                         </div>
@@ -4515,9 +4560,13 @@ export default function App() {
                             </span>
                             <span>{card.topic}</span>
                           </div>
-                          <div className="text-sm font-bold my-2.5">{flashcardFlipped ? card.back : card.front}</div>
+                          <div className="text-sm font-bold my-2.5">
+                            <MathText text={flashcardFlipped ? card.back : card.front} />
+                          </div>
                           <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-200/70">
-                            <span>Key Point: {card.formulaOrKeyPoint}</span>
+                            <span>
+                              Key Point: <MathText text={card.formulaOrKeyPoint} />
+                            </span>
                             <span className="font-bold underline">Click to flip ↻</span>
                           </div>
                         </div>
@@ -4656,7 +4705,9 @@ export default function App() {
                                   )}
                                 </div>
                               </div>
-                              <div className="font-bold text-xs sm:text-sm text-slate-900">{q.question}</div>
+                              <div className="font-bold text-xs sm:text-sm text-slate-900">
+                                <MathText text={q.question} />
+                              </div>
                               <div className="space-y-1.5">
                                 {q.options.map((opt, oIdx) => {
                                   let btnClass =
@@ -4676,14 +4727,14 @@ export default function App() {
                                       onClick={() => handleSelectQuizOption(qIdx, oIdx)}
                                       className={btnClass}
                                     >
-                                      {opt}
+                                      <MathText text={opt} />
                                     </button>
                                   );
                                 })}
                               </div>
                               {hasAnswered && (
                                 <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs font-medium text-emerald-900">
-                                  <strong>NECTA Explanation:</strong> {q.explanation}
+                                  <strong>NECTA Explanation:</strong> <MathText text={q.explanation} />
                                 </div>
                               )}
                             </div>
@@ -5410,9 +5461,19 @@ export default function App() {
       )}
       </AnimatePresence>
 
-      {/* FULL-VIEWPORT INTERACTIVE STEM GAME SHELL */}
+      {/* FULL-VIEWPORT ELIMIKA PLAY ARCADE (NECTA TREASURE HUNT, ESCAPE THE CLASSROOM & ORIGINAL STEM ARENA) */}
       {activePage === 'game' && (
-        <StemArenaGame onExitGame={() => setActivePage('papers')} />
+        <ElimikaPlayHub
+          initialRoute={playRoute}
+          initialClass={selectedClass || mohaActiveClass || 'Form 3'}
+          initialSubject={selectedSubject || mohaActiveSubject || 'Basic Mathematics'}
+          onExitPlay={() => {
+            if (typeof window !== 'undefined' && window.location.hash) {
+              window.history.replaceState(null, '', '#home');
+            }
+            setActivePage('papers');
+          }}
+        />
       )}
 
       {/* TOAST NOTIFICATION */}
