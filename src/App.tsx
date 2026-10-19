@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import {
   ArrowLeft,
   Award,
@@ -2076,9 +2077,17 @@ export default function App() {
 
       <OfflineIndicator />
 
+      <AnimatePresence mode="wait">
       {/* MAIN PAST PAPERS BROWSER MODE */}
       {activePage === 'papers' && (
-        <>
+        <motion.div
+          key="view-papers"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.22, ease: 'easeOut' }}
+          className="flex-grow flex flex-col"
+        >
           <section className="pt-6 pb-8 bg-gradient-to-b from-white via-slate-50 to-slate-100 border-b border-slate-200">
             <div className="max-w-3xl mx-auto px-4 text-center space-y-4">
               <div className="text-xs font-bold text-blue-700 tracking-wide">
@@ -2597,12 +2606,19 @@ export default function App() {
               )}
             </div>
           </main>
-        </>
+        </motion.div>
       )}
 
       {/* DEDICATED TIE BOOKS PAGE */}
       {activePage === 'books' && (
-        <div className="flex-grow bg-slate-50 min-h-screen pb-24">
+        <motion.div
+          key="view-books"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.22, ease: 'easeOut' }}
+          className="flex-grow bg-slate-50 min-h-screen pb-24"
+        >
           <div className="bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 border-b border-emerald-700 shadow-sm">
             <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -2767,12 +2783,19 @@ export default function App() {
               })}
             </div>
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* DEDICATED SYLLABUS PAGE */}
       {activePage === 'syllabus' && (
-        <div className="flex-grow bg-slate-50 min-h-screen pb-24">
+        <motion.div
+          key="view-syllabus"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.22, ease: 'easeOut' }}
+          className="flex-grow bg-slate-50 min-h-screen pb-24"
+        >
           <div className="bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-400 border-b border-amber-600 shadow-sm">
             <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -2923,8 +2946,9 @@ export default function App() {
               </div>
             )}
           </div>
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
 
       {/* STICKY MOBILE BOTTOM BAR */}
       {activePage === 'papers' && step > 1 && (
@@ -3066,8 +3090,16 @@ export default function App() {
       )}
 
       {/* DEDICATED FULL-PAGE MOHA AI SITE (CLEAN VIEWPORT-LOCKED WORKSPACE) */}
+      <AnimatePresence mode="wait">
       {activePage === 'moha' && (
-        <div className="h-[calc(100vh-4rem)] bg-slate-50 flex flex-col overflow-hidden">
+        <motion.div
+          key={`view-moha-${mohaViewMode === 'studio' ? 'studio' : 'portal'}`}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.22, ease: 'easeOut' }}
+          className="h-[calc(100vh-4rem)] bg-slate-50 flex flex-col overflow-hidden"
+        >
           {/* Compact Single-Row Top Bar: Class/Subject + Mode Tabs */}
           <div className="shrink-0 bg-white border-b border-slate-200 px-3 sm:px-6 py-2 shadow-xs">
             <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-2">
@@ -4476,8 +4508,9 @@ export default function App() {
               </div>
             </div>
           )}
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
 
       {/* TOAST NOTIFICATION */}
       {toastMessage && (
