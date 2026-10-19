@@ -1,0 +1,328 @@
+@import "tailwindcss";
+
+:root {
+  --bg-canvas: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-surface-glass: rgba(255, 255, 255, 0.95);
+  --bg-elevated: #f1f5f9;
+  --bg-subtle: #e2e8f0;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --border-subtle: #e2e8f0;
+  --border-strong: #cbd5e1;
+
+  --callout-violet-bg: #f5f3ff;
+  --callout-violet-border: #ddd6fe;
+  --callout-violet-text: #4c1d95;
+
+  --callout-amber-bg: #fffbeb;
+  --callout-amber-border: #fde68a;
+  --callout-amber-text: #78350f;
+
+  --callout-emerald-bg: #ecfdf5;
+  --callout-emerald-border: #a7f3d0;
+  --callout-emerald-text: #064e3b;
+
+  --callout-blue-bg: #eff6ff;
+  --callout-blue-border: #bfdbfe;
+  --callout-blue-text: #1e3a8a;
+
+  --callout-rose-bg: #fff1f2;
+  --callout-rose-border: #fecdd3;
+  --callout-rose-text: #881337;
+}
+
+html.dark,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg-canvas: #090d16;
+  --bg-surface: #111827;
+  --bg-surface-glass: rgba(17, 24, 39, 0.95);
+  --bg-elevated: #1e293b;
+  --bg-subtle: #334155;
+  --text-primary: #f8fafc;
+  --text-secondary: #e2e8f0;
+  --text-muted: #94a3b8;
+  --border-subtle: #1e293b;
+  --border-strong: #334155;
+
+  --callout-violet-bg: rgba(109, 40, 217, 0.22);
+  --callout-violet-border: rgba(167, 139, 250, 0.45);
+  --callout-violet-text: #ede9fe;
+
+  --callout-amber-bg: rgba(180, 83, 9, 0.22);
+  --callout-amber-border: rgba(251, 191, 36, 0.45);
+  --callout-amber-text: #fef3c7;
+
+  --callout-emerald-bg: rgba(5, 150, 105, 0.22);
+  --callout-emerald-border: rgba(52, 211, 153, 0.45);
+  --callout-emerald-text: #d1fae5;
+
+  --callout-blue-bg: rgba(37, 99, 235, 0.22);
+  --callout-blue-border: rgba(96, 165, 250, 0.45);
+  --callout-blue-text: #dbeafe;
+
+  --callout-rose-bg: rgba(225, 29, 72, 0.22);
+  --callout-rose-border: rgba(251, 113, 133, 0.45);
+  --callout-rose-text: #ffe4e6;
+}
+
+@layer base {
+  body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: var(--bg-canvas);
+    color: var(--text-primary);
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+  h1, h2, h3, .font-display {
+    font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+  }
+  code, pre, .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+/* High-Contrast Dark Theme Overrides Using CSS Variables */
+html.dark .bg-slate-50,
+html.dark .bg-slate-50\/80 {
+  background-color: var(--bg-canvas) !important;
+}
+
+html.dark .bg-white {
+  background-color: var(--bg-surface) !important;
+}
+
+html.dark .bg-white\/95,
+html.dark .bg-white\/90,
+html.dark .bg-white\/80 {
+  background-color: var(--bg-surface-glass) !important;
+}
+
+html.dark .bg-slate-100 {
+  background-color: var(--bg-elevated) !important;
+}
+
+html.dark .bg-slate-200,
+html.dark .hover\:bg-slate-200:hover,
+html.dark .hover\:bg-slate-100:hover {
+  background-color: var(--bg-subtle) !important;
+}
+
+html.dark .from-white {
+  --tw-gradient-from: var(--bg-surface) !important;
+}
+
+html.dark .via-slate-50 {
+  --tw-gradient-via: var(--bg-canvas) !important;
+}
+
+html.dark .to-slate-100 {
+  --tw-gradient-to: var(--bg-elevated) !important;
+}
+
+/* High-Contrast Text Overrides */
+html.dark .text-slate-900,
+html.dark .text-slate-800,
+html.dark .hover\:text-slate-900:hover {
+  color: var(--text-primary) !important;
+}
+
+html.dark .text-slate-700,
+html.dark .text-slate-600 {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .text-slate-500,
+html.dark .text-slate-400 {
+  color: var(--text-muted) !important;
+}
+
+/* Preserve dark text on bright high-visibility action buttons */
+html.dark .bg-amber-400.text-slate-950,
+html.dark .bg-amber-300.text-slate-950,
+html.dark .bg-amber-500.text-slate-950,
+html.dark .bg-emerald-500.text-slate-950,
+html.dark .bg-emerald-400.text-slate-950 {
+  color: #090d16 !important;
+}
+
+/* High-Contrast Accent Text Adjustments for Dark Surfaces */
+html.dark .text-blue-600,
+html.dark .text-blue-700,
+html.dark .text-blue-800,
+html.dark .text-blue-900,
+html.dark .text-blue-950 {
+  color: #93c5fd !important;
+}
+
+html.dark .text-violet-600,
+html.dark .text-violet-700,
+html.dark .text-violet-800,
+html.dark .text-violet-900,
+html.dark .text-violet-950 {
+  color: #ddd6fe !important;
+}
+
+html.dark .text-emerald-700,
+html.dark .text-emerald-800,
+html.dark .text-emerald-900,
+html.dark .text-emerald-950 {
+  color: #6ee7b7 !important;
+}
+
+html.dark .text-amber-700,
+html.dark .text-amber-800,
+html.dark .text-amber-900,
+html.dark .text-amber-950 {
+  color: #fde68a !important;
+}
+
+html.dark .text-rose-600,
+html.dark .text-rose-700,
+html.dark .text-rose-800,
+html.dark .text-rose-900 {
+  color: #fda4af !important;
+}
+
+/* Tinted Callout & Badge Surfaces */
+html.dark .bg-violet-50,
+html.dark .bg-violet-50\/70,
+html.dark .bg-violet-100,
+html.dark .bg-violet-200 {
+  background-color: var(--callout-violet-bg) !important;
+  color: var(--callout-violet-text) !important;
+}
+
+html.dark .border-violet-200,
+html.dark .border-violet-200\/80,
+html.dark .border-violet-300 {
+  border-color: var(--callout-violet-border) !important;
+}
+
+html.dark .bg-amber-50,
+html.dark .bg-amber-50\/80,
+html.dark .bg-amber-50\/90,
+html.dark .bg-amber-100 {
+  background-color: var(--callout-amber-bg) !important;
+  color: var(--callout-amber-text) !important;
+}
+
+html.dark .border-amber-200,
+html.dark .border-amber-200\/90,
+html.dark .border-amber-300 {
+  border-color: var(--callout-amber-border) !important;
+}
+
+html.dark .bg-emerald-50,
+html.dark .bg-emerald-100 {
+  background-color: var(--callout-emerald-bg) !important;
+  color: var(--callout-emerald-text) !important;
+}
+
+html.dark .border-emerald-200,
+html.dark .border-emerald-300,
+html.dark .border-emerald-400 {
+  border-color: var(--callout-emerald-border) !important;
+}
+
+html.dark .bg-blue-50,
+html.dark .bg-blue-50\/70,
+html.dark .bg-blue-100 {
+  background-color: var(--callout-blue-bg) !important;
+  color: var(--callout-blue-text) !important;
+}
+
+html.dark .border-blue-200,
+html.dark .border-blue-200\/80,
+html.dark .border-blue-300 {
+  border-color: var(--callout-blue-border) !important;
+}
+
+html.dark .bg-rose-50,
+html.dark .bg-rose-100 {
+  background-color: var(--callout-rose-bg) !important;
+  color: var(--callout-rose-text) !important;
+}
+
+/* Borders & Dividers */
+html.dark .border-slate-100,
+html.dark .border-slate-200,
+html.dark .border-slate-200\/80,
+html.dark .border-slate-200\/70 {
+  border-color: var(--border-subtle) !important;
+}
+
+html.dark .border-slate-300 {
+  border-color: var(--border-strong) !important;
+}
+
+html.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--border-subtle) !important;
+}
+
+/* Form Controls in Dark Mode */
+html.dark input:not([type="range"]),
+html.dark select,
+html.dark textarea {
+  background-color: var(--bg-elevated) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-strong) !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: var(--text-muted) !important;
+}
+
+/* Official TIE Document Tables & Print Previews */
+.official-tie-doc {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  padding: 16px;
+  border: 2px solid var(--border-strong);
+  border-radius: 8px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11.5px;
+  line-height: 1.45;
+  overflow-x: auto;
+  margin-top: 8px;
+}
+
+.official-tie-doc table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 10px;
+}
+
+.official-tie-doc th,
+.official-tie-doc td {
+  border: 1px solid var(--border-strong);
+  padding: 6px 8px;
+  text-align: left;
+  vertical-align: top;
+  color: var(--text-primary);
+}
+
+.official-tie-doc th {
+  background-color: var(--bg-elevated);
+  color: var(--text-primary);
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: 10px;
+}
+
+/* Interactive SVG Diagrams in Dark Mode */
+html.dark svg rect[fill="#f8fafc"],
+html.dark svg rect[fill="#ffffff"],
+html.dark svg rect[fill="#f1f5f9"] {
+  fill: #1e293b;
+}
+
+html.dark svg text[fill="#0f172a"],
+html.dark svg text[fill="#1e293b"],
+html.dark svg text[fill="#334155"],
+html.dark svg text[fill="#475569"] {
+  fill: #f8fafc;
+}

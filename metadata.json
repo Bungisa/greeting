@@ -1,0 +1,6 @@
+{
+  "name": "Elimika TZ | Tanzania Past Papers, TIE Books, Syllabus & Moha AI",
+  "description": "Simple, fast access to Tanzanian past examination papers, marking schemes, TIE books, official syllabuses, and Moha AI for Standard 1–7 and Form 1–6.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
