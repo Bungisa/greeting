@@ -27,17 +27,20 @@ import {
   X,
 } from 'lucide-react';
 import {
+  buildContentIntegratedQuizQuestions,
   buildInstantOfficialDocument,
   CONFIG,
   escapeHtml,
   FlashcardItem,
   generateLocalSmartTutorReply,
   getDefaultFlashcardsForSubject,
+  getSubTopicsForMainTopic,
   getSyllabusTopicsForClassSubject,
   LearnedMemoryItem,
   normalizeClassName,
   OfficialDocType,
   PaperRecord,
+  parseClassSubjectTopicFromPrompt,
   QuizHistoryRecord,
   QuizItem,
   SiteResourceContext,
@@ -47,6 +50,9 @@ import {
 } from './data/curriculumData';
 import { DiagramPreset, InteractiveDiagramLab } from './components/InteractiveDiagramLab';
 import { OfflineIndicator, PWAInstallButton } from './components/PWAInstallButton';
+import { StemArenaGame } from './components/StemArenaGame';
+import { BioscienceWorkbench } from './components/BioscienceWorkbench';
+import { VeoVideoStudio } from './components/VeoVideoStudio';
 
 declare global {
   interface Window {
@@ -82,6 +88,12 @@ interface ChatMessage {
   loading?: boolean;
   imagePreview?: string;
   diagramPreset?: DiagramPreset;
+  quizTarget?: {
+    cls: string;
+    subject: string;
+    topic: string;
+    subTopic: string;
+  };
 }
 
 interface ChallengeLeaderboardEntry {
@@ -344,9 +356,20 @@ function formatMwalimuHtml(raw: string): string {
         continue;
       }
     }
-    outLines.push(
-      escapeHtml(lines[i]).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    );
+
+    const formattedLine = escapeHtml(lines[i]).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    const trimmed = formattedLine.trim();
+    if (/^<strong>[1-9]\.\s/.test(trimmed)) {
+      outLines.push(
+        `<div style="margin-top:10px; margin-bottom:4px; padding:6px 10px; background:#f8fafc; border-left:3px solid #4f46e5; border-radius:6px; font-weight:700; color:#0f172a;">${formattedLine}</div>`
+      );
+    } else if (/^(•|-|\*)\s+/.test(trimmed)) {
+      outLines.push(
+        `<div style="margin-left:10px; margin-top:3px; margin-bottom:3px; padding-left:8px; border-left:2px solid #cbd5e1; color:#1e293b;">${formattedLine}</div>`
+      );
+    } else {
+      outLines.push(formattedLine);
+    }
     i++;
   }
 
@@ -358,7 +381,7 @@ export default function App() {
   const [syncStatus, setSyncStatus] = useState<'syncing' | 'live' | 'offline' | 'error'>('syncing');
 
   // Navigation & View Mode
-  const [activePage, setActivePage] = useState<'papers' | 'books' | 'syllabus' | 'moha'>('papers');
+  const [activePage, setActivePage] = useState<'papers' | 'books' | 'syllabus' | 'daily_quiz' | 'moha' | 'game'>('papers');
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [selectedClass, setSelectedClass] = useState<string>('');
   const [selectedSubject, setSelectedSubject] = useState<string>('');
@@ -397,7 +420,7 @@ export default function App() {
   // Moha AI Full-Page Site State
   const [mohaOpen, setMohaOpen] = useState<boolean>(false);
   const [mohaViewMode, setMohaViewMode] = useState<
-    'chat' | 'studio' | 'quiz' | 'diagram' | 'resources' | 'profile'
+    'chat' | 'studio' | 'quiz' | 'diagram' | 'bioscience' | 'video' | 'resources' | 'profile'
   >('chat');
   const [activeDiagramPreset, setActiveDiagramPreset] = useState<DiagramPreset>('physics_ohm');
   const [mohaActiveClass, setMohaActiveClass] = useState<string>('Form 3');
@@ -446,6 +469,8 @@ export default function App() {
   const [quizSelectedAnswers, setQuizSelectedAnswers] = useState<Record<number, number>>({});
   const [quizResultSaved, setQuizResultSaved] = useState<boolean>(false);
   const [selectedQuizTopic, setSelectedQuizTopic] = useState<string>('ALL');
+  const [selectedQuizSubTopic, setSelectedQuizSubTopic] = useState<string>('ALL');
+  const [selectedQuizSourceFilter, setSelectedQuizSourceFilter] = useState<'ALL' | 'textbook' | 'past_paper'>('ALL');
   const [quizStartTime, setQuizStartTime] = useState<number>(() => Date.now());
   const [activeChallenge, setActiveChallenge] = useState<TopicQuizChallenge | null>(null);
   const [allChallenges, setAllChallenges] = useState<TopicQuizChallenge[]>([]);
@@ -458,13 +483,6 @@ export default function App() {
   const [joinChallengeCode, setJoinChallengeCode] = useState<string>('');
   const [joiningChallengeByCode, setJoiningChallengeByCode] = useState<boolean>(false);
   const [serverPublicAppUrl, setServerPublicAppUrl] = useState<string>('');
-  const [customDomain, setCustomDomain] = useState<string>(() => {
-    try {
-      return localStorage.getItem('elimika_custom_domain') || '';
-    } catch {
-      return '';
-    }
-  });
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     try {
       const saved = localStorage.getItem('elimika_dark_mode');
@@ -513,22 +531,8 @@ export default function App() {
     }, 3400);
   };
 
-  function handleSaveCustomDomain(domain: string) {
-    setCustomDomain(domain);
-    try {
-      if (domain) {
-        localStorage.setItem('elimika_custom_domain', domain);
-        showToast(`🌐 Custom domain saved: ${domain}`);
-      } else {
-        localStorage.removeItem('elimika_custom_domain');
-      }
-    } catch {
-      // ignore storage errors
-    }
-  }
-
   function getPublicShareBaseUrl(customServerUrl?: string): string {
-    const rawOrigin = (customDomain || customServerUrl || serverPublicAppUrl || window.location.origin).replace(/\/+$/, '');
+    const rawOrigin = (customServerUrl || serverPublicAppUrl || window.location.origin).replace(/\/+$/, '');
     // Replace private ais-dev URL (which shows 403 Forbidden to friends) with the shared ais-pre preview URL
     return rawOrigin.replace('https://ais-dev-', 'https://ais-pre-');
   }
@@ -724,6 +728,8 @@ export default function App() {
       setActivePage('syllabus');
     } else if (window.location.hash === '#books') {
       setActivePage('books');
+    } else if (window.location.hash === '#daily-quiz') {
+      openDailyQuizPage();
     } else if (window.location.hash === '#moha') {
       openMwalimuModal();
     }
@@ -1007,6 +1013,30 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  function openDailyQuizPage(
+    customClass?: string,
+    customSubject?: string,
+    customTopic?: string,
+    customSubTopic?: string,
+    customSource?: 'ALL' | 'textbook' | 'past_paper'
+  ) {
+    const cls = customClass || selectedClass || savedClass || mohaActiveClass || 'Form 4';
+    const sub =
+      customSubject ||
+      selectedSubject ||
+      mohaActiveSubject ||
+      (TIE_CURRICULUM_SUBJECTS[cls]?.[0] ?? 'Basic Mathematics');
+    const topics = getSyllabusTopicsForClassSubject(cls, sub);
+    const firstTopic = customTopic || (topics[0] ? topics[0].replace(/^\d+\.\d+\s*/, '') : 'ALL');
+    const subTopics = getSubTopicsForMainTopic(sub, firstTopic);
+    const firstSubTopic = customSubTopic || subTopics[0] || 'ALL';
+    const src = customSource || selectedQuizSourceFilter || 'ALL';
+
+    setActivePage('daily_quiz');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    startAiQuiz(cls, sub, firstTopic, firstSubTopic, src, true);
+  }
+
   function handleSmartSearchChange(val: string) {
     setSearchQuery(val);
     setPage(1);
@@ -1092,7 +1122,7 @@ export default function App() {
   function openMwalimuModal(
     cls?: string,
     sub?: string,
-    initialView: 'chat' | 'studio' | 'quiz' | 'diagram' | 'resources' | 'profile' = 'chat'
+    initialView: 'chat' | 'studio' | 'quiz' | 'diagram' | 'bioscience' | 'video' | 'resources' | 'profile' = 'chat'
   ) {
     const targetCls = cls || selectedClass || 'Form 3';
     const targetSub = sub || selectedSubject || 'Basic Mathematics';
@@ -1382,6 +1412,94 @@ export default function App() {
     const displayPrompt = userText || 'Solve this question step-by-step and show the NECTA Marking Scheme.';
     const loadingId = `load-${Date.now()}`;
 
+    // Parse any specific Class, Subject, and Topic requested in the user's message
+    const parsedTarget = parseClassSubjectTopicFromPrompt(
+      displayPrompt,
+      mohaActiveClass,
+      mohaActiveSubject
+    );
+    const targetCls = parsedTarget.cls;
+    const targetSub = parsedTarget.subject;
+    const targetTopic = parsedTarget.topic;
+    const targetSubTopic = parsedTarget.subTopic;
+
+    if (parsedTarget.matchedFromPrompt) {
+      setMohaActiveClass(targetCls);
+      setMohaActiveSubject(targetSub);
+      setTsClass(targetCls);
+      setTsSubject(targetSub);
+      setSelectedQuizTopic(targetTopic);
+      setSelectedQuizSubTopic(targetSubTopic);
+    }
+
+    // Build integrated website Books, Syllabuses & Past Papers specifically for targetCls & targetSub
+    const clsLower = targetCls.toLowerCase();
+    const subLower = targetSub.toLowerCase();
+    const promptSiteResources: SiteResourceContext = {
+      syllabuses: allPapers
+        .filter(
+          (p) =>
+            p.isSyllabus &&
+            (p.subject.toLowerCase().includes(subLower) ||
+              subLower.includes(p.subject.toLowerCase()) ||
+              p.form.toLowerCase().includes(clsLower))
+        )
+        .slice(0, 6)
+        .map((s) => ({
+          title: s.title,
+          form: s.form,
+          subject: s.subject,
+          year: s.year,
+          hasUrl: Boolean(s.paperUrl),
+        })),
+      books: allPapers
+        .filter(
+          (p) =>
+            p.isBook &&
+            (p.subject.toLowerCase().includes(subLower) || subLower.includes(p.subject.toLowerCase()))
+        )
+        .slice(0, 6)
+        .map((b) => ({
+          title: b.title,
+          form: b.form,
+          subject: b.subject,
+          year: b.year,
+          hasUrl: Boolean(b.paperUrl),
+        })),
+      papers: allPapers
+        .filter(
+          (p) =>
+            !p.isBook &&
+            !p.isSyllabus &&
+            (p.subject.toLowerCase().includes(subLower) || subLower.includes(p.subject.toLowerCase()))
+        )
+        .slice(0, 8)
+        .map((p) => ({
+          title: p.title,
+          form: p.form,
+          subject: p.subject,
+          year: p.year,
+          category: p.category,
+          hasUrl: Boolean(p.paperUrl),
+          hasAnswers: Boolean(p.answersUrl),
+        })),
+    };
+
+    // If user asked for a quiz/questions in chat, pre-load the interactive Quiz items for this exact Class, Subject & Topic
+    if (/\b(quiz|questions|maswali|test me|exercise|practice)\b/i.test(displayPrompt)) {
+      const topicItems = buildContentIntegratedQuizQuestions(
+        targetCls,
+        targetSub,
+        targetTopic,
+        promptSiteResources,
+        targetSubTopic,
+        selectedQuizSourceFilter
+      );
+      setQuizItems(topicItems);
+      setQuizSelectedAnswers({});
+      setQuizResultSaved(false);
+    }
+
     setMohaMessages((prev) => [
       ...prev,
       {
@@ -1394,7 +1512,7 @@ export default function App() {
         id: loadingId,
         role: 'ai',
         loading: true,
-        text: 'Moha AI is analyzing with TIE Books, Syllabuses & NECTA Past Papers...',
+        text: `Moha AI is analyzing ${targetCls} ${targetSub} (${targetTopic}) with TIE Books, Syllabus, Past Papers & Google Search...`,
       },
     ]);
 
@@ -1404,23 +1522,37 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           prompt: displayPrompt,
-          cls: mohaActiveClass,
-          subject: mohaActiveSubject,
+          cls: targetCls,
+          subject: targetSub,
           image: attachedImg ? { mimeType: attachedImg.mimeType, base64Data: attachedImg.base64Data } : null,
           history: mohaMessages.slice(-6).map((m) => ({ id: m.id, role: m.role, text: m.text })),
           learnedMemory,
-          siteResources: activeSiteResources,
+          siteResources: promptSiteResources,
         }),
       });
 
       if (response.ok) {
         const data = await response.json();
+        if (Array.isArray(data.quizQuestions) && data.quizQuestions.length > 0) {
+          setQuizItems(data.quizQuestions);
+        }
         if (data.reply) {
-          const matchedPreset = detectDiagramPreset(displayPrompt, mohaActiveSubject);
+          const matchedPreset = detectDiagramPreset(displayPrompt, targetSub);
           setMohaMessages((prev) =>
             prev.map((m) =>
               m.id === loadingId
-                ? { id: `ai-${Date.now()}`, role: 'ai', text: data.reply, diagramPreset: matchedPreset }
+                ? {
+                    id: `ai-${Date.now()}`,
+                    role: 'ai',
+                    text: data.reply,
+                    diagramPreset: matchedPreset,
+                    quizTarget: {
+                      cls: targetCls,
+                      subject: targetSub,
+                      topic: targetTopic,
+                      subTopic: targetSubTopic,
+                    },
+                  }
                 : m
             )
           );
@@ -1433,16 +1565,27 @@ export default function App() {
 
     const localReply = generateLocalSmartTutorReply(
       displayPrompt,
-      mohaActiveClass,
-      mohaActiveSubject,
+      targetCls,
+      targetSub,
       learnedMemory,
-      activeSiteResources
+      promptSiteResources
     );
-    const matchedPreset = detectDiagramPreset(displayPrompt, mohaActiveSubject);
+    const matchedPreset = detectDiagramPreset(displayPrompt, targetSub);
     setMohaMessages((prev) =>
       prev.map((m) =>
         m.id === loadingId
-          ? { id: `ai-${Date.now()}`, role: 'ai', text: localReply, diagramPreset: matchedPreset }
+          ? {
+              id: `ai-${Date.now()}`,
+              role: 'ai',
+              text: localReply,
+              diagramPreset: matchedPreset,
+              quizTarget: {
+                cls: targetCls,
+                subject: targetSub,
+                topic: targetTopic,
+                subTopic: targetSubTopic,
+              },
+            }
           : m
       )
     );
@@ -1474,21 +1617,98 @@ export default function App() {
     }
   }
 
-  async function startAiQuiz(customClass?: string, customSubject?: string, customTopic?: string) {
+  async function startAiQuiz(
+    customClass?: string,
+    customSubject?: string,
+    customTopic?: string,
+    customSubTopic?: string,
+    customSourceFilter?: 'ALL' | 'textbook' | 'past_paper',
+    stayOnDailyQuizPage?: boolean
+  ) {
     const targetCls = customClass || mohaActiveClass;
     const targetSub = customSubject || mohaActiveSubject;
     const targetTopic = customTopic !== undefined ? customTopic : selectedQuizTopic;
+    const targetSubTopic = customSubTopic !== undefined ? customSubTopic : selectedQuizSubTopic;
+    const targetSourceFilter =
+      customSourceFilter !== undefined ? customSourceFilter : selectedQuizSourceFilter;
 
-    if (customClass) setMohaActiveClass(customClass);
-    if (customSubject) setMohaActiveSubject(customSubject);
+    if (customClass) {
+      setMohaActiveClass(customClass);
+      setTsClass(customClass);
+    }
+    if (customSubject) {
+      setMohaActiveSubject(customSubject);
+      setTsSubject(customSubject);
+    }
     if (customTopic !== undefined) setSelectedQuizTopic(customTopic);
+    if (customSubTopic !== undefined) setSelectedQuizSubTopic(customSubTopic);
+    if (customSourceFilter !== undefined) setSelectedQuizSourceFilter(customSourceFilter);
 
-    setMohaViewMode('quiz');
+    if (stayOnDailyQuizPage || activePage === 'daily_quiz') {
+      setActivePage('daily_quiz');
+    } else {
+      setActivePage('moha');
+      setMohaOpen(true);
+      setMohaViewMode('quiz');
+    }
     setQuizLoading(true);
     setQuizSelectedAnswers({});
     setQuizResultSaved(false);
     setScoreSubmittedToChallenge(false);
     setQuizStartTime(Date.now());
+
+    // Build site resources context for the target class and subject so the quiz integrates available website contents
+    const clsNorm = targetCls.toLowerCase();
+    const subNorm = targetSub.toLowerCase();
+    const quizSiteResources: SiteResourceContext = {
+      syllabuses: allPapers
+        .filter(
+          (p) =>
+            p.isSyllabus &&
+            (p.subject.toLowerCase().includes(subNorm) ||
+              subNorm.includes(p.subject.toLowerCase()) ||
+              p.form.toLowerCase().includes(clsNorm))
+        )
+        .slice(0, 4)
+        .map((s) => ({
+          title: s.title,
+          form: s.form,
+          subject: s.subject,
+          year: s.year,
+          hasUrl: Boolean(s.paperUrl),
+        })),
+      books: allPapers
+        .filter(
+          (p) =>
+            p.isBook &&
+            (p.subject.toLowerCase().includes(subNorm) || subNorm.includes(p.subject.toLowerCase()))
+        )
+        .slice(0, 4)
+        .map((b) => ({
+          title: b.title,
+          form: b.form,
+          subject: b.subject,
+          year: b.year,
+          hasUrl: Boolean(b.paperUrl),
+        })),
+      papers: allPapers
+        .filter(
+          (p) =>
+            !p.isBook &&
+            !p.isSyllabus &&
+            (p.subject.toLowerCase().includes(subNorm) || subNorm.includes(p.subject.toLowerCase()))
+        )
+        .slice(0, 6)
+        .map((p) => ({
+          title: p.title,
+          form: p.form,
+          subject: p.subject,
+          year: p.year,
+          category: p.category,
+          hasUrl: Boolean(p.paperUrl),
+          hasAnswers: Boolean(p.answersUrl),
+        })),
+    };
 
     try {
       const response = await fetch('/api/moha/quiz', {
@@ -1498,6 +1718,9 @@ export default function App() {
           cls: targetCls,
           subject: targetSub,
           topic: targetTopic,
+          subTopic: targetSubTopic,
+          sourceFilter: targetSourceFilter,
+          siteResources: quizSiteResources,
         }),
       });
       if (response.ok) {
@@ -1512,63 +1735,16 @@ export default function App() {
       // fallback below
     }
 
-    const topics = getSyllabusTopicsForClassSubject(targetCls, targetSub);
-    const focusTopic =
-      targetTopic && targetTopic !== 'ALL'
-        ? targetTopic
-        : topics[0] || `1.0 Core Principles of ${targetSub}`;
-
-    setQuizItems([
-      {
-        question: `[NECTA ${targetCls} ${targetSub}] Which competence principle is central when solving problems on "${focusTopic}" under the TIE curriculum?`,
-        options: [
-          `Applying ${focusTopic} formulas, definitions, and real-life Tanzanian applications step-by-step`,
-          'Memorizing final answers without showing working or units',
-          'Skipping formula statements and diagrams',
-          'Using unrelated non-syllabus assumptions',
-        ],
-        correctIndex: 0,
-        explanation: `In NECTA ${targetSub}, questions on "${focusTopic}" require stating the governing principle/formula, substituting given data clearly, and stating proper units.`,
-        topic: focusTopic,
-      },
-      {
-        question: `When answering a structured NECTA Section B question on "${focusTopic}" (${targetCls} ${targetSub}), how are method marks (M1) awarded?`,
-        options: [
-          'Only if the page is completely full',
-          `For identifying given parameters and writing the correct ${focusTopic} equation or law before substitution`,
-          'For writing the final number only',
-          'Method marks are never awarded in NECTA exams',
-        ],
-        correctIndex: 1,
-        explanation:
-          'NECTA marking schemes allocate method marks (M1) for extracting given data and stating the correct formula or law prior to numerical substitution.',
-        topic: focusTopic,
-      },
-      {
-        question: `Which of the following is an official TIE syllabus competence tested alongside "${focusTopic}" in ${targetCls} ${targetSub}?`,
-        options: [
-          topics[1] || topics[0] || focusTopic,
-          'Unrelated Extracurricular Speculation',
-          'Non-Tanzanian Optional Module',
-          'Deprecated 1970s Syllabus Only',
-        ],
-        correctIndex: 0,
-        explanation: `${topics[1] || topics[0] || targetSub} is a core competence in the TIE curriculum.`,
-        topic: focusTopic,
-      },
-      {
-        question: `In ${targetCls} ${targetSub}, why is graphical or tabular presentation important when analyzing "${focusTopic}"?`,
-        options: [
-          'It replaces all calculations completely',
-          `It clearly shows relationships between variables, trends, and experimental accuracy in ${focusTopic}`,
-          'It is only used for decoration',
-          'NECTA forbids tables and diagrams',
-        ],
-        correctIndex: 1,
-        explanation: `Clear tables and labeled diagrams help verify relationships between variables in "${focusTopic}" and earn full presentation marks in NECTA examinations.`,
-        topic: focusTopic,
-      },
-    ]);
+    setQuizItems(
+      buildContentIntegratedQuizQuestions(
+        targetCls,
+        targetSub,
+        targetTopic,
+        quizSiteResources,
+        targetSubTopic,
+        targetSourceFilter
+      )
+    );
     setQuizLoading(false);
   }
 
@@ -2024,6 +2200,14 @@ export default function App() {
               Syllabuses
             </button>
             <button
+              onClick={() => openDailyQuizPage()}
+              className={`hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 cursor-pointer flex items-center gap-1 ${
+                activePage === 'daily_quiz' ? 'text-violet-700 font-bold underline underline-offset-4' : ''
+              }`}
+            >
+              <span>🎯 Daily Quiz</span>
+            </button>
+            <button
               onClick={() => openMwalimuModal(undefined, undefined, 'studio')}
               className={`hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                 activePage === 'moha' && mohaViewMode === 'studio'
@@ -2031,7 +2215,15 @@ export default function App() {
                   : ''
               }`}
             >
-              Lesson Plans &amp; Studio
+              Lesson Notes &amp; Studio
+            </button>
+            <button
+              onClick={() => setActivePage('game')}
+              className={`hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 cursor-pointer flex items-center gap-1 ${
+                activePage === 'game' ? 'text-emerald-700 font-bold underline underline-offset-4' : ''
+              }`}
+            >
+              <span>🎮 STEM Game</span>
             </button>
           </nav>
 
@@ -2067,10 +2259,7 @@ export default function App() {
               <span>{activePage === 'moha' ? 'Moha AI Portal (Active)' : 'Open Moha AI Site'}</span>
             </button>
 
-            <PWAInstallButton
-              customDomain={customDomain}
-              onSaveCustomDomain={handleSaveCustomDomain}
-            />
+            <PWAInstallButton />
           </div>
         </div>
       </header>
@@ -2121,6 +2310,13 @@ export default function App() {
                   className="px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm border border-amber-500 bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-sm transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
                 >
                   <span>Official Syllabuses</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => openDailyQuizPage()}
+                  className="px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm border border-violet-700 bg-violet-600 hover:bg-violet-700 text-white shadow-sm transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
+                >
+                  <span>🎯 Daily Solving Quiz</span>
                   <ExternalLink className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -2211,6 +2407,53 @@ export default function App() {
               {/* STEP 1: CHOOSE CLASS */}
               {step === 1 && (
                 <section className="space-y-6">
+                  {/* DAILY QUIZ IN HOME — OPENS TO ITS SEPARATE PAGE */}
+                  <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-violet-950 via-slate-900 to-blue-950 text-white border border-violet-700/60 shadow-md space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="space-y-1">
+                        <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-md bg-amber-400 text-slate-950 text-[11px] font-black uppercase tracking-wider">
+                          <span>🔥 Daily Solving Quiz · {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                        </div>
+                        <h2 className="text-base sm:text-lg font-black text-white">
+                          Daily Textbook &amp; Past Paper Problem-Solving Quiz
+                        </h2>
+                        <p className="text-xs text-slate-200 max-w-2xl">
+                          Open the dedicated Daily Quiz page to choose your <strong>Class, Subject, Topic, and Sub-Topic</strong>. Every question is a real step-by-step problem from <strong>TIE Textbooks</strong> or <strong>NECTA Past Papers</strong>.
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => openDailyQuizPage()}
+                        className="px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs sm:text-sm shadow-sm whitespace-nowrap shrink-0 cursor-pointer flex items-center justify-center gap-1.5"
+                      >
+                        <span>Open Daily Quiz Page →</span>
+                      </button>
+                    </div>
+
+                    {/* Quick Subject Launchers into the Separate Daily Quiz Page */}
+                    <div className="pt-2 border-t border-white/15 flex flex-wrap items-center gap-1.5 text-xs">
+                      <span className="text-slate-300 font-bold text-[11px] mr-1">
+                        Quick Solve by Subject:
+                      </span>
+                      {[
+                        { cls: 'Form 4', sub: 'Basic Mathematics', label: '📐 Mathematics' },
+                        { cls: 'Form 4', sub: 'Physics', label: '⚡ Physics' },
+                        { cls: 'Form 4', sub: 'Chemistry', label: '🧪 Chemistry' },
+                        { cls: 'Form 4', sub: 'Biology', label: '🧬 Biology' },
+                        { cls: 'Form 4', sub: 'Geography', label: '🌍 Geography' },
+                        { cls: 'Form 4', sub: 'History', label: '🏛️ History' },
+                        { cls: 'Form 4', sub: 'English Language', label: '📘 English' },
+                      ].map((item) => (
+                        <button
+                          key={item.sub}
+                          onClick={() => openDailyQuizPage(item.cls, item.sub)}
+                          className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold text-[11px] border border-white/15 cursor-pointer transition-colors"
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   {savedClass && (
                     <div className="p-4 bg-emerald-50 border border-emerald-300 rounded-2xl flex items-center justify-between gap-3">
                       <div>
@@ -2562,6 +2805,12 @@ export default function App() {
                               >
                                 Moha AI
                               </button>
+                              <button
+                                onClick={() => startAiQuiz(p.form, p.subject, p.title)}
+                                className="px-3 py-2 bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300 text-xs font-bold rounded-xl whitespace-nowrap shrink-0 cursor-pointer"
+                              >
+                                🎯 Take Quiz
+                              </button>
 
                               {hasPaper && (
                                 <button
@@ -2777,6 +3026,12 @@ export default function App() {
                       >
                         Moha AI
                       </button>
+                      <button
+                        onClick={() => startAiQuiz(p.form, p.subject, p.title)}
+                        className="px-3 py-2.5 bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300 text-xs font-bold rounded-xl whitespace-nowrap shrink-0 cursor-pointer"
+                      >
+                        🎯 Quiz
+                      </button>
                     </div>
                   </article>
                 );
@@ -2939,6 +3194,12 @@ export default function App() {
                         >
                           Moha AI
                         </button>
+                        <button
+                          onClick={() => startAiQuiz(p.form, p.subject, 'ALL')}
+                          className="px-3 py-2.5 bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300 text-xs font-bold rounded-xl cursor-pointer"
+                        >
+                          🎯 Quiz
+                        </button>
                       </div>
                     </article>
                   );
@@ -2948,6 +3209,474 @@ export default function App() {
           </div>
         </motion.div>
       )}
+
+      {/* DEDICATED SEPARATE DAILY QUIZ PAGE (SUBJECT + TOPIC + SUB-TOPIC + TEXTBOOK/PAST PAPER SOLVING) */}
+      {activePage === 'daily_quiz' && (() => {
+        const totalQuestions = quizItems.length;
+        const answeredCount = quizItems.reduce(
+          (acc, _, idx) => acc + (quizSelectedAnswers[idx] !== undefined ? 1 : 0),
+          0
+        );
+        const correctCount = quizItems.reduce(
+          (acc, item, idx) => acc + (quizSelectedAnswers[idx] === item.correctIndex ? 1 : 0),
+          0
+        );
+        const completionPercentage =
+          totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0;
+        const isQuizComplete = totalQuestions > 0 && answeredCount === totalQuestions;
+
+        const allClassLevels = [
+          'Form 1',
+          'Form 2',
+          'Form 3',
+          'Form 4',
+          'Form 5',
+          'Form 6',
+          'Standard 1',
+          'Standard 2',
+          'Standard 3',
+          'Standard 4',
+          'Standard 5',
+          'Standard 6',
+          'Standard 7',
+        ];
+        const availableSubjectsForDaily =
+          TIE_CURRICULUM_SUBJECTS[mohaActiveClass] || TIE_CURRICULUM_SUBJECTS['Form 4'] || ['Basic Mathematics'];
+        const activeTopicForSubtopics =
+          selectedQuizTopic && selectedQuizTopic !== 'ALL'
+            ? selectedQuizTopic
+            : activeSyllabusTopics[0]?.replace(/^\d+\.\d+\s*/, '') || 'Core Topic';
+        const availableSubTopics = getSubTopicsForMainTopic(mohaActiveSubject, activeTopicForSubtopics);
+
+        return (
+          <motion.div
+            key="view-daily-quiz"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.22, ease: 'easeOut' }}
+            className="flex-grow py-6 pb-24 bg-slate-50"
+          >
+            <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-5">
+              {/* Top Header Bar */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-violet-950 via-slate-900 to-blue-950 text-white p-5 rounded-2xl shadow-sm">
+                <div className="space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-md bg-amber-400 text-slate-950 text-[11px] font-black uppercase tracking-wider">
+                      🎯 Daily Solving Quiz
+                    </span>
+                    <span className="text-xs font-bold text-violet-200">
+                      TIE Textbooks &amp; NECTA Past Papers
+                    </span>
+                  </div>
+                  <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">
+                    Step-by-Step Problem Solving Quiz
+                  </h1>
+                  <p className="text-xs text-slate-200">
+                    Choose your Class, Subject, Main Topic, Sub-Topic, and Question Source (TIE Textbook or NECTA Past Papers).
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => openMwalimuModal(mohaActiveClass, mohaActiveSubject, 'quiz')}
+                    className="px-3.5 py-2 bg-violet-600 hover:bg-violet-500 text-white font-bold text-xs rounded-xl cursor-pointer"
+                  >
+                    🏆 Leaderboard &amp; Friend Challenge
+                  </button>
+                  <button
+                    onClick={resetToStep1}
+                    className="px-3.5 py-2 bg-white/15 hover:bg-white/25 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <ArrowLeft className="w-4 h-4" /> Back to Home
+                  </button>
+                </div>
+              </div>
+
+              {/* Sticky Progress Bar */}
+              {totalQuestions > 0 && (
+                <div className="sticky top-16 z-20 bg-white/95 backdrop-blur-md p-3.5 sm:p-4 rounded-2xl border border-violet-200 shadow-xs space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`px-2.5 py-0.5 rounded-md font-black uppercase tracking-wider text-[11px] ${
+                          isQuizComplete
+                            ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                            : 'bg-violet-100 text-violet-900 border border-violet-200'
+                        }`}
+                      >
+                        {isQuizComplete ? '✅ Daily Quiz Completed' : '📊 Solving Progress'}
+                      </span>
+                      <span className="font-bold text-slate-800 tabular-nums">
+                        {answeredCount} of {totalQuestions} Problems Solved
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-3 tabular-nums">
+                      <span className="text-slate-600 font-semibold">
+                        Correct:{' '}
+                        <strong className="text-emerald-700">
+                          {correctCount}/{totalQuestions}
+                        </strong>
+                      </span>
+                      <span
+                        className={`text-sm font-black ${
+                          isQuizComplete ? 'text-emerald-700' : 'text-violet-700'
+                        }`}
+                      >
+                        {completionPercentage}%
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/80">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${completionPercentage}%` }}
+                      transition={{ duration: 0.3, ease: 'easeOut' }}
+                      className={`h-full rounded-full ${
+                        isQuizComplete
+                          ? 'bg-gradient-to-r from-emerald-500 to-teal-500'
+                          : 'bg-gradient-to-r from-violet-600 to-blue-600'
+                      }`}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Student Selection Card: Class -> Subject -> Topic -> Sub-Topic -> Question Source */}
+              <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+                  <div>
+                    <h2 className="text-sm font-black text-slate-900">
+                      1. Configure Your Solving Quiz (Subject · Topic · Sub-Topic · Source)
+                    </h2>
+                    <p className="text-xs text-slate-500">
+                      Every generated quiz question requires solving a real problem from the TIE Student&apos;s Book or NECTA Past Examination Papers.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() =>
+                      startAiQuiz(
+                        mohaActiveClass,
+                        mohaActiveSubject,
+                        selectedQuizTopic,
+                        selectedQuizSubTopic,
+                        selectedQuizSourceFilter,
+                        true
+                      )
+                    }
+                    className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs rounded-xl cursor-pointer shrink-0"
+                  >
+                    🔄 Generate New Solving Set
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
+                  {/* 1. Class Level */}
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">1. Class Level</label>
+                    <select
+                      value={mohaActiveClass}
+                      onChange={(e) => {
+                        const nextCls = e.target.value;
+                        const nextSubs = TIE_CURRICULUM_SUBJECTS[nextCls] || ['Basic Mathematics'];
+                        const nextSub = nextSubs.includes(mohaActiveSubject) ? mohaActiveSubject : nextSubs[0];
+                        const nextTopics = getSyllabusTopicsForClassSubject(nextCls, nextSub);
+                        const firstTopic = nextTopics[0] ? nextTopics[0].replace(/^\d+\.\d+\s*/, '') : 'ALL';
+                        const nextSubTopics = getSubTopicsForMainTopic(nextSub, firstTopic);
+                        const firstSubTopic = nextSubTopics[0] || 'ALL';
+                        startAiQuiz(
+                          nextCls,
+                          nextSub,
+                          firstTopic,
+                          firstSubTopic,
+                          selectedQuizSourceFilter,
+                          true
+                        );
+                      }}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold bg-white text-slate-900"
+                    >
+                      {allClassLevels.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* 2. Subject */}
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">2. Subject</label>
+                    <select
+                      value={mohaActiveSubject}
+                      onChange={(e) => {
+                        const nextSub = e.target.value;
+                        const nextTopics = getSyllabusTopicsForClassSubject(mohaActiveClass, nextSub);
+                        const firstTopic = nextTopics[0] ? nextTopics[0].replace(/^\d+\.\d+\s*/, '') : 'ALL';
+                        const nextSubTopics = getSubTopicsForMainTopic(nextSub, firstTopic);
+                        const firstSubTopic = nextSubTopics[0] || 'ALL';
+                        startAiQuiz(
+                          mohaActiveClass,
+                          nextSub,
+                          firstTopic,
+                          firstSubTopic,
+                          selectedQuizSourceFilter,
+                          true
+                        );
+                      }}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold bg-white text-slate-900"
+                    >
+                      {availableSubjectsForDaily.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* 3. Main Topic */}
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">3. Main Topic</label>
+                    <select
+                      value={selectedQuizTopic}
+                      onChange={(e) => {
+                        const nextTopic = e.target.value;
+                        const nextSubTopics = getSubTopicsForMainTopic(
+                          mohaActiveSubject,
+                          nextTopic === 'ALL' ? activeSyllabusTopics[0] || '' : nextTopic
+                        );
+                        const firstSubTopic = nextSubTopics[0] || 'ALL';
+                        startAiQuiz(
+                          mohaActiveClass,
+                          mohaActiveSubject,
+                          nextTopic,
+                          firstSubTopic,
+                          selectedQuizSourceFilter,
+                          true
+                        );
+                      }}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold bg-white text-slate-900"
+                    >
+                      <option value="ALL">All Syllabus Topics ({mohaActiveSubject})</option>
+                      <optgroup label="📜 Official TIE Syllabus Topics">
+                        {activeSyllabusTopics.map((t) => {
+                          const cleanT = t.replace(/^\d+\.\d+\s*/, '');
+                          return (
+                            <option key={t} value={cleanT}>
+                              {t}
+                            </option>
+                          );
+                        })}
+                      </optgroup>
+                      {(activeSiteResources.books.length > 0 || activeSiteResources.papers.length > 0) && (
+                        <optgroup label="📚 Website TIE Books & Past Papers">
+                          {activeSiteResources.books.map((b, idx) => (
+                            <option key={`dbook-${idx}`} value={b.title}>
+                              📘 {b.title} ({b.form})
+                            </option>
+                          ))}
+                          {activeSiteResources.papers.slice(0, 6).map((p, idx) => (
+                            <option key={`dpaper-${idx}`} value={`${p.title} (${p.year})`}>
+                              📄 {p.title} ({p.year})
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
+                    </select>
+                  </div>
+
+                  {/* 4. Sub-Topic */}
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">4. Sub-Topic</label>
+                    <select
+                      value={selectedQuizSubTopic}
+                      onChange={(e) => {
+                        const nextSubT = e.target.value;
+                        startAiQuiz(
+                          mohaActiveClass,
+                          mohaActiveSubject,
+                          selectedQuizTopic,
+                          nextSubT,
+                          selectedQuizSourceFilter,
+                          true
+                        );
+                      }}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold bg-white text-slate-900"
+                    >
+                      <option value="ALL">All Sub-Topics</option>
+                      {availableSubTopics.map((st) => (
+                        <option key={st} value={st}>
+                          {st}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* 5. Question Source (Textbook vs Past Papers) */}
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">5. Question Source</label>
+                    <select
+                      value={selectedQuizSourceFilter}
+                      onChange={(e) => {
+                        const nextSrc = e.target.value as 'ALL' | 'textbook' | 'past_paper';
+                        startAiQuiz(
+                          mohaActiveClass,
+                          mohaActiveSubject,
+                          selectedQuizTopic,
+                          selectedQuizSubTopic,
+                          nextSrc,
+                          true
+                        );
+                      }}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold bg-white text-slate-900"
+                    >
+                      <option value="ALL">📚 Both (TIE Textbook + Past Papers)</option>
+                      <option value="textbook">📘 TIE Textbook Exercises Only</option>
+                      <option value="past_paper">📄 NECTA Past Papers Only</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Solving Questions List */}
+              <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2 text-xs font-black uppercase tracking-wider text-violet-700">
+                      <span>{mohaActiveClass} · {mohaActiveSubject}</span>
+                      <span>•</span>
+                      <span>{selectedQuizTopic === 'ALL' ? 'All Topics' : selectedQuizTopic}</span>
+                      {selectedQuizSubTopic !== 'ALL' && (
+                        <>
+                          <span>•</span>
+                          <span className="text-emerald-700">{selectedQuizSubTopic}</span>
+                        </>
+                      )}
+                    </div>
+                    <h3 className="text-base font-black text-slate-900 mt-0.5">
+                      Step-by-Step Solving Questions ({selectedQuizSourceFilter === 'textbook' ? 'TIE Textbook Exercises' : selectedQuizSourceFilter === 'past_paper' ? 'NECTA Past Papers' : 'TIE Textbook & NECTA Past Papers'})
+                    </h3>
+                  </div>
+
+                  {totalQuestions > 0 && (
+                    <div className="px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-black tabular-nums">
+                      Score: {correctCount} / {totalQuestions} ({completionPercentage}% Solved)
+                    </div>
+                  )}
+                </div>
+
+                {quizLoading ? (
+                  <div className="p-10 bg-slate-50 rounded-xl border border-slate-200 flex flex-col items-center justify-center gap-2">
+                    <div className="w-7 h-7 border-2 border-violet-600 border-t-transparent rounded-full animate-spin" />
+                    <p className="text-xs font-bold text-slate-600">
+                      Loading step-by-step solving questions for {mohaActiveClass} {mohaActiveSubject}...
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {quizItems.map((q, qIdx) => {
+                      const selectedIdx = quizSelectedAnswers[qIdx];
+                      const hasAnswered = selectedIdx !== undefined;
+                      const isPastPaperSource = (q.sourceRef || '').toLowerCase().includes('necta') || (q.sourceRef || '').toLowerCase().includes('paper');
+                      return (
+                        <div
+                          key={qIdx}
+                          className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3"
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="px-2.5 py-0.5 rounded-md bg-slate-900 text-white font-black">
+                                Problem {qIdx + 1} of {quizItems.length}
+                              </span>
+                              {q.sourceRef && (
+                                <span
+                                  className={`px-2.5 py-0.5 rounded-md font-bold border ${
+                                    isPastPaperSource
+                                      ? 'bg-blue-50 text-blue-900 border-blue-200'
+                                      : 'bg-emerald-50 text-emerald-900 border-emerald-200'
+                                  }`}
+                                >
+                                  {isPastPaperSource ? '📄 ' : '📘 '}
+                                  {q.sourceRef}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-bold">
+                              {q.topic && (
+                                <span className="px-2 py-0.5 rounded bg-violet-100 text-violet-900">
+                                  Topic: {q.topic}
+                                </span>
+                              )}
+                              {q.subTopic && (
+                                <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-950">
+                                  Sub-Topic: {q.subTopic}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="font-bold text-sm text-slate-900 leading-relaxed">
+                            {q.question}
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {q.options.map((opt, oIdx) => {
+                              const optionLetter = String.fromCharCode(65 + oIdx);
+                              let btnClass =
+                                'w-full text-left p-3 rounded-xl border border-slate-200 bg-white hover:border-violet-400 text-xs font-semibold text-slate-800 transition-colors cursor-pointer flex items-start gap-2';
+                              if (hasAnswered) {
+                                if (oIdx === q.correctIndex) {
+                                  btnClass =
+                                    'w-full text-left p-3 rounded-xl border-2 border-emerald-600 bg-emerald-50 text-xs font-bold text-emerald-950 flex items-start gap-2';
+                                } else if (oIdx === selectedIdx) {
+                                  btnClass =
+                                    'w-full text-left p-3 rounded-xl border-2 border-rose-500 bg-rose-50 text-xs font-bold text-rose-900 flex items-start gap-2';
+                                }
+                              }
+                              return (
+                                <button
+                                  key={oIdx}
+                                  onClick={() => handleSelectQuizOption(qIdx, oIdx)}
+                                  className={btnClass}
+                                >
+                                  <span className="w-5 h-5 rounded-md bg-slate-100 text-slate-800 font-black flex items-center justify-center shrink-0 text-[11px]">
+                                    {optionLetter}
+                                  </span>
+                                  <span>{opt}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          {hasAnswered && (
+                            <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-950 space-y-2">
+                              <div className="font-black text-emerald-900 flex items-center justify-between gap-2">
+                                <span>✅ Worked Step-by-Step Solution ({q.sourceRef || 'TIE / NECTA Standard'}):</span>
+                                <button
+                                  onClick={() => {
+                                    openMwalimuModal(mohaActiveClass, mohaActiveSubject, 'chat');
+                                    sendMwalimuMessage(
+                                      `Show me the complete step-by-step working for this ${mohaActiveClass} ${mohaActiveSubject} problem (${q.topic || ''} - ${q.subTopic || ''}): ${q.question}`
+                                    );
+                                  }}
+                                  className="px-2.5 py-1 rounded-lg bg-violet-600 hover:bg-violet-700 text-white font-bold text-[11px] cursor-pointer shrink-0"
+                                >
+                                  Ask Moha AI Tutor →
+                                </button>
+                              </div>
+                              <div className="leading-relaxed font-medium">{q.explanation}</div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        );
+      })()}
       </AnimatePresence>
 
       {/* STICKY MOBILE BOTTOM BAR */}
@@ -3172,8 +3901,10 @@ export default function App() {
                 {[
                   { id: 'chat' as const, label: '💬 Chat' },
                   { id: 'quiz' as const, label: '🎯 Quiz & Challenge' },
-                  { id: 'studio' as const, label: '📋 Teacher Docs' },
+                  { id: 'studio' as const, label: '📘 Lesson Notes & Docs' },
                   { id: 'diagram' as const, label: '🔬 Diagrams' },
+                  { id: 'bioscience' as const, label: '🧬 Protein & Drug Lab' },
+                  { id: 'video' as const, label: '🎬 Veo Video' },
                   { id: 'resources' as const, label: '📚 Resources' },
                   { id: 'profile' as const, label: `📊 Profile (${masteryProgressData.totalMasteredTopics})` },
                 ].map((tab) => {
@@ -3253,6 +3984,12 @@ export default function App() {
                     className="px-2.5 py-1 rounded-lg bg-white hover:bg-amber-50 text-slate-800 border border-slate-200 font-bold cursor-pointer"
                   >
                     📜 Syllabus
+                  </button>
+                  <button
+                    onClick={() => sendQuickMwalimuPrompt('lessonnotes')}
+                    className="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-950 border border-indigo-200 font-bold cursor-pointer"
+                  >
+                    📘 Lesson Notes
                   </button>
                   <button
                     onClick={() => sendQuickMwalimuPrompt('summary')}
@@ -3379,9 +4116,22 @@ export default function App() {
                                 >
                                   🔬 Diagram Lab
                                 </button>
+                                <button
+                                  onClick={() => {
+                                    const qt = m.quizTarget;
+                                    if (qt) {
+                                      startAiQuiz(qt.cls, qt.subject, qt.topic, qt.subTopic);
+                                    } else {
+                                      startAiQuiz();
+                                    }
+                                  }}
+                                  className="px-2.5 py-1 rounded-lg bg-violet-600 hover:bg-violet-700 text-white font-bold text-[11px] cursor-pointer"
+                                >
+                                  🎯 Solve Interactive Quiz ({m.quizTarget ? `${m.quizTarget.cls} • ${m.quizTarget.topic.slice(0, 24)}` : `${mohaActiveClass} ${mohaActiveSubject}`})
+                                </button>
                               </div>
                               <span className="text-[10px] font-bold text-slate-400">
-                                {mohaActiveClass} · {mohaActiveSubject}
+                                {m.quizTarget ? `${m.quizTarget.cls} · ${m.quizTarget.subject} · ${m.quizTarget.topic}` : `${mohaActiveClass} · ${mohaActiveSubject}`}
                               </span>
                             </div>
                           </>
@@ -3459,55 +4209,256 @@ export default function App() {
           )}
 
           {/* ==================== VIEW 2: NECTA QUIZ, 'CHALLENGE A FRIEND' & LEADERBOARD ==================== */}
-          {mohaViewMode === 'quiz' && (
+          {mohaViewMode === 'quiz' && (() => {
+            const totalQuestions = quizItems.length;
+            const answeredCount = quizItems.reduce(
+              (acc, _, idx) => acc + (quizSelectedAnswers[idx] !== undefined ? 1 : 0),
+              0
+            );
+            const correctCount = quizItems.reduce(
+              (acc, item, idx) => acc + (quizSelectedAnswers[idx] === item.correctIndex ? 1 : 0),
+              0
+            );
+            const completionPercentage =
+              totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0;
+            const isQuizComplete = totalQuestions > 0 && answeredCount === totalQuestions;
+
+            return (
             <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-6">
               <div className="max-w-6xl mx-auto space-y-5">
-                {/* Topic Selector & Challenge a Friend Header Card */}
-                <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-slate-100 pb-3">
-                    <div>
-                      <h2 className="text-base sm:text-lg font-black text-slate-900">
-                        🎯 NECTA Topic Quiz &amp; &ldquo;Challenge a Friend&rdquo; Leaderboard
-                      </h2>
-                      <p className="text-xs text-slate-500">
-                        Pick a specific syllabus topic, share a quiz link with friends, and see who scores highest on NECTA-aligned questions!
-                      </p>
+                {/* Quiz Session Completion Progress Bar at Top of Quiz View */}
+                {totalQuestions > 0 && (
+                  <div
+                    role="progressbar"
+                    aria-valuenow={completionPercentage}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-label="Quiz completion progress"
+                    className="sticky top-0 z-20 bg-white/95 backdrop-blur-md p-3.5 sm:px-5 sm:py-3.5 rounded-2xl border border-slate-200 shadow-xs space-y-2"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`px-2.5 py-0.5 rounded-md font-black uppercase tracking-wider text-[11px] ${
+                            isQuizComplete
+                              ? 'bg-emerald-100 text-emerald-900'
+                              : 'bg-violet-100 text-violet-900'
+                          }`}
+                        >
+                          {isQuizComplete ? '✅ Quiz Completed' : '📊 Quiz Progress'}
+                        </span>
+                        <span className="font-bold text-slate-800 tabular-nums">
+                          {answeredCount} of {totalQuestions} Questions Answered
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-3 tabular-nums">
+                        <span className="text-slate-600 font-semibold">
+                          Correct:{' '}
+                          <strong className="text-emerald-700">
+                            {correctCount}/{totalQuestions}
+                          </strong>
+                        </span>
+                        <span
+                          className={`text-sm font-black ${
+                            isQuizComplete ? 'text-emerald-700' : 'text-violet-700'
+                          }`}
+                        >
+                          {completionPercentage}%
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2">
+
+                    {/* Smooth Animated Progress Bar Track */}
+                    <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/80">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${completionPercentage}%` }}
+                        transition={{ duration: 0.3, ease: 'easeOut' }}
+                        className={`h-full rounded-full ${
+                          isQuizComplete
+                            ? 'bg-gradient-to-r from-emerald-500 to-teal-500'
+                            : 'bg-gradient-to-r from-violet-600 to-blue-600'
+                        }`}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Simple, Clean Quiz & Friend Challenge Control Card */}
+                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+                  {/* Row 1: Topic + Sub-Topic + Source Filter + Player Name + New Quiz */}
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 text-xs items-end">
+                    <div className="sm:col-span-4">
+                      <label className="font-bold text-slate-700 block mb-1">
+                        1. Topic ({mohaActiveClass} {mohaActiveSubject})
+                      </label>
+                      <select
+                        value={selectedQuizTopic}
+                        onChange={(e) => {
+                          const nextTopic = e.target.value;
+                          const nextSubTopics = getSubTopicsForMainTopic(
+                            mohaActiveSubject,
+                            nextTopic === 'ALL' ? activeSyllabusTopics[0] || '' : nextTopic
+                          );
+                          const firstSubT = nextSubTopics[0] || 'ALL';
+                          setSelectedQuizTopic(nextTopic);
+                          setSelectedQuizSubTopic(firstSubT);
+                          startAiQuiz(
+                            mohaActiveClass,
+                            mohaActiveSubject,
+                            nextTopic,
+                            firstSubT,
+                            selectedQuizSourceFilter
+                          );
+                        }}
+                        className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold bg-white text-slate-900"
+                      >
+                        <option value="ALL">All Syllabus Topics ({mohaActiveSubject})</option>
+                        <optgroup label="📜 Official TIE Syllabus Topics">
+                          {activeSyllabusTopics.map((t) => {
+                            const cleanT = t.replace(/^\d+\.\d+\s*/, '');
+                            return (
+                              <option key={t} value={cleanT}>
+                                {t}
+                              </option>
+                            );
+                          })}
+                        </optgroup>
+                        {(activeSiteResources.books.length > 0 || activeSiteResources.papers.length > 0) && (
+                          <optgroup label="📚 Website TIE Books & Past Papers">
+                            {activeSiteResources.books.map((b, idx) => (
+                              <option key={`book-${idx}`} value={b.title}>
+                                📘 {b.title} ({b.form})
+                              </option>
+                            ))}
+                            {activeSiteResources.papers.slice(0, 6).map((p, idx) => (
+                              <option key={`paper-${idx}`} value={`${p.title} (${p.year})`}>
+                                📄 {p.title} ({p.year})
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
+                      </select>
+                    </div>
+
+                    <div className="sm:col-span-3">
+                      <label className="font-bold text-slate-700 block mb-1">2. Sub-Topic</label>
+                      <select
+                        value={selectedQuizSubTopic}
+                        onChange={(e) => {
+                          const nextSubT = e.target.value;
+                          setSelectedQuizSubTopic(nextSubT);
+                          startAiQuiz(
+                            mohaActiveClass,
+                            mohaActiveSubject,
+                            selectedQuizTopic,
+                            nextSubT,
+                            selectedQuizSourceFilter
+                          );
+                        }}
+                        className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold bg-white text-slate-900"
+                      >
+                        <option value="ALL">All Sub-Topics</option>
+                        {getSubTopicsForMainTopic(
+                          mohaActiveSubject,
+                          selectedQuizTopic === 'ALL' ? activeSyllabusTopics[0] || '' : selectedQuizTopic
+                        ).map((st) => (
+                          <option key={st} value={st}>
+                            {st}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="font-bold text-slate-700 block mb-1">3. Question Source</label>
+                      <select
+                        value={selectedQuizSourceFilter}
+                        onChange={(e) => {
+                          const nextSrc = e.target.value as 'ALL' | 'textbook' | 'past_paper';
+                          setSelectedQuizSourceFilter(nextSrc);
+                          startAiQuiz(
+                            mohaActiveClass,
+                            mohaActiveSubject,
+                            selectedQuizTopic,
+                            selectedQuizSubTopic,
+                            nextSrc
+                          );
+                        }}
+                        className="w-full px-2.5 py-2 rounded-xl border border-slate-300 font-bold bg-white text-slate-900"
+                      >
+                        <option value="ALL">📚 Book + Past Papers</option>
+                        <option value="textbook">📘 TIE Book Only</option>
+                        <option value="past_paper">📄 Past Papers Only</option>
+                      </select>
+                    </div>
+
+                    <div className="sm:col-span-3 flex items-center gap-1.5">
+                      <input
+                        type="text"
+                        value={challengePlayerName}
+                        onChange={(e) => setChallengePlayerName(e.target.value)}
+                        placeholder={userProfile.name || 'Your Name'}
+                        className="w-28 px-2.5 py-2 rounded-xl border border-slate-300 font-semibold bg-white"
+                      />
+                      <button
+                        onClick={() =>
+                          startAiQuiz(
+                            mohaActiveClass,
+                            mohaActiveSubject,
+                            selectedQuizTopic,
+                            selectedQuizSubTopic,
+                            selectedQuizSourceFilter
+                          )
+                        }
+                        className="flex-1 px-2.5 py-2 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-xl cursor-pointer whitespace-nowrap"
+                      >
+                        🔄 Solve
+                      </button>
                       <button
                         onClick={() => setShowFlashcardsSection((v) => !v)}
-                        className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold cursor-pointer"
+                        className="px-2.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold cursor-pointer shrink-0"
+                        title="Toggle Revision Flashcards"
                       >
-                        {showFlashcardsSection ? 'Hide Flashcards' : '🗂️ Revision Flashcards'}
-                      </button>
-                      <button
-                        onClick={() => startFriendTurnSameDevice()}
-                        className="px-3.5 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
-                        title="Let your friend play this exact quiz right here and add their score to the Leaderboard"
-                      >
-                        <span>👥 Friend&apos;s Turn (Play on Same Device)</span>
-                      </button>
-                      <button
-                        onClick={() => createFriendChallenge()}
-                        disabled={challengeCreating}
-                        className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                      >
-                        <span>🤝 {challengeCreating ? 'Creating Link...' : 'Challenge a Friend (Share Code & Link)'}</span>
+                        {showFlashcardsSection ? 'Hide' : '🗂️'}
                       </button>
                     </div>
                   </div>
 
-                  {/* Join Friend Challenge by Room Code Bar */}
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="px-2.5 py-1 rounded-lg bg-violet-100 text-violet-900 font-black uppercase tracking-wider text-[11px]">
-                        🔑 Join Friend&apos;s Challenge
-                      </span>
-                      <span className="text-slate-600 font-medium">
-                        Enter a friend&apos;s Challenge Code (e.g. <strong className="text-slate-900">MATH-301</strong>, <strong className="text-slate-900">BIO-102</strong>, <strong className="text-slate-900">PHYS-204</strong>):
-                      </span>
+                  {/* Row 2: Simple One-Line Friend Challenge Bar */}
+                  <div className="pt-2.5 border-t border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-2.5 text-xs">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-black text-slate-800">🤝 Challenge a Friend:</span>
+                      {activeChallenge?.id && (
+                        <span className="px-2.5 py-1 rounded-lg bg-amber-300 text-slate-950 font-black tracking-wider">
+                          CODE: {activeChallenge.id}
+                        </span>
+                      )}
+                      <button
+                        onClick={() => createFriendChallenge()}
+                        disabled={challengeCreating}
+                        className="px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white font-bold cursor-pointer disabled:opacity-50"
+                      >
+                        {challengeCreating ? 'Creating...' : '📋 Copy Challenge Link'}
+                      </button>
+                      <a
+                        href={getChallengeWhatsAppUrl()}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+                      >
+                        📲 WhatsApp Friend
+                      </a>
+                      <button
+                        onClick={() => startFriendTurnSameDevice()}
+                        className="px-3 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300 font-bold cursor-pointer"
+                      >
+                        👥 Friend&apos;s Turn
+                      </button>
                     </div>
-                    <div className="flex items-center gap-2">
+
+                    <div className="flex items-center gap-1.5">
                       <input
                         type="text"
                         value={joinChallengeCode}
@@ -3517,150 +4468,18 @@ export default function App() {
                             loadSharedChallengeFromUrl(joinChallengeCode);
                           }
                         }}
-                        placeholder="Code e.g. MATH-301"
-                        className="px-3 py-1.5 rounded-xl bg-white border border-slate-300 font-black uppercase tracking-wider text-slate-900 w-40 sm:w-44 focus:outline-none focus:border-violet-600"
+                        placeholder="Friend Code (e.g. MATH-301)"
+                        className="px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-300 font-bold uppercase text-slate-900 w-44 focus:outline-none focus:border-violet-600"
                       />
                       <button
                         onClick={() => loadSharedChallengeFromUrl(joinChallengeCode)}
                         disabled={joiningChallengeByCode || !joinChallengeCode.trim()}
-                        className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white font-bold cursor-pointer shrink-0"
+                        className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white font-bold cursor-pointer shrink-0"
                       >
-                        {joiningChallengeByCode ? 'Loading...' : 'Join Quiz →'}
+                        {joiningChallengeByCode ? '...' : 'Join'}
                       </button>
                     </div>
                   </div>
-
-                  {/* Topic Picker + Player Identity Row */}
-                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 text-xs items-end">
-                    <div className="sm:col-span-5">
-                      <label className="font-bold text-slate-700 block mb-1">
-                        Select Specific Topic ({mohaActiveClass} {mohaActiveSubject})
-                      </label>
-                      <select
-                        value={selectedQuizTopic}
-                        onChange={(e) => {
-                          const nextTopic = e.target.value;
-                          setSelectedQuizTopic(nextTopic);
-                          startAiQuiz(mohaActiveClass, mohaActiveSubject, nextTopic);
-                        }}
-                        className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold bg-white text-slate-900"
-                      >
-                        <option value="ALL">All Syllabus Topics ({mohaActiveSubject})</option>
-                        {activeSyllabusTopics.map((t) => {
-                          const cleanT = t.replace(/^\d+\.\d+\s*/, '');
-                          return (
-                            <option key={t} value={cleanT}>
-                              {t}
-                            </option>
-                          );
-                        })}
-                      </select>
-                    </div>
-
-                    <div className="sm:col-span-3">
-                      <label className="font-bold text-slate-700 block mb-1">Player Name (for Leaderboard)</label>
-                      <input
-                        type="text"
-                        value={challengePlayerName}
-                        onChange={(e) => setChallengePlayerName(e.target.value)}
-                        placeholder={userProfile.name || 'e.g. Kelvin Massawe'}
-                        className="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold bg-white"
-                      />
-                    </div>
-
-                    <div className="sm:col-span-2">
-                      <label className="font-bold text-slate-700 block mb-1">School</label>
-                      <input
-                        type="text"
-                        value={challengePlayerSchool}
-                        onChange={(e) => setChallengePlayerSchool(e.target.value)}
-                        placeholder={userProfile.school || 'School Name'}
-                        className="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold bg-white"
-                      />
-                    </div>
-
-                    <div className="sm:col-span-2">
-                      <button
-                        onClick={() => startAiQuiz(mohaActiveClass, mohaActiveSubject, selectedQuizTopic)}
-                        className="w-full px-3 py-2 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold rounded-xl cursor-pointer"
-                      >
-                        🔄 New Quiz
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Shareable Quiz Challenge Link & Room Code Box */}
-                  {(challengeShareUrl || activeChallenge) && (
-                    <div className="p-3.5 rounded-xl bg-violet-50 border border-violet-200 space-y-2.5 text-xs">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div className="space-y-1 flex-1 min-w-0">
-                          <div className="font-bold text-violet-950 flex flex-wrap items-center gap-2">
-                            <span>🔗 Public Shareable Challenge Link:</span>
-                            {activeChallenge?.id && (
-                              <span className="px-2.5 py-0.5 rounded-md bg-amber-300 text-slate-950 font-black tracking-wider">
-                                CODE: {activeChallenge.id}
-                              </span>
-                            )}
-                            <span className="px-2 py-0.5 rounded bg-violet-200 text-violet-900 text-[11px]">
-                              {activeChallenge?.topic ||
-                                (selectedQuizTopic !== 'ALL' ? selectedQuizTopic : mohaActiveSubject)}
-                            </span>
-                          </div>
-                          <input
-                            type="text"
-                            readOnly
-                            value={
-                              challengeShareUrl ||
-                              (activeChallenge
-                                ? buildPublicChallengeLink(
-                                    activeChallenge.id,
-                                    activeChallenge.cls,
-                                    activeChallenge.subject,
-                                    activeChallenge.topic,
-                                    activeChallenge.createdBy
-                                  )
-                                : '')
-                            }
-                            onClick={(e) => (e.target as HTMLInputElement).select()}
-                            className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-violet-300 text-slate-700 font-mono text-[11px]"
-                          />
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2 shrink-0">
-                          <button
-                            onClick={copyChallengeShareLink}
-                            className="px-3.5 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold cursor-pointer"
-                          >
-                            📋 Copy Public Link
-                          </button>
-                          {activeChallenge?.id && (
-                            <button
-                              onClick={() => {
-                                if (navigator.clipboard) {
-                                  navigator.clipboard.writeText(activeChallenge.id).catch(() => {});
-                                }
-                                showToast(`🔑 Challenge Code ${activeChallenge.id} copied!`);
-                              }}
-                              className="px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold cursor-pointer"
-                            >
-                              🔑 Copy Code ({activeChallenge.id})
-                            </button>
-                          )}
-                          <a
-                            href={getChallengeWhatsAppUrl()}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
-                          >
-                            📲 WhatsApp Friend
-                          </a>
-                        </div>
-                      </div>
-
-                      <div className="text-[11px] text-slate-700 bg-white/90 border border-violet-200/80 rounded-lg px-3 py-2">
-                        💡 <strong>Tip if your friend sees &ldquo;403 You do not have access&rdquo;:</strong> Private <code className="font-mono bg-slate-100 px-1 rounded">ais-dev</code> links are locked to your personal Google account. We automatically converted the link above to the shared <code className="font-mono bg-slate-100 px-1 rounded">ais-pre</code> URL and created a short <strong>Challenge Code ({activeChallenge?.id || 'MATH-301'})</strong>. Make sure your app is shared in AI Studio&apos;s top-right <strong>Share</strong> button, or click <strong>👥 Friend&apos;s Turn (Play on Same Device)</strong> so your friend can play right now and rank on the Leaderboard!
-                      </div>
-                    </div>
-                  )}
                 </div>
 
                 {/* Collapsible Revision Flashcards Deck */}
@@ -3748,17 +4567,57 @@ export default function App() {
                           {mohaActiveClass} {mohaActiveSubject} — NECTA Practice Questions
                         </h3>
                       </div>
-                      {quizItems.length > 0 && (
-                        <div className="px-3 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-bold tabular-nums">
-                          Score:{' '}
-                          {quizItems.reduce(
-                            (acc, item, idx) => acc + (quizSelectedAnswers[idx] === item.correctIndex ? 1 : 0),
-                            0
-                          )}{' '}
-                          / {quizItems.length}
+                      {totalQuestions > 0 && (
+                        <div className="flex items-center gap-2">
+                          <span className="px-2.5 py-1 rounded-lg bg-violet-50 border border-violet-200 text-violet-900 text-xs font-bold tabular-nums">
+                            {completionPercentage}% Done
+                          </span>
+                          <div className="px-3 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-bold tabular-nums">
+                            Score: {correctCount} / {totalQuestions}
+                          </div>
                         </div>
                       )}
                     </div>
+
+                    {/* Quick Integrated Website Content Pills for Quiz */}
+                    {(activeSiteResources.books.length > 0 || activeSiteResources.papers.length > 0) && (
+                      <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5 text-xs">
+                        <div className="font-bold text-slate-600 text-[11px] flex items-center justify-between">
+                          <span>📚 Integrated Website Content (Click to Quiz on a Specific Book or Past Paper):</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {activeSiteResources.books.slice(0, 2).map((b, i) => (
+                            <button
+                              key={`qbook-${i}`}
+                              onClick={() => startAiQuiz(mohaActiveClass, mohaActiveSubject, b.title)}
+                              className={`px-2.5 py-1 rounded-lg font-bold text-[11px] border cursor-pointer transition-colors ${
+                                selectedQuizTopic === b.title
+                                  ? 'bg-emerald-600 text-white border-emerald-600'
+                                  : 'bg-white hover:bg-emerald-50 text-emerald-900 border-emerald-200'
+                              }`}
+                            >
+                              📘 {b.title}
+                            </button>
+                          ))}
+                          {activeSiteResources.papers.slice(0, 3).map((p, i) => {
+                            const label = `${p.title} (${p.year})`;
+                            return (
+                              <button
+                                key={`qpaper-${i}`}
+                                onClick={() => startAiQuiz(mohaActiveClass, mohaActiveSubject, label)}
+                                className={`px-2.5 py-1 rounded-lg font-bold text-[11px] border cursor-pointer transition-colors ${
+                                  selectedQuizTopic === label
+                                    ? 'bg-blue-600 text-white border-blue-600'
+                                    : 'bg-white hover:bg-blue-50 text-blue-900 border-blue-200'
+                                }`}
+                              >
+                                📄 {p.title} ({p.year})
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
 
                     {quizLoading ? (
                       <div className="p-8 bg-slate-50 rounded-xl border border-slate-200 flex flex-col items-center justify-center gap-2">
@@ -3777,11 +4636,25 @@ export default function App() {
                               key={qIdx}
                               className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2"
                             >
-                              <div className="flex items-center justify-between gap-2 text-[11px] text-slate-500">
-                                <span className="font-semibold">
-                                  Question {qIdx + 1} of {quizItems.length}
-                                </span>
-                                {q.topic && <span className="font-bold text-violet-700">{q.topic}</span>}
+                              <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500">
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                  <span className="font-bold text-slate-800">
+                                    Problem {qIdx + 1} of {quizItems.length}
+                                  </span>
+                                  {q.sourceRef && (
+                                    <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-900 border border-blue-200 font-semibold">
+                                      {q.sourceRef}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                  {q.topic && <span className="font-bold text-violet-700">{q.topic}</span>}
+                                  {q.subTopic && (
+                                    <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-950 font-bold">
+                                      {q.subTopic}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                               <div className="font-bold text-xs sm:text-sm text-slate-900">{q.question}</div>
                               <div className="space-y-1.5">
@@ -4000,7 +4873,8 @@ export default function App() {
                 </div>
               </div>
             </div>
-          )}
+            );
+          })()}
 
           {/* ==================== VIEW 3: TEACHER & EXAM STUDIO (7 OFFICIAL DOCUMENTS) ==================== */}
           {mohaViewMode === 'studio' && (
@@ -4197,7 +5071,7 @@ export default function App() {
                     dangerouslySetInnerHTML={{
                       __html:
                         studioPreviewHtml ||
-                        buildInstantOfficialDocument('lessonplan', {
+                        buildInstantOfficialDocument('lessonnotes', {
                           school: tsSchool || userProfile.school || 'ELIMIKA SECONDARY SCHOOL',
                           teacher: tsTeacher || userProfile.name || 'SUBJECT TEACHER',
                           cls: tsClass || mohaActiveClass,
@@ -4228,6 +5102,24 @@ export default function App() {
                   activeClass={mohaActiveClass}
                   activeSubject={mohaActiveSubject}
                 />
+              </div>
+            </div>
+          )}
+
+          {/* ==================== VIEW 4B: BIOSCIENCE PROTEIN & DRUG DISCOVERY WORKBENCH ==================== */}
+          {mohaViewMode === 'bioscience' && (
+            <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-6">
+              <div className="max-w-6xl mx-auto">
+                <BioscienceWorkbench />
+              </div>
+            </div>
+          )}
+
+          {/* ==================== VIEW 4C: VEO 3.1 PHOTO-TO-VIDEO ANIMATION STUDIO ==================== */}
+          {mohaViewMode === 'video' && (
+            <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-6">
+              <div className="max-w-5xl mx-auto">
+                <VeoVideoStudio />
               </div>
             </div>
           )}
@@ -4326,6 +5218,12 @@ export default function App() {
                                 Preview PDF
                               </button>
                             )}
+                            <button
+                              onClick={() => startAiQuiz(item.form, item.subject, item.title)}
+                              className="px-2.5 py-1 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold cursor-pointer"
+                            >
+                              🎯 Quiz This
+                            </button>
                             <button
                               onClick={() =>
                                 sendMwalimuMessage(
@@ -4512,6 +5410,11 @@ export default function App() {
       )}
       </AnimatePresence>
 
+      {/* FULL-VIEWPORT INTERACTIVE STEM GAME SHELL */}
+      {activePage === 'game' && (
+        <StemArenaGame onExitGame={() => setActivePage('papers')} />
+      )}
+
       {/* TOAST NOTIFICATION */}
       {toastMessage && (
         <div className="fixed bottom-20 right-4 z-50 bg-slate-900 text-white text-xs font-bold px-4 py-3 rounded-xl shadow-lg">
@@ -4519,8 +5422,8 @@ export default function App() {
         </div>
       )}
 
-      {/* FOOTER (Hidden when inside full-viewport Moha AI workspace so input box stays fixed in view) */}
-      {activePage !== 'moha' && (
+      {/* FOOTER (Hidden when inside full-viewport Moha AI workspace or full-screen Game) */}
+      {activePage !== 'moha' && activePage !== 'game' && (
         <footer className="bg-slate-900 text-slate-400 py-8 border-t border-slate-800 text-xs text-center mt-auto">
           <div className="max-w-5xl mx-auto px-4 space-y-1.5">
             <div className="font-bold text-white text-sm">ELIMIKA TANZANIA</div>

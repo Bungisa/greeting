@@ -2,12 +2,14 @@ import 'dotenv/config';
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { GoogleGenAI, Type } from '@google/genai';
+import { GenerateVideosOperation, GoogleGenAI, Type } from '@google/genai';
 import {
+  buildContentIntegratedQuizQuestions,
   buildInstantOfficialDocument,
   generateLocalSmartTutorReply,
   getDefaultFlashcardsForSubject,
   getSyllabusTopicsForClassSubject,
+  parseClassSubjectTopicFromPrompt,
   type LearnedMemoryItem,
   type OfficialDocType,
   type SiteResourceContext,
@@ -30,15 +32,15 @@ function getGenAIClient(): GoogleGenAI | null {
   }
   return new GoogleGenAI({
     apiKey: apiKey.trim(),
-    httpOptions: {
-      headers: {
-        'User-Agent': 'aistudio-build',
-      },
-    },
   });
 }
 
-const GEMINI_FALLBACK_MODELS = ['gemini-flash-latest', 'gemini-3.1-flash-lite', 'gemini-3.8-flash'] as const;
+const GEMINI_FALLBACK_MODELS = [
+  'gemini-3-flash-preview',
+  'gemini-2.5-flash',
+  'gemini-3.1-flash-lite-preview',
+  'gemini-flash-latest',
+] as const;
 const modelCooldownUntil = new Map<string, number>();
 
 async function generateContentWithQuotaFallback(
@@ -46,6 +48,7 @@ async function generateContentWithQuotaFallback(
   params: {
     contents: unknown;
     config?: Record<string, unknown>;
+    useGoogleSearch?: boolean;
   }
 ): Promise<string | null> {
   const now = Date.now();
@@ -55,23 +58,63 @@ async function generateContentWithQuotaFallback(
       continue;
     }
     try {
-      const response = await ai.models.generateContent({
-        model: modelName,
-        contents: params.contents as never,
-        config: params.config as never,
-      });
-      const text = response.text?.trim();
+      const baseConfig = params.config || {};
+      const configWithTools =
+        params.useGoogleSearch && !baseConfig.responseMimeType
+          ? { ...baseConfig, tools: [{ googleSearch: {} }] }
+          : baseConfig;
+
+      let response;
+      try {
+        response = await ai.models.generateContent({
+          model: modelName,
+          contents: params.contents as never,
+          config: configWithTools as never,
+        });
+      } catch (innerErr) {
+        if (params.useGoogleSearch) {
+          // Retry without googleSearch tool if model does not support search grounding on this tier
+          response = await ai.models.generateContent({
+            model: modelName,
+            contents: params.contents as never,
+            config: baseConfig as never,
+          });
+        } else {
+          throw innerErr;
+        }
+      }
+
+      let text = response.text?.trim();
       if (text) {
+        // Append verified Google Search grounding links if present
+        const chunks = (
+          response.candidates?.[0] as {
+            groundingMetadata?: {
+              groundingChunks?: Array<{ web?: { uri?: string; title?: string } }>;
+            };
+          }
+        )?.groundingMetadata?.groundingChunks;
+
+        if (Array.isArray(chunks) && chunks.length > 0) {
+          const webSources = chunks
+            .map((c) => c.web)
+            .filter((w): w is { uri: string; title?: string } => Boolean(w && w.uri))
+            .slice(0, 3);
+          if (webSources.length > 0) {
+            const sourceLines = webSources
+              .map((w) => `• ${w.title || 'Google Curriculum Source'} (${w.uri})`)
+              .join('\n');
+            text += `\n\n**🌐 Google Search Grounding Sources:**\n${sourceLines}`;
+          }
+        }
         return text;
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       if (msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED') || msg.includes('quota')) {
-        // Put this specific model on cooldown for 30 minutes and try the next model
         modelCooldownUntil.set(modelName, Date.now() + 30 * 60 * 1000);
         continue;
       }
-      // For non-quota transient errors, try next model or fall back cleanly
     }
   }
   return null;
@@ -137,8 +180,18 @@ app.post('/api/moha/chat', async (req, res) => {
     }
   }
 
+  // Parse any specific Class, Subject, or Topic mentioned in the user's prompt (e.g., "generate quiz for Form 2 Math on Logarithms")
+  const parsedTarget = parseClassSubjectTopicFromPrompt(userPrompt, cls, subject);
+  const effectiveCls = parsedTarget.cls;
+  const effectiveSubject = parsedTarget.subject;
+  const effectiveTopic = parsedTarget.topic;
+  const effectiveSubTopic = parsedTarget.subTopic;
+
+  const isQuizRequest =
+    /\b(quiz|questions|maswali|test me|exercise|practice)\b/i.test(userPrompt);
+
   const ai = getGenAIClient();
-  const syllabusTopics = getSyllabusTopicsForClassSubject(cls, subject);
+  const syllabusTopics = getSyllabusTopicsForClassSubject(effectiveCls, effectiveSubject);
   const learnedContext =
     learnedMemory.length > 0
       ? `\n\nTeacher/Student Custom Learned Memory:\n${learnedMemory
@@ -148,31 +201,49 @@ app.post('/api/moha/chat', async (req, res) => {
       : '';
 
   const siteResourcesContext = siteResources
-    ? `\n\nUploaded Elimika Website Resources Integrated for ${cls} ${subject} & Related Subjects:
+    ? `\n\nUploaded Elimika Website Resources Integrated for ${effectiveCls} ${effectiveSubject}:
 - TIE Textbooks Available: ${
-        siteResources.books.map((b) => `${b.title} (${b.form} ${b.subject})`).join('; ') || 'Standard TIE Textbooks'
+        siteResources.books.map((b) => `${b.title} (${b.form} ${b.subject})`).join('; ') ||
+        `Official TIE ${effectiveCls} ${effectiveSubject} Student's Book`
       }
 - Official Syllabuses Available: ${
-        siteResources.syllabuses.map((s) => `${s.title} (${s.form} ${s.subject})`).join('; ') || 'Official TIE Syllabus'
+        siteResources.syllabuses.map((s) => `${s.title} (${s.form} ${s.subject})`).join('; ') ||
+        `Official TIE ${effectiveCls} ${effectiveSubject} Syllabus`
       }
 - Past Examination Papers Available: ${
-        siteResources.papers.map((p) => `${p.title} [${p.category} ${p.year}]`).join('; ') || 'NECTA Past Papers'
+        siteResources.papers.map((p) => `${p.title} [${p.category} ${p.year}]`).join('; ') ||
+        `NECTA ${effectiveCls} ${effectiveSubject} Past Papers`
       }`
     : '';
 
+  const topicQuizQuestions = isQuizRequest
+    ? buildContentIntegratedQuizQuestions(
+        effectiveCls,
+        effectiveSubject,
+        effectiveTopic,
+        siteResources,
+        effectiveSubTopic
+      )
+    : undefined;
+
   if (ai) {
     try {
-      const systemInstruction = `You are Moha AI, the official Tanzanian TIE (Tanzania Institute of Education) Competence-Based Curriculum & NECTA (National Examinations Council of Tanzania) Examiner Assistant for ${cls} ${subject}.
-Official TIE Syllabus Competences for ${cls} ${subject}:
+      const systemInstruction = `You are Moha AI, the official Tanzanian TIE (Tanzania Institute of Education) & NECTA Assistant for ${effectiveCls} ${effectiveSubject}.
+Specified Class: ${effectiveCls}
+Specified Subject: ${effectiveSubject}
+Specified Topic: ${effectiveTopic} (${effectiveSubTopic})
+Official TIE Syllabus Competences for ${effectiveCls} ${effectiveSubject}:
 ${syllabusTopics.map((t) => `- ${t}`).join('\n')}${siteResourcesContext}${learnedContext}
 
-Formatting & Pedagogical Rules:
-1. Give thorough, crystal-clear, step-by-step explanations, lesson notes, lesson plans, or schemes of work tailored to Tanzanian ${cls} ${subject} students and teachers.
-2. Actively integrate and reference the uploaded TIE Textbooks, Official Syllabuses, and Past Examination Papers available on the Elimika website.
-3. CLEAR TABLES: Whenever the user asks for a table, comparison, experimental results (e.g., Physics Ohm's Law, Chemistry Titration Burette Table), Mathematics table of values/statistics, or Book-Keeping/Accounts ledgers, ALWAYS draw a clean, well-aligned Markdown table using pipe syntax (| Column 1 | Column 2 |).
-4. When solving mathematical, physics, or chemistry problems, write clean LaTeX equations enclosed in $...$ for inline math and $$...$$ for block equations.
-5. Include NECTA Marking Scheme mark allocations (e.g., [02 Marks], [01 Mark]) for steps and key points.
-6. Use **bold** headings and bullet points (•) for readability.`;
+CRITICAL TOPIC & CLASS ACCURACY RULES:
+1. You MUST strictly generate questions, examples, and explanations ONLY for the specified Class (${effectiveCls}), Subject (${effectiveSubject}), and Topic (${effectiveTopic}). Never give generic questions from a different topic!
+2. Integrate content directly from the Official TIE ${effectiveCls} ${effectiveSubject} Textbook, Official TIE Syllabus, NECTA Past Papers, and Google Search.
+3. Arrange every answer into 3 clear, numbered sections:
+   **1. 📌 Key Concept / Direct Answer (${effectiveCls} • ${effectiveTopic}):** Give a clear explanation or topic-specific problems.
+   **2. 📐 Step-by-Step Working / Main Points:** Use numbered steps (Step 1, Step 2, Step 3) or clear bullet points (•).
+   **3. ✅ NECTA Marking Tip & Website Resources:** Show how marks are awarded (e.g., [02 Marks]) and cite the relevant TIE Books, Syllabuses, and Past Papers available on the Elimika website.
+4. LESSON NOTES RULE: Never put Lesson Notes or study notes inside a table. Format Lesson Notes with clean numbered headings, well-spaced paragraphs, bullet points (•), and step-by-step worked examples.
+5. Write math, physics, or chemistry formulas clearly in $...$ or $$...$$.`;
 
       const recentHistoryParts = history
         .filter((h) => !h.text.includes('official-tie-doc') && h.id !== 'msg-welcome')
@@ -181,8 +252,8 @@ Formatting & Pedagogical Rules:
         .join('\n\n');
 
       const fullPromptText = recentHistoryParts
-        ? `Previous conversation context:\n${recentHistoryParts}\n\nCurrent Request (${cls} ${subject}):\n${userPrompt}`
-        : userPrompt;
+        ? `Previous conversation context:\n${recentHistoryParts}\n\nCurrent Request (Class: ${effectiveCls}, Subject: ${effectiveSubject}, Topic: ${effectiveTopic}):\n${userPrompt}`
+        : `Class: ${effectiveCls} | Subject: ${effectiveSubject} | Specified Topic: ${effectiveTopic} (${effectiveSubTopic})\nRequest: ${userPrompt}`;
 
       const parts: Array<{ text?: string; inlineData?: { mimeType: string; data: string } }> = [];
       if (image && image.base64Data && image.mimeType) {
@@ -199,21 +270,38 @@ Formatting & Pedagogical Rules:
         contents: { parts },
         config: {
           systemInstruction,
-          temperature: 0.4,
+          temperature: 0.35,
         },
+        useGoogleSearch: !image,
       });
 
       if (replyText && replyText.length > 0) {
-        return res.json({ reply: replyText, source: 'gemini' });
+        return res.json({
+          reply: replyText,
+          source: 'gemini',
+          parsedTarget,
+          quizQuestions: topicQuizQuestions,
+        });
       }
     } catch {
       // Fallback to built-in curriculum engine below
     }
   }
 
-  // Fallback to built-in curriculum engine
-  const fallbackReply = generateLocalSmartTutorReply(userPrompt, cls, subject, learnedMemory, siteResources);
-  return res.json({ reply: fallbackReply, source: 'local' });
+  // Fallback to built-in curriculum engine (which now generates distinct topic- & class-specific questions!)
+  const fallbackReply = generateLocalSmartTutorReply(
+    userPrompt,
+    effectiveCls,
+    effectiveSubject,
+    learnedMemory,
+    siteResources
+  );
+  return res.json({
+    reply: fallbackReply,
+    source: 'local',
+    parsedTarget,
+    quizQuestions: topicQuizQuestions,
+  });
 });
 
 // Moha AI Official TIE / PO-RALG / NECTA Document & Lesson Notes Generator Endpoint
@@ -363,93 +451,67 @@ app.post('/api/moha/generate-doc', async (req, res) => {
   return res.json({ html, source: 'local' });
 });
 
-// Helper to build NECTA-aligned fallback questions for a class, subject, and specific topic
-function buildFallbackTopicQuizQuestions(cls: string, subject: string, topic?: string) {
-  const syllabusTopics = getSyllabusTopicsForClassSubject(cls, subject);
-  const focusTopic =
-    topic && topic !== 'ALL'
-      ? topic
-      : syllabusTopics[0] || `1.0 Core Principles of ${subject}`;
-
-  return [
-    {
-      question: `[NECTA ${cls} ${subject}] Which competence principle is central when solving problems on "${focusTopic}" under the TIE curriculum?`,
-      options: [
-        `Applying ${focusTopic} formulas, definitions, and real-life Tanzanian applications step-by-step`,
-        'Memorizing final answers without showing working or units',
-        'Skipping formula statements and diagrams',
-        'Using unrelated non-syllabus assumptions',
-      ],
-      correctIndex: 0,
-      explanation: `In NECTA ${subject}, questions on "${focusTopic}" require stating the governing principle/formula, substituting given data clearly, and stating proper units.`,
-      topic: focusTopic,
-    },
-    {
-      question: `When answering a structured NECTA Section B question on "${focusTopic}" (${cls} ${subject}), how are method marks (M1) awarded?`,
-      options: [
-        'Only if the page is completely full',
-        `For identifying given parameters and writing the correct ${focusTopic} equation or law before substitution`,
-        'For writing the final number only',
-        'Method marks are never awarded in NECTA exams',
-      ],
-      correctIndex: 1,
-      explanation:
-        'NECTA marking schemes allocate method marks (M1) for extracting given data and stating the correct formula or law prior to numerical substitution.',
-      topic: focusTopic,
-    },
-    {
-      question: `Which of the following is an official TIE syllabus competence tested alongside "${focusTopic}" in ${cls} ${subject}?`,
-      options: [
-        syllabusTopics[1] || syllabusTopics[0] || focusTopic,
-        'Unrelated Foreign Literature',
-        'Non-Curriculum Speculative Trivia',
-        'Deprecated Pre-1960 Syllabus Topic',
-      ],
-      correctIndex: 0,
-      explanation: `${
-        syllabusTopics[1] || syllabusTopics[0] || focusTopic
-      } is part of the official Tanzania Institute of Education (TIE) syllabus for ${cls} ${subject}.`,
-      topic: focusTopic,
-    },
-    {
-      question: `In ${cls} ${subject}, why is graphical or tabular presentation important when analyzing "${focusTopic}"?`,
-      options: [
-        'It replaces all calculations completely',
-        `It clearly shows relationships between variables, trends, and experimental accuracy in ${focusTopic}`,
-        'It is only used for decoration',
-        'NECTA forbids tables and diagrams',
-      ],
-      correctIndex: 1,
-      explanation: `Clear tables and labeled diagrams help verify relationships between variables in "${focusTopic}" and earn full presentation marks in NECTA examinations.`,
-      topic: focusTopic,
-    },
-  ];
+// Helper to build NECTA-aligned fallback questions for a class, subject, specific topic, subTopic, and site resources
+function buildFallbackTopicQuizQuestions(
+  cls: string,
+  subject: string,
+  topic?: string,
+  siteResources?: SiteResourceContext,
+  subTopic?: string,
+  sourceFilter: 'ALL' | 'BOOK' | 'PAPER' | 'textbook' | 'past_paper' = 'ALL'
+) {
+  return buildContentIntegratedQuizQuestions(cls, subject, topic, siteResources, subTopic, sourceFilter);
 }
 
-// Moha AI Interactive Quiz Generator Endpoint (supports specific topic)
+// Moha AI Interactive Quiz Generator Endpoint (integrates specific topic, subTopic & available website contents)
 app.post('/api/moha/quiz', async (req, res) => {
   const {
     cls = 'Form 3',
     subject = 'Basic Mathematics',
     topic,
+    subTopic,
+    sourceFilter = 'ALL',
+    siteResources,
   } = req.body as {
     cls?: string;
     subject?: string;
     topic?: string;
+    subTopic?: string;
+    sourceFilter?: 'ALL' | 'BOOK' | 'PAPER' | 'textbook' | 'past_paper';
+    siteResources?: SiteResourceContext;
   };
 
   const syllabusTopics = getSyllabusTopicsForClassSubject(cls, subject);
   const selectedTopicText =
     topic && topic !== 'ALL'
-      ? `focusing specifically on the topic "${topic}"`
+      ? `focusing specifically on Topic "${topic}"${subTopic && subTopic !== 'ALL' ? ` and Sub-Topic "${subTopic}"` : ''}`
       : `covering these official TIE syllabus topics: ${syllabusTopics.join('; ')}`;
+
+  const sourceConstraintText =
+    sourceFilter === 'BOOK' || sourceFilter === 'textbook'
+      ? 'All 4 questions MUST be solving/workout exercises taken from the Official TIE Textbook.'
+      : sourceFilter === 'PAPER' || sourceFilter === 'past_paper'
+      ? 'All 4 questions MUST be problem-solving questions taken from NECTA Past Examination Papers.'
+      : 'Questions 1 and 3 MUST be solving exercises from the Official TIE Textbook, and Questions 2 and 4 MUST be problem-solving questions from NECTA Past Examination Papers.';
+
+  const availableContentSummary = siteResources
+    ? `Available Website Content for ${cls} ${subject}:
+- TIE Books: ${siteResources.books.map((b) => b.title).join(', ') || `Official TIE ${cls} ${subject} Textbook`}
+- Syllabuses: ${siteResources.syllabuses.map((s) => s.title).join(', ') || `Official TIE ${cls} ${subject} Syllabus`}
+- Past Papers: ${siteResources.papers.map((p) => `${p.title} (${p.year})`).join(', ') || `NECTA ${cls} ${subject} Past Papers`}`
+    : '';
 
   const ai = getGenAIClient();
 
   if (ai) {
     try {
       const jsonText = await generateContentWithQuotaFallback(ai, {
-        contents: `Generate 4 high-quality NECTA multiple-choice practice questions for Tanzanian ${cls} ${subject} ${selectedTopicText}. Each question must have 4 options, correctIndex (0 to 3), a clear step-by-step explanation, and the specific syllabus topic name it tests.`,
+        contents: `Generate 4 concrete problem-solving / workout questions for Tanzanian ${cls} ${subject} ${selectedTopicText}.
+${sourceConstraintText}
+${availableContentSummary}
+IMPORTANT RULES:
+1. Every question MUST be a real problem to solve (e.g. calculation, equation solving, scientific problem, map/accounting workout, or structured past paper problem) from either the TIE Textbook or a NECTA Past Paper.
+2. Provide 4 clear options, correctIndex (0 to 3), a step-by-step worked solution in "explanation" (Step 1 -> Step 2 -> Final Answer), the "topic", the "subTopic", and the "sourceRef" (e.g. "📘 TIE ${cls} ${subject} Textbook" or "📄 NECTA ${cls} ${subject} Past Paper").`,
         config: {
           responseMimeType: 'application/json',
           responseSchema: {
@@ -465,8 +527,10 @@ app.post('/api/moha/quiz', async (req, res) => {
                 correctIndex: { type: Type.INTEGER },
                 explanation: { type: Type.STRING },
                 topic: { type: Type.STRING },
+                subTopic: { type: Type.STRING },
+                sourceRef: { type: Type.STRING },
               },
-              required: ['question', 'options', 'correctIndex', 'explanation', 'topic'],
+              required: ['question', 'options', 'correctIndex', 'explanation', 'topic', 'subTopic', 'sourceRef'],
             },
           },
         },
@@ -483,7 +547,7 @@ app.post('/api/moha/quiz', async (req, res) => {
   }
 
   return res.json({
-    questions: buildFallbackTopicQuizQuestions(cls, subject, topic),
+    questions: buildFallbackTopicQuizQuestions(cls, subject, topic, siteResources, subTopic, sourceFilter),
     source: 'local',
   });
 });
@@ -848,6 +912,121 @@ app.get('/.well-known/assetlinks.json', (_req, res) => {
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
+});
+
+// ==================== VEO 3.1 PHOTO-TO-VIDEO 3-STEP ENDPOINTS ====================
+app.post('/api/generate-video', async (req, res) => {
+  const {
+    prompt = 'Animate this image with smooth cinematic motion',
+    imageBase64,
+    imageMimeType = 'image/png',
+    aspectRatio = '16:9',
+  } = req.body as {
+    prompt?: string;
+    imageBase64?: string;
+    imageMimeType?: string;
+    aspectRatio?: '16:9' | '9:16';
+  };
+
+  const validAspect: '16:9' | '9:16' = aspectRatio === '9:16' ? '9:16' : '16:9';
+  const ai = getGenAIClient();
+  if (!ai) {
+    return res.status(400).json({
+      error: 'Gemini API key is not configured on the server. Please configure GEMINI_API_KEY in Settings > Secrets.',
+    });
+  }
+
+  try {
+    const operation = await ai.models.generateVideos({
+      model: 'veo-3.1-fast-generate-preview',
+      prompt,
+      ...(imageBase64
+        ? {
+            image: {
+              imageBytes: imageBase64,
+              mimeType: imageMimeType,
+            },
+          }
+        : {}),
+      config: {
+        numberOfVideos: 1,
+        resolution: '720p',
+        aspectRatio: validAspect,
+      },
+    });
+    return res.json({ operationName: operation.name });
+  } catch (err) {
+    return res.status(500).json({
+      error: err instanceof Error ? err.message : 'Failed to start Veo video generation.',
+    });
+  }
+});
+
+app.post('/api/video-status', async (req, res) => {
+  const { operationName } = req.body as { operationName?: string };
+  if (!operationName) {
+    return res.status(400).json({ error: 'Missing operationName' });
+  }
+  const ai = getGenAIClient();
+  if (!ai) {
+    return res.status(400).json({ error: 'Gemini API key not configured' });
+  }
+  try {
+    const op = new GenerateVideosOperation();
+    op.name = operationName;
+    const updated = await ai.operations.getVideosOperation({ operation: op });
+    return res.json({ done: Boolean(updated.done) });
+  } catch (err) {
+    return res.status(500).json({
+      error: err instanceof Error ? err.message : 'Failed to check video operation status.',
+    });
+  }
+});
+
+app.post('/api/video-download', async (req, res) => {
+  const { operationName } = req.body as { operationName?: string };
+  if (!operationName) {
+    return res.status(400).json({ error: 'Missing operationName' });
+  }
+  const apiKey =
+    process.env.GEMINI_API_KEY ||
+    process.env.VITE_GEMINI_API_KEY ||
+    process.env.GOOGLE_API_KEY ||
+    '';
+  const ai = getGenAIClient();
+  if (!ai || !apiKey) {
+    return res.status(400).json({ error: 'Gemini API key not configured' });
+  }
+  try {
+    const op = new GenerateVideosOperation();
+    op.name = operationName;
+    const updated = await ai.operations.getVideosOperation({ operation: op });
+    const uri = updated.response?.generatedVideos?.[0]?.video?.uri;
+    if (!uri) {
+      return res.status(404).json({ error: 'Generated video URI not found in completed operation.' });
+    }
+    const videoRes = await fetch(uri, {
+      headers: { 'x-goog-api-key': apiKey.trim() },
+    });
+    if (!videoRes.ok || !videoRes.body) {
+      return res.status(502).json({ error: `Failed to fetch video stream (${videoRes.status})` });
+    }
+    res.setHeader('Content-Type', 'video/mp4');
+    await videoRes.body.pipeTo(
+      new WritableStream({
+        write(chunk) {
+          res.write(chunk);
+        },
+        close() {
+          res.end();
+        },
+      })
+    );
+  } catch (err) {
+    return res.status(500).json({
+      error: err instanceof Error ? err.message : 'Failed to download generated video.',
+    });
+  }
 });
 
 async function startServer() {
