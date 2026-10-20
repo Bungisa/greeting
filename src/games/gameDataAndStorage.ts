@@ -1,13 +1,25 @@
 // Modular Curriculum Question Bank, Adventure Worlds, Escape Room Puzzles & Progress Persistence
-// Clearly labels sample practice questions in accordance with educational integrity rules.
+// Autogenerates questions & puzzles according to selected Class, Subject, Specific Topic, and Uploaded Books & Past Papers.
+
+import {
+  buildContentIntegratedQuizQuestions,
+  getSubTopicsForMainTopic,
+  getSyllabusTopicsForClassSubject,
+  PaperRecord,
+  QuizItem,
+  SiteResourceContext,
+  TIE_CURRICULUM_SUBJECTS,
+} from '../data/curriculumData';
 
 export type GameDifficulty = 'Easy' | 'Medium' | 'Hard';
+export type GameSourceFilter = 'ALL' | 'BOOK' | 'PAPER';
 
 export interface GameQuestion {
   id: string;
   subject: string;
   cls: string;
   topic: string;
+  subTopic?: string;
   difficulty: GameDifficulty;
   question: string;
   options: string[];
@@ -68,6 +80,8 @@ export interface ElimikaPlayProgress {
     worldId: string;
     cls: string;
     subject: string;
+    topic?: string;
+    sourceFilter?: GameSourceFilter;
     difficulty: GameDifficulty;
     currentCheckpointIdx: number;
     completedCheckpoints: number[];
@@ -84,6 +98,15 @@ export const PLAY_SUBJECTS = [
   'Geography',
   'History',
   'English Language',
+  'Kiswahili',
+  'Civics',
+  'Book-Keeping',
+  'Commerce',
+  'Computer Science',
+  'Advanced Mathematics',
+  'Basic Applied Mathematics (BAM)',
+  'Economics',
+  'General Studies',
 ] as const;
 
 export const PLAY_CLASSES = [
@@ -93,8 +116,13 @@ export const PLAY_CLASSES = [
   'Form 4',
   'Form 5',
   'Form 6',
-  'Standard 6',
   'Standard 7',
+  'Standard 6',
+  'Standard 5',
+  'Standard 4',
+  'Standard 3',
+  'Standard 2',
+  'Standard 1',
 ] as const;
 
 export const TREASURE_ADVENTURE_WORLDS: TreasureAdventureWorld[] = [
@@ -987,56 +1015,430 @@ const QUESTION_BANK: GameQuestion[] = [
 ];
 
 /**
- * Returns a sequence of 6 modular questions tailored to the selected subject, class, and difficulty
- * for the 6 checkpoints of a NECTA Treasure Hunt adventure.
+ * Reads all currently uploaded Books, Syllabuses, and Past Papers from memory or localStorage cache.
+ */
+export function loadCachedUploadedPapers(passedPapers?: PaperRecord[]): PaperRecord[] {
+  if (Array.isArray(passedPapers) && passedPapers.length > 0) {
+    return passedPapers;
+  }
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem('elimika_papers_cache_v3');
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Returns the subjects available for a given Class (combining TIE curriculum + uploaded Books/Past Papers).
+ */
+export function getAvailableSubjectsForClass(cls: string, allPapers?: PaperRecord[]): string[] {
+  const papers = loadCachedUploadedPapers(allPapers);
+  const baseSubjects = TIE_CURRICULUM_SUBJECTS[cls] || [...PLAY_SUBJECTS];
+  const clsLower = (cls || 'Form 3').toLowerCase();
+
+  const uploadedSubjects = papers
+    .filter((p) => p.form.toLowerCase() === clsLower)
+    .map((p) => p.subject.trim())
+    .filter(Boolean);
+
+  return Array.from(new Set([...baseSubjects, ...uploadedSubjects]));
+}
+
+/**
+ * Returns the specific topics available for a given Class & Subject (combining TIE syllabus topics + uploaded Book/Paper topics).
+ */
+export function getAvailableTopicsForClassSubject(
+  cls: string,
+  subject: string,
+  allPapers?: PaperRecord[]
+): string[] {
+  const syllabusTopics = getSyllabusTopicsForClassSubject(cls, subject);
+  const papers = loadCachedUploadedPapers(allPapers);
+  const clsLower = (cls || 'Form 3').toLowerCase();
+  const subLower = (subject || 'Basic Mathematics').toLowerCase();
+
+  const matchingUploaded = papers.filter(
+    (p) =>
+      p.form.toLowerCase() === clsLower &&
+      (p.subject.toLowerCase().includes(subLower) || subLower.includes(p.subject.toLowerCase()))
+  );
+
+  const uploadedTopicTitles = matchingUploaded
+    .slice(0, 6)
+    .map((p) =>
+      p.isBook
+        ? `📘 Book Focus: ${p.title}`
+        : p.isSyllabus
+        ? `📋 Syllabus Focus: ${p.title}`
+        : `📄 Past Paper Focus: ${p.title} (${p.year})`
+    );
+
+  return Array.from(new Set([...syllabusTopics, ...uploadedTopicTitles]));
+}
+
+/**
+ * Returns the matching uploaded Books, Syllabuses, and Past Papers for a specific Class & Subject.
+ */
+export function getUploadedResourcesForClassSubject(
+  cls: string,
+  subject: string,
+  allPapers?: PaperRecord[]
+): SiteResourceContext {
+  const papers = loadCachedUploadedPapers(allPapers);
+  const clsNorm = (cls || 'Form 3').toLowerCase();
+  const subNorm = (subject || 'Basic Mathematics').toLowerCase();
+
+  const matchingBooks = papers.filter(
+    (p) =>
+      p.isBook &&
+      (p.subject.toLowerCase().includes(subNorm) || subNorm.includes(p.subject.toLowerCase())) &&
+      (p.form.toLowerCase() === clsNorm || p.paperUrl !== null)
+  );
+  const matchingSyllabuses = papers.filter(
+    (p) =>
+      p.isSyllabus &&
+      (p.subject.toLowerCase().includes(subNorm) ||
+        subNorm.includes(p.subject.toLowerCase()) ||
+        p.form.toLowerCase().includes(clsNorm))
+  );
+  const matchingPapers = papers.filter(
+    (p) =>
+      !p.isBook &&
+      !p.isSyllabus &&
+      (p.subject.toLowerCase().includes(subNorm) || subNorm.includes(p.subject.toLowerCase())) &&
+      (p.form.toLowerCase() === clsNorm || p.paperUrl !== null)
+  );
+
+  return {
+    syllabuses: matchingSyllabuses.slice(0, 6).map((s) => ({
+      title: s.title,
+      form: s.form,
+      subject: s.subject,
+      year: s.year,
+      hasUrl: Boolean(s.paperUrl),
+    })),
+    books: matchingBooks.slice(0, 6).map((b) => ({
+      title: b.title,
+      form: b.form,
+      subject: b.subject,
+      year: b.year,
+      hasUrl: Boolean(b.paperUrl),
+    })),
+    papers: matchingPapers.slice(0, 8).map((p) => ({
+      title: p.title,
+      form: p.form,
+      subject: p.subject,
+      year: p.year,
+      category: p.category,
+      hasUrl: Boolean(p.paperUrl),
+      hasAnswers: Boolean(p.answersUrl),
+    })),
+  };
+}
+
+/**
+ * Deterministically rotates/shuffles answer options so the correct answer is distributed across A, B, C, and D.
+ */
+function rotateOptionsWithCorrectIndex(
+  options: string[],
+  correctIndex: number,
+  shiftSeed: number
+): { options: string[]; correctIndex: number } {
+  if (!Array.isArray(options) || options.length < 2) {
+    return { options, correctIndex: 0 };
+  }
+  const safeCorrectIdx = Math.max(0, Math.min(options.length - 1, correctIndex));
+  const correctValue = options[safeCorrectIdx];
+  const len = options.length;
+  const shift = ((shiftSeed % len) + len) % len;
+  if (shift === 0) {
+    return { options: [...options], correctIndex: safeCorrectIdx };
+  }
+  const rotated: string[] = new Array(len);
+  for (let i = 0; i < len; i++) {
+    rotated[(i + shift) % len] = options[i];
+  }
+  const nextCorrectIdx = rotated.indexOf(correctValue);
+  return {
+    options: rotated,
+    correctIndex: nextCorrectIdx >= 0 ? nextCorrectIdx : 0,
+  };
+}
+
+function extractSmartHintFromExplanation(explanation: string, topic: string): string {
+  if (!explanation) {
+    return `Apply the governing TIE formula or principle for ${topic}.`;
+  }
+  const step1Match = explanation.match(/Step\s*1\s*:\s*([^.]+(?:\.[^.]+)?)/i);
+  if (step1Match && step1Match[1]) {
+    return `Start with Step 1: ${step1Match[1].trim()}.`;
+  }
+  const firstSentence = explanation.split(/\.\s+/)[0];
+  return firstSentence ? `${firstSentence}.` : `Review the key principle of ${topic}.`;
+}
+
+/**
+ * Autogenerates a sequence of 6 modular questions strictly tailored to the selected
+ * Class, Subject, Specific Topic, and Uploaded Books & Past Papers.
  */
 export function getQuestionsForTreasureHunt(
   subject: string,
   cls: string,
-  difficulty: GameDifficulty
+  difficulty: GameDifficulty,
+  topic: string = 'ALL',
+  sourceFilter: GameSourceFilter = 'ALL',
+  allPapers?: PaperRecord[],
+  specificResourceTitle: string = 'ALL'
 ): GameQuestion[] {
+  const siteResources = getUploadedResourcesForClassSubject(cls, subject, allPapers);
+  const syllabusTopics = getSyllabusTopicsForClassSubject(cls, subject);
+
+  const cleanSelectedTopic =
+    topic && topic !== 'ALL'
+      ? topic.replace(/^(📘 Book Focus:|📋 Syllabus Focus:|📄 Past Paper Focus:)\s*/i, '').trim()
+      : 'ALL';
+
+  const baseXp = difficulty === 'Hard' ? 100 : difficulty === 'Medium' ? 75 : 55;
+
+  const generatedQuizItems: QuizItem[] = [];
+
+  if (cleanSelectedTopic !== 'ALL') {
+    const subTopics = getSubTopicsForMainTopic(cls, subject, cleanSelectedTopic);
+    const primaryBatch = buildContentIntegratedQuizQuestions(
+      cls,
+      subject,
+      cleanSelectedTopic,
+      siteResources,
+      subTopics[0],
+      sourceFilter
+    );
+    generatedQuizItems.push(...primaryBatch);
+
+    const secondarySubTopic = subTopics[1] || subTopics[0];
+    const secondaryTopic =
+      syllabusTopics.find((t) => !t.toLowerCase().includes(cleanSelectedTopic.toLowerCase())) ||
+      cleanSelectedTopic;
+    const secondBatch = buildContentIntegratedQuizQuestions(
+      cls,
+      subject,
+      secondaryTopic,
+      siteResources,
+      secondarySubTopic,
+      sourceFilter
+    );
+    for (const item of secondBatch) {
+      if (!generatedQuizItems.some((g) => g.question === item.question)) {
+        generatedQuizItems.push(item);
+      }
+    }
+  } else {
+    for (const sysTopic of syllabusTopics) {
+      const batch = buildContentIntegratedQuizQuestions(
+        cls,
+        subject,
+        sysTopic,
+        siteResources,
+        undefined,
+        sourceFilter
+      );
+      for (const item of batch) {
+        if (!generatedQuizItems.some((g) => g.question === item.question)) {
+          generatedQuizItems.push(item);
+        }
+      }
+      if (generatedQuizItems.length >= 20) break;
+    }
+  }
+
   const subNorm = subject.toLowerCase();
-  const matchingSubject = QUESTION_BANK.filter(
+  const matchingBank = QUESTION_BANK.filter(
     (q) => q.subject.toLowerCase().includes(subNorm) || subNorm.includes(q.subject.toLowerCase())
   );
 
-  const pool = matchingSubject.length >= 3 ? [...matchingSubject] : [...QUESTION_BANK];
+  const matchedBookName =
+    specificResourceTitle !== 'ALL'
+      ? specificResourceTitle
+      : siteResources.books[0]?.title || `Official TIE ${cls} ${subject} Student's Book`;
+  const matchedPaperName =
+    specificResourceTitle !== 'ALL'
+      ? specificResourceTitle
+      : siteResources.papers[0]
+      ? `${siteResources.papers[0].title} (${siteResources.papers[0].year})`
+      : `Uploaded ${cls} ${subject} Past Examination Paper`;
 
-  // Sort so earlier checkpoints match easier/standard questions and final checkpoints get boss/special questions
-  pool.sort((a, b) => {
-    const scoreA = a.difficulty === 'Easy' ? 1 : a.difficulty === 'Medium' ? 2 : 3;
-    const scoreB = b.difficulty === 'Easy' ? 1 : b.difficulty === 'Medium' ? 2 : 3;
-    return difficulty === 'Hard' ? scoreB - scoreA : scoreA - scoreB;
+  const result: GameQuestion[] = [];
+
+  generatedQuizItems.forEach((item, idx) => {
+    if (result.length >= 20) return;
+    const rotated = rotateOptionsWithCorrectIndex(item.options, item.correctIndex, idx + 1);
+    const isBookRef =
+      sourceFilter === 'BOOK' || (sourceFilter === 'ALL' && idx % 2 === 0);
+    const sourceCitation =
+      specificResourceTitle !== 'ALL'
+        ? `📚 Uploaded Source: ${specificResourceTitle} (${cls} ${subject})`
+        : item.sourceRef ||
+          (isBookRef ? `📘 Uploaded Book: ${matchedBookName}` : `📄 Uploaded Past Paper: ${matchedPaperName}`);
+
+    result.push({
+      id: `autogen-${cls}-${subject}-${idx}`,
+      subject,
+      cls,
+      topic:
+        item.topic ||
+        (cleanSelectedTopic !== 'ALL'
+          ? cleanSelectedTopic
+          : syllabusTopics[idx % syllabusTopics.length] || subject),
+      subTopic: item.subTopic,
+      difficulty,
+      question: item.question,
+      options: rotated.options,
+      correctIndex: rotated.correctIndex,
+      explanation: item.explanation,
+      hint: extractSmartHintFromExplanation(item.explanation, item.topic || subject),
+      xpReward: baseXp + (idx >= 12 ? 20 : 0),
+      sourceLabel: sourceCitation,
+      isBossOrSpecial: idx >= 12,
+    });
   });
 
-  // Ensure exactly 6 distinct checkpoints by supplementing from cross-curricular STEM/Humanities if needed
-  const result: GameQuestion[] = [];
-  for (const item of pool) {
-    if (result.length < 6) {
+  matchingBank.forEach((bankItem, bIdx) => {
+    if (result.length >= 20) return;
+    if (!result.some((r) => r.question === bankItem.question)) {
+      const rotated = rotateOptionsWithCorrectIndex(
+        bankItem.options,
+        bankItem.correctIndex,
+        result.length + bIdx
+      );
       result.push({
-        ...item,
+        ...bankItem,
+        id: `${bankItem.id}-${cls}`,
         cls,
-        xpReward:
-          difficulty === 'Hard'
-            ? Math.round(item.xpReward * 1.25)
-            : difficulty === 'Medium'
-            ? item.xpReward
-            : Math.round(item.xpReward * 0.9),
+        subject,
+        topic: cleanSelectedTopic !== 'ALL' ? cleanSelectedTopic : bankItem.topic,
+        options: rotated.options,
+        correctIndex: rotated.correctIndex,
+        xpReward: baseXp + (result.length >= 12 ? 25 : 0),
+        sourceLabel:
+          sourceFilter === 'PAPER'
+            ? `📄 Uploaded Past Paper: ${matchedPaperName}`
+            : `📘 Uploaded Book: ${matchedBookName}`,
       });
     }
+  });
+
+  let padIdx = 0;
+  while (result.length < 20 && result.length > 0) {
+    const template = result[padIdx % result.length];
+    const rotated = rotateOptionsWithCorrectIndex(
+      template.options,
+      template.correctIndex,
+      result.length + 2
+    );
+    result.push({
+      ...template,
+      id: `${template.id}-extra-${result.length}`,
+      options: rotated.options,
+      correctIndex: rotated.correctIndex,
+      isBossOrSpecial: result.length >= 12,
+    });
+    padIdx++;
   }
 
-  for (const item of QUESTION_BANK) {
-    if (result.length >= 6) break;
-    if (!result.some((r) => r.id === item.id)) {
-      result.push({
-        ...item,
+  return result.slice(0, 20);
+}
+
+/**
+ * Calls the backend /api/moha/quiz endpoint to dynamically autogenerate 20 fresh questions
+ * grounded in the uploaded Books and Past Papers for the exact Class, Subject, and Topic.
+ */
+export async function fetchAiAutogeneratedGameQuestions(
+  cls: string,
+  subject: string,
+  topic: string = 'ALL',
+  difficulty: GameDifficulty = 'Medium',
+  sourceFilter: GameSourceFilter = 'ALL',
+  allPapers?: PaperRecord[],
+  specificResourceTitle: string = 'ALL'
+): Promise<GameQuestion[]> {
+  const fallback = getQuestionsForTreasureHunt(
+    subject,
+    cls,
+    difficulty,
+    topic,
+    sourceFilter,
+    allPapers,
+    specificResourceTitle
+  );
+
+  try {
+    const siteResources = getUploadedResourcesForClassSubject(cls, subject, allPapers);
+    const cleanTopic =
+      topic && topic !== 'ALL'
+        ? topic.replace(/^(📘 Book Focus:|📋 Syllabus Focus:|📄 Past Paper Focus:)\s*/i, '').trim()
+        : 'ALL';
+
+    const res = await fetch('/api/moha/quiz', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
         cls,
-      });
-    }
-  }
+        subject,
+        topic: cleanTopic,
+        sourceFilter,
+        siteResources,
+        count: 20,
+        specificResourceTitle,
+      }),
+    });
 
-  return result.slice(0, 6);
+    if (!res.ok) return fallback;
+    const data = await res.json();
+    if (!data || !Array.isArray(data.questions) || data.questions.length === 0) {
+      return fallback;
+    }
+
+    const baseXp = difficulty === 'Hard' ? 100 : difficulty === 'Medium' ? 75 : 55;
+    const aiQuestions: GameQuestion[] = data.questions.map((q: QuizItem, idx: number) => {
+      const opts = Array.isArray(q.options) && q.options.length >= 2 ? q.options : fallback[0].options;
+      const rawCorrect = typeof q.correctIndex === 'number' ? q.correctIndex : 0;
+      const rotated = rotateOptionsWithCorrectIndex(opts, rawCorrect, idx + 1);
+      const qTopic = q.topic || (cleanTopic !== 'ALL' ? cleanTopic : subject);
+      return {
+        id: `ai-game-${cls}-${subject}-${idx}-${Date.now()}`,
+        subject,
+        cls,
+        topic: qTopic,
+        subTopic: q.subTopic,
+        difficulty,
+        question: q.question,
+        options: rotated.options,
+        correctIndex: rotated.correctIndex,
+        explanation: q.explanation || 'Step-by-step curriculum working verified.',
+        hint: extractSmartHintFromExplanation(q.explanation || '', qTopic),
+        xpReward: baseXp + (idx >= 12 ? 25 : 0),
+        sourceLabel:
+          specificResourceTitle !== 'ALL'
+            ? `📚 Uploaded Source: ${specificResourceTitle} (${cls} ${subject})`
+            : q.sourceRef || `📘 Uploaded ${cls} ${subject} Book & Past Paper`,
+        isBossOrSpecial: idx >= 12,
+      };
+    });
+
+    const combined = [...aiQuestions];
+    for (const fb of fallback) {
+      if (combined.length >= 20) break;
+      if (!combined.some((c) => c.question === fb.question)) {
+        combined.push(fb);
+      }
+    }
+    return combined.slice(0, 20);
+  } catch {
+    return fallback;
+  }
 }
 
 export interface EscapeRoomPuzzleSet {
@@ -1079,212 +1481,121 @@ export interface EscapeRoomPuzzleSet {
   };
 }
 
+/**
+ * Dynamically builds the 4 Escape the Classroom puzzles directly from a set of autogenerated
+ * Class + Subject + Topic + Uploaded Book/Past Paper questions!
+ */
+export function buildEscapePuzzlesFromQuestions(
+  questions: GameQuestion[],
+  roomId: string,
+  cls: string,
+  subject: string,
+  topic: string = 'ALL',
+  sourceLabelOverride?: string
+): EscapeRoomPuzzleSet {
+  const q1 = questions[0];
+  const q2 = questions[1] || questions[0];
+  const q3 = questions[2] || questions[0];
+  const q4 = questions[3] || questions[1] || questions[0];
+  const q5 = questions[4] || questions[2] || questions[0];
+
+  const topicDisplay =
+    topic && topic !== 'ALL'
+      ? topic.replace(/^\d+\.\d+\s*/, '')
+      : q1?.topic || `${cls} ${subject} Core Syllabus`;
+  const srcTag = sourceLabelOverride || q1?.sourceLabel || `Uploaded ${cls} ${subject} Books & Past Papers`;
+
+  const d1 = ((q1.correctIndex % 4) + 1).toString();
+  const d2 = ((q2.correctIndex % 4) + 2).toString();
+  const d3 = ((q3.correctIndex % 4) + 3).toString();
+  const code3 = `${d1}${d2}${d3}`;
+
+  const unlockedDigit = (((q4.correctIndex + 2) % 8) + 2).toString();
+  const cabinetDigit = (q4.correctIndex + 1).toString();
+  const logicSuffix = ((q5.correctIndex + 2) * 12).toString();
+  const masterCode = `${code3}-${unlockedDigit}${cabinetDigit}-${logicSuffix}`;
+
+  const correctAns1 = q1.options[q1.correctIndex] || q1.options[0];
+  const correctAns2 = q2.options[q2.correctIndex] || q2.options[0];
+  const correctAns3 = q3.options[q3.correctIndex] || q3.options[0];
+
+  return {
+    puzzle1Math: {
+      title: `Puzzle 1 — Smartboard Cipher (${cls} • ${subject})`,
+      prompt: `From ${srcTag} on "${topicDisplay}": Verify the three checkpoint values on the chalkboard to unlock the 3-digit Smartboard PIN (${code3}):`,
+      equationDisplay: `Digit 1 = ${d1} (${q1.topic}: ${correctAns1})  |  Digit 2 = ${d2} (${q2.topic}: ${correctAns2})  |  Digit 3 = ${d3} (${correctAns3})`,
+      correctCode: code3,
+      hint: `Combine the three verified digits shown on the Smartboard analysis: Digit 1 = ${d1}, Digit 2 = ${d2}, Digit 3 = ${d3}.`,
+      explanation: `${q1.explanation} Therefore the 3-digit Smartboard PIN for ${cls} ${subject} (${topicDisplay}) is ${code3}.`,
+    },
+    puzzle2Matching: {
+      title: `Puzzle 2 — ${subject} Concept & Principle Match (${topicDisplay})`,
+      prompt: `Verify the three curriculum principles from your uploaded ${cls} ${subject} Books & Past Papers to unlock Latch Digit ${unlockedDigit}:`,
+      pairs: [
+        {
+          id: 'p1',
+          structure: `1. ${q1.topic || topicDisplay} (Core Problem)`,
+          functionDesc: `${q1.question} → Correct Solution: ${correctAns1}`,
+        },
+        {
+          id: 'p2',
+          structure: `2. ${q2.topic || topicDisplay} (Application)`,
+          functionDesc: `${q2.question} → Correct Solution: ${correctAns2}`,
+        },
+        {
+          id: 'p3',
+          structure: `3. ${q3.topic || topicDisplay} (Past Paper Verification)`,
+          functionDesc: `${q3.question} → Correct Solution: ${correctAns3}`,
+        },
+      ],
+      correctOrderIds: ['p1', 'p2', 'p3'],
+      unlockedClueDigit: unlockedDigit,
+      hint: `Review each ${cls} ${subject} question and its verified solution on the workbench.`,
+      explanation: `1) ${q1.explanation} 2) ${q2.explanation}`,
+    },
+    puzzle3CircuitOrLab: {
+      title: `Puzzle 3 — Locked Supply Cabinet (${cls} • ${topicDisplay})`,
+      prompt: `Solve this problem autogenerated from ${q4.sourceLabel || srcTag} to release the Brass Master Key:`,
+      question: q4.question,
+      options: q4.options,
+      correctIndex: q4.correctIndex,
+      unlockedItemName: 'Brass Master Key',
+      hint: q4.hint,
+      explanation: q4.explanation,
+    },
+    puzzle4Logic: {
+      title: `Puzzle 4 — Master Exit Synthesis (${cls} • ${subject})`,
+      prompt: `Final Examination Lock from ${q5.sourceLabel || srcTag} on "${topicDisplay}". Solve this question to synthesize the Master Exit Code (${masterCode}):`,
+      question: q5.question,
+      options: q5.options,
+      correctIndex: q5.correctIndex,
+      masterSequenceCode: masterCode,
+      hint: q5.hint,
+      explanation: `${q5.explanation} Master Exit Sequence Unlocked: ${masterCode}.`,
+    },
+  };
+}
+
 export function getEscapeRoomPuzzles(
   roomId: string,
   cls: string,
   subject: string,
-  difficulty: GameDifficulty
+  difficulty: GameDifficulty,
+  topic: string = 'ALL',
+  sourceFilter: GameSourceFilter = 'ALL',
+  allPapers?: PaperRecord[],
+  specificResourceTitle: string = 'ALL'
 ): EscapeRoomPuzzleSet {
-  if (roomId === 'exam_hall' || difficulty === 'Medium') {
-    return {
-      puzzle1Math: {
-        title: 'Puzzle 1 — Smartboard Algebraic Cipher',
-        prompt: `Solve the three equations for (${cls} • ${subject}) to discover the 3-digit Smartboard PIN (Digits: $x$, $y$, $z$):`,
-        equationDisplay:
-          'Digit 1 ($x$): $\\log_{10}(1000) = x$  |  Digit 2 ($y$): $2y - 3 = 7$  |  Digit 3 ($z$): $\\sqrt{49} = z$',
-        correctCode: '357',
-        hint: '$\\log_{10}(1000) = 3$, solve $2y = 10$, and $\\sqrt{49} = 7$.',
-        explanation:
-          'Step 1: Since $10^3 = 1000$, $x = 3$. Step 2: $2y - 3 = 7 \\Rightarrow 2y = 10 \\Rightarrow y = 5$. Step 3: $\\sqrt{49} = 7$. Thus the 3-digit PIN is 357.',
-      },
-      puzzle2Matching: {
-        title: 'Puzzle 2 — Specimen Table Structure-Function Lock',
-        prompt:
-          'Select the correct scientific function for each biological/chemical structure to release the Cabinet Latch:',
-        pairs: [
-          {
-            id: 'xylem',
-            structure: '1. Xylem Vessels',
-            functionDesc: 'Transports water and dissolved mineral salts upward from roots to leaves',
-          },
-          {
-            id: 'alveoli',
-            structure: '2. Alveoli (Air Sacs)',
-            functionDesc: 'Provides a large moist surface area for gaseous exchange ($O_2$ and $CO_2$)',
-          },
-          {
-            id: 'nephron',
-            structure: '3. Kidney Glomerulus',
-            functionDesc: 'Performs ultrafiltration of blood under high hydrostatic pressure',
-          },
-        ],
-        correctOrderIds: ['xylem', 'alveoli', 'nephron'],
-        unlockedClueDigit: '8',
-        hint: 'Xylem transports water, Alveoli exchange gases in the lungs, and the Glomerulus filters blood.',
-        explanation:
-          'In the TIE Biology curriculum: Xylem conducts water and mineral ions upward; Alveoli are the gas exchange surfaces in mammalian lungs; and the Glomerulus filters small molecules from blood plasma.',
-      },
-      puzzle3CircuitOrLab: {
-        title: 'Puzzle 3 — Locked Supply Cabinet (Ohm’s Law & Wall Clock)',
-        prompt:
-          'The cabinet electronic lock shows a $12\\text{ V}$ battery connected across a $3\\,\\Omega$ resistor in series with a $1\\,\\Omega$ resistor.',
-        question:
-          'Calculate the electric current $I$ flowing through the circuit ($I = \\frac{V}{R_1 + R_2}$) to unlock the Brass Master Key:',
-        options: ['$I = 3\\text{ A}$', '$I = 4\\text{ A}$', '$I = 12\\text{ A}$', '$I = 1.5\\text{ A}$'],
-        correctIndex: 0,
-        unlockedItemName: 'Brass Master Key',
-        hint: 'Total resistance $R_T = 3\\,\\Omega + 1\\,\\Omega = 4\\,\\Omega$. Divide $12\\text{ V}$ by $4\\,\\Omega$.',
-        explanation:
-          'Step 1: Series resistance $R_T = 3\\,\\Omega + 1\\,\\Omega = 4\\,\\Omega$. Step 2: By Ohm’s Law, $I = \\frac{12\\text{ V}}{4\\,\\Omega} = 3\\text{ A}$.',
-      },
-      puzzle4Logic: {
-        title: 'Puzzle 4 — Logic Synthesis Board',
-        prompt:
-          'Combine your discovered clues: Smartboard PIN (357) + Specimen Digit (8) + Circuit Current (3 A).',
-        question:
-          'What is the sum of the three digits of the Smartboard PIN ($3 + 5 + 7$) multiplied by the Circuit Current ($3$)?',
-        options: ['$45$', '$35$', '$54$', '$30$'],
-        correctIndex: 0,
-        masterSequenceCode: '357-83-45',
-        hint: 'Add $3 + 5 + 7 = 15$, then multiply $15 \\times 3$.',
-        explanation:
-          'Step 1: Sum of PIN digits $= 3 + 5 + 7 = 15$. Step 2: Multiply by the $3\\text{ A}$ circuit reading: $15 \\times 3 = 45$. Master Escape Code: 357-83-45.',
-      },
-    };
-  }
-
-  if (roomId === 'ancient_library' || difficulty === 'Hard') {
-    return {
-      puzzle1Math: {
-        title: 'Puzzle 1 — Archive Manuscript Cipher',
-        prompt: `Solve the three equations for (${cls} • ${subject}) to unlock the 3-digit Archive Code (Digits: $a$, $b$, $c$):`,
-        equationDisplay:
-          'Digit 1 ($a$): Determinant of $\\begin{pmatrix} 3 & 1 \\\\ 2 & 2 \\end{pmatrix}$  |  Digit 2 ($b$): Gradient of $y = 6x - 9$  |  Digit 3 ($c$): $2^c = 8$',
-        correctCode: '463',
-        hint: 'Determinant $= (3 \\times 2) - (1 \\times 2) = 4$; gradient $m = 6$; and $2^3 = 8$.',
-        explanation:
-          'Step 1: Determinant $= 6 - 2 = 4$. Step 2: In $y = mx + c$, the gradient $m = 6$. Step 3: Since $2^3 = 8$, $c = 3$. Archive Code = 463.',
-      },
-      puzzle2Matching: {
-        title: 'Puzzle 2 — Scholar’s Analytical Bench',
-        prompt: 'Verify the three fundamental scientific & historical principles to unlock the Vault Dial:',
-        pairs: [
-          {
-            id: 'faraday',
-            structure: '1. Faraday’s First Law',
-            functionDesc: 'Mass liberated during electrolysis is directly proportional to quantity of electricity ($m \\propto Q$)',
-          },
-          {
-            id: 'boyle',
-            structure: '2. Boyle’s Gas Law',
-            functionDesc: 'At constant temperature, pressure of a fixed mass of gas is inversely proportional to volume ($P_1V_1 = P_2V_2$)',
-          },
-          {
-            id: 'mendel',
-            structure: '3. Mendel’s Law of Segregation',
-            functionDesc: 'Paired alleles separate during gamete formation so each gamete carries one allele',
-          },
-        ],
-        correctOrderIds: ['faraday', 'boyle', 'mendel'],
-        unlockedClueDigit: '9',
-        hint: 'Review the definitions of Faraday’s Law ($m = ZIt$), Boyle’s Law ($PV = k$), and Mendel’s first law.',
-        explanation:
-          'All three laws are foundational principles across TIE Form 3 and Form 4 Chemistry, Physics, and Biology.',
-      },
-      puzzle3CircuitOrLab: {
-        title: 'Puzzle 3 — Mahogany Cabinet Calibration',
-        prompt:
-          'A topographical map inside the cabinet has a scale of $1:50,000$. A straight canal on the map measures $10\\text{ cm}$.',
-        question: 'Calculate the actual ground length of the canal in kilometres to release the Brass Master Key:',
-        options: ['$5\\text{ km}$', '$10\\text{ km}$', '$50\\text{ km}$', '$2.5\\text{ km}$'],
-        correctIndex: 0,
-        unlockedItemName: 'Brass Master Key',
-        hint: 'At $1:50,000$, $1\\text{ cm} = 0.5\\text{ km}$. Multiply $10\\text{ cm} \\times 0.5\\text{ km}$.',
-        explanation:
-          'Step 1: $1\\text{ cm}$ represents $50,000\\text{ cm} = 0.5\\text{ km}$. Step 2: $10 \\times 0.5\\text{ km} = 5\\text{ km}$.',
-      },
-      puzzle4Logic: {
-        title: 'Puzzle 4 — Master Archive Sequence',
-        prompt:
-          'Combine the Archive Code (463), the Bench Digit (9), and the Canal Distance (5 km).',
-        question:
-          'In the sequence $4, 9, 16, 25, x$, where each term is $n^2$, what is the next term $x$ after $25$?',
-        options: ['$36$', '$30$', '$49$', '$32$'],
-        correctIndex: 0,
-        masterSequenceCode: '463-95-36',
-        hint: 'The sequence is $2^2, 3^2, 4^2, 5^2, 6^2$.',
-        explanation:
-          'The terms are perfect squares: $2^2=4, 3^2=9, 4^2=16, 5^2=25$, so the next term is $6^2 = 36$. Master Escape Code: 463-95-36.',
-      },
-    };
-  }
-
-  // Default Room 1: The Locked STEM Laboratory
-  return {
-    puzzle1Math: {
-      title: 'Puzzle 1 — Chalkboard 3-Digit Cipher',
-      prompt: `Solve the chalkboard equations for (${cls} • ${subject}) to find the 3-digit code (Digits: $A$, $B$, $C$):`,
-      equationDisplay:
-        'Digit $A$: $3A - 2 = 4$  |  Digit $B$: $\\sqrt{16} = B$  |  Digit $C$: $2^3 = C$',
-      correctCode: '248',
-      hint: 'Solve $3A = 6 \\Rightarrow A = 2$; $\\sqrt{16} = 4$; and $2^3 = 8$.',
-      explanation:
-        'Step 1: $3A - 2 = 4 \\Rightarrow 3A = 6 \\Rightarrow A = 2$. Step 2: $\\sqrt{16} = 4 \\Rightarrow B = 4$. Step 3: $2^3 = 2 \\times 2 \\times 2 = 8 \\Rightarrow C = 8$. Therefore the 3-digit code is 248.',
-    },
-    puzzle2Matching: {
-      title: 'Puzzle 2 — Laboratory Bench Organelle & Reagent Match',
-      prompt:
-        'Verify the three laboratory organelle and reagent pairings on the lab bench to reveal the hidden magnetic latch digit:',
-      pairs: [
-        {
-          id: 'chloroplast',
-          structure: '1. Chloroplast',
-          functionDesc: 'Contains chlorophyll pigment that traps light energy for photosynthesis',
-        },
-        {
-          id: 'iodine',
-          structure: '2. Iodine Solution',
-          functionDesc: 'Turns blue-black in the presence of starch',
-        },
-        {
-          id: 'mitochondria',
-          structure: '3. Mitochondrion',
-          functionDesc: 'Synthesizes ATP energy during aerobic cellular respiration',
-        },
-      ],
-      correctOrderIds: ['chloroplast', 'iodine', 'mitochondria'],
-      unlockedClueDigit: '6',
-      hint: 'Chloroplasts trap light, Iodine tests for starch (blue-black), and Mitochondria produce ATP.',
-      explanation:
-        'In TIE Biology & Chemistry practicals: Chloroplasts carry out photosynthesis; Iodine solution turns blue-black with starch; and Mitochondria generate ATP.',
-    },
-    puzzle3CircuitOrLab: {
-      title: 'Puzzle 3 — Locked Supply Cabinet (Physics Measurement)',
-      prompt:
-        'The locked supply cabinet has a digital sensor showing a $20\\text{ V}$ source connected to a $5\\,\\Omega$ resistor.',
-      question:
-        'Using Ohm’s Law ($I = \\frac{V}{R}$), calculate the current $I$ required to release the Brass Master Key:',
-      options: ['$I = 4\\text{ A}$', '$I = 2\\text{ A}$', '$I = 100\\text{ A}$', '$I = 5\\text{ A}$'],
-      correctIndex: 0,
-      unlockedItemName: 'Brass Master Key',
-      hint: 'Divide voltage $V = 20\\text{ V}$ by resistance $R = 5\\,\\Omega$.',
-      explanation:
-        'By Ohm’s Law, $I = \\frac{V}{R} = \\frac{20\\text{ V}}{5\\,\\Omega} = 4\\text{ A}$. Unlocking this cabinet gives you the Brass Master Key!',
-    },
-    puzzle4Logic: {
-      title: 'Puzzle 4 — Mathematical Logic Board',
-      prompt:
-        'Look at the pattern formed by your first three clues: Chalkboard Code ($2, 4, 8$), Lab Digit ($6$), and Cabinet Current ($4\\text{ A}$).',
-      question:
-        'In the geometric sequence on the chalkboard ($2, 4, 8, 16, \\dots$), what is the 5th term needed to complete the Master Exit Sequence?',
-      options: ['$32$', '$24$', '$64$', '$20$'],
-      correctIndex: 0,
-      masterSequenceCode: '248-64-32',
-      hint: 'Each term is multiplied by $2$: $2 \\times 2 = 4$, $4 \\times 2 = 8$, $8 \\times 2 = 16$, $16 \\times 2 = ?$',
-      explanation:
-        'This is a Geometric Progression with first term $G_1 = 2$ and common ratio $r = 2$. The 5th term is $G_5 = 2 \\times 2^4 = 32$. Master Exit Sequence: 248-64-32.',
-    },
-  };
+  const autogenQuestions = getQuestionsForTreasureHunt(
+    subject,
+    cls,
+    difficulty,
+    topic,
+    sourceFilter,
+    allPapers,
+    specificResourceTitle
+  );
+  return buildEscapePuzzlesFromQuestions(autogenQuestions, roomId, cls, subject, topic);
 }
 
 const STORAGE_KEY = 'elimika_play_progress_v1';

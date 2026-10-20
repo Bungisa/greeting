@@ -42,6 +42,20 @@ const CHALLENGES: MathChallenge[] = [
   { prompt: '2 sin(30°) + 8 =', correctValue: 9, distractors: [6, 10, 11] },
   { prompt: '√81 + √16 =', correctValue: 13, distractors: [11, 15, 17] },
   { prompt: 'Gradient through (1,2) & (3,14) =', correctValue: 6, distractors: [4, 8, 12] },
+  { prompt: '3² + 4² =', correctValue: 25, distractors: [14, 21, 49] },
+  { prompt: 'log₂(32) =', correctValue: 5, distractors: [4, 6, 8] },
+  { prompt: 'Solve 5x + 3 = 23 → x =', correctValue: 4, distractors: [3, 5, 6] },
+  { prompt: 'Sum of interior angles of triangle ÷ 10 =', correctValue: 18, distractors: [9, 36, 12] },
+  { prompt: 'If f(x) = x² - 1, find f(4) =', correctValue: 15, distractors: [17, 12, 8] },
+  { prompt: 'LCM of 4 and 6 =', correctValue: 12, distractors: [24, 8, 18] },
+  { prompt: '2³ × 3 =', correctValue: 24, distractors: [18, 12, 36] },
+  { prompt: 'cos(0°) + tan(45°) =', correctValue: 2, distractors: [1, 0, 3] },
+  { prompt: 'Solve x/3 + 2 = 6 → x =', correctValue: 12, distractors: [9, 15, 18] },
+  { prompt: 'Area of circle (r=7, π=22/7) ÷ 11 =', correctValue: 14, distractors: [7, 22, 28] },
+  { prompt: '7! ÷ 6! =', correctValue: 7, distractors: [6, 42, 1] },
+  { prompt: 'Mean of 4, 8, 12, 16 =', correctValue: 10, distractors: [8, 12, 14] },
+  { prompt: 'Kinetic Energy (m=2kg, v=4m/s) =', correctValue: 16, distractors: [8, 32, 12] },
+  { prompt: 'Ohm’s Law: V = I×R (I=3A, R=7Ω) =', correctValue: 21, distractors: [10, 14, 28] },
 ];
 
 export const StemArenaGame: React.FC<StemArenaGameProps> = ({ onExitGame }) => {
@@ -244,7 +258,7 @@ export const StemArenaGame: React.FC<StemArenaGameProps> = ({ onExitGame }) => {
               }
               st.score += 100;
               setScore(st.score);
-              if (st.wave >= 6) {
+              if (st.wave >= 20) {
                 setGameState('VICTORY');
               } else {
                 st.wave += 1;
@@ -333,7 +347,7 @@ export const StemArenaGame: React.FC<StemArenaGameProps> = ({ onExitGame }) => {
       <div className="fixed top-4 left-4 right-4 flex items-center justify-between pointer-events-none">
         <div className="bg-slate-900/80 backdrop-blur-md border border-slate-700/80 px-4 py-2 rounded-xl text-white font-mono text-xs sm:text-sm pointer-events-auto flex items-center gap-4 tabular-nums">
           <span>SCORE: {score}</span>
-          <span>WAVE: {wave}/6</span>
+          <span>WAVE: {wave}/20</span>
           <span>LIVES: {'❤️'.repeat(Math.max(0, lives))}</span>
         </div>
 
@@ -379,7 +393,7 @@ export const StemArenaGame: React.FC<StemArenaGameProps> = ({ onExitGame }) => {
             </p>
             {gameState !== 'TITLE_MENU' && (
               <div className="p-3 rounded-xl bg-slate-800 font-mono text-sm tabular-nums">
-                Final Score: <strong>{score}</strong> · Wave: <strong>{wave}/6</strong>
+                Final Score: <strong>{score}</strong> · Wave: <strong>{wave}/20</strong>
               </div>
             )}
             <div className="flex items-center justify-center gap-3 pt-2">

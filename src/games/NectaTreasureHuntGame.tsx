@@ -63,6 +63,7 @@ export const NectaTreasureHuntGame: React.FC<NectaTreasureHuntGameProps> = ({
   const [currentCheckpointIdx, setCurrentCheckpointIdx] = useState<number>(0);
   const [completedCheckpoints, setCompletedCheckpoints] = useState<number[]>([]);
   const [activeCheckpointModalIdx, setActiveCheckpointModalIdx] = useState<number | null>(null);
+  const [checkpointSubQuestionIdx, setCheckpointSubQuestionIdx] = useState<number>(0);
 
   const [sessionXp, setSessionXp] = useState<number>(0);
   const [inventory, setInventory] = useState<string[]>([]);
@@ -100,6 +101,15 @@ export const NectaTreasureHuntGame: React.FC<NectaTreasureHuntGameProps> = ({
     () => getQuestionsForTreasureHunt(selectedSubject, selectedClass, difficulty),
     [selectedSubject, selectedClass, difficulty]
   );
+
+  const CHECKPOINT_QUESTION_RANGES: Array<[number, number]> = [
+    [0, 2],
+    [3, 5],
+    [6, 8],
+    [9, 12],
+    [13, 16],
+    [17, 19],
+  ];
 
   // Timer during active exploration
   useEffect(() => {
@@ -299,6 +309,7 @@ export const NectaTreasureHuntGame: React.FC<NectaTreasureHuntGameProps> = ({
     soundEngine.playClick();
     setCurrentCheckpointIdx(idx);
     setActiveCheckpointModalIdx(idx);
+    setCheckpointSubQuestionIdx(0);
     setSelectedOptionIdx(null);
     setAttemptCount(0);
     setHintVisible(false);
@@ -314,7 +325,10 @@ export const NectaTreasureHuntGame: React.FC<NectaTreasureHuntGameProps> = ({
 
   const handleSubmitCheckpointAnswer = () => {
     if (activeCheckpointModalIdx === null || selectedOptionIdx === null) return;
-    const q = questions[activeCheckpointModalIdx] || questions[0];
+    const [startQ, endQ] = CHECKPOINT_QUESTION_RANGES[activeCheckpointModalIdx] || [0, 1];
+    const totalSubQns = endQ - startQ + 1;
+    const globalQIdx = Math.min(questions.length - 1, startQ + checkpointSubQuestionIdx);
+    const q = questions[globalQIdx] || questions[0];
     const cp = activeWorld.checkpoints[activeCheckpointModalIdx];
 
     setTotalQuestionsAttempted((c) => c + 1);
@@ -326,52 +340,54 @@ export const NectaTreasureHuntGame: React.FC<NectaTreasureHuntGameProps> = ({
       if (isFirstTry) {
         setFirstTryCorrectCount((c) => c + 1);
       }
-      const bonusXp = isFirstTry ? 25 : 0;
+      const bonusXp = isFirstTry ? 15 : 0;
       const earned = q.xpReward + bonusXp;
       const nextXp = sessionXp + earned;
       setSessionXp(nextXp);
 
-      const nextCompleted = completedCheckpoints.includes(cp.id)
-        ? completedCheckpoints
-        : [...completedCheckpoints, cp.id];
-      setCompletedCheckpoints(nextCompleted);
+      const isLastQuestionOfCheckpoint = checkpointSubQuestionIdx + 1 >= totalSubQns;
+      if (isLastQuestionOfCheckpoint) {
+        const nextCompleted = completedCheckpoints.includes(cp.id)
+          ? completedCheckpoints
+          : [...completedCheckpoints, cp.id];
+        setCompletedCheckpoints(nextCompleted);
 
-      const nextInv = inventory.includes(cp.rewardItemName)
-        ? inventory
-        : [...inventory, cp.rewardItemName];
-      setInventory(nextInv);
+        const nextInv = inventory.includes(cp.rewardItemName)
+          ? inventory
+          : [...inventory, cp.rewardItemName];
+        setInventory(nextInv);
 
-      const nextClues = discoveredClues.includes(cp.clueFragment)
-        ? discoveredClues
-        : [...discoveredClues, cp.clueFragment];
-      setDiscoveredClues(nextClues);
+        const nextClues = discoveredClues.includes(cp.clueFragment)
+          ? discoveredClues
+          : [...discoveredClues, cp.clueFragment];
+        setDiscoveredClues(nextClues);
 
-      // Save checkpoint session progress
-      const nextCheckpointIdx = Math.min(
-        activeWorld.checkpoints.length - 1,
-        activeCheckpointModalIdx + 1
-      );
-      const updatedProgress: ElimikaPlayProgress = {
-        ...progress,
-        totalXp: progress.totalXp + earned,
-        collectedArtifacts: Array.from(
-          new Set([...progress.collectedArtifacts, cp.rewardItemName])
-        ),
-        savedTreasureSession:
-          nextCompleted.length >= activeWorld.checkpoints.length
-            ? null
-            : {
-                worldId: activeWorld.id,
-                cls: selectedClass,
-                subject: selectedSubject,
-                difficulty,
-                currentCheckpointIdx: nextCheckpointIdx,
-                completedCheckpoints: nextCompleted,
-                xpEarned: nextXp,
-                inventory: nextInv,
-              },
-      };
-      persistProgress(updatedProgress);
+        const nextCheckpointIdx = Math.min(
+          activeWorld.checkpoints.length - 1,
+          activeCheckpointModalIdx + 1
+        );
+        const updatedProgress: ElimikaPlayProgress = {
+          ...progress,
+          totalXp: progress.totalXp + earned,
+          collectedArtifacts: Array.from(
+            new Set([...progress.collectedArtifacts, cp.rewardItemName])
+          ),
+          savedTreasureSession:
+            nextCompleted.length >= activeWorld.checkpoints.length
+              ? null
+              : {
+                  worldId: activeWorld.id,
+                  cls: selectedClass,
+                  subject: selectedSubject,
+                  difficulty,
+                  currentCheckpointIdx: nextCheckpointIdx,
+                  completedCheckpoints: nextCompleted,
+                  xpEarned: nextXp,
+                  inventory: nextInv,
+                },
+        };
+        persistProgress(updatedProgress);
+      }
     } else {
       soundEngine.playWrong();
       setAttemptCount((a) => a + 1);
@@ -381,6 +397,19 @@ export const NectaTreasureHuntGame: React.FC<NectaTreasureHuntGameProps> = ({
 
   const handleAdvanceAfterCorrect = () => {
     if (activeCheckpointModalIdx === null) return;
+    const [startQ, endQ] = CHECKPOINT_QUESTION_RANGES[activeCheckpointModalIdx] || [0, 1];
+    const totalSubQns = endQ - startQ + 1;
+
+    if (checkpointSubQuestionIdx + 1 < totalSubQns) {
+      soundEngine.playClick();
+      setCheckpointSubQuestionIdx((s) => s + 1);
+      setSelectedOptionIdx(null);
+      setAttemptCount(0);
+      setHintVisible(false);
+      setFeedbackState('idle');
+      return;
+    }
+
     const isFinalStage = activeCheckpointModalIdx >= activeWorld.checkpoints.length - 1;
     if (isFinalStage) {
       soundEngine.playVictory();
@@ -406,6 +435,7 @@ export const NectaTreasureHuntGame: React.FC<NectaTreasureHuntGameProps> = ({
       const nextIdx = activeCheckpointModalIdx + 1;
       setCurrentCheckpointIdx(nextIdx);
       setActiveCheckpointModalIdx(null);
+      setCheckpointSubQuestionIdx(0);
       setSelectedOptionIdx(null);
       setAttemptCount(0);
       setHintVisible(false);
@@ -804,13 +834,17 @@ export const NectaTreasureHuntGame: React.FC<NectaTreasureHuntGameProps> = ({
             {activeCheckpointModalIdx !== null ? (
               (() => {
                 const cp = activeWorld.checkpoints[activeCheckpointModalIdx];
-                const q = questions[activeCheckpointModalIdx] || questions[0];
+                const [startQ, endQ] = CHECKPOINT_QUESTION_RANGES[activeCheckpointModalIdx] || [0, 1];
+                const totalSubQns = endQ - startQ + 1;
+                const globalQIdx = Math.min(questions.length - 1, startQ + checkpointSubQuestionIdx);
+                const q = questions[globalQIdx] || questions[0];
+                const isLastSubQn = checkpointSubQuestionIdx + 1 >= totalSubQns;
                 return (
                   <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xl">
                     <div className="flex items-center justify-between gap-2 border-b border-slate-800 pb-3">
                       <div>
                         <div className="text-[11px] font-bold text-amber-400">
-                          {cp.title} · {cp.subtitle}
+                          {cp.title} · Question {globalQIdx + 1} of 20 (Stage Qn {checkpointSubQuestionIdx + 1}/{totalSubQns})
                         </div>
                         <div className="text-xs text-slate-400">
                           Topic: {q.topic} · Reward: +{q.xpReward} XP
@@ -893,19 +927,25 @@ export const NectaTreasureHuntGame: React.FC<NectaTreasureHuntGameProps> = ({
                     {feedbackState === 'correct' && (
                       <div className="p-3.5 rounded-xl bg-emerald-950/80 border border-emerald-600 text-xs text-emerald-100 space-y-2">
                         <div className="font-black text-emerald-300">
-                          ✓ Checkpoint Unlocked! You found: {cp.rewardItemName}
+                          {isLastSubQn
+                            ? `✓ Checkpoint Unlocked! You found: ${cp.rewardItemName}`
+                            : `✓ Stage Question ${checkpointSubQuestionIdx + 1} of ${totalSubQns} Solved!`}
                         </div>
                         <div>
                           <strong>Step-by-Step Solution:</strong> <MathText text={q.explanation} />
                         </div>
-                        <div className="p-2 rounded-lg bg-slate-950/80 text-amber-300 font-semibold">
-                          {cp.clueFragment}
-                        </div>
+                        {isLastSubQn && (
+                          <div className="p-2 rounded-lg bg-slate-950/80 text-amber-300 font-semibold">
+                            {cp.clueFragment}
+                          </div>
+                        )}
                         <button
                           onClick={handleAdvanceAfterCorrect}
                           className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs cursor-pointer"
                         >
-                          {activeCheckpointModalIdx >= activeWorld.checkpoints.length - 1
+                          {!isLastSubQn
+                            ? `Next Stage Question (${checkpointSubQuestionIdx + 2}/${totalSubQns}) →`
+                            : activeCheckpointModalIdx >= activeWorld.checkpoints.length - 1
                             ? 'Open Grand Treasure Vault →'
                             : 'Continue to Next Checkpoint →'}
                         </button>

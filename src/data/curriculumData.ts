@@ -9,6 +9,10 @@ export interface PaperRecord {
   answersUrl: string | null;
   isBook: boolean;
   isSyllabus: boolean;
+  customContent?: string;
+  attachedFileMimeType?: string;
+  attachedFileName?: string;
+  isUserAttached?: boolean;
 }
 
 export interface LearnedMemoryItem {
@@ -36,10 +40,23 @@ export interface UserProfileData {
   targetClass: string;
 }
 
+export interface FocusedResourceInfo {
+  id?: string;
+  title: string;
+  form: string;
+  subject: string;
+  category: string;
+  year: string;
+  paperUrl?: string | null;
+  answersUrl?: string | null;
+  customContent?: string;
+}
+
 export interface SiteResourceContext {
-  syllabuses: Array<{ title: string; form: string; subject: string; year: string; hasUrl: boolean }>;
-  books: Array<{ title: string; form: string; subject: string; year: string; hasUrl: boolean }>;
-  papers: Array<{ title: string; form: string; subject: string; year: string; category: string; hasUrl: boolean; hasAnswers: boolean }>;
+  syllabuses: Array<{ title: string; form: string; subject: string; year: string; hasUrl: boolean; paperUrl?: string | null; customContent?: string }>;
+  books: Array<{ title: string; form: string; subject: string; year: string; hasUrl: boolean; paperUrl?: string | null; customContent?: string }>;
+  papers: Array<{ title: string; form: string; subject: string; year: string; category: string; hasUrl: boolean; hasAnswers: boolean; paperUrl?: string | null; customContent?: string }>;
+  focusedResource?: FocusedResourceInfo | null;
 }
 
 export interface TeacherMetadata {
@@ -97,15 +114,15 @@ export const CONFIG = {
 export const TIE_CURRICULUM_SUBJECTS: Record<string, string[]> = {
   'Standard 1': ['Kusoma', 'Kuandika', 'Kuhesabu', 'Afya na Mazingira', 'Michezo na Sanaa'],
   'Standard 2': ['Kusoma', 'Kuandika', 'Kuhesabu', 'Afya na Mazingira', 'Michezo na Sanaa'],
-  'Standard 3': ['Kiswahili', 'English', 'Hisabati (Mathematics)', 'Sayansi (Science)', 'Jiografia na Mazingira', 'Historia ya Tanzania na Maadili', 'Sanaa na Michezo'],
-  'Standard 4': ['Kiswahili', 'English', 'Hisabati (Mathematics)', 'Sayansi (Science)', 'Jiografia na Mazingira', 'Historia ya Tanzania na Maadili', 'Sanaa na Michezo'],
-  'Standard 5': ['Kiswahili', 'English', 'Hisabati (Mathematics)', 'Sayansi na Teknolojia', 'Maarifa ya Jamii', 'Uraia na Maadili', 'Stadi za Kazi'],
-  'Standard 6': ['Kiswahili', 'English', 'Hisabati (Mathematics)', 'Sayansi na Teknolojia', 'Maarifa ya Jamii', 'Uraia na Maadili', 'Stadi za Kazi'],
-  'Standard 7': ['Kiswahili', 'English', 'Hisabati (Mathematics)', 'Sayansi na Teknolojia', 'Maarifa ya Jamii', 'Uraia na Maadili', 'Stadi za Kazi'],
-  'Form 1': ['Basic Mathematics', 'English Language', 'Kiswahili', 'Biology', 'Physics', 'Chemistry', 'Geography', 'History', 'Historia ya Tanzania na Maadili', 'Business Studies', 'Civics', 'Book-Keeping', 'Commerce', 'Computer Science', 'Agriculture'],
-  'Form 2': ['Basic Mathematics', 'English Language', 'Kiswahili', 'Biology', 'Physics', 'Chemistry', 'Geography', 'History', 'Historia ya Tanzania na Maadili', 'Business Studies', 'Civics', 'Book-Keeping', 'Commerce', 'Computer Science', 'Agriculture'],
-  'Form 3': ['Basic Mathematics', 'English Language', 'Kiswahili', 'Biology', 'Physics', 'Chemistry', 'Geography', 'History', 'Historia ya Tanzania na Maadili', 'Business Studies', 'Civics', 'Book-Keeping', 'Commerce', 'Computer Science', 'Literature in English'],
-  'Form 4': ['Basic Mathematics', 'English Language', 'Kiswahili', 'Biology', 'Physics', 'Chemistry', 'Geography', 'History', 'Historia ya Tanzania na Maadili', 'Business Studies', 'Civics', 'Book-Keeping', 'Commerce', 'Computer Science', 'Literature in English'],
+  'Standard 3': ['Kiswahili', 'English Language', 'Hisabati (Mathematics)', 'Sayansi (Science)', 'Jiografia na Mazingira', 'Historia ya Tanzania na Maadili', 'Sanaa na Michezo'],
+  'Standard 4': ['Kiswahili', 'English Language', 'Hisabati (Mathematics)', 'Sayansi (Science)', 'Jiografia na Mazingira', 'Historia ya Tanzania na Maadili', 'Sanaa na Michezo'],
+  'Standard 5': ['Kiswahili', 'English Language', 'Hisabati (Mathematics)', 'Sayansi na Teknolojia', 'Maarifa ya Jamii', 'Uraia na Maadili', 'Stadi za Kazi'],
+  'Standard 6': ['Kiswahili', 'English Language', 'Hisabati (Mathematics)', 'Sayansi na Teknolojia', 'Maarifa ya Jamii', 'Uraia na Maadili', 'Stadi za Kazi'],
+  'Standard 7': ['Kiswahili', 'English Language', 'Hisabati (Mathematics)', 'Sayansi na Teknolojia', 'Maarifa ya Jamii', 'Uraia na Maadili', 'Stadi za Kazi'],
+  'Form 1': ['Basic Mathematics', 'Additional Mathematics', 'English Language', 'Kiswahili', 'Biology', 'Physics', 'Chemistry', 'Geography', 'History', 'Historia ya Tanzania na Maadili', 'Business Studies', 'Civics', 'Book-Keeping', 'Commerce', 'Computer Science', 'Agriculture', 'Home Economics'],
+  'Form 2': ['Basic Mathematics', 'Additional Mathematics', 'English Language', 'Kiswahili', 'Biology', 'Physics', 'Chemistry', 'Geography', 'History', 'Historia ya Tanzania na Maadili', 'Business Studies', 'Civics', 'Book-Keeping', 'Commerce', 'Computer Science', 'Agriculture', 'Home Economics'],
+  'Form 3': ['Basic Mathematics', 'Additional Mathematics', 'English Language', 'Kiswahili', 'Biology', 'Physics', 'Chemistry', 'Geography', 'History', 'Historia ya Tanzania na Maadili', 'Business Studies', 'Civics', 'Book-Keeping', 'Commerce', 'Computer Science', 'Agriculture', 'Home Economics', 'Literature in English'],
+  'Form 4': ['Basic Mathematics', 'Additional Mathematics', 'English Language', 'Kiswahili', 'Biology', 'Physics', 'Chemistry', 'Geography', 'History', 'Historia ya Tanzania na Maadili', 'Business Studies', 'Civics', 'Book-Keeping', 'Commerce', 'Computer Science', 'Agriculture', 'Home Economics', 'Literature in English'],
   'Form 5': ['General Studies', 'Academic Communication', 'Advanced Mathematics', 'Basic Applied Mathematics (BAM)', 'Physics', 'Chemistry', 'Biology', 'Geography', 'History', 'Economics', 'Accountancy', 'Commerce', 'English Language', 'Kiswahili', 'Computer Science'],
   'Form 6': ['General Studies', 'Academic Communication', 'Advanced Mathematics', 'Basic Applied Mathematics (BAM)', 'Physics', 'Chemistry', 'Biology', 'Geography', 'History', 'Economics', 'Accountancy', 'Commerce', 'English Language', 'Kiswahili', 'Computer Science'],
 };
@@ -113,184 +130,644 @@ export const TIE_CURRICULUM_SUBJECTS: Record<string, string[]> = {
 export const TIE_SYLLABUS_COMPETENCES: Record<string, Record<string, string[]>> = {
   'Basic Mathematics': {
     'Form 1': [
-      '1.0 Numbers & Mathematical Language (Rational, Irrational, Real Numbers, Approximations)',
-      '2.0 Fractions, Decimals, Percentages, Ratios & Proportions',
-      '3.0 Algebra (Linear Equations, Simultaneous Equations, Inequalities)',
-      '4.0 Geometry & Coordinate Geometry (Gradient, Straight Line Equations)',
+      'Chapter 1: Concept of Mathematics (Meaning, Branches & Relationship with Other Subjects)',
+      'Chapter 2: Numbers I (Base Ten Numeration, Natural, Whole & Integer Operations, BODMAS, Factors & Multiples, HCF & LCM)',
+      'Chapter 3: Fractions (Proper, Improper, Mixed Fractions & Operations on Fractions)',
+      'Chapter 4: Decimals and Percentages (Conversions & Operations on Decimals and Percentages)',
+      'Chapter 5: Metric Units (Length, Mass, Time & Capacity Conversions and Operations)',
+      'Chapter 6: Approximations (Rounding Off, Decimal Places & Significant Figures)',
+      'Chapter 7: Introduction to Geometry (Points, Lines, Angles, Polygons & Constructions)',
+      'Chapter 8: Algebra (Algebraic Expressions, Linear Equations, Simultaneous Equations & Linear Inequalities)',
+      'Chapter 9: Numbers II (Rational, Irrational & Real Numbers, Absolute Value & Number Line)',
+      'Chapter 10: Ratios, Profit and Loss (Ratios, Proportions, Profit/Loss Percentage & Simple Interest)',
+      'Chapter 11: Coordinate Geometry (Coordinates of a Point, Gradient/Slope & Equation of a Straight Line y = mx + c)',
+      'Chapter 12: Perimeters and Areas (Triangles, Quadrilaterals, Circles & Combined Plane Figures)',
     ],
     'Form 2': [
-      '1.0 Exponents, Radicals & Logarithms',
-      '2.0 Algebra (Quadratic Expressions & Equations, Factorisation)',
-      '3.0 Congruence, Similarity & Geometrical Transformations',
-      '4.0 Pythagoras Theorem & Right-Angled Trigonometry',
-      '5.0 Sets & Statistics',
+      'Chapter 1: Exponents and Radicals (Laws of Exponents/Indices, Simplifying Radicals/Surds & Rationalising the Denominator)',
+      'Chapter 2: Algebra (Binary Operations, Brackets, Quadratic Expressions & Factorisation)',
+      'Chapter 3: Quadratic Equations (Solving by Factorisation, Completing the Square & General Quadratic Formula)',
+      'Chapter 4: Logarithms (Standard Form A × 10^n, Laws of Logarithms & Mathematical Tables)',
+      'Chapter 5: Congruence (Congruence Postulates SSS, SAS, ASA, AAS, RHS & Proofs)',
+      'Chapter 6: Similarity (Similar Polygons, Similarity Theorems & Ratio of Areas of Similar Figures)',
+      'Chapter 7: Geometrical Transformations (Reflection, Rotation, Translation & Enlargement)',
+      'Chapter 8: Pythagoras Theorem (Proof & Real-Life Right-Angled Triangle Applications)',
+      'Chapter 9: Trigonometry (Sine, Cosine, Tangent Ratios, Special Angles 30°, 45°, 60° & Angles of Elevation/Depression)',
+      'Chapter 10: Sets (Description of Sets, Subsets, Venn Diagrams, Union, Intersection & Complement)',
+      'Chapter 11: Statistics (Frequency Distribution Tables, Histograms, Frequency Polygons, Pie Charts & Line Graphs)',
     ],
     'Form 3': [
-      '1.0 Relations & Functions (Linear, Quadratic, Polynomial)',
-      '2.0 Sequences & Series (AP and GP)',
-      '3.0 Circles, Earth as a Sphere (Great Circles, Meridians, Shortest Distance)',
-      '4.0 Accounts (Double Entry, Trial Balance, Financial Statements)',
+      'Chapter 1: Relations (Relations, Domain & Range, Graphs of Linear/Quadratic Relations & Inverse of a Relation)',
+      'Chapter 2: Functions (Concept of Function, Linear, Quadratic, Polynomial, Step & Absolute Value Functions, Inverse Functions)',
+      'Chapter 3: Statistics (Mean, Median, Mode for Grouped & Ungrouped Data, Assumed Mean & Ogive/Cumulative Frequency)',
+      'Chapter 4: Rates and Variations (Rates of Exchange, Direct, Inverse, Joint & Partial Variations)',
+      'Chapter 5: Sequences and Series (Arithmetic Progression AP, Geometric Progression GP, Arithmetic/Geometric Mean & Compound Interest)',
+      'Chapter 6: Circles (Parts of a Circle, Central & Inscribed Angles, Chord Properties, Cyclic Quadrilaterals & Tangent Theorems)',
+      'Chapter 7: The Earth as a Sphere (Great & Small Circles, Latitudes & Longitudes, Distance in Kilometres & Nautical Miles)',
+      'Chapter 8: Accounts (Double Entry Principle, Cash Book, Ledger, Trial Balance, Trading, Profit & Loss Account & Balance Sheet)',
     ],
     'Form 4': [
-      '1.0 Coordinate Geometry & Vectors',
-      '2.0 Area & Perimeter of Regular Polygons',
-      '3.0 Three-Dimensional Figures (Surface Area, Volume, Angle Between Line & Plane)',
-      '4.0 Probability',
-      '5.0 Matrices & Linear Transformations (2x2 Matrices, Inverse, Cramer Rule, Linear Programming)',
+      'Chapter 1: Coordinate Geometry (Midpoint, Distance Formula, Parallel & Perpendicular Lines m1·m2 = -1)',
+      'Chapter 3: Area and Perimeter (Area of Any Triangle ½ab sin C, Rhombus, Parallelogram & Regular Polygons)',
+      'Chapter 3: Three-Dimensional Figures (Prisms, Pyramids, Cones, Spheres, Angle Between a Line and a Plane, Surface Area & Volume)',
+      'Chapter 4: Probability (Sample Space, Event Probability, Mutually Exclusive Events, Independent Events & Tree Diagrams)',
+      'Chapter 5: Trigonometry (Trigonometric Ratios in All 4 Quadrants, Sine Rule, Cosine Rule, Compound Angle Identities & Graphs)',
+      'Chapter 6: Vectors (Displacement & Position Vectors, Magnitude & Direction, Vector Addition, Scalar Multiplication & Bearings)',
+      'Chapter 7: Matrices and Transformations (2×2 Matrix Operations, Determinant, Inverse Matrix, Simultaneous Equations & Linear Transformations)',
+      'Chapter 8: Linear Programming (Formulating Constraints, Objective Function, Graphing Feasible Region & Optimal Value)',
     ],
   },
-  'Biology': {
+  'Additional Mathematics': {
     'Form 1': [
-      '1.0 Introduction to Biology & Scientific Processes',
-      '2.0 Safety in Our Environment & First Aid',
-      '3.0 Cell Structure and Organization',
-      '4.0 Classification of Living Things',
+      'Chapter 1: Numbers (Number Patterns, Divisibility Rules, Base Numerals & Modular Arithmetic)',
+      'Chapter 2: Symmetrical Properties of Plane Figures (Lines of Symmetry & Rotational Symmetry)',
+      'Chapter 3: Algebra (Algebraic Fractions, Simultaneous Equations in Three Unknowns & Absolute Value Equations)',
+      'Chapter 4: Geometrical Constructions and Loci (Concept of Locus, Equidistant Loci & Constructions)',
+      'Chapter 5: Coordinate Geometry I (Internal & External Division of a Line Segment, Distance from a Point to a Line)',
+      'Chapter 6: Sets and Logic (Operations on Three Sets, Venn Diagrams, Truth Tables & Logical Statements)',
     ],
     'Form 2': [
-      '1.0 Nutrition in Plants and Animals (Photosynthesis & Human Digestive System)',
-      '2.0 Food Processing, Preservation and Storage',
-      '3.0 Balance of Nature & Natural Environment',
-      '4.0 Transport of Materials in Living Things',
-      '5.0 Gaseous Exchange and Respiration',
+      'Chapter 1: Algebra II (Polynomials, Remainder Theorem, Factor Theorem & Synthetic Division)',
+      'Chapter 2: Simultaneous Equations (Linear and Quadratic Simultaneous Equations & Word Problems)',
+      'Chapter 3: Variations and Series (Summation Notation Σ, Sum of Natural Numbers, Squares & Cubes)',
+      'Chapter 4: Coordinate Geometry of a Circle (Standard & General Equation of a Circle, Tangent & Normal to a Circle)',
+      'Chapter 5: Trigonometry (Radian Measure, Arc Length, Sector Area, Reciprocal Ratios sec, cosec, cot & Identities)',
+      'Chapter 6: Permutations and Combinations (Factorial Notation, Fundamental Counting Principle, nPr & nCr)',
     ],
     'Form 3': [
-      '1.0 Classification of Kingdom Plantae & Animalia',
-      '2.0 Movement & Locomotion',
-      '3.0 Coordination (Nervous & Hormonal Systems) and Sense Organs',
-      '4.0 Excretion and Regulation (Homeostasis)',
-      '5.0 Reproduction in Plants and Animals',
+      'Chapter 1: Functions and Relations (Composite Functions, Rational Functions & Asymptotes)',
+      'Chapter 2: Sequences, Series and Binomial Theorem (Binomial Expansion & Pascal Triangle)',
+      'Chapter 3: Differentiation (Limits, First Principles, Chain Rule, Product Rule, Quotient Rule, Tangents & Stationary Points)',
+      'Chapter 4: Integration (Indefinite & Definite Integrals, Area Under a Curve & Volume of Revolution)',
+      'Chapter 5: Kinematics (Displacement, Velocity & Acceleration using Calculus)',
     ],
     'Form 4': [
-      '1.0 Growth and Development',
-      '2.0 Genetics, Mendelian Inheritance & Variation',
-      '3.0 Classification of Arthropoda & Chordata',
-      '4.0 Organic Evolution',
-      '5.0 HIV/AIDS and STIs',
-    ],
-  },
-  'Chemistry': {
-    'Form 1': [
-      '1.0 Introduction to Chemistry & Laboratory Techniques',
-      '2.0 Heat Sources, Flames & Scientific Procedure',
-      '3.0 Matter (States, Physical & Chemical Changes, Separation of Mixtures)',
-      '4.0 Air, Combustion, Rusting and Firefighting',
-    ],
-    'Form 2': [
-      '1.0 Oxygen and Hydrogen',
-      '2.0 Water (Treatment & Purification)',
-      '3.0 Fuels and Energy',
-      '4.0 Atomic Structure, Periodic Table, Bonding & Formulae/Nomenclature',
-    ],
-    'Form 3': [
-      '1.0 Chemical Equations, Hardness of Water',
-      '2.0 Acids, Bases and Salts',
-      '3.0 The Mole Concept and Volumetric Analysis (Titration)',
-      '4.0 Ionic Theory and Electrolysis (Faraday Laws)',
-      '5.0 Chemical Kinetics, Equilibrium and Energetics',
-    ],
-    'Form 4': [
-      '1.0 Extraction of Metals (Sodium, Aluminium, Iron, Copper)',
-      '2.0 Compounds of Metals & Non-Metals (Chlorine, Sulphur, Nitrogen)',
-      '3.0 Organic Chemistry (Hydrocarbons, Alcohols, Carboxylic Acids, Polymers)',
-      '4.0 Soil Chemistry and Environmental Pollution',
+      'Chapter 1: Vectors in 2D and 3D (Unit Vectors i, j, k, Dot/Scalar Product, Angle Between Vectors & Work Done)',
+      'Chapter 2: Matrices and Determinants (3×3 Matrices, Cofactors, Adjoint, Inverse & 3×3 Simultaneous Equations)',
+      'Chapter 3: Probability and Statistics (Standard Deviation, Variance, Quartiles, Conditional Probability & Bayes Rule)',
+      'Chapter 4: Trigonometry II (Double Angle, Factor Formulae & Solving Trigonometric Equations)',
     ],
   },
   'Physics': {
     'Form 1': [
-      '1.0 Introduction to Physics & Laboratory Rules',
-      '2.0 Measurement, Density & Relative Density',
-      '3.0 Force, Archimedes Principle & Law of Flotation',
-      '4.0 Structure and Properties of Matter (Elasticity, Surface Tension, Capillarity)',
-      '5.0 Pressure, Work, Energy, Power & Light',
+      'Chapter 1: Introduction to Physics (Concept of Physics, Relationship with Other Subjects & Importance of Physics)',
+      'Chapter 2: Introduction to Laboratory Practice (Laboratory Rules, Safety Measures, First Aid & Warning Signs)',
+      'Chapter 3: Measurement (Fundamental & Derived Quantities, Vernier Calliper, Micrometer Screw Gauge, Mass, Weight, Volume & Density)',
+      'Chapter 4: Force (Concept of Force, Types of Forces: Gravity, Friction, Normal, Tension & Effects of Forces)',
+      'Chapter 5: Archimedes Principle and Law of Flotation (Upthrust, Apparent Weight, Relative Density, Sinking, Floating & Hydrometer)',
+      'Chapter 6: Structure and Properties of Matter (States of Matter, Hooke Law & Elasticity, Adhesion, Cohesion, Surface Tension, Capillarity, Diffusion & Osmosis)',
+      'Chapter 7: Pressure (Pressure in Solids P = F/A, Pressure in Liquids P = ρgh, Pascal Principle, Hydraulic Press, Atmospheric Pressure & Barometers)',
+      'Chapter 8: Work, Energy and Power (Work W = Fd, Kinetic Energy ½mv², Potential Energy mgh, Conservation of Energy & Power P = W/t)',
+      'Chapter 9: Light (Sources of Light, Propagation of Light, Shadows, Eclipses, Pinhole Camera & Reflection at Plane Mirrors)',
     ],
     'Form 2': [
-      '1.0 Static Electricity & Current Electricity (Ohm Law)',
-      '2.0 Magnetism & Earth Magnetic Field',
-      '3.0 Forces in Equilibrium (Moments, Center of Gravity) & Simple Machines',
-      '4.0 Motion in a Straight Line (Newton Laws of Motion)',
-      '5.0 Temperature and Sustainable Energy Sources',
+      'Chapter 1: Static Electricity (Origin of Charges, Law of Electrostatics, Gold-Leaf Electroscope, Capacitors & Capacitance)',
+      'Chapter 2: Current Electricity (Electric Current I = Q/t, Voltage, Ohm Law V = IR, Factors Affecting Resistance & Series/Parallel Resistors)',
+      'Chapter 3: Magnetism (Magnetic & Non-Magnetic Materials, Magnetisation, Demagnetisation, Magnetic Fields & Earth Magnetic Field)',
+      'Chapter 4: Forces in Equilibrium (Moment of a Force, Principle of Moments, Parallel Forces, Centre of Gravity & Types of Equilibrium)',
+      'Chapter 5: Simple Machines (Mechanical Advantage, Velocity Ratio, Efficiency, Levers, Pulleys, Inclined Plane, Screw Jack, Wheel & Axle, Hydraulic Press)',
+      'Chapter 6: Motion in a Straight Line (Distance, Displacement, Speed, Velocity, Acceleration, Equations of Uniformly Accelerated Motion & Free Fall)',
+      'Chapter 7: Newton Laws of Motion (First Law & Inertia, Second Law & Linear Momentum F = ma, Conservation of Momentum & Third Law)',
+      'Chapter 8: Temperature (Concept of Temperature, Fixed Points, Celsius & Kelvin Scales, Liquid-in-Glass Thermometers)',
+      'Chapter 9: Sustainable Energy Sources (Water/Hydroelectric, Solar, Wind, Sea Wave, Geothermal & Tidal Energy)',
     ],
     'Form 3': [
-      '1.0 Applications of Vectors & Friction',
-      '2.0 Light (Reflection & Refraction at Curved Mirrors and Lenses, Optical Instruments)',
-      '3.0 Thermal Expansion, Transfer of Thermal Energy & Measurement of Heat',
-      '4.0 Vapour, Humidity and Current Electricity (EMF, Internal Resistance)',
+      'Chapter 1: Applications of Vectors (Scalar & Vector Quantities, Triangle & Parallelogram Laws of Vector Addition, Relative Velocity & Resolution of Vectors)',
+      'Chapter 2: Friction (Concept of Friction, Limiting Friction, Laws of Friction, Coefficient of Static & Dynamic Friction μ = F/R)',
+      'Chapter 3: Light (Reflection at Curved Mirrors, Mirror Formula 1/f = 1/u + 1/v, Refraction of Light, Snell Law, Total Internal Reflection, Lenses & Dispersion)',
+      'Chapter 4: Optical Instruments (Simple Microscope, Compound Microscope, Astronomical Telescope, Projection Lantern, Lens Camera & The Human Eye)',
+      'Chapter 5: Thermal Expansion (Thermal Expansion of Solids, Liquids & Gases, Linear Expansivity α, Bimetallic Strip, Anomalous Expansion of Water & Gas Laws)',
+      'Chapter 6: Transfer of Thermal Energy (Conduction, Convection, Radiation & Thermos Flask)',
+      'Chapter 7: Measurement of Thermal Energy (Heat Capacity C = mc, Specific Heat Capacity Q = mcΔθ, Change of State & Specific Latent Heat Q = mL)',
+      'Chapter 8: Vapour and Humidity (Evaporation, Saturated Vapour Pressure, Dew Point, Relative Humidity & Wet-and-Dry Bulb Hygrometer)',
+      'Chapter 9: Thermal Current Electricity (Electromotive Force E, Internal Resistance r, E = I(R + r), Heating Effect of Electric Current, Electrical Power & Domestic Wiring)',
     ],
     'Form 4': [
-      '1.0 Waves & Sound Waves, Electromagnetic Spectrum',
-      '2.0 Electromagnetism (Induction, Transformers)',
-      '3.0 Radioactivity (Alpha, Beta, Gamma, Half-Life)',
-      '4.0 Thermionic Emission & Electronics (Semiconductors, Diodes, Transistors)',
-      '5.0 Elementary Astronomy & Geophysics',
+      'Chapter 1: Waves (Wave Parameters v = fλ, Reflection, Refraction, Diffraction, Interference, Sound Waves, Musical Sounds, Resonance & Electromagnetic Spectrum)',
+      'Chapter 2: Electromagnetism (Magnetic Field Around Conductors, Force on Current-Carrying Conductor, Faraday & Lenz Laws of Electromagnetic Induction, Generators & Transformers)',
+      'Chapter 3: Radioactivity (Structure of the Nucleus, Isotopes, Alpha, Beta & Gamma Radiation, Nuclear Equations, Half-Life Calculations, Nuclear Fission & Fusion)',
+      'Chapter 4: Thermionic Emission (Cathode Rays, Cathode-Ray Tube, X-Rays: Production, Properties & Uses)',
+      'Chapter 5: Electronics (Insulators, Conductors, Intrinsic & Extrinsic Semiconductors, p-n Junction Diode, Half/Full-Wave Rectification, Transistors & Single-Stage Amplifiers)',
+      'Chapter 6: Elementary Astronomy (Introduction to Astronomy, Constellations, The Solar System, Gravitational Force & Tides)',
+      'Chapter 7: Geophysics (Structure & Composition of the Earth, Earthquakes, Volcanoes, Structure of the Atmosphere & Greenhouse Effect)',
+    ],
+  },
+  'Chemistry': {
+    'Form 1': [
+      'Chapter 1: Introduction to Chemistry (Concept of Chemistry & Its Importance in Daily Life, Agriculture, Medicine and Industry)',
+      'Chapter 2: Laboratory Techniques and Safety (Rules and Safety Precautions, First Aid Kit, Basic Chemistry Apparatus & Warning Signs)',
+      'Chapter 3: Heat Sources and Flames (Bunsen Burner Parts, Luminous vs Non-Luminous Flames & Uses of Flames)',
+      'Chapter 4: The Scientific Procedure (Steps of Scientific Investigation: Problem Identification, Hypothesis, Experimentation, Data Interpretation & Conclusion)',
+      'Chapter 5: Matter (Concept of Matter, States of Matter, Particulate Nature, Physical and Chemical Changes)',
+      'Chapter 6: Elements, Compounds and Mixtures (Chemical Symbols, Elements vs Compounds, Solutions, Suspensions, Emulsions & Methods of Separating Mixtures)',
+      'Chapter 7: Air, Combustion, Rusting and Firefighting (Composition of Air, Combustion, Conditions & Prevention of Rusting, Classes of Fire & Fire Extinguishers)',
+    ],
+    'Form 2': [
+      'Chapter 1: Oxygen (Laboratory Preparation of Oxygen using Hydrogen Peroxide & Potassium Chlorate, Physical/Chemical Properties & Uses)',
+      'Chapter 2: Hydrogen (Laboratory Preparation of Hydrogen from Zinc & Dilute HCl, Properties, Industrial Manufacture & Uses)',
+      'Chapter 3: Water (Occurrence, Properties, Water Cycle, Water Treatment & Purification, Importance of Water)',
+      'Chapter 4: Fuels and Energy (Categories of Fuels, Destructive Distillation of Coal/Wood, Biogas, Calorific Value & Conservation of Energy)',
+      'Chapter 5: Atomic Structure (Sub-Atomic Particles, Atomic Number Z, Mass Number A, Isotopes, Relative Atomic Mass & Electronic Configuration)',
+      'Chapter 6: Periodic Classification (Development of the Periodic Table, Periods & Groups, Periodic Trends in Electronegativity, Atomic Radius & Metallic Character)',
+      'Chapter 7: Formula, Bonding and Nomenclature (Valency, Electrovalent/Ionic Bonding, Covalent Bonding, Oxidation States, Radicals, Empirical/Molecular Formulae & IUPAC Nomenclature)',
+    ],
+    'Form 3': [
+      'Chapter 1: Chemical Equations (Balancing Molecular Equations, State Symbols, Total & Net Ionic Equations)',
+      'Chapter 2: Hardness of Water (Temporary & Permanent Hardness, Causes, Removal by Boiling, Washing Soda, Ion Exchange & Advantages/Disadvantages)',
+      'Chapter 3: Acids, Bases and Salts (Natural & Synthetic Indicators, pH Scale, Neutralisation, Preparation, Properties, Solubility & Thermal Decomposition of Salts)',
+      'Chapter 4: The Mole Concept and Related Calculations (Avogadro Constant, Molar Mass, Molar Gas Volume at STP 22.4 dm³ & Stoichiometric Reacting Masses)',
+      'Chapter 5: Volumetric Analysis (Standard Solutions, Acid-Base Titration Apparatus, Choice of Indicators, Molarity M = conc/Mr & Percentage Purity/Water of Crystallisation)',
+      'Chapter 6: Ionic Theory and Electrolysis (Electrolytes vs Non-Electrolytes, Preferential Discharge of Ions, Faraday First & Second Laws of Electrolysis & Industrial Applications)',
+      'Chapter 7: Chemical Kinetics, Equilibrium and Energetics (Rate of Chemical Reactions, Factors Affecting Rate, Reversible Reactions, Le Chatelier Principle, Endothermic & Exothermic Reactions)',
+      'Chapter 8: Extraction and Compounds of Metals (Extraction of Sodium, Aluminium, Iron & Copper; Oxides, Hydroxides, Carbonates, Nitrates, Chlorides & Sulphates of Metals)',
+    ],
+    'Form 4': [
+      'Chapter 1: Non-Metals and Their Compounds (Chlorine, Hydrogen Chloride, Sulphur, Sulphur Dioxide, Contact Process for Sulphuric Acid, Nitrogen, Ammonia by Haber Process & Carbon)',
+      'Chapter 2: Introduction to Organic Chemistry (Homologous Series, Isomerism, Alkanes, Alkenes, Alkynes, Alcohols/Alkanols, Carboxylic Acids/Alkanoic Acids, Esterification & Soap/Polymers)',
+      'Chapter 3: Soil Chemistry (Soil Formation, Soil Reaction/pH, Liming, Plant Nutrients Macro/Micro, Manures, Straight & Compound Fertilisers)',
+      'Chapter 4: Pollution (Terrestrial, Aquatic and Aerial Pollution, Acid Rain, Ozone Layer Depletion, Global Warming & Environmental Conservation)',
+      'Chapter 5: Qualitative Analysis (Preliminary Tests, Flame Tests, Action of Heat, Action of Dilute/Concentrated Acids & Confirmatory Tests for Cations and Anions)',
+    ],
+  },
+  'Biology': {
+    'Form 1': [
+      'Chapter 1: Introduction to Biology (Basic Concepts, Branches of Biology, Scientific Processes & Importance of Studying Biology)',
+      'Chapter 2: Safety in Our Environment (First Aid, First Aid Kit, Common Accidents at Home and School, Waste & Waste Disposal)',
+      'Chapter 3: Health and Immunity (Concept of Health and Immunity, Types of Immunity, Factors Affecting Body Immunity, Personal Hygiene & Good Manners, Infections and Diseases)',
+      'Chapter 4: Cell Structure and Organisation (The Microscope, Plant and Animal Cell Structures, Functions of Organelles, Cell Differentiation & Specialised Cells)',
+      'Chapter 5: Classification of Living Things (Concept of Classification, Artificial vs Natural Systems, Taxonomic Ranks & Binomial Nomenclature)',
+      'Chapter 6: Viruses, Kingdom Monera and Kingdom Protoctista (Characteristics, Structure, Reproduction & Economic Importance of Viruses, Bacteria, Amoeba, Paramecium, Euglena & Plasmodium)',
+    ],
+    'Form 2': [
+      'Chapter 1: Kingdom Fungi and Kingdom Plantae (Fungi: Mushroom, Yeast, Bread Mould; Plantae: Division Bryophyta & Division Filicinophyta)',
+      'Chapter 2: Nutrition (Concept of Nutrition, Food Nutrients, Biochemical Food Tests, Balanced Diet, Nutritional Deficiencies, Digestive System in Humans & Photosynthesis in Plants)',
+      'Chapter 3: Food Processing, Preservation and Storage (Importance and Traditional vs Modern Methods of Food Preservation and Storage)',
+      'Chapter 4: Balance of Nature (Natural Environment, Biotic & Abiotic Factors, Interaction of Organisms, Food Chains & Food Webs)',
+      'Chapter 5: Transport of Materials in Living Things (Diffusion, Osmosis & Mass Flow; Mammalian Heart, Blood Vessels, Blood Components, Blood Groups; Xylem, Phloem & Transpiration)',
+      'Chapter 6: Gaseous Exchange and Respiration (Gaseous Exchange in Mammals, Fish, Amphibians, Insects & Plants; Aerobic and Anaerobic Respiration)',
+    ],
+    'Form 3': [
+      'Chapter 1: Classification of Living Things (Kingdom Plantae: Division Coniferophyta & Division Angiospermophyta — Monocotyledonae vs Dicotyledonae)',
+      'Chapter 2: Movement (Concept of Movement and Locomotion, Human Skeletal System, Joints, Antagonistic Muscles & Movement in Plants/Tropisms)',
+      'Chapter 3: Coordination (Nervous Coordination in Humans, Central & Peripheral Nervous System, Reflex Arc, Sense Organs [Eye, Ear, Skin, Nose, Tongue], Hormonal/Endocrine System & Plant Tropisms)',
+      'Chapter 4: Excretion (Concept of Excretion, Excretory Products, Mammalian Urinary System, Structure of the Nephron, Urine Formation & Excretion in Plants)',
+      'Chapter 5: Regulation (Concept of Regulation/Homeostasis, Temperature Regulation in Endotherms & Ectotherms, Osmoregulation & Blood Sugar Regulation by Insulin and Glucagon)',
+      'Chapter 6: Reproduction (Mitosis and Meiosis, Asexual vs Sexual Reproduction, Reproduction in Flowering Plants, Pollination, Fertilisation, Human Reproductive System, Pregnancy & Family Planning)',
+    ],
+    'Form 4': [
+      'Chapter 1: Growth (Concept of Growth, Mitosis and Growth, Growth Curves, Seed Dormancy, Viability & Epigeal vs Hypogeal Germination)',
+      'Chapter 2: Genetics (Hereditary Material DNA & RNA, Concept of Genetics, Mendel First Law, Monohybrid Inheritance, Incomplete/Co-dominance, Sex Determination, Sex-Linked Traits & Variation/Mutation)',
+      'Chapter 3: Classification of Living Things (Kingdom Animalia: Phylum Platyhelminthes, Aschelminthes/Nematoda, Annelida, Arthropoda & Chordata)',
+      'Chapter 4: Evolution (Concept of Organic Evolution, Origin of Life, Lamarckism, Darwinism/Natural Selection, Evidence of Evolution: Fossils, Comparative Anatomy, Embryology)',
+      'Chapter 5: HIV/AIDS and STIs (Relationship Between HIV, AIDS and STIs, Management and Control of HIV/AIDS and STIs, Counselling and Voluntary Testing)',
+    ],
+  },
+  'Historia ya Tanzania na Maadili': {
+    'Form 1': [
+      'Sura ya Kwanza: Dhana ya Historia ya Tanzania na Maadili (Maana ya Historia ya Tanzania, Dhana ya Maadili, Umuhimu wa Somo na Uhusiano na Masomo Mengine)',
+      'Sura ya Pili: Chimbuko la Jamii za Kitanzania na Maadili Yake (Asili ya Jamii za Kitanzania: Wakushiti, Wabantu, Waniloti na Wakhoisani; Maadili na Mila za Asili)',
+      'Sura ya Tatu: Mifumo ya Maisha, Uchumi na Utawala katika Jamii za Awali za Tanzania (Kilimo, Ufugaji, Uhunzi wa Chuma, Biashara ya Masafa Marefu na Mifumo ya Kiutawala)',
+      'Sura ya Nne: Urithi wa Kitanzania na Utambulisho wa Taifa (Urithi wa Kiutamaduni na Kihistoria, Lugha ya Kiswahili, Tunu za Taifa: Utu, Uzalendo, Umoja na Amani)',
+      'Sura ya Tano: Maadili na Uadilifu katika Jamii ya Tanzania (Misingi ya Maadili katika Familia, Shule na Jamii; Kupinga Rushwa na Mmomonyoko wa Maadili)',
+      'Sura ya Sita: Haki na Wajibu wa Raia katika Kulinda Maadili na Tunu za Taifa (Katiba, Haki za Binadamu, Wajibu wa Mwanafunzi na Raia Mwema)',
+    ],
+    'Form 2': [
+      'Sura ya Kwanza: Mwingiliano wa Jamii za Kitanzania na Wageni Kabla ya Ukoloni (Wafanyabiashara wa Kiarabu, Kiajemi na Kireno; Athari za Kiuchumi, Kijamii na Kimaadili)',
+      'Sura ya Pili: Uvamizi wa Kikoloni na Mapambano ya Wananchi wa Tanzania (Ugawaji wa Afrika Mashariki, Utawala wa Kijerumani na Kiingereza; Mapambano ya Mkwawa, Abushiri, Mirambo, Kinjekitile na Vita vya Majimaji 1905–1907)',
+      'Sura ya Tatu: Mabadiliko ya Kiuchumi, Kijamii na Kimaadili Wakati wa Ukoloni (Uchumi wa Kikoloni, Kilimo cha Mazao ya Biashara, Elimu ya Kikoloni na Athari Zake kwa Maadili ya Kitanzania)',
+      'Sura ya Nne: Harakati za Kudai Uhuru Tanganyika na Zanzibar (Vyama vya Wafanyakazi na Wakulima, TAA, TANU na Mwalimu Julius K. Nyerere; ASP na Sheikh Abeid Amani Karume; Uhuru wa Tanganyika 1961)',
+      'Sura ya Tano: Mapinduzi Matukufu ya Zanzibar (1964) na Muungano wa Tanganyika na Zanzibar (Sababu za Mapinduzi ya Januari 12, 1964; Muungano wa Aprili 26, 1964 na Umuhimu Wake)',
+      'Sura ya Sita: Ujenzi wa Taifa, Azimio la Arusha (1967) na Maadili ya Uongozi (Siasa ya Ujamaa na Kujitegemea, Vijiji vya Ujamaa, Miiko ya Uongozi na Maadili ya Taifa)',
+    ],
+    'Form 3': [
+      'Sura ya Kwanza: Maendeleo ya Kisiasa, Kiuchumi na Kijamii Tanzania Baada ya Azimio la Arusha',
+      'Sura ya Pili: Mageuzi ya Kiuchumi na Kisiasa Tanzania (Mfumo wa Vyama Vingi 1992, Uchumi wa Soko na Uwekezaji)',
+      'Sura ya Tatu: Maadili ya Uongozi, Utawala Bora na Uwajibikaji wa Umma nchini Tanzania',
+      'Sura ya Nne: Kulinda Rasilimali za Taifa, Mazingira na Maadili ya Kazi',
+    ],
+    'Form 4': [
+      'Sura ya Kwanza: Mchango wa Tanzania katika Ukombozi wa Bara la Afrika (Kamati ya Ukombozi ya OAU, Mwalimu Nyerere na Nchi za Mstari wa Mbele)',
+      'Sura ya Pili: Tanzania katika Jumuiya za Kikanda na Kimataifa (EAC, SADC, AU, UN na Diplomasia ya Uchumi)',
+      'Sura ya Tatu: Utandawazi, Sayansi na Teknolojia na Mustakabali wa Maadili ya Kitanzania',
+      'Sura ya Nne: Tathmini ya Urithi wa Taifa, Uzalendo na Dira ya Maendeleo ya Tanzania',
+    ],
+  },
+  'Business Studies': {
+    'Form 1': [
+      'Chapter 1: Concept and Scope of Business Studies (Meaning, Components of Business Studies, Importance & Relationship with Other Disciplines)',
+      'Chapter 2: Production, Distribution and Consumption (Concept of Human Wants, Goods & Services, Factors of Production: Land, Labour, Capital, Entrepreneurship)',
+      'Chapter 3: Entrepreneurship and Business Opportunities (Concept of Entrepreneurship, Qualities of an Entrepreneur, Identifying Viable Business Opportunities in Tanzania)',
+      'Chapter 4: Sole Proprietorship and Business Formation (Features, Formation, Sources of Capital, Advantages & Challenges of Sole Proprietorship)',
+      'Chapter 5: Business Environment and Business Ethics (Internal & External Business Environment, Ethical Practices, Fair Competition & Corporate Social Responsibility)',
+      'Chapter 6: Consumer Protection and Basic Financial Literacy (Rights & Responsibilities of Consumers, TBS, FCC, Personal Budgeting & Saving Culture)',
+    ],
+    'Form 2': [
+      'Chapter 1: Forms of Business Units (Partnerships, Co-operative Societies/SACCOS, Private & Public Limited Liability Companies, Public Corporations)',
+      'Chapter 2: Domestic Trade (Retail Trade: Small-Scale vs Large-Scale Retailers; Wholesale Trade & Documents Used in Home Trade)',
+      'Chapter 3: Warehousing and Stock Control (Types of Warehouses, Functions of Warehousing & Basic Inventory Management)',
+      'Chapter 4: Transport and Communication in Business (Modes of Transport in Tanzania: Road, SGR Railway, Water, Air, Pipeline & Digital Business Communication)',
+      'Chapter 5: Money, Banking and Mobile Financial Services (Evolution of Money, Central Bank BoT, Commercial Banks & Mobile Money Services)',
+      'Chapter 6: Insurance and Business Risk Management (Principles of Insurance: Indemnity, Utmost Good Faith, Insurable Interest, Subrogation & Types of Policies)',
+    ],
+    'Form 3': [
+      'Chapter 1: Marketing and Market Research (Marketing Mix 4Ps: Product, Price, Place, Promotion, Digital Marketing & Customer Care)',
+      'Chapter 2: Fundamentals of Financial Accounting (Double Entry System, Source Documents, Books of Prime Entry, Ledger & Trial Balance)',
+      'Chapter 3: Financial Statements of a Sole Trader (Income Statement / Trading, Profit & Loss Account and Statement of Financial Position / Balance Sheet)',
+      'Chapter 4: Taxation and Business Compliance in Tanzania (TRA, Direct & Indirect Taxes, VAT, PAYE, TIN, EFD Receipts & Business Licensing/BRELA)',
+    ],
+    'Form 4': [
+      'Chapter 1: Business Planning and Project Management (Writing a Comprehensive Business Plan, Executive Summary, Financial Projections & Cash Flow)',
+      'Chapter 2: International Trade and Regional Economic Integration (Import/Export Procedures, Balance of Trade/Payments, EAC, SADC & AfCFTA)',
+      'Chapter 3: Human Resource and Operations Management (Recruitment, Motivation, Leadership & Quality Control)',
+      'Chapter 4: Financial Markets and Investment in Tanzania (Dar es Salaam Stock Exchange DSE, Shares, Bonds, Collective Investment Schemes/UTT AMIS)',
+    ],
+  },
+  'Computer Science': {
+    'Form 1': [
+      'Chapter 1: Introduction to Information and Computer Studies / Computer Science (Concept of ICS/Computer Science & Relationship with Other Subjects)',
+      'Chapter 2: Data and Information (Concept of Data and Information, Information Dissemination, Modern Ways of Disseminating Information & Communication Media)',
+      'Chapter 3: Computer Evolution (Early Computer Development: Abacus, Napier Bones, Pascaline, Analytical Engine & Computer Generations 1st to 5th)',
+      'Chapter 4: Computer Hardware and Software (Input Devices, CPU/Processor, Primary & Secondary Memory, Output Devices; System Software/Operating Systems & Application Software)',
+      'Chapter 5: Classification and Significance of Computers (Classification by Size, Purpose & Data Handled; Significance of Computers in Education, Health, Banking & Industry)',
+      'Chapter 6: Computer Handling (Concept of Computer Handling, Power Management/UPS, Utility Programs, Data Backup & Computer Security)',
+    ],
+    'Form 2': [
+      'Chapter 1: Word Processing (Concept of Word Processing, Creating, Editing, Formatting, Tables, Mail Merge & Printing Documents)',
+      'Chapter 2: Spreadsheet (Concept of Electronic Spreadsheets, Cell Referencing, Built-in Formulas SUM, AVERAGE, IF, RANK & Creating Charts)',
+      'Chapter 3: Computer Networks and Communications (Concept of Networking, LAN, MAN, WAN, Network Topologies: Star, Bus, Ring, Mesh & Network Devices)',
+      'Chapter 4: The Internet (Concept of the Internet, World Wide Web, Web Browsers, Search Engines, Electronic Mail & Online Safety)',
+      'Chapter 5: Computer Security, Privacy and Ethics (Malware, Antivirus, Firewalls, Cybercrime Laws in Tanzania & Digital Ethics)',
+    ],
+    'Form 3': [
+      'Chapter 1: Problem Solving and Algorithms (Problem Definition, Pseudocode, Flowcharts & Control Structures: Sequence, Selection, Iteration)',
+      'Chapter 2: Programming Fundamentals (Data Types, Variables, Operators, Conditional Statements, Loops, Functions & Arrays in Python/C/JavaScript)',
+      'Chapter 3: Database Management Systems (Relational Databases, Tables, Primary & Foreign Keys, Queries/SQL, Forms & Reports)',
+      'Chapter 4: Website Design and Development (HTML Structure, Tags, Lists, Tables, Forms, Hyperlinks & CSS Styling)',
+    ],
+    'Form 4': [
+      'Chapter 1: Data Representation and Logic Gates (Binary, Octal, Hexadecimal Conversions, Binary Arithmetic & Logic Gates AND, OR, NOT, NAND, NOR, XOR)',
+      'Chapter 2: System Analysis and Design (System Development Life Cycle SDLC: Investigation, Analysis, Design, Implementation, Testing & Maintenance)',
+      'Chapter 3: Multimedia and Desktop Publishing (DTP Concepts, Graphic Design, Audio/Video Processing & Publication Layout)',
+      'Chapter 4: Emerging Technologies and Impact of ICT on Society (Artificial Intelligence, Cloud Computing, IoT, E-Commerce & E-Government in Tanzania)',
     ],
   },
   'Geography': {
-    'Form 1': ['1.0 Concept of Geography & The Solar System', '2.0 Major Features of the Earth Surface', '3.0 Weather and Climate', '4.0 Map Work'],
-    'Form 2': ['1.0 Human Activities', '2.0 Agriculture, Water Management & Forest Resources', '3.0 Mining, Tourism, Manufacturing & Sustainable Energy', '4.0 Transport'],
-    'Form 3': ['1.0 Structure of the Earth & Forces Affecting the Earth', '2.0 Soil', '3.0 Elementary Survey & Map Reading', '4.0 Photograph Reading & Application of Statistics'],
-    'Form 4': ['1.0 Introduction to Research', '2.0 Climate and Natural Regions', '3.0 Human Population & Settlements', '4.0 Environmental Issues and Management'],
+    'Form 1': [
+      'Chapter 1: Concept of Geography (Meaning, Branches: Physical, Human & Practical Geography, and Importance of Studying Geography)',
+      'Chapter 2: The Solar System (Sun, Planets, Satellites, Asteroids, Comets, Earth Shape, Rotation & Revolution, Eclipses, Latitudes, Longitudes & Time Calculation)',
+      'Chapter 3: Major Features of the Earth Surface (Continents, Relief Features: Mountains, Plateaus, Plains, Rift Valleys; Oceans, Seas, Lakes & River Basins)',
+      'Chapter 4: Weather and Climate (Meaning of Weather vs Climate, Elements of Weather, Weather Station, Stevenson Screen, Instruments, Weather Forecasting & Major Climatic Regions)',
+      'Chapter 5: Map Work (Concept & Components of a Map, Types of Maps, Map Scale, Measuring Distances & Areas, Compass Bearing, Direction & Grid References)',
+    ],
+    'Form 2': [
+      'Chapter 1: Human Activities (Concept and Major Types of Human Activities: Primary, Secondary, Tertiary, Quaternary & Quinary)',
+      'Chapter 2: Agriculture (Small-Scale Subsistence vs Large-Scale Commercial/Plantation Farming, Major Cash Crops in Tanzania & Livestock Keeping)',
+      'Chapter 3: Water Management for Economic Development (Uses of Water, River Basin Development Projects: Rufiji/JNHPP, Tennessee Valley Authority, Water Conservation)',
+      'Chapter 4: Sustainable Use of Forest Resources (Types of Forests, Importance of Forests, Deforestation & Forest Conservation in Tanzania)',
+      'Chapter 5: Sustainable Mining (Types of Minerals, Methods of Mining: Open Cast, Underground, Alluvial; Contribution & Environmental Impact of Mining in Tanzania)',
+      'Chapter 6: Tourism (Concept, Domestic & International Tourism, Tourist Attractions in Tanzania: Serengeti, Ngorongoro, Kilimanjaro, Zanzibar & Sustainable Eco-Tourism)',
+      'Chapter 7: Manufacturing Industry (Types of Industries, Factors for Location of Industries, Focal Studies & Challenges of Industrialisation in Tanzania)',
+      'Chapter 8: Sustainable Use of Power and Energy Resources (Renewable & Non-Renewable Energy: Hydroelectric, Natural Gas, Solar, Wind, Geothermal, Coal & Biogas)',
+      'Chapter 9: Transport (Land, Railway, Water, Air & Pipeline Transport in East Africa, Importance & Challenges)',
+    ],
+    'Form 3': [
+      'Chapter 1: Structure of the Earth (Concentric Zones: Crust/Lithosphere, Mantle/Mesosphere, Core/Barysphere; Igneous, Sedimentary & Metamorphic Rocks and Rock Cycle)',
+      'Chapter 2: Forces That Affect the Earth (Internal Forces: Earth Movements, Folding, Faulting, Vulcanicity, Earthquakes; External Forces: Weathering, Mass Wasting, River, Wind, Glacial & Wave Action)',
+      'Chapter 3: Soil (Soil Formation, Factors, Soil Profile, Soil Properties: Texture, Structure, Porosity, pH, Soil Erosion & Soil Conservation)',
+      'Chapter 4: Elementary Survey and Map Making (Chain/Tape Surveying, Prismatic Compass Survey, Plane Table Survey & Levelling, Booking & Plotting)',
+      'Chapter 5: Map Reading and Map Interpretation (Topographical Maps, Contours, Cross-Section/Relief Profile, Intervisibility, Gradient, Drainage Patterns & Human Settlements)',
+      'Chapter 6: Photograph Reading and Interpretation (Ground, Oblique & Vertical Aerial Photographs; Foreground, Middleground, Background; Estimating Scale, Time & Economic Activities)',
+      'Chapter 7: Application of Simple Statistics (Types of Statistical Data, Line, Bar, Compound, Divergent Graphs, Pie Charts & Measures of Central Tendency)',
+    ],
+    'Form 4': [
+      'Chapter 1: Introduction to Research (Concept, Types of Research, Stages of Research Work, Sampling Techniques, Data Collection Tools: Questionnaire, Interview, Observation)',
+      'Chapter 2: Climate and Natural Regions (World Climatic Regions: Equatorial, Tropical Savannah, Hot Desert, Mediterranean, Tundra & Climate Change)',
+      'Chapter 3: Human Population and Settlement (Population Distribution, Density, Census, Birth/Death/Fertility Rates, Migration, Population Pyramids & Rural/Urban Settlements)',
+      'Chapter 4: Environmental Issues and Management (Biodiversity Loss, Deforestation, Desertification, Pollution, Waste Management & Environmental Conservation Laws in Tanzania)',
+    ],
   },
   'History': {
-    'Form 1': ['1.0 Sources and Importance of History', '2.0 Evolution of Man, Technology and Environment', '3.0 Development of Economic Activities and Their Impact', '4.0 Development of Social and Political Systems'],
-    'Form 2': ['1.0 Interactions Among the People of Africa', '2.0 Socio-Economic Development and Production in Pre-Colonial Africa', '3.0 Africa and the External World', '4.0 Industrial Capitalism'],
-    'Form 3': ['1.0 Establishment of Colonialism', '2.0 Colonial Administrative Systems', '3.0 Colonial Economy', '4.0 Colonial Social Services'],
-    'Form 4': ['1.0 Crises in the Capitalist System', '2.0 Nationalism and Decolonisation', '3.0 Changes in Political, Social and Economic Policies in Africa After Independence', '4.0 Africa in International Affairs'],
+    'Form 1': [
+      'Chapter 1: Sources and Importance of History (Meaning of History, Importance & Sources: Oral Traditions, Historical Sites, Archaeology, Archives, Museums, Written Records, Anthropology & Linguistics)',
+      'Chapter 2: Evolution of Man, Technology and Environment (Theories of Origin of Man: Creation vs Evolution, Stages of Human Evolution, Early, Middle & Late Stone Age and Iron Age)',
+      'Chapter 3: Development of Economic Activities and Their Impact (Agriculture, Handcraft & Mining Industries [Iron, Salt, Gold, Copper], Local & Regional Long-Distance Trade in Pre-Colonial Africa)',
+      'Chapter 4: Development of Social and Political Systems (Kinship/Clan Organisation, Age-Set System, Ntemiship, Centralised vs Decentralised States in Pre-Colonial Africa)',
+    ],
+    'Form 2': [
+      'Chapter 1: Interactions Among the People of Africa (Social and Economic Factors for Interactions, Ngoni Migration: Causes & Effects)',
+      'Chapter 2: Socio-Economic Development and Production in Pre-Colonial Africa (Modes of Production: Communalism, Slavery and Feudalism — Nyarubanja, Ubugabire, Umwinyi)',
+      'Chapter 3: Africa and the External World (Early Contacts with Middle East & Far East, Portuguese Rule in East Africa, Dutch Settlement at the Cape, Slave Trade & Trans-Atlantic Slave Trade)',
+      'Chapter 4: Industrial Capitalism (Transition from Mercantile to Industrial Capitalism, Demands of Industrial Capitalism, Agents of Industrial Capitalism: Explorers, Missionaries, Traders & Abolition of Slave Trade)',
+    ],
+    'Form 3': [
+      'Chapter 1: Establishment of Colonialism (Scramble for and Partition of Africa, Berlin Conference 1884–1885, Imposition of Colonial Rule & African Reactions: Active/Passive Resistance, Majimaji, Samori Toure, Menelik II)',
+      'Chapter 2: Colonial Administrative Systems (Direct Rule, Indirect Rule, Assimilation & Association Policies; Colonial Military and Legal Institutions)',
+      'Chapter 3: Colonial Economy (Characteristics of Colonial Economy, Peasant, Plantation & Settler Agriculture, Colonial Mining, Trade, Transport/Railways & Migrant Labour)',
+      'Chapter 4: Colonial Social Services (Colonial Education, Health, Water & Housing Services: Distribution, Objectives & Impact on Africa)',
+    ],
+    'Form 4': [
+      'Chapter 1: Crises in the Capitalist System (First World War 1914–1918, Great Economic Depression 1929–1933, Second World War 1939–1945 & Their Impact on Africa)',
+      'Chapter 2: Nationalism and Decolonisation (Rise of Mass Nationalism, Political Parties, Constitutional/Peaceful Struggle in Tanganyika, Ghana, Uganda; Armed Liberation in Mozambique, Angola, Zimbabwe & South Africa)',
+      'Chapter 3: Changes in Political, Social and Economic Policies in Africa After Independence (Ideological Changes, Single-Party vs Multi-Party, Economic Development Strategies, Neo-Colonialism, Military Coups & Structural Adjustment Programmes)',
+      'Chapter 4: Africa in International Affairs (Continental Cooperation: OAU/AU; Regional Integration: EAC, SADC, ECOWAS; Africa and the United Nations UN)',
+    ],
   },
   'Civics': {
-    'Form 1': ['1.0 Our Nation', '2.0 Promotion of Life Skills', '3.0 Human Rights & Responsible Citizenship', '4.0 Work, Family Life, Road Safety Education'],
-    'Form 2': ['1.0 Government of Tanzania', '2.0 Democracy', '3.0 Gender'],
-    'Form 3': ['1.0 Economic and Social Development', '2.0 Poverty Eradication in Tanzania'],
-    'Form 4': ['1.0 Culture', '2.0 Globalization'],
+    'Form 1': [
+      'Chapter 1: Our Nation (Components of Our Nation, National Symbols: Flag, Coat of Arms, Anthem, Uhuru Torch, Currency, Constitution & National Festivals)',
+      'Chapter 2: Promotion of Life Skills (Meaning & Types of Life Skills: Self-Awareness, Assertiveness, Empathy, Problem-Solving, Critical Thinking, Effective Communication & Leadership)',
+      'Chapter 3: Human Rights (Concept, Categories of Human Rights, Universal Declaration of Human Rights, Abuse of Human Rights & Role of CHRAGG)',
+      'Chapter 4: Responsible Citizenship (Concept of Citizen and Citizenship, Types of Citizenship in Tanzania, Privileges, Responsibilities & Special Groups)',
+      'Chapter 5: Work (Concept & Importance of Work for Self and National Development)',
+      'Chapter 6: Family Life, Proper Behaviour and Road Safety Education (Courtship, Marriage, Family Stability, Responsible Decision Making, Road Signs, Causes & Prevention of Road Accidents)',
+    ],
+    'Form 2': [
+      'Chapter 1: Government of Tanzania (Concept & Types of Government, Constitution of the United Republic of Tanzania, Three Pillars: Executive, Legislature/Bunge, Judiciary; Union vs Non-Union Matters & Local Government)',
+      'Chapter 2: Democracy (Concept, Direct vs Indirect/Representative Democracy, Principles of Democracy, Multi-Party System & Democratic Elections in Tanzania/INEC)',
+      'Chapter 3: Gender (Gender Concepts: Sex vs Gender, Gender Roles, Stereotypes, Discrimination, Negative Socio-Cultural Practices & Women Empowerment)',
+    ],
+    'Form 3': [
+      'Chapter 1: Economic and Social Development (Concept & Indicators of Economic Development, Factors for Economic Development, Role of Financial Institutions: BoT, Commercial Banks, SACCOS, NSSF, NHIF)',
+      'Chapter 2: Poverty (Concept, Levels, Types, Causes and Effects of Poverty in Tanzania & Strategies for Poverty Alleviation: MKUKUTA, TASAF)',
+    ],
+    'Form 4': [
+      'Chapter 1: Culture (Concept, Characteristics, Elements & Importance of Culture, Positive vs Negative Cultural Values, Reproductive Health & Preservation of National Cultural Heritage)',
+      'Chapter 2: Globalisation (Concept, Driving Forces, Aspects of Globalisation: Free Market, Structural Adjustment, Privatisation, Regional Integration & Opportunities/Challenges for Tanzania)',
+    ],
+  },
+  'Book-Keeping': {
+    'Form 1': [
+      'Chapter 1: Introduction to Book-Keeping (Concept, Objectives, Importance, Users of Accounting Information & Accounting Equation Assets = Capital + Liabilities)',
+      'Chapter 2: Principles of Double Entry System (Concept of Business Transaction, Debit & Credit Rules for Personal, Real & Nominal Accounts)',
+      'Chapter 3: Source Documents and Books of Prime Entry (Invoices, Credit/Debit Notes, Receipts; Sales Day Book, Purchases Day Book, Returns Inwards/Outwards Journals & General Journal)',
+      'Chapter 4: Ledger Accounts (Posting from Books of Prime Entry to Sales, Purchases & General Ledgers and Balancing Off Accounts)',
+      'Chapter 5: Trial Balance (Purpose, Preparation of a Trial Balance & Errors Not Affecting the Trial Balance)',
+      'Chapter 6: Elementary Financial Statements (Income Statement / Trading and Profit & Loss Account and Statement of Financial Position / Balance Sheet)',
+    ],
+    'Form 2': [
+      'Chapter 1: Books of Prime Entry — Cash Books (Two-Column Cash Book, Three-Column Cash Book with Cash/Trade Discounts & Petty Cash Book with Imprest System)',
+      'Chapter 2: Bank Reconciliation Statement (Reasons for Discrepancies Between Cash Book and Bank Statement, Unpresented Cheques, Uncredited Deposits, Updating Cash Book & Preparing Bank Reconciliation Statement)',
+      'Chapter 3: Government Accounting and Budgeting (Sources of Government Revenue, Capital vs Recurrent Expenditure, Consolidated Fund, Accounting Officers, CAG & Government Budget)',
+      'Chapter 4: Correction of Errors and Suspense Account (Errors Disclosed vs Not Disclosed by Trial Balance, Journal Entries for Correction & Suspense Account)',
+    ],
+    'Form 3': [
+      'Chapter 1: Adjustments in Final Accounts (Accrued & Prepaid Expenses/Incomes, Bad Debts & Provision for Doubtful Debts, Depreciation: Straight-Line, Reducing Balance & Revaluation)',
+      'Chapter 2: Control Accounts (Sales Ledger Control Account / Total Debtors & Purchases Ledger Control Account / Total Creditors)',
+      'Chapter 3: Accounting for Single Entry and Incomplete Records (Statement of Affairs, Deriving Missing Sales/Purchases Figures & Final Accounts)',
+      'Chapter 4: Accounts of Non-Profit Making Organisations (Receipts and Payments Account, Subscriptions Account, Income and Expenditure Account & Accumulated Fund)',
+      'Chapter 5: Manufacturing Accounts (Prime Cost, Factory Overheads, Work-in-Progress & Cost of Production)',
+    ],
+    'Form 4': [
+      'Chapter 1: Partnership Accounts (Partnership Deed, Profit & Loss Appropriation Account, Interest on Capital/Drawings, Admission, Goodwill & Dissolution)',
+      'Chapter 2: Consignment and Joint Venture Accounts (Consignor, Consignee, Account Sales, Del Credere Commission & Valuation of Unsold Stock)',
+      'Chapter 3: Departmental and Branch Accounts (Apportionment of Expenses, Departmental Income Statement & Branch Stock/Debtors Accounts)',
+      'Chapter 4: Elements of Auditing (Concept, Objectives of Auditing, Internal vs External Audit, Audit Evidence & Auditor Report)',
+    ],
+  },
+  'Commerce': {
+    'Form 1': [
+      'Chapter 1: The Scope of Commerce (Concept of Commerce, Branches of Commerce: Trade and Aids to Trade & Importance of Commerce)',
+      'Chapter 2: Production (Concept, Stages of Production: Primary, Secondary, Tertiary; Factors of Production, Specialisation & Division of Labour)',
+      'Chapter 3: Entrepreneurship (Meaning, Characteristics of Entrepreneurs, Innovation, Business Plan & Self-Employment)',
+      'Chapter 4: Domestic/Home Trade (Retail Trade, Small & Large Scale Retailers, Modern Trends in Retailing & Wholesale Trade)',
+    ],
+    'Form 2': [
+      'Chapter 1: Theory of Demand and Supply (Laws of Demand and Supply, Demand/Supply Schedules & Curves, Equilibrium Price & Price Elasticity of Demand/Supply)',
+      'Chapter 2: Warehousing Management (Meaning, Types of Warehouses: Private, Public, Bonded; Stock Administration: Stock Level, Rate of Stock Turnover, Mark-up & Margin)',
+      'Chapter 3: Transportation (Elements of Transport, Modes of Transport, Containerisation & Factors for Choosing Mode of Transport)',
+      'Chapter 4: Communication and Advertising (Importance of Business Communication, Postal/Telecommunication Services & Sales Promotion/Advertising)',
+    ],
+    'Form 3': [
+      'Chapter 1: Finance, Money and Banking (Barter System, Qualities & Functions of Money, Central Bank BoT, Commercial Banks, Cheques & Mobile Money)',
+      'Chapter 2: Insurance (Pooling of Risks, Insurable vs Non-Insurable Risks, Principles of Insurance, Life & General Insurance Policies)',
+      'Chapter 3: Marketing and Consumer Protection (Marketing Functions, Channels of Distribution, Branding, Packaging & Consumer Protection in Tanzania)',
+      'Chapter 4: International Trade (Visible & Invisible Trade, Balance of Trade & Balance of Payments, Import/Export Documents: Bill of Lading, Certificate of Origin, Letter of Credit)',
+    ],
+    'Form 4': [
+      'Chapter 1: Business Units (Sole Proprietorship, Partnerships, Joint Stock Companies, Co-operatives & Parastatals)',
+      'Chapter 2: Taxation (Principles/Canons of Taxation, Direct vs Indirect Taxes, Progressive/Regressive/Proportional Tax Systems & TRA VAT/Income Tax)',
+      'Chapter 3: Business Management and Ethics (Functions of Management: Planning, Organising, Staffing, Directing, Controlling & Business Ethics)',
+    ],
+  },
+  'Agriculture': {
+    'Form 1': [
+      'Chapter 1: Introduction to Agriculture (Concept, Branches of Agriculture, Importance to Tanzanian Economy & Relationship with Other Subjects)',
+      'Chapter 2: Farm Tools, Equipment and Workshop Technology (Hand Tools, Maintenance, Farm Workshop Safety & Basic Carpentry/Metalwork)',
+      'Chapter 3: Soil Science I (Concept of Soil, Weathering & Soil Formation, Soil Constituents, Soil Profile & Physical Properties of Soil)',
+      'Chapter 4: Introduction to Crop Production (Classification of Crops, Land Preparation, Planting Materials, Spacing, Weeding & Harvesting)',
+      'Chapter 5: Introduction to Livestock Production (Classes & Breeds of Cattle, Poultry, Goats, Sheep, Pigs & Rabbits Kept in Tanzania)',
+    ],
+    'Form 2': [
+      'Chapter 1: Factors of Production and Farm Management (Land, Labour, Capital, Entrepreneurship, Farm Records & Gross Margin Analysis)',
+      'Chapter 2: Soil Fertility, Manures and Fertilisers (Essential Macro & Micro Plant Nutrients, Organic Manures, Inorganic Fertilisers & Fertiliser Calculations)',
+      'Chapter 3: Crop Pests, Weeds and Diseases (Identification, Economic Damage & Integrated Pest/Disease Management)',
+      'Chapter 4: Livestock Nutrition, Housing and Health (Livestock Feeds, Ration Formulation, Parasites, Common Livestock Diseases & Vaccination)',
+    ],
+    'Form 3': [
+      'Chapter 1: Soil and Water Conservation, Irrigation and Drainage (Soil Erosion Control, Surface, Overhead & Drip Irrigation)',
+      'Chapter 2: Agronomy of Selected Field and Horticultural Crops (Maize, Rice, Beans, Cassava, Coffee, Cotton, Cashew, Tomatoes & Onions)',
+      'Chapter 3: Animal Breeding and Reproduction (Reproductive Systems, Heat Detection, Artificial Insemination & Selection)',
+      'Chapter 4: Agricultural Marketing and Price Fluctuations (Marketing Functions, Co-operatives, Warehouse Receipt System & Storable Commodities)',
+    ],
+    'Form 4': [
+      'Chapter 1: Agricultural Mechanisation and Farm Structures (Tractors, Ploughs, Fences, Crush, Dip Tank & Crop Storage Structures)',
+      'Chapter 2: Agroforestry and Environmental Conservation in Agriculture (Silvopastoral, Agrosilvicultural Systems & Climate-Smart Agriculture)',
+      'Chapter 3: Financial Analysis in Agribusiness (Partial Budget, Complete Budget, Break-Even Analysis & Agricultural Credit)',
+    ],
+  },
+  'Home Economics': {
+    'Form 1': [
+      'Chapter 1: Introduction to Home Economics (Concept, Branches: Food & Human Nutrition, Textiles & Garment Construction, Home Management)',
+      'Chapter 2: Personal Hygiene, Good Grooming and Safety in the Home (First Aid, Kitchen Hygiene & Waste Disposal)',
+      'Chapter 3: Food and Nutrition I (Six Classes of Food Nutrients: Carbohydrates, Proteins, Lipids, Vitamins, Minerals, Water & Dietary Fibre)',
+      'Chapter 4: Kitchen Equipment and Cooking Methods (Moist Heat: Boiling, Stewing, Steaming; Dry Heat: Baking, Roasting, Grilling & Frying)',
+      'Chapter 5: Sewing Equipment and Basic Stitches (Hand Sewing Tools, Sewing Machine Parts, Temporary & Permanent Stitches)',
+    ],
+    'Form 2': [
+      'Chapter 1: Meal Planning and Balanced Diets for Different Groups (Infants, Pregnant/Lactating Mothers, Adolescents, Elderly & Invalid Diets)',
+      'Chapter 2: Food Spoilage, Preservation and Hygiene (Causes of Food Spoilage, Principles & Methods of Food Preservation)',
+      'Chapter 3: Textile Fibres and Fabrics (Natural vs Man-Made Fibres: Cotton, Linen, Wool, Silk, Nylon, Polyester; Seams & Fastenings)',
+      'Chapter 4: Care of the Home and Laundry Work (Cleaning Agents, Stain Removal, Washing & Finishing Different Fabrics)',
+    ],
+    'Form 3': [
+      'Chapter 1: Baking, Pastry, Cake Making and Flour Mixtures (Raising Agents: Yeast, Baking Powder, Steam & Air)',
+      'Chapter 2: Maternal and Child Health Care (Antenatal Care, Immunisation Schedule, Weaning & Childhood Nutritional Disorders)',
+      'Chapter 3: Garment Construction (Taking Body Measurements, Pattern Drafting, Cutting Out & Assembling a Garment)',
+    ],
+    'Form 4': [
+      'Chapter 1: Consumer Education and Family Budgeting (Wise Buying, Food Labelling, Managing Family Income & Entrepreneurship in Catering/Tailoring)',
+      'Chapter 2: Interior Decoration, Housing and Sanitation (Ventilation, Lighting, Flower Arrangement & Sustainable Home Management)',
+    ],
   },
   'English Language': {
-    'Form 1': ['1.0 Listening & Speaking Skills', '2.0 Reading Comprehension & Summary', '3.0 Grammar & Tenses', '4.0 Writing Personal & Official Letters'],
-    'Form 2': ['1.0 Expressing Opinions & Debates', '2.0 Reading Literary Texts', '3.0 Active/Passive Voice & Conditional Sentences', '4.0 Writing Cards, Invitations & Compositions'],
-    'Form 3': ['1.0 Literary Analysis (Novels, Plays, Poetry)', '2.0 Direct & Indirect Speech', '3.0 Essay & Speech Writing', '4.0 Comprehension & Summary Writing'],
-    'Form 4': ['1.0 Appreciation of Literary Works (Plays, Novels, Poetry)', '2.0 Writing CV, Application Letters & Reports', '3.0 Advanced Grammar & Structure', '4.0 NECTA Paper 1 & Literature Revision'],
+    'Form 1': [
+      'Chapter 1: Listening to and Understanding Simple Texts (Listening for Specific & General Information)',
+      'Chapter 2: Giving Directions and Locating Places (Prepositions of Place, Landmarks & Compass Directions)',
+      'Chapter 3: Using a Dictionary (Alphabetical Order, Guide Words, Pronunciation, Parts of Speech & Multiple Meanings)',
+      'Chapter 4: Expressing Personal and Group Routines/Habits (Simple Present Tense, Adverbs of Frequency)',
+      'Chapter 5: Expressing Ongoing Activities (Present Continuous Tense)',
+      'Chapter 6: Expressing Likes and Dislikes, Preferences & Talking About One Family',
+      'Chapter 7: Expressing Opinions and Feelings & Talking About Past Events/Activities (Simple Past Tense)',
+      'Chapter 8: Expressing Future Plans and Activities (Will / Going to)',
+      'Chapter 9: Reading for Comprehension and Interpreting Literary Works (Stories, Poems & Characters)',
+      'Chapter 10: Writing Personal and Friendly Letters',
+    ],
+    'Form 2': [
+      'Chapter 1: Listening to Various Simple Oral Texts & Talking About Celebrations/Accidents',
+      'Chapter 2: Asking for Services and Making Telephone Calls',
+      'Chapter 3: Analysing Information from the Media (Newspapers, Radio, TV, Facts vs Opinions)',
+      'Chapter 4: Giving Descriptions of People, Things and Places (Adjectives & Comparisons)',
+      'Chapter 5: Talking About Cultural Activities and Expressing Opinions in Debates',
+      'Chapter 6: Grammar & Structure (Active and Passive Voice, Conditional Sentences Type 1, 2 & 3, Question Tags)',
+      'Chapter 7: Reading for Comprehension & Summary Writing',
+      'Chapter 8: Interpreting Literary Works (Novels, Short Stories & Poetry)',
+      'Chapter 9: Writing Cards, Invitations, Messages and Official Notices',
+    ],
+    'Form 3': [
+      'Chapter 1: Listening for Information from Different Sources & Participating in Formal Debates/Interviews',
+      'Chapter 2: Using Appropriate Language Content and Style in Speaking (Concessions, Cause & Effect, Contrast)',
+      'Chapter 3: Advanced Grammar (Direct & Indirect/Reported Speech, Relative Clauses, Phrasal Verbs & Tenses)',
+      'Chapter 4: Reading Intensive Comprehension & Summary Writing',
+      'Chapter 5: Literary Analysis — Form and Content (Themes, Characterisation, Figures of Speech, Conflict & Relevance in Novels, Plays & Poetry)',
+      'Chapter 6: Writing Narrative, Expository, Descriptive and Argumentative Essays & Speeches',
+    ],
+    'Form 4': [
+      'Chapter 1: Appreciation and Critical Analysis of Literary Works (Selected NECTA Plays, Novels and Summons/Selected Poems)',
+      'Chapter 2: Writing Curriculum Vitae (CV), Job Application Letters, Official Business Letters, Memos & Reports',
+      'Chapter 3: Comprehensive Grammar & Structure Synthesis (Inversion, Correlative Conjunctions, Prepositions, Concord/Subject-Verb Agreement)',
+      'Chapter 4: NECTA Paper 1 & Literature Examination Mastery',
+    ],
+  },
+  'Literature in English': {
+    'Form 3': [
+      'Chapter 1: Introduction to Literature (Meaning, Functions of Literature, Oral vs Written Literature)',
+      'Chapter 2: Elements of Literature — Form and Content (Plot, Setting, Characterisation, Style, Point of View, Theme, Message, Philosophy)',
+      'Chapter 3: Literary Genres and Figurative Language (Prose/Novels, Drama/Plays, Poetry & Poetic Devices: Simile, Metaphor, Personification, Irony, Satire, Symbolism)',
+      'Chapter 4: Analysis of Selected Plays and Novels',
+    ],
+    'Form 4': [
+      'Chapter 1: Appreciation and Analysis of Poetry (Traditional vs Modern/Free Verse Poetry, Persona, Tone, Mood & Poetic Diction)',
+      'Chapter 2: Comparative Analysis of Selected NECTA Plays (The Lion and the Jewel, The Trials of Brother Jero, Dilemma of a Ghost, The Government Inspector)',
+      'Chapter 3: Comparative Analysis of Selected NECTA Novels (A Walk in the Night, Houseboy, The Old Man and the Medal, The Concubine)',
+      'Chapter 4: Answering 15-Mark NECTA Literature Essay Questions',
+    ],
   },
   'Kiswahili': {
-    'Form 1': ['1.0 Mawasiliano na Lugha', '2.0 Aina za Maneno na Sarufi', '3.0 Fasihi Simulizi', '4.0 Uandishi wa Barua na Insha'],
-    'Form 2': ['1.0 Mnyumbuliko wa Maneno na Viambishi', '2.0 Uhakiki wa Kazi za Fasihi Simulizi', '3.0 Ufahamu na Ufupisho', '4.0 Utungaji wa Simu, Kadi na Risala'],
-    'Form 3': ['1.0 Tungo na Uchambuzi wa Sentensi', '2.0 Maendeleo ya Kiswahili', '3.0 Uhakiki wa Fasihi Andishi (Riwaya, Tamthiliya, Ushairi)', '4.0 Uandishi wa Matangazo na Kumbukumbu'],
-    'Form 4': ['1.0 Historia na Ukuzaji wa Kiswahili', '2.0 Uhakiki wa Riwaya, Tamthiliya na Mashairi', '3.0 Uandishi wa Hotuba na Insha za Kitaaluma', '4.0 Majaribio na Marudio ya NECTA'],
+    'Form 1': [
+      'Sura ya Kwanza: Mawasiliano na Dhana ya Lugha (Maana ya Mawasiliano, Vipengele vya Mawasiliano, Dhana ya Lugha na Matamshi na Lafudhi ya Kiswahili)',
+      'Sura ya Pili: Aina za Maneno na Matumizi ya Kamusi (Nomino N, Kiwakilishi W, Kivumishi V, Kitenzi T, Kielezi E, Kiunganishi U, Kihusishi H, Kihisishi Hs na Kamusi)',
+      'Sura ya Tatu: Fasihi kwa Ujumla na Fasihi Simulizi (Maana ya Sanaa na Fasihi, Tanzu za Fasihi Simulizi: Hadithi, Ushairi, Semi, Maigizo na Uhakiki Wake)',
+      'Sura ya Nne: Uandishi wa Insha na Barua (Insha za Wasifu za Kisanaa na Zisizo za Kisanaa, Barua ya Kirafiki na Anwani za Bahasha)',
+      'Sura ya Tano: Ufahamu na Kusoma kwa Kina (Ufahamu wa Kusikiliza na Kusoma, Kufupisha Habari)',
+    ],
+    'Form 2': [
+      'Sura ya Kwanza: Uundaji wa Maneno (Uambishaji: Viambishi Awali na Tamati, Mzizi wa Neno, Mnyumbuliko/Kauli za Vitenzi na Uradidi)',
+      'Sura ya Pili: Matumizi ya Lugha katika Miktadha Mbalimbali (Rejesta za Mahakamani, Hospitalini, Sokoni, Hotelini; Misimu na Lugha ya Kimazungumzo)',
+      'Sura ya Tatu: Uhakiki wa Kazi za Fasihi Simulizi (Vipengele vya Fani na Maudhui katika Tanzu za Fasihi Simulizi)',
+      'Sura ya Nne: Uhifadhi wa Kazi za Fasihi Simulizi (Njia za Kuhifadhi: Kichwani, Maandishi, Vinasa Sauti na Kanda za Video; Umuhimu na Changamoto)',
+      'Sura ya Tano: Utungaji wa Barua Rasmi, Simu na Kadi za Mialiko (Muundo wa Barua ya Kikazi/Rasmi, Uandishi wa Simu za Maandishi na Kadi za Mwaliko)',
+      'Sura ya Sita: Ufahamu na Ufupisho (Kusoma kwa Ufahamu na Hatua za Kuandika Ufupisho)',
+    ],
+    'Form 3': [
+      'Sura ya Kwanza: Ngeli za Nomino na Upatanisho wa Kisarufi (Ngeli ya A-WA, U-I, LI-YA, KI-VI, I-ZI, U-ZI, U-YA, KU na PA-MU-KU)',
+      'Sura ya Pili: Mjengo wa Tungo na Uchambuzi wa Sentensi (Tungo Neno, Kirai, Kishazi na Sentensi: Sahili, Ambatano na Changamano; Uchanganuzi kwa Njia ya Matawi na Visanduku)',
+      'Sura ya Tatu: Historia na Maendeleo ya Kiswahili (Asili ya Kiswahili: Kibantu, Ukuaji na Kuenea Wakati wa Waarabu na Wakoloni wa Kijerumani na Kiingereza)',
+      'Sura ya Nne: Uhakiki wa Kazi za Fasihi Andishi (Fani na Maudhui katika Riwaya, Tamthiliya na Ushairi)',
+      'Sura ya Tano: Uandishi wa Matangazo, Kumbukumbu za Mikutano na Insha za Hoja',
+    ],
+    'Form 4': [
+      'Sura ya Kwanza: Kuenea na Kukua kwa Kiswahili Baada ya Uhuru (Taasisi za Ukuzaji wa Kiswahili: BAKITA, TATAKI, TAKILUKI, UKUTA na Kiswahili Kimataifa)',
+      'Sura ya Pili: Ufahamu, Ufupisho na Utungaji wa Risala, Hotuba na Maombi ya Kazi (CV)',
+      'Sura ya Tatu: Uhakiki wa Riwaya Teule, Tamthiliya Teule na Diwani za Mashairi (NECTA Kidato cha Nne)',
+      'Sura ya Nne: Majaribio na Marudio ya Mtihani wa Taifa (NECTA CSEE Kiswahili)',
+    ],
+  },
+  'Hisabati (Mathematics)': {
+    'Standard 3': ['1.0 Namba Nzima (Kusoma na Kuandika hadi 10,000)', '2.0 Matendo katika Namba (Kujumlisha na Kutoa)', '3.0 Sehemu, Fedha ya Tanzania na Wakati', '4.0 Maumbo Bapa na Vipimo vya Urefu na Uzito'],
+    'Standard 4': ['1.0 Namba Nzima na Namba za Kirumi', '2.0 Kujumlisha, Kutoa, Kuzidisha na Kugawanya', '3.0 Sehemu, Fedha, Wakati na Vipimo', '4.0 Maumbo, Mzingo na Takwimu za Msingi'],
+    'Standard 5': ['1.0 Namba Nzima hadi Milioni Moja, Vigawe na Vigawanyo (KKS na KKT)', '2.0 Sehemu na Desimali', '3.0 Jometria (Pembe, Pembetatu, Mstatili, Mraba na Eneo)', '4.0 Aljebra ya Msingi, Fedha na Takwimu'],
+    'Standard 6': ['1.0 Namba Nzima hadi Milioni Kumi, Sehemu, Desimali na Asilimia', '2.0 Uwiano, Faida na Hasara, na Hesabu za Biashara', '3.0 Jometria ya Majira ya Nukta, Maumbo ya Mche na Mzingo/Eneo la Duara', '4.0 Aljebra na Majedwali ya Takwimu/Chati za Duara'],
+    'Standard 7': ['1.0 Namba Nzima hadi Bilioni Moja, Namba Hasi na Chanya (Integers), Kipeuo cha Pili', '2.0 Sehemu, Desimali, Asilimia, Faida, Hasara na Riba Rahisi (Simple Interest)', '3.0 Mwendokasi, Umbali na Wakati (Speed, Distance & Time)', '4.0 Jometria, Theorem ya Pythagoras, Eneo la Uso na Ujazo wa Maumbo ya 3D, Aljebra na Takwimu'],
+  },
+  'Sayansi na Teknolojia': {
+    'Standard 5': ['1.0 Viumbe Hai (Mimea na Wanyama, Usanisinuru na Uzazi)', '2.0 Nishati (Mwanga, Sauti, Joto na Umeme)', '3.0 Maada na Hali Zake, Maji na Mazingira', '4.0 Afya, Lishe, Huduma ya Kwanza na TEHAMA ya Msingi'],
+    'Standard 6': ['1.0 Mifumo ya Mwili wa Binadamu (Mzunguko wa Damu, Upumuaji na Uzazi)', '2.0 Nishati Mbadala, Mashine Rahisi na Kazi', '3.0 Hewa, Gesi ya Oksijeni na Kabonidayoksaidi, na Udongo', '4.0 Usalama Mtandaoni, Programu Jedwali (Spreadsheet) na Afya ya Jamii'],
+    'Standard 7': ['1.0 Mfumo wa Fahamu, Milango ya Fahamu na Utoaji Taka Mwilini (Excretion)', '2.0 Umeme na Sumaku, Mawimbi, Nyuzi za Optiki na Mashine Tata', '3.0 Mabadiliko ya Kikemikali, Kutu na Uzimaji Moto', '4.0 Antena, Mtandao wa Intaneti, Afya na VVU/UKIMWI'],
+  },
+  'Advanced Mathematics': {
+    'Form 5': [
+      '1.0 Calculating Devices & Hyperbolic Functions',
+      '2.0 Sets, Logic and Mathematical Induction',
+      '3.0 Coordinate Geometry I (Conic Sections: Circles, Parabola, Ellipse, Hyperbola)',
+      '4.0 Functions, Polynomials, Algebra (Series, Binomial Theorem, Partial Fractions)',
+      '5.0 Trigonometry (Identities, Inverse Trig Functions, T-Formulae)',
+      '6.0 Linear Programming & Differentiation / Integration I',
+    ],
+    'Form 6': [
+      '1.0 Coordinate Geometry II (Polar Coordinates & Parametric Equations)',
+      '2.0 Vectors in 3D (Dot Product, Cross Product, Lines & Planes in 3D)',
+      '3.0 Complex Numbers (Argand Diagram, Polar Form, De Moivre Theorem, Roots of Unity)',
+      '4.0 Differential Equations (1st & 2nd Order ODEs, Exact & Integrating Factor, Modelling)',
+      '5.0 Numerical Methods (Newton-Raphson, Secant, Trapezoidal & Simpson Rules)',
+      '6.0 Probability and Statistics (Binomial, Poisson & Normal Distributions)',
+    ],
+  },
+  'Basic Applied Mathematics (BAM)': {
+    'Form 5': ['1.0 Calculating Devices', '2.0 Functions', '3.0 Algebra (Simultaneous Equations, Sequences & Series)', '4.0 Differentiation', '5.0 Integration', '6.0 Statistics'],
+    'Form 6': ['1.0 Probability', '2.0 Trigonometry', '3.0 Exponential and Logarithmic Functions', '4.0 Matrices (3×3 Determinant, Inverse, Cramer Rule)', '5.0 Linear Programming'],
   },
 };
 
 export const MOHA_BUILTIN_KNOWLEDGE = [
   {
     keywords: ['photosynthesis', 'nutrition in plants', 'chlorophyll', 'photolysis', 'calvin cycle'],
-    title: 'Photosynthesis (Biology — Form 2 Nutrition in Plants)',
-    content: `**Definition:** Photosynthesis is the biochemical process by which green plants manufacture organic food (glucose) from carbon dioxide and water in the presence of sunlight energy trapped by chlorophyll.\n\n**Balanced Chemical Equation:**\n$$6\\text{CO}_2 + 6\\text{H}_2\\text{O} \\xrightarrow{\\text{Sunlight / Chlorophyll}} \\text{C}_6\\text{H}_{12}\\text{O}_6 + 6\\text{O}_2$$\n\n**Stages of Photosynthesis:**\n1. **Light Reaction (Photolysis - Grana):** Splits water molecules ($2\\text{H}_2\\text{O} \\rightarrow 4\\text{H}^+ + \\text{O}_2 + 4e^-$) and forms ATP.\n2. **Dark Reaction (Calvin Cycle - Stroma):** Reduces $\\text{CO}_2$ using hydrogen ions and ATP to form glucose ($\\text{C}_6\\text{H}_{12}\\text{O}_6$).\n\n**Leaf Adaptations (NECTA Points - 02 Marks @):**\n• Broad, flat lamina for large surface area to trap maximum sunlight.\n• Numerous stomata for efficient gaseous exchange ($\\text{CO}_2$ and $\\text{O}_2$).\n• Palisade mesophyll cells densely packed with chloroplasts.\n• Network of xylem (supplies water) and phloem (translocates manufactured food).`,
+    title: 'Photosynthesis (Biology — Form 2 TIE Textbook Chapter 2: Nutrition)',
+    content: `**Definition (TIE Biology Form 2 Textbook):** Photosynthesis is the biochemical process by which green plants manufacture organic food (glucose) from carbon dioxide and water in the presence of sunlight energy trapped by chlorophyll.\n\n**Balanced Chemical Equation:**\n$$6\\text{CO}_2 + 6\\text{H}_2\\text{O} \\xrightarrow{\\text{Sunlight / Chlorophyll}} \\text{C}_6\\text{H}_{12}\\text{O}_6 + 6\\text{O}_2$$\n\n**Stages of Photosynthesis:**\n1. **Light Reaction (Photolysis - Grana):** Splits water molecules ($2\\text{H}_2\\text{O} \\rightarrow 4\\text{H}^+ + \\text{O}_2 + 4e^-$) and forms ATP.\n2. **Dark Reaction (Calvin Cycle - Stroma):** Reduces $\\text{CO}_2$ using hydrogen ions and ATP to form glucose ($\\text{C}_6\\text{H}_{12}\\text{O}_6$).\n\n**Leaf Adaptations (NECTA Points - 02 Marks @):**\n• Broad, flat lamina for large surface area to trap maximum sunlight.\n• Numerous stomata for efficient gaseous exchange ($\\text{CO}_2$ and $\\text{O}_2$).\n• Palisade mesophyll cells densely packed with chloroplasts.\n• Network of xylem (supplies water) and phloem (translocates manufactured food).`,
   },
   {
     keywords: ['ohm', 'resistance', 'current electricity', 'voltage', 'resistor'],
-    title: "Ohm's Law & Current Electricity (Physics — Form 2)",
-    content: `**Ohm's Law:** States that electric current ($I$) flowing through a metallic conductor is directly proportional to the potential difference ($V$) across its ends, provided temperature and other physical conditions remain constant.\n\n$$V = I \\times R \\quad \\Rightarrow \\quad I = \\frac{V}{R} \\quad \\Rightarrow \\quad R = \\frac{V}{I}$$\n\n**Combination of Resistors:**\n• **Series Arrangement:** $R_{\\text{total}} = R_1 + R_2 + R_3$ (Same current $I$ flows through each).\n• **Parallel Arrangement:** $\\frac{1}{R_{\\text{total}}} = \\frac{1}{R_1} + \\frac{1}{R_2}$ (Same voltage $V$ across each).\n\n**Factors Affecting Resistance ($R = \\rho \\frac{L}{A}$):**\n1. Length of conductor ($R \\propto L$)\n2. Cross-sectional area ($R \\propto \\frac{1}{A}$)\n3. Temperature of conductor\n4. Nature of material (Resistivity $\\rho$)`,
+    title: "Ohm's Law & Current Electricity (Physics — Form 2 TIE Textbook Chapter 2)",
+    content: `**Ohm's Law (TIE Physics Form 2 Textbook):** States that electric current ($I$) flowing through a metallic conductor is directly proportional to the potential difference ($V$) across its ends, provided temperature and other physical conditions remain constant.\n\n$$V = I \\times R \\quad \\Rightarrow \\quad I = \\frac{V}{R} \\quad \\Rightarrow \\quad R = \\frac{V}{I}$$\n\n**Combination of Resistors:**\n• **Series Arrangement:** $R_{\\text{total}} = R_1 + R_2 + R_3$ (Same current $I$ flows through each).\n• **Parallel Arrangement:** $\\frac{1}{R_{\\text{total}}} = \\frac{1}{R_1} + \\frac{1}{R_2}$ (Same voltage $V$ across each).\n\n**Factors Affecting Resistance ($R = \\rho \\frac{L}{A}$):**\n1. Length of conductor ($R \\propto L$)\n2. Cross-sectional area ($R \\propto \\frac{1}{A}$)\n3. Temperature of conductor\n4. Nature of material (Resistivity $\\rho$)`,
   },
   {
     keywords: ['archimedes', 'flotation', 'upthrust', 'buoyancy', 'hydrometer'],
-    title: "Archimedes' Principle & Law of Flotation (Physics — Form 1)",
-    content: `**1. Archimedes' Principle:** States that when a body is partially or totally immersed in a fluid, it experiences an upthrust which is equal to the weight of the fluid displaced.\n$$\\text{Upthrust } (U) = \\text{Real Weight } (W_a) - \\text{Apparent Weight } (W_f)$$\n$$\\text{Relative Density (R.D)} = \\frac{\\text{Weight in Air}}{\\text{Upthrust in Water}} = \\frac{W_a}{W_a - W_w}$$\n\n**2. Law of Flotation:** A floating body displaces its own weight of the fluid in which it floats.\n• Applications: Ships, submarines, hydrometers, hot-air balloons.`,
+    title: "Archimedes' Principle & Law of Flotation (Physics — Form 1 TIE Textbook Chapter 5)",
+    content: `**1. Archimedes' Principle (TIE Physics Form 1 Textbook):** States that when a body is partially or totally immersed in a fluid, it experiences an upthrust which is equal to the weight of the fluid displaced.\n$$\\text{Upthrust } (U) = \\text{Real Weight } (W_a) - \\text{Apparent Weight } (W_f)$$\n$$\\text{Relative Density (R.D)} = \\frac{\\text{Weight in Air}}{\\text{Upthrust in Water}} = \\frac{W_a}{W_a - W_w}$$\n\n**2. Law of Flotation:** A floating body displaces its own weight of the fluid in which it floats.\n• Applications: Ships, submarines, hydrometers, hot-air balloons.`,
   },
   {
     keywords: ['mole', 'molarity', 'titration', 'avogadro', 'volumetric'],
-    title: 'The Mole Concept & Volumetric Analysis (Chemistry — Form 3)',
-    content: `**Key Formulas:**\n1. $\\text{Number of moles }(n) = \\frac{\\text{Mass }(m)}{\\text{Molar Mass }(M_r)} = \\frac{\\text{Number of Particles }(N)}{6.02 \\times 10^{23}}$\n2. At STP, $n = \\frac{\\text{Volume of gas (dm}^3\\text{)}}{22.4\\text{ dm}^3/\\text{mol}}$\n3. $\\text{Molarity }(M) = \\frac{\\text{Concentration in g/dm}^3}{\\text{Molar Mass }(M_r)}$\n4. **Titration Equation:**\n$$\\frac{M_A V_A}{M_B V_B} = \\frac{n_A}{n_B}$$\nWhere $M_A, V_A, n_A$ are molarity, volume, and stoichiometric mole ratio of the acid, and $M_B, V_B, n_B$ are for the base.`,
+    title: 'The Mole Concept & Volumetric Analysis (Chemistry — Form 3 TIE Textbook Chapters 4 & 5)',
+    content: `**Key Formulas (TIE Chemistry Form 3 Textbook):**\n1. $\\text{Number of moles }(n) = \\frac{\\text{Mass }(m)}{\\text{Molar Mass }(M_r)} = \\frac{\\text{Number of Particles }(N)}{6.02 \\times 10^{23}}$\n2. At STP, $n = \\frac{\\text{Volume of gas (dm}^3\\text{)}}{22.4\\text{ dm}^3/\\text{mol}}$\n3. $\\text{Molarity }(M) = \\frac{\\text{Concentration in g/dm}^3}{\\text{Molar Mass }(M_r)}$\n4. **Titration Equation:**\n$$\\frac{M_A V_A}{M_B V_B} = \\frac{n_A}{n_B}$$\nWhere $M_A, V_A, n_A$ are molarity, volume, and stoichiometric mole ratio of the acid, and $M_B, V_B, n_B$ are for the base.`,
   },
   {
     keywords: ['quadratic', 'factorize', 'roots', 'discriminant', 'completing the square'],
-    title: 'Quadratic Equations & Expressions (Basic Mathematics — Form 2)',
-    content: `**General Form:** $ax^2 + bx + c = 0$ where $a \\neq 0$.\n\n**General Quadratic Formula:**\n$$x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$\n\n**Nature of Roots (Discriminant $\\Delta = b^2 - 4ac$):**\n• If $b^2 - 4ac > 0$: Two distinct real roots.\n• If $b^2 - 4ac = 0$: Two equal (repeated) real roots.\n• If $b^2 - 4ac < 0$: No real roots (complex roots).`,
+    title: 'Quadratic Equations & Expressions (Basic Mathematics — Form 2 TIE Textbook Chapters 2 & 3)',
+    content: `**General Form (TIE Basic Mathematics Form 2 Textbook):** $ax^2 + bx + c = 0$ where $a \\neq 0$.\n\n**General Quadratic Formula:**\n$$x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$\n\n**Nature of Roots (Discriminant $\\Delta = b^2 - 4ac$):**\n• If $b^2 - 4ac > 0$: Two distinct real roots.\n• If $b^2 - 4ac = 0$: Two equal (repeated) real roots.\n• If $b^2 - 4ac < 0$: No real roots (complex roots).`,
   },
   {
     keywords: ['sequence', 'series', 'arithmetic progression', 'geometric progression', 'compound interest'],
-    title: 'Sequences & Series (Basic Mathematics — Form 3)',
-    content: `**1. Arithmetic Progression (AP):**\n• $n^{\\text{th}}$ Term: $A_n = A_1 + (n - 1)d$\n• Sum of $n$ terms: $S_n = \\frac{n}{2}[2A_1 + (n - 1)d] = \\frac{n}{2}(A_1 + A_n)$\n\n**2. Geometric Progression (GP):**\n• $n^{\\text{th}}$ Term: $G_n = G_1 r^{n - 1}$\n• Sum of $n$ terms: $S_n = \\frac{G_1(r^n - 1)}{r - 1}$ (for $r > 1$) or $S_n = \\frac{G_1(1 - r^n)}{1 - r}$ (for $r < 1$)\n\n**3. Compound Interest:**\n$$A_n = P\\left(1 + \\frac{R}{100}\\right)^n$$`,
+    title: 'Sequences & Series (Basic Mathematics — Form 3 TIE Textbook Chapter 5)',
+    content: `**1. Arithmetic Progression (AP) — TIE Basic Mathematics Form 3 Textbook:**\n• $n^{\\text{th}}$ Term: $A_n = A_1 + (n - 1)d$\n• Sum of $n$ terms: $S_n = \\frac{n}{2}[2A_1 + (n - 1)d] = \\frac{n}{2}(A_1 + A_n)$\n\n**2. Geometric Progression (GP):**\n• $n^{\\text{th}}$ Term: $G_n = G_1 r^{n - 1}$\n• Sum of $n$ terms: $S_n = \\frac{G_1(r^n - 1)}{r - 1}$ (for $r > 1$) or $S_n = \\frac{G_1(1 - r^n)}{1 - r}$ (for $r < 1$)\n\n**3. Compound Interest:**\n$$A_n = P\\left(1 + \\frac{R}{100}\\right)^n$$`,
   },
   {
     keywords: ['newton', 'motion', 'acceleration', 'velocity', 'momentum', 'impulse'],
-    title: "Newton's Laws of Motion & Linear Motion (Physics — Form 2)",
-    content: `**Equations of Uniformly Accelerated Motion:**\n1. $v = u + at$\n2. $s = ut + \\frac{1}{2}at^2$\n3. $v^2 = u^2 + 2as$\n\n**Newton's Three Laws of Motion:**\n• **1st Law (Inertia):** A body remains at rest or uniform motion in a straight line unless acted upon by an external resultant force.\n• **2nd Law:** Rate of change of momentum is directly proportional to applied force ($F = ma = \\frac{mv - mu}{t}$).\n• **3rd Law:** To every action there is an equal and opposite reaction.`,
+    title: "Newton's Laws of Motion & Linear Motion (Physics — Form 2 TIE Textbook Chapters 6 & 7)",
+    content: `**Equations of Uniformly Accelerated Motion (TIE Physics Form 2 Textbook):**\n1. $v = u + at$\n2. $s = ut + \\frac{1}{2}at^2$\n3. $v^2 = u^2 + 2as$\n\n**Newton's Three Laws of Motion:**\n• **1st Law (Inertia):** A body remains at rest or uniform motion in a straight line unless acted upon by an external resultant force.\n• **2nd Law:** Rate of change of momentum is directly proportional to applied force ($F = ma = \\frac{mv - mu}{t}$).\n• **3rd Law:** To every action there is an equal and opposite reaction.`,
+  },
+  {
+    keywords: ['historia ya tanzania na maadili', 'tunu za taifa', 'maadili ya kitanzania', 'chimbuko la jamii', 'azimio la arusha', 'majimaji', 'muungano'],
+    title: 'Historia ya Tanzania na Maadili — Kitabu cha Mwanafunzi (TET/TIE Kidato cha 1 & 2)',
+    content: `**Muhtasari wa Kitabu cha Mwanafunzi (Taasisi ya Elimu Tanzania — TET):**\n• **Sura ya 1 (Dhana ya Historia ya Tanzania na Maadili):** Historia ya Tanzania ni elimu inayochambua matukio, mabadiliko na maendeleo ya jamii za Kitanzania tangu kale hadi sasa pamoja na misingi ya maadili (utu, uzalendo, uadilifu, umoja na uwajibikaji).\n• **Sura ya 2 (Chimbuko la Jamii za Kitanzania):** Makundi makuu manne ya lugha na jamii yaliyoanza kuishi Tanzania ni **Wakhoisani** (wawindaji na wakusanyaji wa awali kama Wahadzabe na Wasandawe), **Wakushiti** (Wairaqw, Wagorowa), **Wabantu** (walioleta teknolojia ya kilimo na uhunzi wa chuma), na **Waniloti** (Wamaasai, Waluo, Wadatoga).\n• **Sura ya 3 & 4 (Mifumo ya Kiutawala na Urithi wa Taifa):** Mifumo ya ukoo, rika na utemi (kama Watemi wa Wasukuma, Wanyamwezi na Wahehe) ilijenga mshikamano, haki na maadili ya kazi.\n• **Tunu za Taifa la Tanzania:** Utu na Heshima, Uhuru na Umoja, Amani na Utulivu, Uzalendo, Uadilifu na Kufanya Kazi kwa Bidii.`,
+  },
+  {
+    keywords: ['information and computer studies', 'computer generations', 'computer evolution', 'computer hardware', 'computer handling', 'data and information'],
+    title: 'Computer Science / Information and Computer Studies (TIE Form 1 & 2 Student Textbook)',
+    content: `**Official TIE Textbook Chapter Breakdown (Information and Computer Studies / Computer Science):**\n• **Chapter 1 & 2 (Concept of ICS, Data and Information):**\n  - **Data:** Raw, unorganised facts and figures (numbers, letters, symbols) that have little meaning on their own.\n  - **Information:** Processed, organised, and structured data that is meaningful and useful for decision-making ($\\text{Data} \\xrightarrow{\\text{Processing}} \\text{Information}$).\n• **Chapter 3 (Computer Evolution & Generations):**\n  1. **1st Generation (1940–1956):** Vacuum tubes (e.g., ENIAC, UNIVAC).\n  2. **2nd Generation (1956–1963):** Transistors.\n  3. **3rd Generation (1964–1971):** Integrated Circuits (ICs).\n  4. **4th Generation (1971–Present):** Microprocessors / VLSI.\n  5. **5th Generation (Present & Beyond):** Artificial Intelligence (AI) & Parallel Processing.\n• **Chapter 4 & 6 (Computer Hardware, Software & Computer Handling):**\n  - **Hardware:** Input devices, Central Processing Unit (ALU, Control Unit, Registers), Main Memory (RAM & ROM), Secondary Storage, Output devices.\n  - **Computer Handling:** Using Uninterruptible Power Supply (UPS), surge protectors, utility programs (antivirus, disk defragmenter, backup), and dust/moisture protection.`,
+  },
+  {
+    keywords: ['business studies', 'sole proprietorship', 'factors of production', 'entrepreneurship', 'warehousing', 'marketing mix'],
+    title: 'Business Studies — Official TIE Student Textbook (Form 1 & Form 2)',
+    content: `**Official TIE Business Studies Textbook Summary:**\n• **Chapter 1 & 2 (Scope of Business Studies & Production):**\n  - **Business Studies** integrates Commerce, Book-Keeping/Accounting, Economics, Entrepreneurship, and Office Management.\n  - **Four Factors of Production & Their Rewards:**\n    1. **Land** $\\rightarrow$ Reward is **Rent**\n    2. **Labour** $\\rightarrow$ Reward is **Wages / Salaries**\n    3. **Capital** $\\rightarrow$ Reward is **Interest**\n    4. **Entrepreneurship** $\\rightarrow$ Reward is **Profit**\n• **Chapter 3 & 4 (Entrepreneurship & Business Units):**\n  - **Sole Proprietorship:** Owned and managed by one person; easy to form, enjoys all profits, but bears **unlimited liability**.\n  - **Partnership:** 2 to 20 partners governed by a **Partnership Deed**.\n  - **Co-operative Societies (AMCOS & SACCOS):** Democratic control (one member, one vote) and patronage refund.`,
   },
 ];
 
@@ -323,25 +800,191 @@ export function normalizeClassName(rawForm: string): string {
   return f || 'Form 4';
 }
 
+export function normalizeSubjectName(rawSubject: string, rawTitle = ''): string {
+  const s = (rawSubject || '').trim();
+  const lower = s.toLowerCase();
+  const titleLower = (rawTitle || '').toLowerCase();
+
+  if (lower === 'htm' || lower.includes('historia ya tanzania') || titleLower.includes('historia ya tanzania na maadili')) {
+    return 'Historia ya Tanzania na Maadili';
+  }
+  if (lower === 'ict' || lower === 'ics' || lower.includes('computer') || lower.includes('information and computer')) {
+    return 'Computer Science';
+  }
+  if (lower === 'english' || lower === 'english language') {
+    return 'English Language';
+  }
+  if (lower === 'book-keeping' || lower === 'book keeping' || lower === 'bookkeeping') {
+    return 'Book-Keeping';
+  }
+  if (lower === 'business studies' || lower === 'bussiness studies' || titleLower.includes('bussiness studies') || titleLower.includes('business studies')) {
+    return 'Business Studies';
+  }
+  if (lower === 'additional mathematics' || lower === 'aditional mathematics' || titleLower.includes('additional mathematics') || titleLower.includes('aditional mathematics')) {
+    return 'Additional Mathematics';
+  }
+  if (lower === 'home economics' || lower.includes('food and human nutrition')) {
+    return 'Home Economics';
+  }
+  if (lower === 'fasihi ya kiswahili' || lower === 'kiswahili') {
+    return 'Kiswahili';
+  }
+  if (lower === 'basic mathematics' || lower === 'mathematics') {
+    return 'Basic Mathematics';
+  }
+  return s || 'General';
+}
+
+export function matchesSubjectQuery(recordSubject: string, targetSubject: string, recordTitle = ''): boolean {
+  const normA = normalizeSubjectName(recordSubject, recordTitle).toLowerCase();
+  const normB = normalizeSubjectName(targetSubject).toLowerCase();
+  if (normA === normB) return true;
+  if (normA.includes(normB) || normB.includes(normA)) {
+    if (
+      (normA.includes('additional') !== normB.includes('additional')) ||
+      (normA.includes('maadili') !== normB.includes('maadili'))
+    ) {
+      return false;
+    }
+    return true;
+  }
+  return false;
+}
+
+export function matchesFormRange(recordForm: string, targetClass: string): boolean {
+  const cleanTarget = normalizeClassName(targetClass);
+  const cleanRecord = normalizeClassName(recordForm);
+  if (cleanRecord === cleanTarget) return true;
+
+  const rLower = (recordForm || '').toLowerCase();
+  const formNumMatch = cleanTarget.match(/^Form\s+(\d)$/i);
+  if (formNumMatch) {
+    const n = Number(formNumMatch[1]);
+    if (rLower.includes('form 1 - 4') || rLower.includes('form 1-4') || rLower.includes('form i - iv')) {
+      return n >= 1 && n <= 4;
+    }
+    if (rLower.includes('form 3 - 4') || rLower.includes('form 3-4') || rLower.includes('form iii - iv')) {
+      return n >= 3 && n <= 4;
+    }
+    if (rLower.includes('form 5 - 6') || rLower.includes('form 5-6') || rLower.includes('form v - vi')) {
+      return n >= 5 && n <= 6;
+    }
+  }
+  const stdNumMatch = cleanTarget.match(/^Standard\s+(\d)$/i);
+  if (stdNumMatch) {
+    const n = Number(stdNumMatch[1]);
+    if (rLower.includes('std 1 - 4') || rLower.includes('standard 1 - 4')) {
+      return n >= 1 && n <= 4;
+    }
+    if (rLower.includes('std 1 - 7') || rLower.includes('standard 1 - 7')) {
+      return n >= 1 && n <= 7;
+    }
+  }
+  return false;
+}
+
 export function getSyllabusTopicsForClassSubject(cls: string, subject: string): string[] {
   const cleanCls = normalizeClassName(cls || 'Form 3');
-  const cleanSub = (subject || 'Basic Mathematics').trim();
+  const cleanSub = normalizeSubjectName(subject || 'Basic Mathematics');
   const subjectKey = Object.keys(TIE_SYLLABUS_COMPETENCES).find(
-    (k) => k.toLowerCase() === cleanSub.toLowerCase() || cleanSub.toLowerCase().includes(k.toLowerCase())
+    (k) => matchesSubjectQuery(k, cleanSub)
   );
   if (subjectKey && TIE_SYLLABUS_COMPETENCES[subjectKey]) {
     const classMap = TIE_SYLLABUS_COMPETENCES[subjectKey];
     if (classMap[cleanCls]) {
       return classMap[cleanCls];
     }
-    return Object.values(classMap).flat().slice(0, 6);
+    return Object.values(classMap).flat().slice(0, 8);
   }
   return [
-    `1.0 Core Principles and Competence Foundations in ${cleanSub}`,
-    `2.0 Conceptual Analysis and Practical Procedures in ${cleanSub}`,
-    `3.0 Problem Solving, Calculations, and Real-Life Applications in ${cleanSub}`,
-    `4.0 NECTA Examination Assessment and Revision in ${cleanSub}`,
+    `Chapter 1: Core Principles and Competence Foundations in ${cleanSub}`,
+    `Chapter 2: Conceptual Analysis and Practical Procedures in ${cleanSub}`,
+    `Chapter 3: Problem Solving, Calculations, and Real-Life Applications in ${cleanSub}`,
+    `Chapter 4: NECTA Examination Assessment and Revision in ${cleanSub}`,
   ];
+}
+
+export function getTieTextbookChapterContent(
+  cls: string,
+  subject: string,
+  queryOrTopic = ''
+): {
+  bookTitle: string;
+  allChapters: string[];
+  matchedChapter: string;
+  chapterSummaryMarkdown: string;
+} {
+  const cleanCls = normalizeClassName(cls || 'Form 1');
+  const cleanSub = normalizeSubjectName(subject || 'Basic Mathematics');
+  const allChapters = getSyllabusTopicsForClassSubject(cleanCls, cleanSub);
+  const bookTitle = `${cleanCls} ${cleanSub} — Official TIE Student's Textbook`;
+
+  const qLower = (queryOrTopic || '').toLowerCase();
+  let matchedChapter = allChapters[0] || `Chapter 1: Introduction to ${cleanSub}`;
+
+  const chapNumMatch = qLower.match(/\b(?:chapter|sura\s+ya|topic)\s*(?:(\d+)|(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|kwanza|pili|tatu|nne|tano|sita))\b/i);
+  const wordMap: Record<string, number> = {
+    one: 1, kwanza: 1,
+    two: 2, pili: 2,
+    three: 3, tatu: 3,
+    four: 4, nne: 4,
+    five: 5, tano: 5,
+    six: 6, sita: 6,
+    seven: 7,
+    eight: 8,
+    nine: 9,
+    ten: 10,
+    eleven: 11,
+    twelve: 12,
+  };
+  if (chapNumMatch) {
+    const idx = chapNumMatch[1]
+      ? parseInt(chapNumMatch[1], 10) - 1
+      : (wordMap[chapNumMatch[2].toLowerCase()] || 1) - 1;
+    if (idx >= 0 && idx < allChapters.length) {
+      matchedChapter = allChapters[idx];
+    }
+  } else if (qLower.trim().length > 2) {
+    let bestScore = 0;
+    for (const ch of allChapters) {
+      const chWords = ch
+        .toLowerCase()
+        .replace(/[(),:&/-]/g, ' ')
+        .split(/\s+/)
+        .filter((w) => w.length >= 3 && !['chapter', 'sura', 'and', 'the', 'for', 'with'].includes(w));
+      let sc = 0;
+      for (const w of chWords) {
+        if (qLower.includes(w)) sc += 3;
+        else if (w.length >= 5 && qLower.includes(w.slice(0, 4))) sc += 2;
+      }
+      if (sc > bestScore) {
+        bestScore = sc;
+        matchedChapter = ch;
+      }
+    }
+  }
+
+  const parenMatch = matchedChapter.match(/\(([^)]+)\)/);
+  const subTopicsList = parenMatch
+    ? parenMatch[1].split(/[,&]/).map((s) => s.trim()).filter(Boolean)
+    : [matchedChapter.replace(/^(?:Chapter\s+\d+|Sura\s+ya\s+\w+|\d+\.\d+):\s*/i, '')];
+
+  const chaptersTocMarkdown = allChapters
+    .map((c) => `${c === matchedChapter ? '👉 ' : '• '}**${c}**`)
+    .join('\n');
+
+  const subTopicsMarkdown = subTopicsList
+    .map((st, idx) => `  ${idx + 1}. **${st}** — Core TIE textbook definition, principles, worked examples & class activities.`)
+    .join('\n');
+
+  const chapterSummaryMarkdown = `📖 **Official TIE Textbook Reference:** **${bookTitle}**\n\n**1. 📑 Complete Chapters / Topics in the ${cleanCls} ${cleanSub} TIE Textbook:**\n${chaptersTocMarkdown}\n\n**2. 🔍 Focused Textbook Chapter Breakdown — ${matchedChapter}:**\n**Key Sub-Topics Covered in This Chapter:**\n${subTopicsMarkdown}`;
+
+  return {
+    bookTitle,
+    allChapters,
+    matchedChapter,
+    chapterSummaryMarkdown,
+  };
 }
 
 export function isFormOneClass(clsStr: string): boolean {
@@ -1146,17 +1789,28 @@ export function generateLocalSmartTutorReply(
   const topicsList = syllabusTopics.map((t) => `• ${t}`).join('\n');
 
   const resourceSummaryLines: string[] = [];
+  if (siteResources?.focusedResource) {
+    const fr = siteResources.focusedResource;
+    resourceSummaryLines.push(
+      `• **📌 Pinned Active Source:** **${fr.title}** (${fr.category} · ${fr.form} · ${fr.subject} · ${fr.year})`
+    );
+    if (fr.customContent && fr.customContent.trim().length > 0) {
+      resourceSummaryLines.push(
+        `• **📄 Attached Excerpt / Notes from "${fr.title}":** ${fr.customContent.trim().slice(0, 450)}`
+      );
+    }
+  }
   if (siteResources) {
     if (siteResources.books.length > 0) {
-      resourceSummaryLines.push(`• **TIE Books on Website:** ${siteResources.books.slice(0, 3).map((b) => b.title).join(', ')}`);
+      resourceSummaryLines.push(`• **TIE Books on Website:** ${siteResources.books.slice(0, 4).map((b) => b.title).join(', ')}`);
     }
     if (siteResources.syllabuses.length > 0) {
       resourceSummaryLines.push(`• **Official Syllabuses on Website:** ${siteResources.syllabuses.slice(0, 3).map((s) => s.title).join(', ')}`);
     }
     if (siteResources.papers.length > 0) {
       resourceSummaryLines.push(
-        `• **Past Papers on Website (${siteResources.papers.length} found):** ${siteResources.papers
-          .slice(0, 4)
+        `• **Past Papers on Website (${siteResources.papers.length} attached):** ${siteResources.papers
+          .slice(0, 5)
           .map((p) => `${p.title} (${p.year})`)
           .join(', ')}`
       );
@@ -1237,23 +1891,34 @@ export function generateLocalSmartTutorReply(
     });
   }
 
-  if (lower.includes('syllabus') || lower.includes('competence') || lower.includes('topics')) {
-    return `📜 **Official TIE Syllabus — ${cls} ${subject}**\n\n**1. Main Syllabus Topics:**\n${topicsList}\n\n**2. NECTA Exam Structure:**\n• **Section A (16 Marks):** Multiple-choice & matching items.\n• **Section B (54 Marks):** 6 Short-answer questions (09 Marks each).\n• **Section C (30 Marks):** 2 Essay / analytical questions (15 Marks each).${siteResourcesBlock}`;
+  const tbInfo = getTieTextbookChapterContent(cls, subject, cleanInput);
+
+  if (
+    lower.includes('syllabus') ||
+    lower.includes('competence') ||
+    lower.includes('topics') ||
+    lower.includes('chapters') ||
+    lower.includes('table of contents') ||
+    lower.includes('sura') ||
+    lower.includes('tie book') ||
+    lower.includes('textbook')
+  ) {
+    return `${tbInfo.chapterSummaryMarkdown}\n\n**3. 📝 Official TIE & NECTA Assessment Structure:**\n• **Continuous Assessment (CA — 30%):** Terminal tests, Form II FTNA, Form III Project & Mock Exams.\n• **National Examination (NECTA — 70%):** Section A (16 Marks), Section B (54 Marks), Section C (30 Marks).${siteResourcesBlock}`;
   }
 
-  if (lower.includes('summary') || lower.includes('revision') || lower.includes('formula')) {
-    return `📝 **Simple Revision Summary — ${cls} ${subject}**\n\n**1. Key Topics to Revise:**\n${topicsList}\n\n**2. Easy 3-Step Exam Strategy:**\n• **Step 1 (Definition):** Write the clear TIE textbook definition first (01–02 Marks).\n• **Step 2 (Formula & Substitution):** State the formula before substituting numbers to earn method marks (**M1**).\n• **Step 3 (Final Answer & Units):** Write the final answer clearly with correct SI units (**A1**).${siteResourcesBlock}`;
+  if (lower.includes('summary') || lower.includes('revision') || lower.includes('formula') || lower.includes('summarize')) {
+    return `${tbInfo.chapterSummaryMarkdown}\n\n**3. ✅ Easy 3-Step TIE Textbook & NECTA Exam Strategy:**\n• **Step 1 (Definition):** Write the clear TIE textbook definition first (01–02 Marks).\n• **Step 2 (Formula & Substitution):** State the formula before substituting numbers to earn method marks (**M1**).\n• **Step 3 (Final Answer & Units):** Write the final answer clearly with correct SI units (**A1**).${siteResourcesBlock}`;
   }
 
   // Smart Class, Subject & Topic extraction from user prompt
   const parsed = parseClassSubjectTopicFromPrompt(cleanInput, cls, subject);
   const effectiveCls = parsed.cls;
   const effectiveSub = parsed.subject;
-  const effectiveTopics = getSyllabusTopicsForClassSubject(effectiveCls, effectiveSub);
+  const effectiveTbInfo = getTieTextbookChapterContent(effectiveCls, effectiveSub, cleanInput);
   const effectiveTopic =
     parsed.topic && parsed.topic !== 'ALL'
       ? parsed.topic
-      : effectiveTopics[0]?.replace(/^\d+\.\d+\s*/, '') || `${effectiveSub} Core Competence`;
+      : effectiveTbInfo.matchedChapter.replace(/^(?:Chapter\s+\d+|Sura\s+ya\s+\w+|\d+\.\d+):\s*/i, '');
 
   if (
     lower.includes('quiz') ||
@@ -1273,7 +1938,7 @@ export function generateLocalSmartTutorReply(
     const formattedQuestions = topicQuiz
       .map(
         (q, idx) =>
-          `**Question ${idx + 1} (${q.sourceRef || 'TIE Textbook & NECTA Past Paper'}):**\n${q.question}\n${q.options
+          `**Question ${idx + 1} (${q.sourceRef || effectiveTbInfo.bookTitle}):**\n${q.question}\n${q.options
             .map((opt, oIdx) => `   ${String.fromCharCode(65 + oIdx)}) ${opt}`)
             .join('\n')}\n• **Correct Answer:** **${String.fromCharCode(65 + q.correctIndex)}) ${
             q.options[q.correctIndex]
@@ -1281,10 +1946,9 @@ export function generateLocalSmartTutorReply(
       )
       .join('\n\n');
 
-    return `🎯 **Topic-Specific Problem-Solving Quiz — ${effectiveCls} ${effectiveSub}**\n**Specified Topic:** **${effectiveTopic}** (${parsed.subTopic})\n\n${formattedQuestions}${siteResourcesBlock}`;
+    return `🎯 **20-Question TIE Textbook & Past Paper Quiz — ${effectiveCls} ${effectiveSub}**\n**Textbook Chapter / Topic:** **${effectiveTbInfo.matchedChapter}**\n\n${formattedQuestions}${siteResourcesBlock}`;
   }
 
-  // Also check if user asked about a specific topic in math/science/etc. and provide a worked example from that exact topic
   const topicWorked = buildContentIntegratedQuizQuestions(
     effectiveCls,
     effectiveSub,
@@ -1294,8 +1958,9 @@ export function generateLocalSmartTutorReply(
   );
   const sampleQ1 = topicWorked[0];
   const sampleQ2 = topicWorked[1];
+  const sampleQ3 = topicWorked[2];
 
-  return `📘 **Moha AI Study Notes & Worked Solutions — ${effectiveCls} ${effectiveSub}**\n**Specified Topic:** **${effectiveTopic}** (*"${cleanInput}"*)\n\n**1. 📌 Key Concept & Official TIE Syllabus Competence:**\n• Under the **${effectiveCls} ${effectiveSub}** TIE curriculum, **${effectiveTopic}** focuses on **${parsed.subTopic}**.\n• Always begin by stating the governing definition or formula from the **Official TIE ${effectiveCls} ${effectiveSub} Student's Textbook**.\n\n**2. 📐 Worked Examples on ${effectiveTopic} (Step-by-Step):**\n• **Worked Example 1 (${sampleQ1?.sourceRef || 'TIE Textbook'}):**\n  *Problem:* ${sampleQ1?.question}\n  *Solution:* ${sampleQ1?.explanation}\n  *Answer:* **${sampleQ1?.options[sampleQ1.correctIndex]}**\n\n• **Worked Example 2 (${sampleQ2?.sourceRef || 'NECTA Past Paper'}):**\n  *Problem:* ${sampleQ2?.question}\n  *Solution:* ${sampleQ2?.explanation}\n  *Answer:* **${sampleQ2?.options[sampleQ2.correctIndex]}**\n\n**3. ✅ NECTA Marking Tip:**\n• Separate your given data, formula (**M1**), substitution (**M1**), and final answer with units (**A1**) on clear lines.${siteResourcesBlock}`;
+  return `${effectiveTbInfo.chapterSummaryMarkdown}\n\n**3. 📐 Worked Examples from ${effectiveTbInfo.bookTitle} (${effectiveTopic}):**\n• **Worked Example 1 (${sampleQ1?.sourceRef || 'TIE Textbook'}):**\n  *Problem:* ${sampleQ1?.question}\n  *Step-by-Step Solution:* ${sampleQ1?.explanation}\n  *Correct Answer:* **${sampleQ1?.options[sampleQ1.correctIndex]}**\n\n• **Worked Example 2 (${sampleQ2?.sourceRef || 'TIE Textbook'}):**\n  *Problem:* ${sampleQ2?.question}\n  *Step-by-Step Solution:* ${sampleQ2?.explanation}\n  *Correct Answer:* **${sampleQ2?.options[sampleQ2.correctIndex]}**\n\n• **Worked Example 3 (${sampleQ3?.sourceRef || 'NECTA Past Paper'}):**\n  *Problem:* ${sampleQ3?.question}\n  *Step-by-Step Solution:* ${sampleQ3?.explanation}\n  *Correct Answer:* **${sampleQ3?.options[sampleQ3.correctIndex]}**${siteResourcesBlock}`;
 }
 
 export function parseClassSubjectTopicFromPrompt(
@@ -1311,21 +1976,21 @@ export function parseClassSubjectTopicFromPrompt(
 } {
   const raw = (prompt || '').trim();
   const lower = raw.toLowerCase();
-  let cls = defaultCls || 'Form 3';
-  let subject = defaultSubject || 'Basic Mathematics';
+  let cls = normalizeClassName(defaultCls || 'Form 3');
+  let subject = normalizeSubjectName(defaultSubject || 'Basic Mathematics');
   let matchedFromPrompt = false;
 
-  // 1. Detect explicit Class in prompt (e.g., "Form 1", "Form 2", "Standard 7", "Std 4")
-  const formMatch = lower.match(/\bform\s*([1-6]|one|two|three|four|five|six|i|ii|iii|iv|v|vi)\b/i);
-  const stdMatch = lower.match(/\b(?:standard|std|darasa\s*la)\s*([1-7]|one|two|three|four|five|six|seven)\b/i);
+  // 1. Detect explicit Class in prompt (e.g., "Form 1", "Form 2", "Standard 7", "Std 4", "Kidato cha 1")
+  const formMatch = lower.match(/\b(?:form|kidato\s*cha)\s*([1-6]|one|two|three|four|five|six|kwanza|pili|tatu|nne|tano|sita|i|ii|iii|iv|v|vi)\b/i);
+  const stdMatch = lower.match(/\b(?:standard|std|darasa\s*la)\s*([1-7]|one|two|three|four|five|six|seven|kwanza|pili|tatu|nne|tano|sita|saba)\b/i);
   const wordToNum: Record<string, string> = {
-    one: '1',
-    two: '2',
-    three: '3',
-    four: '4',
-    five: '5',
-    six: '6',
-    seven: '7',
+    one: '1', kwanza: '1',
+    two: '2', pili: '2',
+    three: '3', tatu: '3',
+    four: '4', nne: '4',
+    five: '5', tano: '5',
+    six: '6', sita: '6',
+    seven: '7', saba: '7',
     i: '1',
     ii: '2',
     iii: '3',
@@ -1347,34 +2012,35 @@ export function parseClassSubjectTopicFromPrompt(
     matchedFromPrompt = true;
   }
 
-  // 2. Detect explicit Subject in prompt
+  // 2. Detect explicit Subject in prompt ONLY when specific subject names appear (ordered most specific first)
   const subjectAliases: Array<{ keywords: string[]; target: string }> = [
-    { keywords: ['advanced math', 'pure math'], target: 'Advanced Mathematics' },
+    { keywords: ['historia ya tanzania na maadili', 'historia ya tanzania', 'htm'], target: 'Historia ya Tanzania na Maadili' },
+    { keywords: ['additional mathematics', 'additional math', 'aditional mathematics'], target: 'Additional Mathematics' },
+    { keywords: ['advanced mathematics', 'advanced math', 'pure math'], target: 'Advanced Mathematics' },
     { keywords: ['basic applied math', 'bam'], target: 'Basic Applied Mathematics (BAM)' },
-    { keywords: ['math', 'mathematics', 'hisabati', 'kuhesabu', 'algebra', 'logarithm', 'trigonometr', 'matrix', 'matrices', 'quadratic', 'vector', 'probability', 'calculus'], target: 'Basic Mathematics' },
+    { keywords: ['basic mathematics', 'hisabati'], target: 'Basic Mathematics' },
+    { keywords: ['business studies', 'bussiness studies'], target: 'Business Studies' },
+    { keywords: ['computer science', 'information and computer studies', 'ict', 'ics', 'tehama'], target: 'Computer Science' },
+    { keywords: ['home economics', 'food and human nutrition'], target: 'Home Economics' },
+    { keywords: ['book-keeping', 'book keeping', 'bookkeeping'], target: 'Book-Keeping' },
+    { keywords: ['literature in english'], target: 'Literature in English' },
     { keywords: ['physics', 'fizikia'], target: 'Physics' },
     { keywords: ['chemistry', 'kemia'], target: 'Chemistry' },
     { keywords: ['biology', 'baiolojia'], target: 'Biology' },
     { keywords: ['geography', 'jiografia'], target: 'Geography' },
-    { keywords: ['history', 'historia'], target: 'History' },
-    { keywords: ['kiswahili'], target: 'Kiswahili' },
-    { keywords: ['english'], target: 'English Language' },
-    { keywords: ['civics', 'uraia'], target: 'Civics' },
-    { keywords: ['book-keeping', 'book keeping', 'bookkeeping', 'accountancy', 'accounts'], target: 'Book-Keeping' },
-    { keywords: ['commerce', 'biashara'], target: 'Commerce' },
+    { keywords: ['agriculture', 'kilimo'], target: 'Agriculture' },
+    { keywords: ['commerce'], target: 'Commerce' },
     { keywords: ['economics', 'uchumi'], target: 'Economics' },
-    { keywords: ['computer', 'ict', 'tehama'], target: 'Computer Studies (ICS)' },
-    { keywords: ['science and technology', 'sayansi'], target: 'Science and Technology' },
+    { keywords: ['civics', 'uraia'], target: 'Civics' },
+    { keywords: ['kiswahili', 'fasihi simulizi', 'sarufi'], target: 'Kiswahili' },
+    { keywords: ['english language'], target: 'English Language' },
+    { keywords: ['sayansi na teknolojia'], target: 'Sayansi na Teknolojia' },
   ];
 
   for (const alias of subjectAliases) {
     if (alias.keywords.some((kw) => lower.includes(kw))) {
       const classSubjects = TIE_CURRICULUM_SUBJECTS[cls] || [];
-      const exactInClass = classSubjects.find(
-        (s) =>
-          s.toLowerCase() === alias.target.toLowerCase() ||
-          s.toLowerCase().includes(alias.target.split(' ')[0].toLowerCase())
-      );
+      const exactInClass = classSubjects.find((s) => matchesSubjectQuery(s, alias.target));
       subject = exactInClass || alias.target;
       matchedFromPrompt = true;
       break;
@@ -1386,7 +2052,7 @@ export function parseClassSubjectTopicFromPrompt(
   let matchedTopic = '';
 
   const scoreTopicMatch = (topicStr: string, queryLower: string): number => {
-    const cleanT = topicStr.replace(/^\d+\.\d+\s*/, '').toLowerCase();
+    const cleanT = topicStr.replace(/^(?:Chapter\s+\d+|Sura\s+ya\s+\w+|\d+\.\d+):\s*/i, '').toLowerCase();
     const words = cleanT
       .replace(/[(),&/-]/g, ' ')
       .split(/\s+/)
@@ -1565,12 +2231,20 @@ export function buildContentIntegratedQuizQuestions(
       ? subTopic.trim()
       : availableSubTopics[0] || `${focusTopic} — Problem Solving`;
 
+  const focusedTitle = siteResources?.focusedResource?.title;
+  const focusedIsBook =
+    siteResources?.focusedResource?.category?.toLowerCase().includes('book') ||
+    siteResources?.focusedResource?.title?.toLowerCase().includes('book');
+
   const matchedBookTitle =
-    siteResources?.books?.[0]?.title || `Official TIE ${cls} ${subject} Student's Textbook`;
+    (focusedTitle && focusedIsBook ? focusedTitle : undefined) ||
+    siteResources?.books?.[0]?.title ||
+    `Official TIE ${cls} ${subject} Student's Textbook`;
   const matchedPaperTitle =
-    siteResources?.papers?.[0]
+    (focusedTitle && !focusedIsBook ? focusedTitle : undefined) ||
+    (siteResources?.papers?.[0]
       ? `${siteResources.papers[0].title} (${siteResources.papers[0].year})`
-      : `NECTA ${cls} ${subject} Past Examination Paper`;
+      : `NECTA ${cls} ${subject} Past Examination Paper`);
 
   const src1 = isPaperOnly
     ? `📄 NECTA Past Paper: ${matchedPaperTitle}`
@@ -1588,14 +2262,1027 @@ export function buildContentIntegratedQuizQuestions(
   const subLower = subject.toLowerCase();
   const topicCombinedLower = `${focusTopic} ${focusSubTopic} ${cls}`.toLowerCase();
 
+  const rotateQuizOptions = (
+    options: string[],
+    correctIndex: number,
+    shiftSeed: number
+  ): { options: string[]; correctIndex: number } => {
+    if (!Array.isArray(options) || options.length < 2) {
+      return { options, correctIndex: 0 };
+    }
+    const safeIdx = Math.max(0, Math.min(options.length - 1, correctIndex));
+    const correctVal = options[safeIdx];
+    const len = options.length;
+    const shift = ((shiftSeed % len) + len) % len;
+    if (shift === 0) return { options: [...options], correctIndex: safeIdx };
+    const rotated = new Array<string>(len);
+    for (let i = 0; i < len; i++) {
+      rotated[(i + shift) % len] = options[i];
+    }
+    const newCorrect = rotated.indexOf(correctVal);
+    return { options: rotated, correctIndex: newCorrect >= 0 ? newCorrect : 0 };
+  };
+
+  const buildAdditionalSubjectQuestions = (): Array<Omit<QuizItem, 'topic' | 'subTopic' | 'sourceRef'>> => {
+    const subT = (i: number) => availableSubTopics[i % Math.max(1, availableSubTopics.length)] || focusSubTopic;
+
+    if (subLower.includes('math') || subLower.includes('hisabati') || subLower.includes('kuhesabu')) {
+      return [
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(1)}] Solve for $x$ in the linear fractional equation: $\\frac{2x + 2}{3} - \\frac{x - 2}{4} = 2$`,
+          options: ['$x = 2$', '$x = 4$', '$x = 3$', '$x = 5$'],
+          correctIndex: 0,
+          explanation: `Step 1: Multiply every term by the LCM of $3$ and $4$, which is $12$: $4(2x + 2) - 3(x - 2) = 24$. Step 2: Expand brackets: $8x + 8 - 3x + 6 = 24 \\Rightarrow 5x + 14 = 24$. Step 3: $5x = 10 \\Rightarrow x = 2$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(2)}] If $a * b = a^2 + 2ab - b^2$, evaluate $3 * 2$`,
+          options: ['$17$', '$13$', '$21$', '$9$'],
+          correctIndex: 0,
+          explanation: `Step 1: Substitute $a = 3$ and $b = 2$ into the binary operation $a * b = a^2 + 2ab - b^2$. Step 2: $3 * 2 = (3)^2 + 2(3)(2) - (2)^2 = 9 + 12 - 4 = 17$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(3)}] Find the sum of the interior angles of a regular $10$-sided polygon (decagon) and the size of each interior angle`,
+          options: [
+            'Sum $= 1440^\\circ$ ; Each interior angle $= 144^\\circ$',
+            'Sum $= 1800^\\circ$ ; Each interior angle $= 180^\\circ$',
+            'Sum $= 1260^\\circ$ ; Each interior angle $= 126^\\circ$',
+            'Sum $= 1080^\\circ$ ; Each interior angle $= 108^\\circ$',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Sum of interior angles $= (n - 2) \\times 180^\\circ = (10 - 2) \\times 180^\\circ = 8 \\times 180^\\circ = 1440^\\circ$. Step 2: Each interior angle $= \\frac{1440^\\circ}{10} = 144^\\circ$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(0)}] Simplify the algebraic fraction: $\\frac{x^2 - 9}{x^2 + 5x + 6}$ for $x \\neq -3, -2$`,
+          options: [
+            '$\\frac{x - 3}{x + 2}$',
+            '$\\frac{x + 3}{x + 2}$',
+            '$\\frac{x - 3}{x - 2}$',
+            '$\\frac{x - 9}{x + 6}$',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Factorise numerator using difference of two squares: $x^2 - 9 = (x - 3)(x + 3)$. Step 2: Factorise denominator: $x^2 + 5x + 6 = (x + 2)(x + 3)$. Step 3: Cancel common factor $(x + 3)$ to get $\\frac{x - 3}{x + 2}$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(1)}] A ladder $13\\text{ m}$ long leans against a vertical wall with its foot $5\\text{ m}$ from the base of the wall. How high up the wall does the ladder reach?`,
+          options: ['$12\\text{ m}$', '$8\\text{ m}$', '$10\\text{ m}$', '$11\\text{ m}$'],
+          correctIndex: 0,
+          explanation: `Step 1: Apply Pythagoras' theorem $h^2 + b^2 = c^2$, where $b = 5\\text{ m}$ and $c = 13\\text{ m}$. Step 2: $h = \\sqrt{13^2 - 5^2} = \\sqrt{169 - 25} = \\sqrt{144} = 12\\text{ m}$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(2)}] Find the equation of a straight line with gradient $m = -2$ passing through the point $(3, 5)$`,
+          options: [
+            '$y = -2x + 11$',
+            '$y = -2x - 1$',
+            '$y = 2x - 1$',
+            '$y = -2x + 5$',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Use point-slope formula $y - y_1 = m(x - x_1)$. Step 2: $y - 5 = -2(x - 3) \\Rightarrow y - 5 = -2x + 6 \\Rightarrow y = -2x + 11$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(3)}] Three bells toll together at intervals of $12$, $15$, and $20$ minutes respectively. If they toll together at $8:00\\text{ AM}$, at what time will they next toll together?`,
+          options: ['$9:00\\text{ AM}$', '$8:45\\text{ AM}$', '$9:30\\text{ AM}$', '$10:00\\text{ AM}$'],
+          correctIndex: 0,
+          explanation: `Step 1: Find the LCM of $12$, $15$, and $20$: $12 = 2^2 \\times 3$, $15 = 3 \\times 5$, $20 = 2^2 \\times 5 \\Rightarrow \\text{LCM} = 2^2 \\times 3 \\times 5 = 60\\text{ minutes}$ ($1\\text{ hour}$). Step 2: $8:00\\text{ AM} + 1\\text{ hour} = 9:00\\text{ AM}$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(0)}] If $\\log_{10} x = 2 \\log_{10} 3 + \\log_{10} 5$, find the exact value of $x$`,
+          options: ['$x = 45$', '$x = 30$', '$x = 15$', '$x = 75$'],
+          correctIndex: 0,
+          explanation: `Step 1: Apply the power and product laws of logarithms: $2 \\log_{10} 3 + \\log_{10} 5 = \\log_{10}(3^2) + \\log_{10} 5 = \\log_{10}(9 \\times 5) = \\log_{10} 45$. Step 2: Therefore, $x = 45$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(1)}] The ages of Neema and Baraka are in the ratio $3 : 5$. If the sum of their ages is $32\\text{ years}$, find Baraka's age`,
+          options: ['$20\\text{ years}$', '$12\\text{ years}$', '$24\\text{ years}$', '$18\\text{ years}$'],
+          correctIndex: 0,
+          explanation: `Step 1: Total ratio parts $= 3 + 5 = 8$ parts. Step 2: Baraka's share $= \\frac{5}{8} \\times 32 = 5 \\times 4 = 20\\text{ years}$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(2)}] Find the inverse of the matrix $A = \\begin{pmatrix} 3 & 1 \\\\ 5 & 2 \\end{pmatrix}$`,
+          options: [
+            '$A^{-1} = \\begin{pmatrix} 2 & -1 \\\\ -5 & 3 \\end{pmatrix}$',
+            '$A^{-1} = \\begin{pmatrix} 3 & -1 \\\\ -5 & 2 \\end{pmatrix}$',
+            '$A^{-1} = \\begin{pmatrix} 2 & 1 \\\\ 5 & 3 \\end{pmatrix}$',
+            '$A^{-1} = \\begin{pmatrix} -2 & 1 \\\\ 5 & -3 \\end{pmatrix}$',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Determinant $|A| = (3)(2) - (1)(5) = 6 - 5 = 1$. Step 2: Swap main diagonal elements and negate off-diagonal elements: $A^{-1} = \\frac{1}{1}\\begin{pmatrix} 2 & -1 \\\\ -5 & 3 \\end{pmatrix}$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(3)}] Calculate the compound amount when $\\text{TZS } 100,000$ is invested for $2\\text{ years}$ at $10\\%$ per annum compounded annually`,
+          options: [
+            '$\\text{TZS } 121,000$',
+            '$\\text{TZS } 120,000$',
+            '$\\text{TZS } 110,000$',
+            '$\\text{TZS } 133,100$',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Use the compound interest formula $A = P\\left(1 + \\frac{r}{100}\\right)^n$. Step 2: $A = 100,000 \\times (1.10)^2 = 100,000 \\times 1.21 = \\text{TZS } 121,000$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(0)}] In an Arithmetic Progression (A.P.), the first term is $a_1 = 7$ and the common difference is $d = 4$. Find the $12\\text{th}$ term ($a_{12}$) and the sum of the first $12$ terms ($S_{12}$)`,
+          options: [
+            '$a_{12} = 51$ ; $S_{12} = 348$',
+            '$a_{12} = 55$ ; $S_{12} = 360$',
+            '$a_{12} = 47$ ; $S_{12} = 324$',
+            '$a_{12} = 51$ ; $S_{12} = 312$',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: $a_{12} = a_1 + (12 - 1)d = 7 + 11(4) = 7 + 44 = 51$. Step 2: $S_{12} = \\frac{12}{2}(a_1 + a_{12}) = 6(7 + 51) = 6 \\times 58 = 348$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(1)}] If $y$ varies inversely as the square of $x$ ($y \\propto \\frac{1}{x^2}$) and $y = 4$ when $x = 3$, find the value of $y$ when $x = 6$`,
+          options: ['$y = 1$', '$y = 2$', '$y = 8$', '$y = 0.5$'],
+          correctIndex: 0,
+          explanation: `Step 1: $y = \\frac{k}{x^2} \\Rightarrow k = y x^2 = 4 \\times 3^2 = 36$. Step 2: When $x = 6$, $y = \\frac{36}{6^2} = \\frac{36}{36} = 1$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(2)}] In a class of $45$ students, $28$ study Physics, $22$ study Chemistry, and $3$ study neither subject. How many students study BOTH Physics and Chemistry?`,
+          options: ['$8$ students', '$5$ students', '$11$ students', '$14$ students'],
+          correctIndex: 0,
+          explanation: `Step 1: $n(P \\cup C) = 45 - 3 = 42$. Step 2: Using $n(P \\cup C) = n(P) + n(C) - n(P \\cap C) \\Rightarrow 42 = 28 + 22 - n(P \\cap C) \\Rightarrow n(P \\cap C) = 50 - 42 = 8$ students.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(3)}] Given that $\\sin \\theta = \\frac{3}{5}$ where $\\theta$ is an acute angle, evaluate $\\cos \\theta + \\tan \\theta$`,
+          options: [
+            '$\\frac{31}{20}$ (or $1.55$)',
+            '$\\frac{7}{5}$ (or $1.40$)',
+            '$\\frac{19}{20}$ (or $0.95$)',
+            '$\\frac{23}{15}$',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: By Pythagoras' theorem, adjacent side $= \\sqrt{5^2 - 3^2} = 4$. Step 2: $\\cos \\theta = \\frac{4}{5}$ and $\\tan \\theta = \\frac{3}{4}$. Step 3: $\\frac{4}{5} + \\frac{3}{4} = \\frac{16 + 15}{20} = \\frac{31}{20} = 1.55$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(0)}] Calculate the curved surface area of a right circular cylinder of radius $r = 7\\text{ cm}$ and height $h = 10\\text{ cm}$ (Take $\\pi = \\frac{22}{7}$)`,
+          options: ['$440\\text{ cm}^2$', '$1,540\\text{ cm}^2$', '$748\\text{ cm}^2$', '$220\\text{ cm}^2$'],
+          correctIndex: 0,
+          explanation: `Step 1: Curved surface area of a cylinder $= 2 \\pi r h$. Step 2: $\\text{CSA} = 2 \\times \\frac{22}{7} \\times 7 \\times 10 = 44 \\times 10 = 440\\text{ cm}^2$.`,
+        },
+      ];
+    }
+
+    if (subLower.includes('physics')) {
+      return [
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(1)}] Two resistors of $4\\text{ }\\Omega$ and $12\\text{ }\\Omega$ are connected in parallel across a battery. Calculate their equivalent (effective) resistance $R_T$`,
+          options: ['$3.0\\text{ }\\Omega$', '$16.0\\text{ }\\Omega$', '$8.0\\text{ }\\Omega$', '$0.33\\text{ }\\Omega$'],
+          correctIndex: 0,
+          explanation: `Step 1: For two resistors in parallel, $R_T = \\frac{R_1 \\times R_2}{R_1 + R_2}$. Step 2: $R_T = \\frac{4 \\times 12}{4 + 12} = \\frac{48}{16} = 3.0\\text{ }\\Omega$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(2)}] A stone of mass $0.5\\text{ kg}$ is thrown vertically upwards with an initial velocity of $20\\text{ m/s}$. Taking $g = 10\\text{ m/s}^2$, calculate the maximum height reached`,
+          options: ['$20\\text{ m}$', '$10\\text{ m}$', '$40\\text{ m}$', '$15\\text{ m}$'],
+          correctIndex: 0,
+          explanation: `Step 1: At maximum height, final velocity $v = 0\\text{ m/s}$. Step 2: Using $v^2 = u^2 - 2gh \\Rightarrow 0 = 20^2 - 2(10)h \\Rightarrow 20h = 400 \\Rightarrow h = 20\\text{ m}$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(3)}] A machine with a Velocity Ratio ($VR$) of $5$ requires an effort of $250\\text{ N}$ to lift a load of $1,000\\text{ N}$. Calculate its Mechanical Advantage ($MA$) and Efficiency ($\\eta$)`,
+          options: [
+            '$MA = 4$ ; Efficiency $= 80\\%$',
+            '$MA = 5$ ; Efficiency $= 100\\%$',
+            '$MA = 4$ ; Efficiency $= 75\\%$',
+            '$MA = 0.25$ ; Efficiency $= 20\\%$',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: $MA = \\frac{\\text{Load}}{\\text{Effort}} = \\frac{1000\\text{ N}}{250\\text{ N}} = 4$. Step 2: Efficiency $\\eta = \\frac{MA}{VR} \\times 100\\% = \\frac{4}{5} \\times 100\\% = 80\\%$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(0)}] Calculate the liquid pressure at a depth of $8\\text{ m}$ in freshwater of density $\\rho = 1,000\\text{ kg/m}^3$ (Take $g = 10\\text{ N/kg}$)`,
+          options: ['$80,000\\text{ Pa}$ ($80\\text{ kPa}$)', '$8,000\\text{ Pa}$', '$125\\text{ Pa}$', '$800,000\\text{ Pa}$'],
+          correctIndex: 0,
+          explanation: `Step 1: Hydrostatic pressure formula $P = \\rho g h$. Step 2: $P = 1,000 \\times 10 \\times 8 = 80,000\\text{ Pa}$ ($80\\text{ kPa}$).`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(1)}] An uniform metre rule is pivoted at the $50\\text{ cm}$ mark. A mass of $40\\text{ g}$ is suspended at the $20\\text{ cm}$ mark. Where must a $60\\text{ g}$ mass be suspended to balance the rule horizontally?`,
+          options: [
+            'At the $70\\text{ cm}$ mark ($20\\text{ cm}$ from the pivot)',
+            'At the $80\\text{ cm}$ mark ($30\\text{ cm}$ from the pivot)',
+            'At the $65\\text{ cm}$ mark ($15\\text{ cm}$ from the pivot)',
+            'At the $75\\text{ cm}$ mark ($25\\text{ cm}$ from the pivot)',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: By the Principle of Moments, Anticlockwise Moment $=$ Clockwise Moment: $40 \\times (50 - 20) = 60 \\times d_2$. Step 2: $40 \\times 30 = 60 d_2 \\Rightarrow d_2 = \\frac{1200}{60} = 20\\text{ cm}$ to the right of $50\\text{ cm}$, which is the $70\\text{ cm}$ mark.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(2)}] An electric kettle rated $2,000\\text{ W}$, $240\\text{ V}$ is switched on for $3\\text{ minutes}$. Calculate the electrical energy consumed in Joules`,
+          options: ['$360,000\\text{ J}$ ($360\\text{ kJ}$)', '$6,000\\text{ J}$', '$480,000\\text{ J}$', '$120,000\\text{ J}$'],
+          correctIndex: 0,
+          explanation: `Step 1: Convert time to seconds: $t = 3 \\times 60 = 180\\text{ s}$. Step 2: Electrical energy $E = P \\times t = 2,000\\text{ W} \\times 180\\text{ s} = 360,000\\text{ J}$ ($360\\text{ kJ}$).`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(3)}] An object weighs $35\\text{ N}$ in air and $27\\text{ N}$ when completely immersed in water. Calculate the upthrust (buoyant force) and the volume of water displaced ($\\rho_w = 1000\\text{ kg/m}^3, g = 10\\text{ N/kg}$)`,
+          options: [
+            'Upthrust $= 8\\text{ N}$ ; Volume $= 8.0 \\times 10^{-4}\\text{ m}^3$',
+            'Upthrust $= 62\\text{ N}$ ; Volume $= 6.2 \\times 10^{-3}\\text{ m}^3$',
+            'Upthrust $= 8\\text{ N}$ ; Volume $= 8.0 \\times 10^{-2}\\text{ m}^3$',
+            'Upthrust $= 12\\text{ N}$ ; Volume $= 1.2 \\times 10^{-3}\\text{ m}^3$',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: By Archimedes' Principle, Upthrust $U = W_{\\text{air}} - W_{\\text{water}} = 35\\text{ N} - 27\\text{ N} = 8\\text{ N}$. Step 2: Since $U = \\rho_w g V$, $V = \\frac{8}{1000 \\times 10} = 8.0 \\times 10^{-4}\\text{ m}^3$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(0)}] A body of mass $4\\text{ kg}$ moving at $6\\text{ m/s}$ collides with and sticks to a stationary body of mass $2\\text{ kg}$. Calculate their common velocity after collision`,
+          options: ['$4.0\\text{ m/s}$', '$3.0\\text{ m/s}$', '$2.0\\text{ m/s}$', '$5.0\\text{ m/s}$'],
+          correctIndex: 0,
+          explanation: `Step 1: By Conservation of Linear Momentum, $m_1 u_1 + m_2 u_2 = (m_1 + m_2)v$. Step 2: $(4 \\times 6) + (2 \\times 0) = (4 + 2)v \\Rightarrow 24 = 6v \\Rightarrow v = 4.0\\text{ m/s}$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(1)}] A spiral spring of natural length $15\\text{ cm}$ extends to $19\\text{ cm}$ when a load of $20\\text{ N}$ is hung from it. What will be its total length when a load of $35\\text{ N}$ is applied (within the elastic limit)?`,
+          options: ['$22\\text{ cm}$', '$7\\text{ cm}$', '$25\\text{ cm}$', '$21\\text{ cm}$'],
+          correctIndex: 0,
+          explanation: `Step 1: By Hooke's Law $F = ke$, spring constant $k = \\frac{20\\text{ N}}{19 - 15\\text{ cm}} = 5\\text{ N/cm}$. Step 2: For $35\\text{ N}$, extension $e_2 = \\frac{35}{5} = 7\\text{ cm}$. Total length $= 15 + 7 = 22\\text{ cm}$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(2)}] Calculate the capacitance $C$ of a parallel-plate capacitor that stores a charge of $6.0 \\times 10^{-4}\\text{ C}$ when connected across a $12\\text{ V}$ supply`,
+          options: ['$50\\text{ }\\mu\\text{F}$ ($5.0 \\times 10^{-5}\\text{ F}$)', '$7.2 \\times 10^{-3}\\text{ F}$', '$20\\text{ }\\mu\\text{F}$', '$100\\text{ }\\mu\\text{F}$'],
+          correctIndex: 0,
+          explanation: `Step 1: Use $Q = CV \\Rightarrow C = \\frac{Q}{V}$. Step 2: $C = \\frac{6.0 \\times 10^{-4}\\text{ C}}{12\\text{ V}} = 5.0 \\times 10^{-5}\\text{ F} = 50\\text{ }\\mu\\text{F}$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(3)}] A simple pendulum completes $40$ oscillations in $80\\text{ seconds}$. Calculate its period $T$ and frequency $f$`,
+          options: [
+            '$T = 2.0\\text{ s}$ ; $f = 0.5\\text{ Hz}$',
+            '$T = 0.5\\text{ s}$ ; $f = 2.0\\text{ Hz}$',
+            '$T = 2.0\\text{ s}$ ; $f = 2.0\\text{ Hz}$',
+            '$T = 4.0\\text{ s}$ ; $f = 0.25\\text{ Hz}$',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Period $T = \\frac{\\text{Total time}}{\\text{Number of oscillations}} = \\frac{80\\text{ s}}{40} = 2.0\\text{ s}$. Step 2: Frequency $f = \\frac{1}{T} = \\frac{1}{2.0} = 0.5\\text{ Hz}$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(0)}] An object is placed $30\\text{ cm}$ in front of a converging (convex) lens of focal length $f = 10\\text{ cm}$. Calculate the image distance $v$`,
+          options: ['$v = 15\\text{ cm}$ (real image)', '$v = 20\\text{ cm}$', '$v = 30\\text{ cm}$', '$v = 7.5\\text{ cm}$'],
+          correctIndex: 0,
+          explanation: `Step 1: Use the real-is-positive lens formula $\\frac{1}{f} = \\frac{1}{u} + \\frac{1}{v}$. Step 2: $\\frac{1}{10} = \\frac{1}{30} + \\frac{1}{v} \\Rightarrow \\frac{1}{v} = \\frac{3 - 1}{30} = \\frac{2}{30} \\Rightarrow v = 15\\text{ cm}$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(1)}] A step-down transformer has $1,200$ turns in the primary coil and $60$ turns in the secondary coil. If the primary is connected to $240\\text{ V AC}$, calculate the secondary output voltage $V_S$`,
+          options: ['$12\\text{ V}$', '$24\\text{ V}$', '$4,800\\text{ V}$', '$6\\text{ V}$'],
+          correctIndex: 0,
+          explanation: `Step 1: Transformer turns ratio equation: $\\frac{V_S}{V_P} = \\frac{N_S}{N_P}$. Step 2: $V_S = 240 \\times \\frac{60}{1200} = \\frac{240}{20} = 12\\text{ V}$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(2)}] How much thermal energy is required to raise the temperature of $2.0\\text{ kg}$ of water from $25^\\circ\\text{C}$ to $75^\\circ\\text{C}$? [Specific heat capacity of water $c = 4,200\\text{ J/(kg K)}$]`,
+          options: ['$420,000\\text{ J}$ ($420\\text{ kJ}$)', '$210,000\\text{ J}$', '$84,000\\text{ J}$', '$630,000\\text{ J}$'],
+          correctIndex: 0,
+          explanation: `Step 1: Use $Q = m c \\Delta \\theta$ where $\\Delta \\theta = 75 - 25 = 50\\text{ K}$. Step 2: $Q = 2.0 \\times 4,200 \\times 50 = 420,000\\text{ J}$ ($420\\text{ kJ}$).`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(3)}] A radioactive sample of Iodine-$131$ has a half-life of $8\\text{ days}$. If the initial mass is $64\\text{ g}$, what mass remains undecayed after $24\\text{ days}$?`,
+          options: ['$8\\text{ g}$', '$16\\text{ g}$', '$4\\text{ g}$', '$32\\text{ g}$'],
+          correctIndex: 0,
+          explanation: `Step 1: Number of half-lives $n = \\frac{24\\text{ days}}{8\\text{ days}} = 3$. Step 2: Remaining mass $m = m_0 \\left(\\frac{1}{2}\\right)^n = 64 \\times \\frac{1}{8} = 8\\text{ g}$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(0)}] In a Physics Paper 2 Simple Pendulum experiment, a student plots $T^2\\text{ (s}^2\\text{)}$ against length $L\\text{ (m)}$ and obtains a straight-line slope $S = 4.02\\text{ s}^2/\\text{m}$. Calculate the acceleration due to gravity $g$`,
+          options: ['$g = 9.82\\text{ m/s}^2$', '$g = 10.50\\text{ m/s}^2$', '$g = 8.90\\text{ m/s}^2$', '$g = 4.02\\text{ m/s}^2$'],
+          correctIndex: 0,
+          explanation: `Step 1: From $T = 2\\pi\\sqrt{L/g}$, squaring gives $T^2 = \\left(\\frac{4\\pi^2}{g}\\right)L$, so $\\text{Slope } S = \\frac{4\\pi^2}{g}$. Step 2: $g = \\frac{4\\pi^2}{4.02} = \\frac{39.478}{4.02} \\approx 9.82\\text{ m/s}^2$.`,
+        },
+      ];
+    }
+
+    if (subLower.includes('chemistry')) {
+      return [
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(1)}] Calculate the volume occupied at STP by $8.8\\text{ g}$ of carbon dioxide ($\text{CO}_2$) gas [Given: $\text{C} = 12, \text{O} = 16$, Molar Volume at STP $= 22.4\\text{ dm}^3$ ]`,
+          options: ['$4.48\\text{ dm}^3$', '$2.24\\text{ dm}^3$', '$11.20\\text{ dm}^3$', '$8.96\\text{ dm}^3$'],
+          correctIndex: 0,
+          explanation: `Step 1: Molar mass of $\\text{CO}_2 = 12 + 2(16) = 44\\text{ g/mol}$. Step 2: Moles $n = \\frac{8.8}{44} = 0.20\\text{ mol}$. Step 3: Volume at STP $= 0.20 \\times 22.4 = 4.48\\text{ dm}^3$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(2)}] Determine the oxidation state (number) of Chromium ($\text{Cr}$) in the dichromate ion $\\text{Cr}_2\\text{O}_7^{2-}$`,
+          options: ['$+6$', '$+3$', '$+7$', '$+12$'],
+          correctIndex: 0,
+          explanation: `Step 1: Let oxidation state of $\\text{Cr}$ be $x$, and $\\text{O} = -2$. Step 2: $2x + 7(-2) = -2 \\Rightarrow 2x - 14 = -2 \\Rightarrow 2x = +12 \\Rightarrow x = +6$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(3)}] In the Haber process $\\text{N}_2(g) + 3\\text{H}_2(g) \\rightleftharpoons 2\\text{NH}_3(g)\\text{ }(\\Delta H = -92\\text{ kJ/mol})$, which conditions favour maximum equilibrium yield of ammonia according to Le Chatelier's Principle?`,
+          options: [
+            'High pressure ($200\\text{ atm}$), moderate temperature ($450^\\circ\\text{C}$), and finely divided iron catalyst',
+            'Low pressure ($1\\text{ atm}$) and very high temperature ($1000^\\circ\\text{C}$)',
+            'High temperature ($800^\\circ\\text{C}$) and vanadium(V) oxide catalyst',
+            'Atmospheric pressure and room temperature without catalyst',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Forward reaction reduces gas moles ($4\\text{ mol} \\to 2\\text{ mol}$), so high pressure shifts equilibrium to the right. Step 2: Forward reaction is exothermic, so moderate temperature ($450^\\circ\\text{C}$) with an iron ($\text{Fe}$) catalyst gives optimal rate and yield.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(0)}] Which chemical reagent is used in the laboratory to distinguish between ethene (an alkene) and ethane (an alkane)?`,
+          options: [
+            'Bromine water (or acidified $\\text{KMnO}_4$), which is decolourized by ethene but not ethane',
+            'Universal indicator solution',
+            'Limewater ($\\text{Ca(OH)}_2$), which turns milky with ethane',
+            'Anhydrous copper(II) sulphate powder',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Ethene ($\\text{C}_2\\text{H}_4$) has a $\\text{C}=\\text{C}$ double bond (unsaturated) and undergoes addition reaction to decolourize reddish-brown bromine water. Step 2: Ethane ($\\text{C}_2\\text{H}_6$) is saturated and does not react in the dark.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(1)}] Calculate the percentage composition by mass of Nitrogen in ammonium nitrate ($\text{NH}_4\text{NO}_3$) [Given: $\text{N} = 14, \text{H} = 1, \text{O} = 16$]`,
+          options: ['$35.0\\%$', '$17.5\\%$', '$28.0\\%$', '$42.0\\%$'],
+          correctIndex: 0,
+          explanation: `Step 1: Molar mass of $\\text{NH}_4\\text{NO}_3 = 14 + 4(1) + 14 + 3(16) = 80\\text{ g/mol}$. Step 2: Total mass of Nitrogen $= 2 \\times 14 = 28\\text{ g}$. Step 3: $\\%\\text{ N} = \\frac{28}{80} \\times 100\\% = 35.0\\%$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(2)}] When aqueous barium chloride ($\text{BaCl}_2$) is added to a solution followed by dilute hydrochloric acid, a thick white precipitate insoluble in dilute $\text{HCl}$ is formed. Which anion is confirmed?`,
+          options: [
+            'Sulphate ion ($\\text{SO}_4^{2-}$)',
+            'Carbonate ion ($\\text{CO}_3^{2-}$)',
+            'Sulphite ion ($\\text{SO}_3^{2-}$)',
+            'Nitrate ion ($\\text{NO}_3^-$)',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: $\\text{Ba}^{2+}(aq) + \\text{SO}_4^{2-}(aq) \\to \\text{BaSO}_4(s)$ (white precipitate). Step 2: Unlike $\\text{BaCO}_3$ or $\\text{BaSO}_3$, barium sulphate ($\\text{BaSO}_4$) is insoluble in dilute $\\text{HCl}$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(3)}] If $50\\text{ cm}^3$ of $2.0\\text{ M}$ $\\text{H}_2\\text{SO}_4$ stock solution is diluted with distilled water to make $500\\text{ cm}^3$ of solution, calculate the molarity of the diluted solution`,
+          options: ['$0.20\\text{ M}$', '$0.40\\text{ M}$', '$0.10\\text{ M}$', '$0.50\\text{ M}$'],
+          correctIndex: 0,
+          explanation: `Step 1: Apply the dilution law $M_1 V_1 = M_2 V_2$. Step 2: $2.0 \\times 50 = M_2 \\times 500 \\Rightarrow M_2 = \\frac{100}{500} = 0.20\\text{ M}$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(0)}] Which method is used to remove permanent hardness of water caused by dissolved $\\text{CaSO}_4$ and $\\text{MgSO}_4$?`,
+          options: [
+            'Addition of washing soda ($\\text{Na}_2\\text{CO}_3$) or use of an ion-exchange resin',
+            'Simple boiling of the water only',
+            'Filtration through sand and gravel',
+            'Chlorination of the water supply',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Permanent hardness is caused by $\\text{Ca}^{2+}$ and $\\text{Mg}^{2+}$ sulphates/chlorides and cannot be removed by boiling. Step 2: Adding washing soda precipitates insoluble carbonates: $\\text{CaSO}_4 + \\text{Na}_2\\text{CO}_3 \\to \\text{CaCO}_3(s) + \\text{Na}_2\\text{SO}_4$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(1)}] In the extraction of iron in the Blast Furnace, what is the primary role of limestone ($\text{CaCO}_3$)?`,
+          options: [
+            'It decomposes to $\\text{CaO}$, which reacts with sandy silica ($\\text{SiO}_2$) impurities to form molten calcium silicate slag ($\\text{CaSiO}_3$)',
+            'It oxidizes iron(II) to iron(III)',
+            'It acts as a catalyst to lower the melting point of iron',
+            'It cools the bottom of the blast furnace',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: $\\text{CaCO}_3(s) \\to \\text{CaO}(s) + \\text{CO}_2(g)$. Step 2: Basic $\\text{CaO}$ neutralizes acidic impurity $\\text{SiO}_2$: $\\text{CaO} + \\text{SiO}_2 \\to \\text{CaSiO}_3(l)$ (slag).`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(2)}] Two isotopes of Chlorine are $^{35}_{17}\\text{Cl}$ ($75\\%$ abundance) and $^{37}_{17}\\text{Cl}$ ($25\\%$ abundance). Calculate the Relative Atomic Mass ($RAM$) of Chlorine`,
+          options: ['$35.5$', '$36.0$', '$35.2$', '$36.5$'],
+          correctIndex: 0,
+          explanation: `Step 1: $RAM = \\frac{(35 \\times 75) + (37 \\times 25)}{100}$. Step 2: $RAM = \\frac{2625 + 925}{100} = \\frac{3550}{100} = 35.5$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(3)}] What is the pH of a $0.001\\text{ M}$ ($1.0 \\times 10^{-3}\\text{ M}$) aqueous solution of hydrochloric acid ($\text{HCl}$)?`,
+          options: ['$\\text{pH} = 3$', '$\\text{pH} = 1$', '$\\text{pH} = 11$', '$\\text{pH} = 4$'],
+          correctIndex: 0,
+          explanation: `Step 1: $\\text{HCl}$ is a strong monobasic acid that ionizes completely, so $[\\text{H}^+] = 1.0 \\times 10^{-3}\\text{ M}$. Step 2: $\\text{pH} = -\\log_{10}[\\text{H}^+] = -\\log_{10}(10^{-3}) = 3$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(0)}] In a NECTA Chemistry Paper 2 titration, $25.0\\text{ cm}^3$ of $0.10\\text{ M }\\text{Na}_2\\text{CO}_3$ required $20.0\\text{ cm}^3$ of $\\text{HCl}$ for complete neutralization ($\\text{Na}_2\\text{CO}_3 + 2\\text{HCl} \\to 2\\text{NaCl} + \\text{H}_2\\text{O} + \\text{CO}_2$). Calculate the molarity of $\\text{HCl}$`,
+          options: ['$0.25\\text{ M}$', '$0.125\\text{ M}$', '$0.20\\text{ M}$', '$0.50\\text{ M}$'],
+          correctIndex: 0,
+          explanation: `Step 1: Use $\\frac{M_A V_A}{M_B V_B} = \\frac{n_A}{n_B}$ where $n_A = 2, n_B = 1$. Step 2: $\\frac{M_A \\times 20.0}{0.10 \\times 25.0} = \\frac{2}{1} \\Rightarrow M_A = \\frac{2 \\times 2.5}{20.0} = 0.25\\text{ M}$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(1)}] According to Faraday's First Law of Electrolysis, what mass of Copper ($\\text{Cu} = 63.5$) is deposited at the cathode when a current of $2.0\\text{ A}$ flows through aqueous $\\text{CuSO}_4$ for $1,930\\text{ seconds}$? ($1\\text{ F} = 96,500\\text{ C/mol}$)`,
+          options: ['$1.27\\text{ g}$', '$2.54\\text{ g}$', '$0.635\\text{ g}$', '$3.81\\text{ g}$'],
+          correctIndex: 0,
+          explanation: `Step 1: Charge $Q = I t = 2.0 \\times 1930 = 3,860\\text{ C}$. Step 2: Since $\\text{Cu}^{2+} + 2e^- \\to \\text{Cu}$, $z = 2$. Mass $m = \\frac{Q \\times M}{z \\times F} = \\frac{3860 \\times 63.5}{2 \\times 96500} = 1.27\\text{ g}$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(2)}] An organic compound contains $52.2\\%$ Carbon, $13.0\\%$ Hydrogen, and $34.8\\%$ Oxygen by mass. Determine its empirical formula [$\\text{C}=12, \\text{H}=1, \\text{O}=16$]`,
+          options: ['$\\text{C}_2\\text{H}_6\\text{O}$', '$\\text{CH}_2\\text{O}$', '$\\text{C}_2\\text{H}_4\\text{O}_2$', '$\\text{C}_3\\text{H}_8\\text{O}$'],
+          correctIndex: 0,
+          explanation: `Step 1: Mole ratios: $\\text{C} = \\frac{52.2}{12} = 4.35$; $\\text{H} = \\frac{13.0}{1} = 13.0$; $\\text{O} = \\frac{34.8}{16} = 2.175$. Step 2: Divide by smallest ($2.175$): $\\text{C}=2, \\text{H}=6, \\text{O}=1 \\Rightarrow \\text{C}_2\\text{H}_6\\text{O}$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(3)}] In Qualitative Analysis, when aqueous sodium hydroxide ($\\text{NaOH}$) is added dropwise and then in excess to a salt solution, a pale blue precipitate forms which is insoluble in excess $\\text{NaOH}$. Which cation is present?`,
+          options: ['Copper(II) ion ($\\text{Cu}^{2+}$)', 'Zinc(II) ion ($\\text{Zn}^{2+}$)', 'Iron(III) ion ($\\text{Fe}^{3+}$)', 'Calcium(II) ion ($\\text{Ca}^{2+}$)'],
+          correctIndex: 0,
+          explanation: `Step 1: $\\text{Cu}^{2+}(aq) + 2\\text{OH}^-(aq) \\to \\text{Cu(OH)}_2(s)$, which is a characteristic pale blue precipitate insoluble in excess $\\text{NaOH}$ (but soluble in excess aqueous ammonia to form deep blue $[\\text{Cu(NH}_3)_4]^{2+}$).`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(0)}] Which indicator is suitable for the titration of a strong acid ($\\text{HCl}$) against a weak base ($\\text{Na}_2\\text{CO}_3$ or $\\text{NH}_3(aq)$)?`,
+          options: ['Methyl Orange (M.O.)', 'Phenolphthalein (P.O.P.)', 'Universal Indicator Paper', 'Starch Indicator'],
+          correctIndex: 0,
+          explanation: `Step 1: A strong acid vs weak base titration has its equivalence point in the acidic pH range ($\\text{pH } 3.1\\text{–}4.4$), where Methyl Orange changes sharply from yellow to orange-pink.`,
+        },
+      ];
+    }
+
+    if (subLower.includes('biology') || subLower.includes('sayansi')) {
+      return [
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(1)}] When a red blood cell is placed in a concentrated salt solution (hypertonic solution), what physiological process occurs?`,
+          options: [
+            'It loses water by osmosis and shrinks (crenation)',
+            'It gains water by osmosis and bursts (haemolysis)',
+            'It becomes fully turgid due to its rigid cell wall',
+            'It undergoes plasmolysis as its cell wall detaches',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: In a hypertonic solution, water potential is higher inside the red blood cell than outside. Step 2: Water moves out by osmosis across the cell membrane, causing the red blood cell to shrink and wrinkle (crenation).`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(2)}] In human blood groups (ABO system), a mother has blood group A (heterozygous $I^A I^O$) and the father has blood group B (heterozygous $I^B I^O$). Which blood groups are possible among their children?`,
+          options: [
+            'All four blood groups: AB, A, B, and O (in a $1 : 1 : 1 : 1$ ratio)',
+            'Only blood groups A and B',
+            'Only blood group AB',
+            'Only blood groups A, B, and AB',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Parental gametes are $I^A, I^O \\times I^B, I^O$. Step 2: Offspring genotypes are $I^A I^B$ (Group AB), $I^A I^O$ (Group A), $I^B I^O$ (Group B), and $I^O I^O$ (Group O) with $25\\%$ probability each.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(3)}] In an ecological study using the capture-recapture method (Lincoln Index), $40$ Tilapia fish were captured, marked, and released. Later, $50$ fish were captured and $10$ of them had marks. Estimate the total Tilapia population $N$`,
+          options: ['$200$ fish', '$100$ fish', '$400$ fish', '$90$ fish'],
+          correctIndex: 0,
+          explanation: `Step 1: Lincoln Index formula: $N = \\frac{n_1 \\times n_2}{m_2}$. Step 2: Substitute $n_1 = 40$, $n_2 = 50$, $m_2 = 10 \\Rightarrow N = \\frac{40 \\times 50}{10} = 200$ fish.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(0)}] Which blood vessel in the mammalian circulatory system carries oxygenated blood at low pressure directly from the lungs to the left atrium of the heart?`,
+          options: [
+            'Pulmonary vein',
+            'Pulmonary artery',
+            'Aorta',
+            'Hepatic portal vein',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Most veins carry deoxygenated blood, EXCEPT the pulmonary vein. Step 2: The pulmonary vein transports freshly oxygenated blood from the lungs into the left atrium.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(1)}] When a food sample is mixed with sodium hydroxide ($\text{NaOH}$) solution followed by a few drops of $1\\%$ copper(II) sulphate ($\text{CuSO}_4$) solution (Biuret test), a purple/violet colour appears. What nutrient is present?`,
+          options: ['Proteins', 'Non-reducing sugars', 'Starch', 'Lipids'],
+          correctIndex: 0,
+          explanation: `Step 1: The Biuret test uses dilute $\\text{NaOH}$ and $1\\%$ $\\text{CuSO}_4$. Step 2: Peptide bonds in proteins form a purple/violet coordination complex with $\\text{Cu}^{2+}$ ions.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(2)}] In the mammalian kidney nephron, where does ultrafiltration take place and what causes the high hydrostatic pressure?`,
+          options: [
+            'In the glomerulus inside Bowman’s capsule, because the afferent arteriole is wider than the efferent arteriole',
+            'In the Loop of Henle due to active transport of sodium ions',
+            'In the collecting duct due to antidiuretic hormone (ADH)',
+            'In the distal convoluted tubule due to aldosterone',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: The afferent arteriole entering the glomerulus has a larger lumen diameter than the efferent arteriole leaving it. Step 2: This builds high hydrostatic pressure that forces water, glucose, urea, and salts into Bowman's capsule.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(3)}] Calculate the Respiratory Quotient ($RQ = \\frac{\\text{Volume of CO}_2\\text{ evolved}}{\\text{Volume of O}_2\\text{ consumed}}$) when $6$ moles of $\\text{CO}_2$ are produced from $6$ moles of $\\text{O}_2$ during complete oxidation of glucose`,
+          options: ['$RQ = 1.0$', '$RQ = 0.7$', '$RQ = 0.9$', '$RQ = 1.5$'],
+          correctIndex: 0,
+          explanation: `Step 1: Formula $RQ = \\frac{\\text{CO}_2\\text{ produced}}{\\text{O}_2\\text{ consumed}}$. Step 2: For carbohydrate (glucose) oxidation: $RQ = \\frac{6}{6} = 1.0$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(0)}] Which plant hormone (phytohormone) is synthesized at the shoot apex and causes phototropism by migrating to the shaded side to stimulate cell elongation?`,
+          options: ['Auxin (Indole-3-acetic acid, IAA)', 'Abscisic acid (ABA)', 'Ethylene (Ethene)', 'Cytokinin'],
+          correctIndex: 0,
+          explanation: `Step 1: Unilateral light causes auxins (IAA) to diffuse from the illuminated side to the shaded side of the shoot tip. Step 2: Higher auxin concentration on the shaded side promotes faster cell elongation, bending the shoot towards light.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(1)}] Trace the correct sequence of neurons and structures in a spinal reflex arc when a student accidentally touches a hot object`,
+          options: [
+            'Pain Receptor $\\to$ Sensory Neuron $\\to$ Relay (Intermediate) Neuron in Spinal Cord $\\to$ Motor Neuron $\\to$ Effector (Biceps Muscle)',
+            'Effector $\\to$ Motor Neuron $\\to$ Sensory Neuron $\\to$ Brain $\\to$ Receptor',
+            'Receptor $\\to$ Motor Neuron $\\to$ Relay Neuron $\\to$ Sensory Neuron $\\to$ Effector',
+            'Brain $\\to$ Relay Neuron $\\to$ Receptor $\\to$ Effector',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Receptor detects thermal stimulus and generates an impulse along the Sensory Neuron (dorsal root). Step 2: Relay neuron in grey matter synapses with the Motor Neuron (ventral root) to contract the Effector muscle.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(2)}] Colour blindness is an X-linked recessive trait ($X^c$). If a carrier mother ($X^C X^c$) marries a normal-vision father ($X^C Y$), what is the probability that their son will be colour-blind?`,
+          options: [
+            '$50\\%$ of their sons ($1/2$ of sons, or $25\\%$ of all children)',
+            '$100\\%$ of their sons',
+            '$0\\%$ of their sons',
+            '$50\\%$ of their daughters',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Sons inherit a $Y$ chromosome from their father and either $X^C$ ($50\\%$) or $X^c$ ($50\\%$) from their carrier mother. Step 2: Thus $1/2$ ($50\\%$) of sons will have genotype $X^c Y$ (colour-blind).`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(3)}] Which kingdom in the Five-Kingdom classification system consists of eukaryotic organisms with chitinous cell walls that feed heterotrophically by saprophytic absorption (e.g. Mucor, Yeast, Mushroom)?`,
+          options: ['Kingdom Fungi', 'Kingdom Plantae', 'Kingdom Protoctista', 'Kingdom Monera'],
+          correctIndex: 0,
+          explanation: `Step 1: Kingdom Fungi members lack chlorophyll, have cell walls made of chitin (not cellulose), and secrete extracellular enzymes for saprophytic nutrition.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(0)}] In a Biology Paper 2 Food Test, why is dilute hydrochloric acid ($\\text{HCl}$) boiled with a sucrose solution before adding sodium hydroxide ($\\text{NaOH}$) and Benedict's solution?`,
+          options: [
+            'Dilute $\\text{HCl}$ hydrolyzes the glycosidic bond in non-reducing sugar (sucrose) into reducing sugars (glucose and fructose), and $\\text{NaOH}$ neutralizes excess acid',
+            'Dilute $\\text{HCl}$ oxidizes starch directly into proteins',
+            'Dilute $\\text{HCl}$ acts as a blue-black colour indicator',
+            'Dilute $\\text{HCl}$ emulsifies lipids into droplets',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Sucrose is a non-reducing disaccharide. Boiling with dilute $\\text{HCl}$ hydrolyzes it into glucose + fructose. Step 2: $\\text{NaOH}$ neutralizes the acid so Benedict's reagent can work in alkaline medium.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(1)}] Using the mammalian dental formula of an adult human ($I \\frac{2}{2}, C \\frac{1}{1}, PM \\frac{2}{2}, M \\frac{3}{3}$), calculate the total number of permanent teeth`,
+          options: ['$32$ teeth', '$16$ teeth', '$28$ teeth', '$20$ teeth'],
+          correctIndex: 0,
+          explanation: `Step 1: Count teeth in one half of upper and lower jaws $= (2+1+2+3) + (2+1+2+3) = 8 + 8 = 16$. Step 2: Multiply by $2$ for both sides of the mouth: $16 \\times 2 = 32$ teeth.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(2)}] During aerobic cellular respiration, how many net molecules of ATP are synthesized per molecule of glucose during Glycolysis in the cytoplasm versus the complete aerobic pathway?`,
+          options: [
+            'Net $2\\text{ ATP}$ in Glycolysis ; $36\\text{–}38\\text{ ATP}$ total in complete aerobic respiration',
+            'Net $38\\text{ ATP}$ in Glycolysis ; $2\\text{ ATP}$ in Krebs cycle',
+            'Net $0\\text{ ATP}$ in Glycolysis ; $10\\text{ ATP}$ total',
+            'Net $4\\text{ ATP}$ in anaerobic fermentation',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Glycolysis invests $2\\text{ ATP}$ and produces $4\\text{ ATP}$ (net gain $= 2\\text{ ATP}$). Step 2: Krebs cycle and oxidative phosphorylation in mitochondria yield a total of $36\\text{–}38\\text{ ATP}$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(3)}] Which class of Phylum Arthropoda is characterized by having three body divisions (head, thorax, abdomen), three pairs of jointed walking legs ($6$ legs), and one pair of antennae?`,
+          options: ['Class Insecta', 'Class Arachnida', 'Class Crustacea', 'Class Diplopoda'],
+          correctIndex: 0,
+          explanation: `Step 1: Class Insecta (e.g., grasshopper, housefly, cockroach) possesses a head, thorax, and abdomen, $3$ pairs of thoracic legs, and $1$ pair of antennae.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(0)}] Under a light microscope with an eyepiece lens marked $\\times 10$ and an objective lens marked $\\times 40$, calculate the total magnification of the specimen`,
+          options: ['$\\times 400$', '$\\times 50$', '$\\times 40$', '$\\times 4,000$'],
+          correctIndex: 0,
+          explanation: `Step 1: Total Magnification $= \\text{Eyepiece Magnification} \\times \\text{Objective Magnification}$. Step 2: $10 \\times 40 = \\times 400$.`,
+        },
+      ];
+    }
+
+    if (subLower.includes('geography') || subLower.includes('jiografia')) {
+      return [
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(1)}] On a contoured topographical map, two stations A (altitude $1,200\\text{ m}$) and B (altitude $1,600\\text{ m}$) are separated by a horizontal ground distance of $4\\text{ km}$. Calculate the gradient between A and B`,
+          options: ['$1\\text{ in }10$ (or $1:10$)', '$1\\text{ in }40$ (or $1:40$)', '$1\\text{ in }100$ (or $1:100$)', '$1\\text{ in }4$ (or $1:4$)'],
+          correctIndex: 0,
+          explanation: `Step 1: Vertical Interval ($VI$) $= 1,600\\text{ m} - 1,200\\text{ m} = 400\\text{ m}$. Step 2: Horizontal Equivalent ($HE$) $= 4\\text{ km} = 4,000\\text{ m}$. Step 3: Gradient $= \\frac{VI}{HE} = \\frac{400}{4,000} = \\frac{1}{10}$ ($1\\text{ in }10$).`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(2)}] If the forward bearing of town Y from town X is $065^\\circ$, calculate the back bearing of town X from town Y`,
+          options: ['$245^\\circ$', '$115^\\circ$', '$295^\\circ$', '$155^\\circ$'],
+          correctIndex: 0,
+          explanation: `Step 1: Rule for Back Bearing: If Forward Bearing $< 180^\\circ$, add $180^\\circ$. Step 2: Back Bearing $= 065^\\circ + 180^\\circ = 245^\\circ$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(3)}] A weather station records a maximum daily temperature of $31^\\circ\\text{C}$ and a minimum daily temperature of $19^\\circ\\text{C}$. Calculate the Mean Daily Temperature and Diurnal Temperature Range`,
+          options: [
+            'Mean $= 25^\\circ\\text{C}$ ; Diurnal Range $= 12^\\circ\\text{C}$',
+            'Mean $= 25^\\circ\\text{C}$ ; Diurnal Range $= 50^\\circ\\text{C}$',
+            'Mean $= 12^\\circ\\text{C}$ ; Diurnal Range $= 25^\\circ\\text{C}$',
+            'Mean $= 26^\\circ\\text{C}$ ; Diurnal Range $= 10^\\circ\\text{C}$',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Mean Daily Temperature $= \\frac{31 + 19}{2} = \\frac{50}{2} = 25^\\circ\\text{C}$. Step 2: Diurnal Range $= \\text{Max} - \\text{Min} = 31^\\circ\\text{C} - 19^\\circ\\text{C} = 12^\\circ\\text{C}$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(0)}] Which drainage pattern develops on a volcanic cone or dome (such as Mount Kilimanjaro or Mount Meru) where rivers flow outwards in all directions from a central peak?`,
+          options: [
+            'Radial drainage pattern',
+            'Dendritic drainage pattern',
+            'Trellis drainage pattern',
+            'Centripetal drainage pattern',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: On a conical dome or volcano, streams radiate outwards downhill in all directions like the spokes of a wheel, forming a Radial drainage pattern.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(1)}] When interpreting a ground-level versus a low-oblique photograph in NECTA Geography Paper, which feature distinguishes a low-oblique photograph?`,
+          options: [
+            'The camera is tilted at an angle from above so the horizon is NOT visible, and scale decreases from foreground to background',
+            'The horizon is clearly visible occupying the top third of the photo',
+            'It shows only the rooftops of buildings vertically from $90^\\circ$ overhead',
+            'It has a uniform scale throughout like a topographical map',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Oblique photographs are taken with the camera axis tilted. Step 2: In a low-oblique photo ($\\approx 30^\\circ$), the horizon is not visible, unlike a high-oblique photo ($\\approx 60^\\circ$).`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(2)}] In chain and tape surveying, which instrument is used specifically to set out right angles ($90^\\circ$ offsets) from the main survey chain line to objects on either side?`,
+          options: [
+            'Cross staff (or Optical Square)',
+            'Ranging rod',
+            'Abney level',
+            'Gunter’s chain',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: A Cross Staff or Optical Square is used in chain surveying to establish perpendicular ($90^\\circ$) offset lines from the baseline to lateral details.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(3)}] At $28^\\circ\\text{C}$, a cubic metre of air holds $15\\text{ g/m}^3$ of water vapour (Absolute Humidity), while saturated air at $28^\\circ\\text{C}$ can hold $30\\text{ g/m}^3$. Calculate the Relative Humidity ($RH$)`,
+          options: ['$50\\%$', '$200\\%$', '$45\\%$', '$15\\%$'],
+          correctIndex: 0,
+          explanation: `Step 1: $RH = \\frac{\\text{Actual Vapour Content}}{\\text{Saturation Vapour Capacity}} \\times 100\\%$. Step 2: $RH = \\frac{15}{30} \\times 100\\% = 50\\%$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(0)}] Which East African lakes were formed within the Western and Eastern branches of the Great East African Rift Valley by tectonic faulting (graben formation)?`,
+          options: [
+            'Lake Tanganyika, Lake Nyasa (Malawi), and Lake Natron',
+            'Lake Victoria and Lake Kyoga',
+            'Lake Chad and Lake Tana',
+            'Lake Ngozi and Lake Duluti only',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Rift valley lakes occupy elongated, steep-sided grabens formed by tensional/compressional faulting. Step 2: Lake Tanganyika and Lake Nyasa are classic deep Rift Valley lakes, whereas Lake Victoria occupies a down-warped crustal basin.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(1)}] In geographic research methodology, a researcher selects every $10\\text{th}$ household from an alphabetical village register of $500$ households. Which probability sampling technique is this?`,
+          options: [
+            'Systematic random sampling',
+            'Snowball sampling',
+            'Purposive (judgmental) sampling',
+            'Quota sampling',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Selecting units at a fixed regular interval ($k = \\frac{N}{n} = 10$) from an ordered sampling frame is Systematic Sampling.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(2)}] If a country has $18\\text{ million}$ children aged $0\\text{–}14$, $2\\text{ million}$ elderly people aged $65+$, and $25\\text{ million}$ working-age people aged $15\\text{–}64$, calculate the Age Dependency Ratio`,
+          options: ['$80\\%$ (or $0.8 : 1$)', '$125\\%$', '$72\\%$', '$44\\%$'],
+          correctIndex: 0,
+          explanation: `Step 1: $\\text{Dependency Ratio} = \\frac{\\text{Pop}(0\\text{–}14) + \\text{Pop}(65+)}{\\text{Pop}(15\\text{–}64)} \\times 100\\%$. Step 2: $\\frac{18 + 2}{25} \\times 100\\% = \\frac{20}{25} \\times 100\\% = 80\\%$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(3)}] Convert the Representative Fraction ($RF$) map scale $1 : 250,000$ into a direct statement scale in kilometres`,
+          options: [
+            '$1\\text{ cm}$ on the map represents $2.5\\text{ km}$ on the ground',
+            '$1\\text{ cm}$ on the map represents $25\\text{ km}$ on the ground',
+            '$1\\text{ cm}$ on the map represents $0.25\\text{ km}$ on the ground',
+            '$1\\text{ cm}$ on the map represents $5.0\\text{ km}$ on the ground',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Since $1\\text{ km} = 100,000\\text{ cm}$, divide $250,000\\text{ cm}$ by $100,000$. Step 2: $\\frac{250,000}{100,000} = 2.5\\text{ km}$, so $1\\text{ cm}$ represents $2.5\\text{ km}$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(0)}] When it is $12:00\\text{ Noon}$ at Greenwich Meridian ($0^\\circ$), what is the local time in Dar es Salaam, Tanzania located at longitude $39^\\circ\\text{E}$?`,
+          options: ['$2:36\\text{ PM}$ ($14:36\\text{ hrs}$)', '$9:24\\text{ AM}$', '$3:00\\text{ PM}$', '$1:39\\text{ PM}$'],
+          correctIndex: 0,
+          explanation: `Step 1: Earth rotates $1^\\circ$ every $4\\text{ minutes}$, so $39^\\circ \\times 4 = 156\\text{ minutes} = 2\\text{ hours } 36\\text{ minutes}$. Step 2: Since $39^\\circ\\text{E}$ is East of Greenwich, add time: $12:00 + 2:36 = 2:36\\text{ PM}$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(1)}] On a topographical map of scale $1 : 50,000$, a sisal estate covers $12$ full grid squares and $8$ half grid squares (where each grid square measures $2\\text{ cm} \\times 2\\text{ cm}$). Calculate the area of the estate in $\\text{km}^2$`,
+          options: ['$16\\text{ km}^2$', '$20\\text{ km}^2$', '$12\\text{ km}^2$', '$8\\text{ km}^2$'],
+          correctIndex: 0,
+          explanation: `Step 1: Total complete squares $= 12 + \\frac{8}{2} = 16$ squares. Step 2: At scale $1:50,000$, $2\\text{ cm} = 1\\text{ km}$, so each grid square $= 1\\text{ km} \\times 1\\text{ km} = 1\\text{ km}^2$. Total area $= 16\\text{ km}^2$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(2)}] Which type of chemical weathering involves the reaction of rainwater containing dissolved carbon dioxide (weak carbonic acid) with limestone ($\\text{CaCO}_3$) to form soluble calcium bicarbonate, creating karst landforms like Amboni Caves in Tanga?`,
+          options: ['Carbonation', 'Exfoliation (Onion-skin peeling)', 'Frost shattering', 'Oxidation'],
+          correctIndex: 0,
+          explanation: `Step 1: $\\text{H}_2\\text{CO}_3 + \\text{CaCO}_3(s) \\to \\text{Ca(HCO}_3)_2(aq)$ is Carbonation, which dissolves jointed limestone rock to form caves, stalactites, and stalagmites.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(3)}] In the internal structure of the Earth, what is the name of the seismic discontinuity separating the Crust (SIAL/SIMA) from the underlying Mantle?`,
+          options: ['Mohorovicic (Moho) discontinuity', 'Gutenberg discontinuity', 'Conrad discontinuity', 'Lehmann discontinuity'],
+          correctIndex: 0,
+          explanation: `Step 1: The Mohorovicic discontinuity (Moho) marks the boundary between the Earth's crust and the mantle, whereas the Gutenberg discontinuity separates the mantle from the core.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(0)}] Calculate the arithmetic mean and median of the following annual rainfall figures (in $\\text{mm}$) recorded at five stations: $600, 850, 700, 950, 900$`,
+          options: [
+            'Mean $= 800\\text{ mm}$ ; Median $= 850\\text{ mm}$',
+            'Mean $= 850\\text{ mm}$ ; Median $= 700\\text{ mm}$',
+            'Mean $= 800\\text{ mm}$ ; Median $= 700\\text{ mm}$',
+            'Mean $= 750\\text{ mm}$ ; Median $= 850\\text{ mm}$',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Mean $= \\frac{600 + 850 + 700 + 950 + 900}{5} = \\frac{4000}{5} = 800\\text{ mm}$. Step 2: Arrange in ascending order ($600, 700, 850, 900, 950$) $\\Rightarrow$ middle value (Median) $= 850\\text{ mm}$.`,
+        },
+      ];
+    }
+
+    if (
+      subLower.includes('book-keeping') ||
+      subLower.includes('account') ||
+      subLower.includes('commerce') ||
+      subLower.includes('business') ||
+      subLower.includes('economics')
+    ) {
+      return [
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(1)}] A business has Current Assets of $\\text{TZS } 4,500,000$ (including Closing Stock of $\\text{TZS } 1,500,000$) and Current Liabilities of $\\text{TZS } 1,500,000$. Calculate Working Capital, Current Ratio, and Acid-Test (Quick) Ratio`,
+          options: [
+            'Working Capital $= \\text{TZS } 3,000,000$ ; Current Ratio $= 3 : 1$ ; Acid-Test Ratio $= 2 : 1$',
+            'Working Capital $= \\text{TZS } 6,000,000$ ; Current Ratio $= 2 : 1$ ; Acid-Test Ratio $= 3 : 1$',
+            'Working Capital $= \\text{TZS } 3,000,000$ ; Current Ratio $= 2 : 1$ ; Acid-Test Ratio $= 1 : 1$',
+            'Working Capital $= \\text{TZS } 1,500,000$ ; Current Ratio $= 3 : 1$ ; Acid-Test Ratio $= 1.5 : 1$',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Working Capital $= \\text{CA} - \\text{CL} = 4,500,000 - 1,500,000 = \\text{TZS } 3,000,000$. Step 2: Current Ratio $= \\frac{4,500,000}{1,500,000} = 3 : 1$. Step 3: Acid-Test Ratio $= \\frac{4,500,000 - 1,500,000}{1,500,000} = 2 : 1$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(2)}] Given Cost of Goods Sold ($\text{COGS}$) $= \\text{TZS } 3,600,000$, Opening Stock $= \\text{TZS } 500,000$, and Closing Stock $= \\text{TZS } 700,000$, calculate the Average Stock and Rate of Stock Turnover ($\text{ROST}$)`,
+          options: [
+            'Average Stock $= \\text{TZS } 600,000$ ; $\\text{ROST} = 6\\text{ times}$',
+            'Average Stock $= \\text{TZS } 1,200,000$ ; $\\text{ROST} = 3\\text{ times}$',
+            'Average Stock $= \\text{TZS } 600,000$ ; $\\text{ROST} = 5\\text{ times}$',
+            'Average Stock $= \\text{TZS } 500,000$ ; $\\text{ROST} = 7.2\\text{ times}$',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Average Stock $= \\frac{500,000 + 700,000}{2} = \\text{TZS } 600,000$. Step 2: Rate of Stock Turnover $= \\frac{\\text{COGS}}{\\text{Average Stock}} = \\frac{3,600,000}{600,000} = 6\\text{ times}$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(3)}] A petty cashier operates on an imprest float of $\\text{TZS } 200,000$ per week. During the week, total petty cash vouchers paid amounted to $\\text{TZS } 165,000$. How much reimbursement is required to restore the imprest?`,
+          options: ['$\\text{TZS } 165,000$', '$\\text{TZS } 35,000$', '$\\text{TZS } 200,000$', '$\\text{TZS } 365,000$'],
+          correctIndex: 0,
+          explanation: `Step 1: Under the Petty Cash Imprest System, the amount reimbursed at the end of the period equals the exact amount spent ($\\text{TZS } 165,000$) so the balance is restored from $\\text{TZS } 35,000$ back to $\\text{TZS } 200,000$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(0)}] A trader's Cash Book (Bank Column) shows a debit balance of $\\text{TZS } 800,000$. Unpresented cheques total $\\text{TZS } 250,000$ and uncredited deposits total $\\text{TZS } 150,000$. Find the balance as per Bank Statement`,
+          options: ['$\\text{TZS } 900,000$', '$\\text{TZS } 700,000$', '$\\text{TZS } 1,050,000$', '$\\text{TZS } 400,000$'],
+          correctIndex: 0,
+          explanation: `Step 1: Start with Cash Book balance $= 800,000$. Step 2: Add Unpresented Cheques ($+250,000$) and Subtract Uncredited Deposits ($-150,000$) $\\Rightarrow 800,000 + 250,000 - 150,000 = \\text{TZS } 900,000$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(1)}] If a retailer applies a Mark-up of $25\\%$ ($\frac{1}{4}$) on Cost Price, what is the corresponding Gross Profit Margin on Selling Price?`,
+          options: ['$20\\%$ ($\\frac{1}{5}$)', '$25\\%$ ($\\frac{1}{4}$)', '$33.3\\%$ ($\\frac{1}{3}$)', '$15\\%$'],
+          correctIndex: 0,
+          explanation: `Step 1: If Mark-up $= \\frac{1}{4}$, then Margin $= \\frac{1}{4 + 1} = \\frac{1}{5}$. Step 2: Convert $\\frac{1}{5}$ to percentage: $\\frac{1}{5} \\times 100\\% = 20\\%$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(2)}] When the price of a commodity rises from $\\text{TZS } 1,000$ to $\\text{TZS } 1,200$ ($+20\\%$), quantity demanded falls from $500\\text{ units}$ to $400\\text{ units}$ ($-20\\%$). Calculate the Price Elasticity of Demand ($PED$)`,
+          options: ['$PED = 1.0$ (Unitary elastic)', '$PED = 2.0$ (Elastic)', '$PED = 0.5$ (Inelastic)', '$PED = 0$ (Perfectly inelastic)'],
+          correctIndex: 0,
+          explanation: `Step 1: $\\%\\Delta Q_d = \\frac{-100}{500} \\times 100\\% = -20\\%$; $\\%\\Delta P = \\frac{+200}{1000} \\times 100\\% = +20\\%$. Step 2: $|PED| = \\frac{20\\%}{20\\%} = 1.0$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(3)}] Which Book of Prime (Original) Entry is used to record credit purchases of goods meant specifically for resale?`,
+          options: [
+            'Purchases Day Book (Purchases Journal)',
+            'Sales Day Book (Sales Journal)',
+            'General Journal',
+            'Cash Book',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: All credit purchases of trading inventory/stock are recorded first in the Purchases Day Book (Purchases Journal) from incoming purchase invoices.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(0)}] A delivery van costing $\\text{TZS } 10,000,000$ is depreciated at $20\\%$ per annum using the Reducing (Diminishing) Balance Method. Calculate the depreciation charge for Year 2`,
+          options: ['$\\text{TZS } 1,600,000$', '$\\text{TZS } 2,000,000$', '$\\text{TZS } 6,400,000$', '$\\text{TZS } 3,600,000$'],
+          correctIndex: 0,
+          explanation: `Step 1: Year 1 depreciation $= 20\\% \\times 10,000,000 = 2,000,000$; Net Book Value at end of Year 1 $= 8,000,000$. Step 2: Year 2 depreciation $= 20\\% \\times 8,000,000 = \\text{TZS } 1,600,000$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(1)}] Which error is NOT disclosed by a Trial Balance even though the debit and credit totals agree?`,
+          options: [
+            'Error of Principle (e.g., debiting Motor Repairs to Motor Vehicles Asset Account)',
+            'Single-sided casting error in the Sales Account',
+            'Posting $\\text{TZS } 45,000$ to the debit side and $\\text{TZS } 54,000$ to the credit side',
+            'Omitting one side of a double-entry transaction',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Errors of Principle, Commission, Complete Omission, Original Entry, and Compensating Errors preserve equal total debits and credits and therefore do not affect Trial Balance agreement.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(2)}] An invoice for goods worth $\\text{TZS } 1,000,000$ offers a $10\\%$ Trade Discount and a $5\\%$ Cash Discount if paid within $14\\text{ days}$. If the buyer pays within $10\\text{ days}$, how much cash is paid?`,
+          options: ['$\\text{TZS } 855,000$', '$\\text{TZS } 850,000$', '$\\text{TZS } 900,000$', '$\\text{TZS } 950,000$'],
+          correctIndex: 0,
+          explanation: `Step 1: Deduct $10\\%$ Trade Discount from list price: $1,000,000 - 100,000 = \\text{TZS } 900,000$ (Invoice price). Step 2: Deduct $5\\%$ Cash Discount on $\\text{TZS } 900,000$ ($45,000$): $900,000 - 45,000 = \\text{TZS } 855,000$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(3)}] In international trade, if Tanzania's Visible Exports are $\\text{TZS } 950\\text{ billion}$ and Visible Imports are $\\text{TZS } 1,100\\text{ billion}$, calculate the Balance of Trade (Visible Balance)`,
+          options: [
+            'Unfavourable Balance of Trade (Deficit) of $-\\text{TZS } 150\\text{ billion}$',
+            'Favourable Balance of Trade (Surplus) of $+\\text{TZS } 150\\text{ billion}$',
+            'Balanced Trade of $\\text{TZS } 2,050\\text{ billion}$',
+            'Surplus of $+\\text{TZS } 950\\text{ billion}$',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Balance of Trade $= \\text{Visible Exports} - \\text{Visible Imports}$. Step 2: $950 - 1,100 = -150\\text{ billion}$ (a visible trade deficit).`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(0)}] If a firm's Total Assets are $\\text{TZS } 18,500,000$ and Total Liabilities are $\\text{TZS } 6,200,000$, calculate the Owner's Equity (Capital) using the Accounting Equation`,
+          options: ['$\\text{TZS } 12,300,000$', '$\\text{TZS } 24,700,000$', '$\\text{TZS } 11,300,000$', '$\\text{TZS } 6,200,000$'],
+          correctIndex: 0,
+          explanation: `Step 1: Accounting Equation: $\\text{Assets} = \\text{Capital} + \\text{Liabilities}$. Step 2: $\\text{Capital} = 18,500,000 - 6,200,000 = \\text{TZS } 12,300,000$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(1)}] Under the Straight-Line Method of depreciation, a machine costing $\\text{TZS } 8,500,000$ has an estimated residual (scrap) value of $\\text{TZS } 500,000$ after a useful life of $5\\text{ years}$. Calculate the annual depreciation expense`,
+          options: ['$\\text{TZS } 1,600,000\\text{ per year}$', '$\\text{TZS } 1,700,000\\text{ per year}$', '$\\text{TZS } 1,800,000\\text{ per year}$', '$\\text{TZS } 1,500,000\\text{ per year}$'],
+          correctIndex: 0,
+          explanation: `Step 1: $\\text{Annual Depreciation} = \\frac{\\text{Cost} - \\text{Scrap Value}}{\\text{Useful Life}}$. Step 2: $\\frac{8,500,000 - 500,000}{5} = \\frac{8,000,000}{5} = \\text{TZS } 1,600,000\\text{ per year}$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(2)}] In an insurance contract, which principle states that the insured cannot recover more than the actual financial loss suffered (preventing profiteering from a loss)?`,
+          options: ['Principle of Indemnity', 'Principle of Insurable Interest', 'Principle of Utmost Good Faith (Uberrimae Fidei)', 'Principle of Proximate Cause'],
+          correctIndex: 0,
+          explanation: `Step 1: The Principle of Indemnity restores the insured to the same financial position occupied immediately before the loss, without allowing profit.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(3)}] Given Opening Capital $= \\text{TZS } 5,000,000$, Net Profit for the year $= \\text{TZS } 1,800,000$, and Owner's Drawings $= \\text{TZS } 400,000$, calculate the Closing Capital`,
+          options: ['$\\text{TZS } 6,400,000$', '$\\text{TZS } 7,200,000$', '$\\text{TZS } 3,600,000$', '$\\text{TZS } 6,800,000$'],
+          correctIndex: 0,
+          explanation: `Step 1: $\\text{Closing Capital} = \\text{Opening Capital} + \\text{Net Profit} - \\text{Drawings}$. Step 2: $5,000,000 + 1,800,000 - 400,000 = \\text{TZS } 6,400,000$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(0)}] In a Control Account, which item is debited to the Sales Ledger (Total Debtors) Control Account?`,
+          options: ['Credit sales for the period and Dishonoured cheques from customers', 'Cash received from debtors', 'Sales returns (Returns Inwards)', 'Bad debts written off'],
+          correctIndex: 0,
+          explanation: `Step 1: Credit sales and dishonoured cheques increase the total amount owed by trade debtors and are therefore debited to the Sales Ledger Control Account.`,
+        },
+      ];
+    }
+
+    // Default / History / Civics / English / Kiswahili / General Subjects — 16 rich sub-topic questions
+    return [
+      {
+        question: `[${cls} • ${focusTopic} — ${subT(1)}] According to ${matchedBookTitle}, which core competence objective is developed when studying "${subT(1)}" under "${focusTopic}"?`,
+        options: [
+          `Analyzing the causes, key principles, and practical Tanzanian applications of "${subT(1)}" with verified evidence`,
+          'Listing isolated definitions without connecting them to the topic',
+          'Skipping practical case studies and historical/social context',
+          'Memorizing headings without explaining their meaning',
+        ],
+        correctIndex: 0,
+        explanation: `Step 1: Identify the competence focus of "${subT(1)}" in ${cls} ${subject}. Step 2: Connect its core concepts to real-world Tanzanian and East African examples as required by TIE.`,
+      },
+      {
+        question: `[${cls} • ${focusTopic} — ${subT(2)}] In ${matchedPaperTitle} (Section A Multiple Choice & Matching Items), how do examiners test your understanding of "${subT(2)}"?`,
+        options: [
+          `By requiring you to distinguish accurate concepts, chronology, or rules of "${subT(2)}" from closely related distractors`,
+          'By asking questions unrelated to the official syllabus',
+          'By awarding marks without checking the chosen letter',
+          'By testing only topics from other subjects',
+        ],
+        correctIndex: 0,
+        explanation: `Step 1: Read the stem on "${subT(2)}" carefully. Step 2: Eliminate options that contradict official TIE ${cls} ${subject} definitions before selecting the verified letter.`,
+      },
+      {
+        question: `[${cls} • ${focusTopic} — ${subT(3)}] When answering a short-answer NECTA Section B question on "${subT(3)}" (${focusTopic}), why is it important to give a concrete Tanzanian or African example for each point?`,
+        options: [
+          `Because NECTA marking schemes allocate specific marks for linking theoretical points on "${subT(3)}" to authentic real-life examples`,
+          'Examples are optional and never carry any marks',
+          'Examples replace the need to state the main point',
+          'Only foreign examples are accepted in NECTA exams',
+        ],
+        correctIndex: 0,
+        explanation: `Step 1: State the main point clearly (1 Mark). Step 2: Explain the mechanism/reason (1 Mark). Step 3: Provide a relevant Tanzanian/East African example on "${subT(3)}" (1 Mark).`,
+      },
+      {
+        question: `[${cls} • ${focusTopic} — ${subT(0)}] Which of the following best describes the relationship between the main competence "${focusTopic}" and its specific sub-topic "${subT(0)}" in ${cls} ${subject}?`,
+        options: [
+          `"${subT(0)}" provides the specific analytical skills, rules, and evidence needed to master the broader competence of "${focusTopic}"`,
+          `"${subT(0)}" is completely independent of "${focusTopic}"`,
+          `"${subT(0)}" is only studied outside the classroom`,
+          `"${focusTopic}" excludes "${subT(0)}" in national examinations`,
+        ],
+        correctIndex: 0,
+        explanation: `Step 1: In the TIE competence-based curriculum, each main topic ("${focusTopic}") is broken down into specific teachable sub-topics such as "${subT(0)}" that build cumulative mastery.`,
+      },
+      {
+        question: `[${cls} • ${focusTopic} — ${subT(1)}] While revising "${subT(1)}" from ${matchedBookTitle}, a student compares two contrasting perspectives or cases. Which higher-order cognitive skill (Bloom's Taxonomy) is being practiced?`,
+        options: [
+          `Analysis and Evaluation of "${subT(1)}"`,
+          'Rote recall without comprehension',
+          'Passive copying of notes',
+          'Guessing without evidence',
+        ],
+        correctIndex: 0,
+        explanation: `Step 1: Comparing, contrasting, and evaluating evidence on "${subT(1)}" develops higher-order Analysis and Evaluation skills tested in Section B and Section C of NECTA papers.`,
+      },
+      {
+        question: `[${cls} • ${focusTopic} — ${subT(2)}] In ${matchedPaperTitle}, a question asks: "Examine six (6) factors/impacts related to ${subT(2)}." What is the mandatory structure of the introduction paragraph?`,
+        options: [
+          `Define the key term(s) in "${subT(2)}", specify the relevant time period/context, and outline the direction of the essay (02 Marks)`,
+          'Start numbering Point 1 immediately without any definition',
+          'Repeat the question word-for-word as the introduction',
+          'Write the conclusion at the beginning of the essay',
+        ],
+        correctIndex: 0,
+        explanation: `Step 1: A complete NECTA essay introduction defines the core concept of "${subT(2)}", situates it in context, and earns the full 02 Introduction Marks.`,
+      },
+      {
+        question: `[${cls} • ${focusTopic} — ${subT(3)}] Which study strategy using ${matchedBookTitle} and ${matchedPaperTitle} is most effective for mastering "${subT(3)}" before the national examination?`,
+        options: [
+          `Study the conceptual notes and worked examples on "${subT(3)}" in ${matchedBookTitle}, then solve corresponding Section A, B, and C questions in ${matchedPaperTitle}`,
+          'Read only the table of contents without solving past paper questions',
+          'Memorize past paper answers without understanding why they are correct',
+          'Skip "${subT(3)}" and focus only on one sub-topic',
+        ],
+        correctIndex: 0,
+        explanation: `Step 1: Combine textbook conceptual mastery (${matchedBookTitle}) with timed past-paper application (${matchedPaperTitle}) on "${subT(3)}".`,
+      },
+      {
+        question: `[${cls} • ${focusTopic} — ${subT(0)}] When evaluating cause-and-effect relationships in "${subT(0)}" (${cls} ${subject}), how should you distinguish between immediate causes and long-term underlying factors?`,
+        options: [
+          `Explain how long-term structural conditions in "${focusTopic}" created the foundation, while immediate triggers directly initiated the outcome in "${subT(0)}"`,
+          'Treat all factors as identical without explanation',
+          'Mention only dates or names without explaining causation',
+          'Ignore the sequence of events',
+        ],
+        correctIndex: 0,
+        explanation: `Step 1: Differentiate underlying structural factors from immediate triggers in "${subT(0)}" to demonstrate deep analytical mastery in ${cls} ${subject}.`,
+      },
+      {
+        question: `[${cls} • ${focusTopic} — ${subT(1)}] In a collaborative classroom discussion on "${subT(1)}" (${focusTopic}), how should students verify whether a proposed statement is accurate?`,
+        options: [
+          `Cross-check the statement against the official TIE ${cls} ${subject} Textbook (${matchedBookTitle}) and NECTA Marking Scheme standards`,
+          'Accept any unverified opinion without checking the syllabus',
+          'Ignore textbook definitions and formulas',
+          'Skip verification altogether',
+        ],
+        correctIndex: 0,
+        explanation: `Step 1: Always ground academic arguments on "${subT(1)}" in the authoritative TIE curriculum and official NECTA marking rubrics.`,
+      },
+      {
+        question: `[${cls} • ${focusTopic} — ${subT(2)}] If a Section B question on "${subT(2)}" carries $10\\text{ marks}$ and asks for five (5) brief explanations, how are the marks distributed in the official marking scheme?`,
+        options: [
+          '$02\\text{ marks}$ for each well-explained point ($5 \\times 2 = 10\\text{ marks}$)',
+          '$10\\text{ marks}$ for the first point and $0\\text{ marks}$ for the rest',
+          '$05\\text{ marks}$ for the title and $05\\text{ marks}$ for the margin',
+          '$01\\text{ mark}$ total for all five points',
+        ],
+        correctIndex: 0,
+        explanation: `Step 1: Divide total marks ($10$) by the required number of points ($5$) $\\Rightarrow 02\\text{ marks}$ per point (1 mark for the key point + 1 mark for clear explanation/example).`,
+      },
+      {
+        question: `[${cls} • ${focusTopic} — ${subT(3)}] What is the purpose of the concluding paragraph in a $15\\text{-mark}$ NECTA essay on "${focusTopic}" (${subT(3)})?`,
+        options: [
+          `To synthesize the main arguments presented on "${subT(3)}" and provide a concise, relevant judgment or recommendation ($01\\text{–}02\\text{ marks}$)`,
+          'To introduce completely new unrelated topics not discussed in the body',
+          'To copy the introduction word-for-word',
+          'To leave the essay unfinished',
+        ],
+        correctIndex: 0,
+        explanation: `Step 1: A strong conclusion summarizes the weight of the arguments on "${subT(3)}" and provides a sound analytical judgment to secure the final conclusion marks.`,
+      },
+      {
+        question: `[${cls} • ${focusTopic} — ${subT(0)}] In ${matchedPaperTitle}, how should a candidate handle a Matching Items question (List A and List B) on "${subT(0)}" to avoid losing marks?`,
+        options: [
+          `First match the items in List A whose definitions in "${subT(0)}" are certain, then carefully compare remaining options in List B to avoid duplicate letters`,
+          'Assign the same letter from List B to every item in List A',
+          'Leave half of the matching items blank',
+          'Write sentences instead of the required letter',
+        ],
+        correctIndex: 0,
+        explanation: `Step 1: Secure certain matches first. Step 2: Eliminate used letters in List B and verify each remaining concept against "${subT(0)}" in ${matchedBookTitle}.`,
+      },
+      {
+        question: `[${cls} • ${focusTopic} — ${subT(1)}] When a NECTA question on "${subT(1)}" (${focusTopic}) uses the command verb "Contrast" or "Differentiate", what format is expected in your answer?`,
+        options: [
+          `Present clear comparative points joined by contrasting conjunctions ("whereas", "while", "on the other hand") addressing both sides of "${subT(1)}"`,
+          'Describe only one side and ignore the second concept',
+          'List single words without explanation',
+          'Write only definitions without comparing them',
+        ],
+        correctIndex: 0,
+        explanation: `Step 1: "Differentiate" or "Contrast" requires side-by-side comparison of both concepts in "${subT(1)}" within each point to earn full marks.`,
+      },
+      {
+        question: `[${cls} • ${focusTopic} — ${subT(2)}] How does mastering "${subT(2)}" in ${cls} ${subject} prepare students for real-life civic, socio-economic, or communication challenges in Tanzania?`,
+        options: [
+          `It equips learners with practical problem-solving, critical thinking, and communication skills applicable to Tanzanian society`,
+          'It is only useful for passing a single classroom test',
+          'It discourages practical application outside school',
+          'It has no connection to national development',
+        ],
+        correctIndex: 0,
+        explanation: `Step 1: The TIE curriculum is competence-based, meaning "${subT(2)}" directly builds practical skills for national development and daily problem-solving.`,
+      },
+      {
+        question: `[${cls} • ${focusTopic} — ${subT(3)}] If a question on "${subT(3)}" in ${matchedPaperTitle} asks you to "Outline four (4) lessons or solutions", what should each numbered point contain?`,
+        options: [
+          `A concise heading/key point followed by a clear one-to-two sentence explanation grounded in "${subT(3)}"`,
+          'A single vague word with no explanation',
+          'A ten-page unnumbered paragraph',
+          'Unrelated points from another subject',
+        ],
+        correctIndex: 0,
+        explanation: `Step 1: State the point clearly and follow it with a brief explanation showing how it applies to "${subT(3)}".`,
+      },
+      {
+        question: `[${cls} • ${focusTopic} — ${subT(0)}] Before submitting your examination answer booklet for ${cls} ${subject}, what final verification should you perform on your answers for "${focusTopic}"?`,
+        options: [
+          `Check that all question numbers match the paper, all required points are complete, and key terms in "${focusTopic}" are accurately spelled and explained`,
+          'Cross out correct workings without replacement',
+          'Leave multiple-choice boxes empty',
+          'Remove introductions and conclusions from essays',
+        ],
+        correctIndex: 0,
+        explanation: `Step 1: Reviewing question numbering, completeness of points, and clarity of explanations on "${focusTopic}" prevents avoidable mark loss.`,
+      },
+    ];
+  };
+
   const attachMetadata = (items: Array<Omit<QuizItem, 'topic' | 'subTopic' | 'sourceRef'>>): QuizItem[] => {
     const sources = [src1, src2, src3, src4];
-    return items.map((item, idx) => ({
-      ...item,
-      topic: focusTopic,
-      subTopic: focusSubTopic,
-      sourceRef: sources[idx % sources.length],
-    }));
+    const extraItems = buildAdditionalSubjectQuestions();
+    const combined = [...items, ...extraItems].slice(0, 20);
+    return combined.map((item, idx) => {
+      const rotated = rotateQuizOptions(item.options, item.correctIndex, idx + 1);
+      const itemSubTopic =
+        availableSubTopics.length > 0
+          ? availableSubTopics[idx % availableSubTopics.length]
+          : focusSubTopic;
+      return {
+        ...item,
+        options: rotated.options,
+        correctIndex: rotated.correctIndex,
+        topic: focusTopic,
+        subTopic: idx < items.length ? focusSubTopic : itemSubTopic,
+        sourceRef: sources[idx % sources.length],
+      };
+    });
   };
 
   // ============================================================================

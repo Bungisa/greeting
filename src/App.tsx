@@ -37,7 +37,10 @@ import {
   getSubTopicsForMainTopic,
   getSyllabusTopicsForClassSubject,
   LearnedMemoryItem,
+  matchesFormRange,
+  matchesSubjectQuery,
   normalizeClassName,
+  normalizeSubjectName,
   OfficialDocType,
   PaperRecord,
   parseClassSubjectTopicFromPrompt,
@@ -54,6 +57,8 @@ import { StemArenaGame } from './components/StemArenaGame';
 import { BioscienceWorkbench } from './components/BioscienceWorkbench';
 import { VeoVideoStudio } from './components/VeoVideoStudio';
 import { ElimikaPlayHub, PlayGameRoute } from './components/ElimikaPlayHub';
+import { TopicMasteryPlanner } from './components/TopicMasteryPlanner';
+import { VirtualScienceLab } from './components/VirtualScienceLab';
 import { MathText, renderMathTextToHtml, typesetMathInElement } from './utils/mathRenderer';
 
 declare global {
@@ -250,7 +255,7 @@ function processParsedRows(rows: string[][]): PaperRecord[] {
       if (!rawTitle && !rawSubject) continue;
 
       const form = normalizeClassName(rawForm);
-      const subject = rawSubject || 'General';
+      const subject = normalizeSubjectName(rawSubject || 'General');
       const year = rawYear || '2025';
       const category = rawCat || 'NECTA';
       const catLower = `${category} ${rawTitle}`.toLowerCase();
@@ -388,7 +393,9 @@ export default function App() {
   const [syncStatus, setSyncStatus] = useState<'syncing' | 'live' | 'offline' | 'error'>('syncing');
 
   // Navigation & View Mode
-  const [activePage, setActivePage] = useState<'papers' | 'books' | 'syllabus' | 'daily_quiz' | 'moha' | 'game'>('papers');
+  const [activePage, setActivePage] = useState<
+    'papers' | 'books' | 'syllabus' | 'daily_quiz' | 'mastery_planner' | 'virtual_lab' | 'moha' | 'game'
+  >('papers');
   const [playRoute, setPlayRoute] = useState<PlayGameRoute>('hub');
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [selectedClass, setSelectedClass] = useState<string>('');
@@ -428,7 +435,16 @@ export default function App() {
   // Moha AI Full-Page Site State
   const [mohaOpen, setMohaOpen] = useState<boolean>(false);
   const [mohaViewMode, setMohaViewMode] = useState<
-    'chat' | 'studio' | 'quiz' | 'diagram' | 'bioscience' | 'video' | 'resources' | 'profile'
+    | 'chat'
+    | 'studio'
+    | 'quiz'
+    | 'diagram'
+    | 'practical_lab'
+    | 'mastery_planner'
+    | 'bioscience'
+    | 'video'
+    | 'resources'
+    | 'profile'
   >('chat');
   const [activeDiagramPreset, setActiveDiagramPreset] = useState<DiagramPreset>('physics_ohm');
   const [mohaActiveClass, setMohaActiveClass] = useState<string>('Form 3');
@@ -439,6 +455,30 @@ export default function App() {
     mimeType: string;
     base64Data: string;
     previewUrl: string;
+    fileName?: string;
+  } | null>(null);
+  const [mohaFocusedResourceId, setMohaFocusedResourceId] = useState<string>('ALL');
+  const [customAttachedPapers, setCustomAttachedPapers] = useState<PaperRecord[]>(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('elimika_custom_attached_resources_v1') || '[]');
+      return Array.isArray(saved) ? saved : [];
+    } catch {
+      return [];
+    }
+  });
+  const [attachModalOpen, setAttachModalOpen] = useState<boolean>(false);
+  const [newResTitle, setNewResTitle] = useState<string>('');
+  const [newResClass, setNewResClass] = useState<string>('Form 4');
+  const [newResSubject, setNewResSubject] = useState<string>('Basic Mathematics');
+  const [newResCategory, setNewResCategory] = useState<string>('TIE Book');
+  const [newResYear, setNewResYear] = useState<string>('2026');
+  const [newResPaperUrl, setNewResPaperUrl] = useState<string>('');
+  const [newResAnswersUrl, setNewResAnswersUrl] = useState<string>('');
+  const [newResCustomContent, setNewResCustomContent] = useState<string>('');
+  const [newResAttachedFile, setNewResAttachedFile] = useState<{
+    mimeType: string;
+    base64Data: string;
+    fileName: string;
   } | null>(null);
   const [mohaLearnPanelOpen, setMohaLearnPanelOpen] = useState<boolean>(false);
   const [learnTopicInput, setLearnTopicInput] = useState<string>('');
@@ -629,7 +669,15 @@ export default function App() {
           setMohaActiveClass(ch.cls);
           setMohaActiveSubject(ch.subject);
           setSelectedQuizTopic(ch.topic);
-          setQuizItems(ch.questions || []);
+          const fallbackFifteen = buildContentIntegratedQuizQuestions(ch.cls, ch.subject, ch.topic);
+          const loadedQns = Array.isArray(ch.questions) ? [...ch.questions] : [];
+          for (const fq of fallbackFifteen) {
+            if (loadedQns.length >= 15) break;
+            if (!loadedQns.some((q) => q.question === fq.question)) {
+              loadedQns.push(fq);
+            }
+          }
+          setQuizItems(loadedQns.slice(0, 15));
           const shareLink = buildPublicChallengeLink(
             ch.id,
             ch.cls,
@@ -799,37 +847,80 @@ export default function App() {
     studioPreviewHtml,
   ]);
 
-  // Integrated Website Resources Context for active Class & Subject (plus cross-subject fallback)
-  const activeSiteResources = React.useMemo<SiteResourceContext>(() => {
-    const clsNorm = (mohaActiveClass || 'Form 3').toLowerCase();
-    const subNorm = (mohaActiveSubject || 'Basic Mathematics').toLowerCase();
+  const mohaFocusedResource = React.useMemo<PaperRecord | null>(() => {
+    if (!mohaFocusedResourceId || mohaFocusedResourceId === 'ALL') return null;
+    return allPapers.find((p) => p.id === mohaFocusedResourceId) || null;
+  }, [allPapers, mohaFocusedResourceId]);
 
-    const matchingBooks = allPapers.filter(
-      (p) =>
-        p.isBook &&
-        (p.subject.toLowerCase().includes(subNorm) || subNorm.includes(p.subject.toLowerCase())) &&
-        (p.form.toLowerCase() === clsNorm || p.paperUrl !== null)
+  const classSubjectResourcesList = React.useMemo<PaperRecord[]>(() => {
+    const clsVal = mohaActiveClass || 'Form 3';
+    const subVal = mohaActiveSubject || 'Basic Mathematics';
+    return allPapers
+      .filter(
+        (p) =>
+          matchesSubjectQuery(p.subject, subVal) &&
+          (matchesFormRange(p.form, clsVal) || p.paperUrl !== null || p.isUserAttached)
+      )
+      .sort((a, b) => {
+        const aExactCls = matchesFormRange(a.form, clsVal) ? 1 : 0;
+        const bExactCls = matchesFormRange(b.form, clsVal) ? 1 : 0;
+        if (bExactCls !== aExactCls) return bExactCls - aExactCls;
+        const aHasLink = a.paperUrl || a.customContent ? 1 : 0;
+        const bHasLink = b.paperUrl || b.customContent ? 1 : 0;
+        return bHasLink - aHasLink;
+      });
+  }, [allPapers, mohaActiveClass, mohaActiveSubject]);
+
+  function buildSiteResourcesForClassSubject(clsVal: string, subVal: string): SiteResourceContext {
+    const sortByRelevance = (items: PaperRecord[]) =>
+      [...items].sort((a, b) => {
+        const aExactCls = matchesFormRange(a.form, clsVal) ? 1 : 0;
+        const bExactCls = matchesFormRange(b.form, clsVal) ? 1 : 0;
+        if (bExactCls !== aExactCls) return bExactCls - aExactCls;
+        const aHasLink = a.paperUrl || a.customContent ? 1 : 0;
+        const bHasLink = b.paperUrl || b.customContent ? 1 : 0;
+        return bHasLink - aHasLink;
+      });
+
+    const matchingBooks = sortByRelevance(
+      allPapers.filter(
+        (p) =>
+          p.isBook &&
+          matchesSubjectQuery(p.subject, subVal) &&
+          (matchesFormRange(p.form, clsVal) || p.paperUrl !== null || p.isUserAttached)
+      )
     );
-    const matchingSyllabuses = allPapers.filter(
-      (p) =>
-        p.isSyllabus &&
-        (p.subject.toLowerCase().includes(subNorm) ||
-          subNorm.includes(p.subject.toLowerCase()) ||
-          p.form.toLowerCase().includes(clsNorm))
+    const matchingSyllabuses = sortByRelevance(
+      allPapers.filter(
+        (p) =>
+          p.isSyllabus &&
+          (matchesSubjectQuery(p.subject, subVal) || matchesFormRange(p.form, clsVal))
+      )
     );
-    const matchingPapers = allPapers.filter(
-      (p) =>
-        !p.isBook &&
-        !p.isSyllabus &&
-        (p.subject.toLowerCase().includes(subNorm) || subNorm.includes(p.subject.toLowerCase())) &&
-        (p.form.toLowerCase() === clsNorm || p.paperUrl !== null)
+    const matchingPapers = sortByRelevance(
+      allPapers.filter(
+        (p) =>
+          !p.isBook &&
+          !p.isSyllabus &&
+          matchesSubjectQuery(p.subject, subVal) &&
+          (matchesFormRange(p.form, clsVal) || p.paperUrl !== null || p.isUserAttached)
+      )
     );
 
-    // If few specific papers, also include top uploaded papers across subjects so Moha AI knows what's on the website
     const crossPapers =
       matchingPapers.length > 0
         ? matchingPapers
-        : allPapers.filter((p) => !p.isBook && !p.isSyllabus).slice(0, 6);
+        : allPapers.filter((p) => !p.isBook && !p.isSyllabus).slice(0, 8);
+
+    // If no manual focusedResource is selected, automatically attach the primary uploaded TIE Book for this exact Class & Subject if available
+    const autoAttachedBook =
+      !mohaFocusedResource
+        ? matchingBooks.find(
+            (b) => matchesFormRange(b.form, clsVal) && Boolean(b.paperUrl || b.customContent)
+          ) || null
+        : null;
+
+    const effectiveFocused = mohaFocusedResource || autoAttachedBook;
 
     return {
       syllabuses: matchingSyllabuses.slice(0, 6).map((s) => ({
@@ -838,25 +929,52 @@ export default function App() {
         subject: s.subject,
         year: s.year,
         hasUrl: Boolean(s.paperUrl),
+        paperUrl: s.paperUrl,
+        customContent: s.customContent,
       })),
-      books: matchingBooks.slice(0, 6).map((b) => ({
+      books: matchingBooks.slice(0, 8).map((b) => ({
         title: b.title,
         form: b.form,
         subject: b.subject,
         year: b.year,
-        hasUrl: Boolean(b.paperUrl),
+        hasUrl: Boolean(b.paperUrl || b.customContent),
+        paperUrl: b.paperUrl,
+        customContent: b.customContent,
       })),
-      papers: crossPapers.slice(0, 8).map((p) => ({
+      papers: crossPapers.slice(0, 12).map((p) => ({
         title: p.title,
         form: p.form,
         subject: p.subject,
         year: p.year,
         category: p.category,
-        hasUrl: Boolean(p.paperUrl),
+        hasUrl: Boolean(p.paperUrl || p.customContent),
         hasAnswers: Boolean(p.answersUrl),
+        paperUrl: p.paperUrl,
+        customContent: p.customContent,
       })),
+      focusedResource: effectiveFocused
+        ? {
+            id: effectiveFocused.id,
+            title: effectiveFocused.title,
+            form: effectiveFocused.form,
+            subject: effectiveFocused.subject,
+            category: effectiveFocused.category,
+            year: effectiveFocused.year,
+            paperUrl: effectiveFocused.paperUrl,
+            answersUrl: effectiveFocused.answersUrl,
+            customContent: effectiveFocused.customContent,
+          }
+        : null,
     };
-  }, [allPapers, mohaActiveClass, mohaActiveSubject]);
+  }
+
+  // Integrated Website Resources Context for active Class & Subject (plus cross-subject fallback & focused resource)
+  const activeSiteResources = React.useMemo<SiteResourceContext>(() => {
+    return buildSiteResourcesForClassSubject(
+      mohaActiveClass || 'Form 3',
+      mohaActiveSubject || 'Basic Mathematics'
+    );
+  }, [allPapers, mohaActiveClass, mohaActiveSubject, mohaFocusedResource]);
 
   // Compute Mastery Progress Statistics for the User Profile View
   const masteryProgressData = React.useMemo(() => {
@@ -929,14 +1047,45 @@ export default function App() {
     };
   }, [userProfile.targetClass, mohaActiveClass, learnedMemory, quizHistory]);
 
-  async function fetchSheetData() {
+  function mergePapersWithAttached(sheetItems: PaperRecord[], customItems: PaperRecord[]): PaperRecord[] {
+    const byId = new Map<string, PaperRecord>();
+    for (const c of customItems) {
+      byId.set(c.id, c);
+    }
+    for (const s of sheetItems) {
+      if (!byId.has(s.id)) {
+        byId.set(s.id, s);
+      }
+    }
+    return Array.from(byId.values());
+  }
+
+  async function fetchSheetData(customOverride?: PaperRecord[]) {
     setSyncStatus('syncing');
+    let localCustom = customOverride || customAttachedPapers;
+    try {
+      const serverRes = await fetch('/api/attached-resources');
+      if (serverRes.ok) {
+        const sData = await serverRes.json();
+        if (Array.isArray(sData.resources) && sData.resources.length > 0) {
+          const mergedCustomMap = new Map<string, PaperRecord>();
+          for (const item of localCustom) mergedCustomMap.set(item.id, item);
+          for (const item of sData.resources) mergedCustomMap.set(item.id, item);
+          localCustom = Array.from(mergedCustomMap.values());
+          setCustomAttachedPapers(localCustom);
+          localStorage.setItem('elimika_custom_attached_resources_v1', JSON.stringify(localCustom));
+        }
+      }
+    } catch {
+      // ignore server attached fetch error
+    }
+
     try {
       const cached = localStorage.getItem('elimika_papers_cache_v3');
       if (cached) {
         const parsedCache = JSON.parse(cached);
         if (Array.isArray(parsedCache) && parsedCache.length > 0) {
-          setAllPapers(parsedCache);
+          setAllPapers(mergePapersWithAttached(parsedCache, localCustom));
         }
       }
     } catch {
@@ -973,12 +1122,74 @@ export default function App() {
     try {
       const raw = parseCSV(csvText);
       const processed = processParsedRows(raw);
-      setAllPapers(processed);
       localStorage.setItem('elimika_papers_cache_v3', JSON.stringify(processed));
+      setAllPapers(mergePapersWithAttached(processed, localCustom));
       setSyncStatus('live');
     } catch {
       setSyncStatus('error');
     }
+  }
+
+  async function handleSaveNewAttachedResource(e: React.FormEvent) {
+    e.preventDefault();
+    const title = newResTitle.trim() || `${newResClass} ${newResSubject} — ${newResCategory} (${newResYear})`;
+    const catLower = `${newResCategory} ${title}`.toLowerCase();
+    const isSyllabus = catLower.includes('syllabus') || catLower.includes('muhtasari');
+    const isBook =
+      !isSyllabus &&
+      (catLower.includes('book') || catLower.includes('kitabu') || catLower.includes('textbook') || catLower.includes('tie'));
+
+    const id = `attached-${Date.now()}`;
+    const created: PaperRecord = {
+      id,
+      title,
+      form: newResClass,
+      subject: newResSubject,
+      year: newResYear.trim() || '2026',
+      category: isSyllabus ? 'TIE Syllabus' : isBook ? 'TIE Book' : newResCategory,
+      paperUrl: sanitizeUrl(newResPaperUrl),
+      answersUrl: sanitizeUrl(newResAnswersUrl),
+      isBook,
+      isSyllabus,
+      customContent: newResCustomContent.trim(),
+      attachedFileMimeType: newResAttachedFile?.mimeType,
+      attachedFileName: newResAttachedFile?.fileName,
+      isUserAttached: true,
+    };
+
+    const nextCustom = [created, ...customAttachedPapers];
+    setCustomAttachedPapers(nextCustom);
+    try {
+      localStorage.setItem('elimika_custom_attached_resources_v1', JSON.stringify(nextCustom));
+    } catch {
+      // ignore
+    }
+
+    setAllPapers((prev) => [created, ...prev]);
+    setMohaActiveClass(newResClass);
+    setMohaActiveSubject(newResSubject);
+    setMohaFocusedResourceId(id);
+
+    try {
+      await fetch('/api/attached-resources', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...created,
+          attachedFileBase64: newResAttachedFile?.base64Data,
+        }),
+      });
+    } catch {
+      // ignore
+    }
+
+    setAttachModalOpen(false);
+    setNewResTitle('');
+    setNewResPaperUrl('');
+    setNewResAnswersUrl('');
+    setNewResCustomContent('');
+    setNewResAttachedFile(null);
+    showToast(`📚 Attached "${title}" and pinned it to Moha AI!`);
   }
 
   function triggerDirectDownloadUrl(rawUrl: string | null, filename?: string) {
@@ -1070,6 +1281,40 @@ export default function App() {
     startAiQuiz(cls, sub, firstTopic, firstSubTopic, src, true);
   }
 
+  function openMasteryPlannerPage(customClass?: string, customSubject?: string) {
+    if (customClass) setMohaActiveClass(customClass);
+    if (customSubject) setMohaActiveSubject(customSubject);
+    setActivePage('mastery_planner');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function openVirtualLabPage(customClass?: string) {
+    if (customClass) setMohaActiveClass(customClass);
+    setActivePage('virtual_lab');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function handleLogManualTopicPractice(cls: string, subject: string, topic: string, scoreOutOf20: number) {
+    const today = new Date().toISOString().split('T')[0];
+    const newRecord: QuizHistoryRecord = {
+      id: `manual-${Date.now()}`,
+      cls,
+      subject,
+      topic,
+      score: Math.max(0, Math.min(20, scoreOutOf20)),
+      total: 20,
+      timestamp: today,
+    };
+    const updatedHistory = [newRecord, ...quizHistory].slice(0, 200);
+    setQuizHistory(updatedHistory);
+    try {
+      localStorage.setItem('elimika_quiz_history_v1', JSON.stringify(updatedHistory));
+    } catch {
+      // ignore
+    }
+    showToast(`✅ Recorded ${scoreOutOf20}/20 for ${cls} ${subject} (${topic}) in Mastery Heatmap!`);
+  }
+
   function handleSmartSearchChange(val: string) {
     setSearchQuery(val);
     setPage(1);
@@ -1155,10 +1400,21 @@ export default function App() {
   function openMwalimuModal(
     cls?: string,
     sub?: string,
-    initialView: 'chat' | 'studio' | 'quiz' | 'diagram' | 'bioscience' | 'video' | 'resources' | 'profile' = 'chat'
+    initialView:
+      | 'chat'
+      | 'studio'
+      | 'quiz'
+      | 'diagram'
+      | 'practical_lab'
+      | 'mastery_planner'
+      | 'bioscience'
+      | 'video'
+      | 'resources'
+      | 'profile' = 'chat',
+    focusedDoc?: PaperRecord
   ) {
-    const targetCls = cls || selectedClass || 'Form 3';
-    const targetSub = sub || selectedSubject || 'Basic Mathematics';
+    const targetCls = focusedDoc?.form || cls || selectedClass || 'Form 3';
+    const targetSub = focusedDoc?.subject || sub || selectedSubject || 'Basic Mathematics';
     setMohaActiveClass(targetCls);
     setMohaActiveSubject(targetSub);
     setTsClass(targetCls);
@@ -1168,18 +1424,32 @@ export default function App() {
     setActiveFlashcardIdx(0);
     setFlashcardFlipped(false);
 
+    if (focusedDoc) {
+      setMohaFocusedResourceId(focusedDoc.id);
+    }
+
     const defaultTopics = getSyllabusTopicsForClassSubject(targetCls, targetSub);
     if (!tsTopic && defaultTopics.length > 0) {
       setTsTopic(defaultTopics[0].replace(/^\d+\.\d+\s*/, ''));
     }
 
     setMohaMessages((prev) => {
+      if (focusedDoc) {
+        return [
+          ...prev,
+          {
+            id: `msg-pin-${Date.now()}`,
+            role: 'ai',
+            text: `📌 **Active Attached Resource Pinned:** **${focusedDoc.title}** (${focusedDoc.category} · ${focusedDoc.form} · ${focusedDoc.subject} · ${focusedDoc.year}).\n\nYou can now ask me to:\n• **Solve any question** or section from **${focusedDoc.title}** step-by-step with the NECTA Marking Scheme\n• **Summarize chapters, definitions & formulas** from this textbook/paper\n• Click **🎯 20-Qn Quiz from This** above to test yourself on 20 questions generated directly from **${focusedDoc.title}**!`,
+          },
+        ];
+      }
       if (prev.length > 0) return prev;
       return [
         {
           id: 'msg-welcome',
           role: 'ai',
-          text: `Hello! I am **Moha AI** for **${targetCls} • ${targetSub}**.\nAsk any question below, upload an exam photo (**📷**), or use the top tabs for **Quiz & Friend Challenges**, **Teacher Docs**, and **Diagrams**.`,
+          text: `Hello! I am **Moha AI** for **${targetCls} • ${targetSub}**.\nSelect any attached **TIE Textbook** or **Past Paper** in the bar above, attach a PDF/photo (**📎**), or ask any question below!`,
         },
       ];
     });
@@ -1466,57 +1736,7 @@ export default function App() {
     }
 
     // Build integrated website Books, Syllabuses & Past Papers specifically for targetCls & targetSub
-    const clsLower = targetCls.toLowerCase();
-    const subLower = targetSub.toLowerCase();
-    const promptSiteResources: SiteResourceContext = {
-      syllabuses: allPapers
-        .filter(
-          (p) =>
-            p.isSyllabus &&
-            (p.subject.toLowerCase().includes(subLower) ||
-              subLower.includes(p.subject.toLowerCase()) ||
-              p.form.toLowerCase().includes(clsLower))
-        )
-        .slice(0, 6)
-        .map((s) => ({
-          title: s.title,
-          form: s.form,
-          subject: s.subject,
-          year: s.year,
-          hasUrl: Boolean(s.paperUrl),
-        })),
-      books: allPapers
-        .filter(
-          (p) =>
-            p.isBook &&
-            (p.subject.toLowerCase().includes(subLower) || subLower.includes(p.subject.toLowerCase()))
-        )
-        .slice(0, 6)
-        .map((b) => ({
-          title: b.title,
-          form: b.form,
-          subject: b.subject,
-          year: b.year,
-          hasUrl: Boolean(b.paperUrl),
-        })),
-      papers: allPapers
-        .filter(
-          (p) =>
-            !p.isBook &&
-            !p.isSyllabus &&
-            (p.subject.toLowerCase().includes(subLower) || subLower.includes(p.subject.toLowerCase()))
-        )
-        .slice(0, 8)
-        .map((p) => ({
-          title: p.title,
-          form: p.form,
-          subject: p.subject,
-          year: p.year,
-          category: p.category,
-          hasUrl: Boolean(p.paperUrl),
-          hasAnswers: Boolean(p.answersUrl),
-        })),
-    };
+    const promptSiteResources = buildSiteResourcesForClassSubject(targetCls, targetSub);
 
     // If user asked for a quiz/questions in chat, pre-load the interactive Quiz items for this exact Class, Subject & Topic
     if (/\b(quiz|questions|maswali|test me|exercise|practice)\b/i.test(displayPrompt)) {
@@ -1637,11 +1857,11 @@ export default function App() {
     }
     if (kind === 'syllabus') {
       sendMwalimuMessage(
-        `Show me the official TIE Syllabus topics, competences, and integrated website resources for ${mohaActiveClass} ${mohaActiveSubject}.`
+        `Show me the official TIE Textbook chapters, Syllabus topics, competences, and integrated website resources for ${mohaActiveClass} ${mohaActiveSubject}.`
       );
     } else if (kind === 'summary') {
       sendMwalimuMessage(
-        `Give me a comprehensive TIE revision summary, key definitions, and essential formulas for ${mohaActiveClass} ${mohaActiveSubject} based on the TIE textbook and syllabus.`
+        `Give me a comprehensive TIE Textbook revision summary, key definitions, and essential formulas for ${mohaActiveClass} ${mohaActiveSubject} based on the uploaded TIE Student's Book and syllabus.`
       );
     } else {
       sendMwalimuMessage(
@@ -1691,57 +1911,7 @@ export default function App() {
     setQuizStartTime(Date.now());
 
     // Build site resources context for the target class and subject so the quiz integrates available website contents
-    const clsNorm = targetCls.toLowerCase();
-    const subNorm = targetSub.toLowerCase();
-    const quizSiteResources: SiteResourceContext = {
-      syllabuses: allPapers
-        .filter(
-          (p) =>
-            p.isSyllabus &&
-            (p.subject.toLowerCase().includes(subNorm) ||
-              subNorm.includes(p.subject.toLowerCase()) ||
-              p.form.toLowerCase().includes(clsNorm))
-        )
-        .slice(0, 4)
-        .map((s) => ({
-          title: s.title,
-          form: s.form,
-          subject: s.subject,
-          year: s.year,
-          hasUrl: Boolean(s.paperUrl),
-        })),
-      books: allPapers
-        .filter(
-          (p) =>
-            p.isBook &&
-            (p.subject.toLowerCase().includes(subNorm) || subNorm.includes(p.subject.toLowerCase()))
-        )
-        .slice(0, 4)
-        .map((b) => ({
-          title: b.title,
-          form: b.form,
-          subject: b.subject,
-          year: b.year,
-          hasUrl: Boolean(b.paperUrl),
-        })),
-      papers: allPapers
-        .filter(
-          (p) =>
-            !p.isBook &&
-            !p.isSyllabus &&
-            (p.subject.toLowerCase().includes(subNorm) || subNorm.includes(p.subject.toLowerCase()))
-        )
-        .slice(0, 6)
-        .map((p) => ({
-          title: p.title,
-          form: p.form,
-          subject: p.subject,
-          year: p.year,
-          category: p.category,
-          hasUrl: Boolean(p.paperUrl),
-          hasAnswers: Boolean(p.answersUrl),
-        })),
-    };
+    const quizSiteResources = buildSiteResourcesForClassSubject(targetCls, targetSub);
 
     try {
       const response = await fetch('/api/moha/quiz', {
@@ -1754,12 +1924,29 @@ export default function App() {
           subTopic: targetSubTopic,
           sourceFilter: targetSourceFilter,
           siteResources: quizSiteResources,
+          count: 20,
+          specificResourceTitle: mohaFocusedResource?.title,
         }),
       });
       if (response.ok) {
         const data = await response.json();
         if (Array.isArray(data.questions) && data.questions.length > 0) {
-          setQuizItems(data.questions);
+          const fallbackTwenty = buildContentIntegratedQuizQuestions(
+            targetCls,
+            targetSub,
+            targetTopic,
+            quizSiteResources,
+            targetSubTopic,
+            targetSourceFilter
+          );
+          const merged = [...data.questions];
+          for (const fq of fallbackTwenty) {
+            if (merged.length >= 20) break;
+            if (!merged.some((q) => q.question === fq.question)) {
+              merged.push(fq);
+            }
+          }
+          setQuizItems(merged.slice(0, 20));
           setQuizLoading(false);
           return;
         }
@@ -2021,15 +2208,29 @@ export default function App() {
   function handleMwalimuImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.type === 'text/plain' || file.type === 'text/csv' || file.name.endsWith('.txt')) {
+      const textReader = new FileReader();
+      textReader.onload = () => {
+        const textContent = String(textReader.result || '').slice(0, 6000);
+        setMohaInput((prev) =>
+          `${prev ? prev + '\n' : ''}[Attached Document "${file.name}"]:\n${textContent}`
+        );
+        showToast(`📄 Loaded text from "${file.name}" into Moha AI!`);
+      };
+      textReader.readAsText(file);
+      return;
+    }
     const reader = new FileReader();
     reader.onload = () => {
       const resultStr = String(reader.result);
       const base64Data = resultStr.split(',')[1];
       setMohaPendingImage({
-        mimeType: file.type,
+        mimeType: file.type || 'application/pdf',
         base64Data,
-        previewUrl: resultStr,
+        previewUrl: file.type.startsWith('image/') ? resultStr : '',
+        fileName: file.name,
       });
+      showToast(`📎 Attached "${file.name}" for Moha AI analysis!`);
     };
     reader.readAsDataURL(file);
   }
@@ -2238,17 +2439,23 @@ export default function App() {
                 activePage === 'daily_quiz' ? 'text-violet-700 font-bold underline underline-offset-4' : ''
               }`}
             >
-              <span>🎯 Daily Quiz</span>
+              <span>🎯 Daily Quiz (20 Qns)</span>
             </button>
             <button
-              onClick={() => openMwalimuModal(undefined, undefined, 'studio')}
-              className={`hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                activePage === 'moha' && mohaViewMode === 'studio'
-                  ? 'text-violet-700 font-bold underline underline-offset-4'
-                  : ''
+              onClick={() => openMasteryPlannerPage()}
+              className={`hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 cursor-pointer flex items-center gap-1 ${
+                activePage === 'mastery_planner' ? 'text-indigo-700 font-bold underline underline-offset-4' : ''
               }`}
             >
-              Lesson Notes &amp; Studio
+              <span>📊 Mastery &amp; Timetable</span>
+            </button>
+            <button
+              onClick={() => openVirtualLabPage()}
+              className={`hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 cursor-pointer flex items-center gap-1 ${
+                activePage === 'virtual_lab' ? 'text-teal-700 font-bold underline underline-offset-4' : ''
+              }`}
+            >
+              <span>🧪 Science Practicals</span>
             </button>
             <button
               onClick={() => {
@@ -2352,8 +2559,20 @@ export default function App() {
                   onClick={() => openDailyQuizPage()}
                   className="px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm border border-violet-700 bg-violet-600 hover:bg-violet-700 text-white shadow-sm transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
                 >
-                  <span>🎯 Daily Solving Quiz</span>
+                  <span>🎯 Daily Quiz (20 Qns)</span>
                   <ExternalLink className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => openMasteryPlannerPage()}
+                  className="px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm border border-indigo-700 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
+                >
+                  <span>📊 Mastery Heatmap &amp; Planner</span>
+                </button>
+                <button
+                  onClick={() => openVirtualLabPage()}
+                  className="px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm border border-teal-700 bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
+                >
+                  <span>🧪 Virtual Science Lab (Paper 2)</span>
                 </button>
                 <button
                   onClick={() => {
@@ -2441,7 +2660,7 @@ export default function App() {
                   <h3 className="text-sm font-bold text-rose-900">Unable to Sync Google Sheet Data</h3>
                   <p className="text-xs text-rose-700">Please check your internet connection and click Retry.</p>
                   <button
-                    onClick={fetchSheetData}
+                    onClick={() => fetchSheetData()}
                     className="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs px-4 py-2 rounded-xl inline-flex items-center gap-1.5 cursor-pointer"
                   >
                     <RefreshCw className="w-4 h-4" /> Retry Connection
@@ -2845,16 +3064,19 @@ export default function App() {
                               )}
 
                               <button
-                                onClick={() => openMwalimuModal(p.form, p.subject)}
+                                onClick={() => openMwalimuModal(p.form, p.subject, 'chat', p)}
                                 className="px-3 py-2 bg-violet-50 hover:bg-violet-100 text-violet-900 border border-violet-200 text-xs font-bold rounded-xl whitespace-nowrap shrink-0 cursor-pointer"
                               >
-                                Moha AI
+                                🤖 Ask Moha AI on This Paper
                               </button>
                               <button
-                                onClick={() => startAiQuiz(p.form, p.subject, p.title)}
+                                onClick={() => {
+                                  setMohaFocusedResourceId(p.id);
+                                  startAiQuiz(p.form, p.subject, p.title);
+                                }}
                                 className="px-3 py-2 bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300 text-xs font-bold rounded-xl whitespace-nowrap shrink-0 cursor-pointer"
                               >
-                                🎯 Take Quiz
+                                🎯 20-Qn Quiz
                               </button>
 
                               {hasPaper && (
@@ -3066,16 +3288,19 @@ export default function App() {
                         </span>
                       )}
                       <button
-                        onClick={() => openMwalimuModal(p.form, p.subject)}
+                        onClick={() => openMwalimuModal(p.form, p.subject, 'chat', p)}
                         className="px-3 py-2.5 bg-violet-50 hover:bg-violet-100 text-violet-900 border border-violet-200 text-xs font-bold rounded-xl whitespace-nowrap shrink-0 cursor-pointer"
                       >
-                        Moha AI
+                        🤖 Study Book with Moha AI
                       </button>
                       <button
-                        onClick={() => startAiQuiz(p.form, p.subject, p.title)}
+                        onClick={() => {
+                          setMohaFocusedResourceId(p.id);
+                          startAiQuiz(p.form, p.subject, p.title);
+                        }}
                         className="px-3 py-2.5 bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300 text-xs font-bold rounded-xl whitespace-nowrap shrink-0 cursor-pointer"
                       >
-                        🎯 Quiz
+                        🎯 20-Qn Quiz
                       </button>
                     </div>
                   </article>
@@ -3722,6 +3947,112 @@ export default function App() {
           </motion.div>
         );
       })()}
+
+      {/* DEDICATED TOPIC MASTERY HEATMAP & WEAK-TOPIC REVISION PLANNER PAGE */}
+      {activePage === 'mastery_planner' && (
+        <motion.div
+          key="view-mastery-planner"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.22, ease: 'easeOut' }}
+          className="flex-grow py-6 pb-24 bg-slate-50"
+        >
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-4">
+            <div className="flex items-center justify-between gap-2">
+              <button
+                onClick={resetToStep1}
+                className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-2xs"
+              >
+                <ArrowLeft className="w-4 h-4" /> Back to Home
+              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => openDailyQuizPage(mohaActiveClass, mohaActiveSubject)}
+                  className="px-3.5 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs cursor-pointer"
+                >
+                  🎯 Open 20-Question Solving Quiz
+                </button>
+                <button
+                  onClick={() => openVirtualLabPage(mohaActiveClass)}
+                  className="px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs cursor-pointer"
+                >
+                  🧪 Virtual Science Practicals
+                </button>
+              </div>
+            </div>
+
+            <TopicMasteryPlanner
+              activeClass={selectedClass || savedClass || mohaActiveClass || 'Form 4'}
+              activeSubject={selectedSubject || mohaActiveSubject || 'Basic Mathematics'}
+              quizHistory={quizHistory.map((q) => ({
+                id: q.id,
+                cls: q.cls,
+                subject: q.subject,
+                topic: q.topic,
+                score: q.score,
+                total: q.total,
+                date: q.timestamp,
+              }))}
+              onLaunchTopicQuiz={(cls, subject, topic) => {
+                openDailyQuizPage(cls, subject, topic, 'ALL', 'ALL');
+              }}
+              onOpenTopicNotes={(cls, subject, topic) => {
+                setTsClass(cls);
+                setTsSubject(subject);
+                setTsTopic(topic);
+                setTsSubTopic(topic);
+                openMwalimuModal(cls, subject, 'studio');
+              }}
+              onLogManualPractice={handleLogManualTopicPractice}
+            />
+          </div>
+        </motion.div>
+      )}
+
+      {/* DEDICATED VIRTUAL SCIENCE PRACTICALS LAB (NECTA PAPER 2) PAGE */}
+      {activePage === 'virtual_lab' && (
+        <motion.div
+          key="view-virtual-lab"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.22, ease: 'easeOut' }}
+          className="flex-grow py-6 pb-24 bg-slate-50"
+        >
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-4">
+            <div className="flex items-center justify-between gap-2">
+              <button
+                onClick={resetToStep1}
+                className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-2xs"
+              >
+                <ArrowLeft className="w-4 h-4" /> Back to Home
+              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => openMasteryPlannerPage(mohaActiveClass, mohaActiveSubject)}
+                  className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs cursor-pointer"
+                >
+                  📊 Syllabus Mastery Heatmap
+                </button>
+                <button
+                  onClick={() => openDailyQuizPage(mohaActiveClass, mohaActiveSubject)}
+                  className="px-3.5 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs cursor-pointer"
+                >
+                  🎯 20-Question Practical Quiz
+                </button>
+              </div>
+            </div>
+
+            <VirtualScienceLab
+              activeClass={selectedClass || savedClass || mohaActiveClass || 'Form 4'}
+              onLaunchPracticalQuiz={(cls, subject, topic) => {
+                openDailyQuizPage(cls, subject, topic, 'ALL', 'ALL');
+              }}
+            />
+          </div>
+        </motion.div>
+      )}
       </AnimatePresence>
 
       {/* STICKY MOBILE BOTTOM BAR */}
@@ -3840,18 +4171,44 @@ export default function App() {
               />
             </div>
 
-            <div className="px-4 py-3 bg-white border-t border-slate-200 flex items-center justify-between gap-2 text-xs">
-              <button
-                onClick={() =>
-                  triggerDirectDownloadUrl(
-                    viewerType === 'answers' && viewerPaper.answersUrl ? viewerPaper.answersUrl : viewerPaper.paperUrl,
-                    `${viewerPaper.title}.pdf`
-                  )
-                }
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl flex items-center gap-1.5 cursor-pointer"
-              >
-                <Download className="w-4 h-4" /> Direct Download PDF
-              </button>
+            <div className="px-4 py-3 bg-white border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <button
+                  onClick={() =>
+                    triggerDirectDownloadUrl(
+                      viewerType === 'answers' && viewerPaper.answersUrl ? viewerPaper.answersUrl : viewerPaper.paperUrl,
+                      `${viewerPaper.title}.pdf`
+                    )
+                  }
+                  className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Download className="w-4 h-4" /> Direct Download PDF
+                </button>
+                <button
+                  onClick={() => {
+                    const doc = viewerPaper;
+                    setViewerPaper(null);
+                    openMwalimuModal(doc.form, doc.subject, 'chat', doc);
+                    sendMwalimuMessage(
+                      `Analyze "${doc.title}" (${doc.form} ${doc.subject} · ${doc.category} ${doc.year}) and solve its key questions step-by-step with the official NECTA Marking Scheme.`
+                    );
+                  }}
+                  className="px-3.5 py-2 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-xl cursor-pointer"
+                >
+                  🤖 Solve &amp; Explain in Moha AI
+                </button>
+                <button
+                  onClick={() => {
+                    const doc = viewerPaper;
+                    setViewerPaper(null);
+                    setMohaFocusedResourceId(doc.id);
+                    startAiQuiz(doc.form, doc.subject, doc.title);
+                  }}
+                  className="px-3.5 py-2 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold rounded-xl cursor-pointer"
+                >
+                  🎯 20-Qn Quiz from This Document
+                </button>
+              </div>
               <button
                 onClick={() => setViewerPaper(null)}
                 className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl cursor-pointer"
@@ -3945,13 +4302,15 @@ export default function App() {
               <div className="flex items-center gap-1 overflow-x-auto py-0.5">
                 {[
                   { id: 'chat' as const, label: '💬 Chat' },
-                  { id: 'quiz' as const, label: '🎯 Quiz & Challenge' },
+                  { id: 'quiz' as const, label: '🎯 Quiz (20 Qns)' },
+                  { id: 'mastery_planner' as const, label: '📊 Mastery & Timetable' },
+                  { id: 'practical_lab' as const, label: '🧪 Paper 2 Practicals' },
                   { id: 'studio' as const, label: '📘 Lesson Notes & Docs' },
                   { id: 'diagram' as const, label: '🔬 Diagrams' },
                   { id: 'bioscience' as const, label: '🧬 Protein & Drug Lab' },
                   { id: 'video' as const, label: '🎬 Veo Video' },
                   { id: 'resources' as const, label: '📚 Resources' },
-                  { id: 'profile' as const, label: `📊 Profile (${masteryProgressData.totalMasteredTopics})` },
+                  { id: 'profile' as const, label: `👤 Profile (${masteryProgressData.totalMasteredTopics})` },
                 ].map((tab) => {
                   const active = mohaViewMode === tab.id;
                   return (
@@ -4021,6 +4380,144 @@ export default function App() {
           {/* ==================== VIEW 1: CLEAN SPLIT CHAT (OBSERVE OUTPUT + VISIBLE INPUT BOX) ==================== */}
           {mohaViewMode === 'chat' && (
             <div className="flex-1 min-h-0 flex flex-col max-w-5xl w-full mx-auto overflow-hidden">
+              {/* Active Attached Textbook & Past Paper Context Selector Bar */}
+              <div className="shrink-0 px-3 sm:px-5 py-2 bg-violet-50/90 border-b border-violet-200 flex flex-wrap items-center justify-between gap-2 text-xs">
+                <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
+                  <span className="font-black text-violet-950 whitespace-nowrap flex items-center gap-1">
+                    📚 Attached Book / Past Paper:
+                  </span>
+                  <select
+                    value={mohaFocusedResourceId}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setMohaFocusedResourceId(val);
+                      const found = allPapers.find((p) => p.id === val);
+                      if (found) {
+                        showToast(`📌 Pinned "${found.title}" to Moha AI!`);
+                      }
+                    }}
+                    className="px-2.5 py-1.5 rounded-lg border border-violet-300 bg-white text-slate-900 font-bold text-xs max-w-xs sm:max-w-md truncate cursor-pointer"
+                  >
+                    <option value="ALL">
+                      All Attached {mohaActiveClass} {mohaActiveSubject} Textbooks &amp; Past Papers ({classSubjectResourcesList.length})
+                    </option>
+                    <optgroup label={`📘 Attached TIE Textbooks (${mohaActiveClass} ${mohaActiveSubject})`}>
+                      {classSubjectResourcesList
+                        .filter((r) => r.isBook)
+                        .map((b) => (
+                          <option key={b.id} value={b.id}>
+                            📘 {b.title} {b.paperUrl || b.customContent ? '✓ [Attached]' : ''}
+                          </option>
+                        ))}
+                    </optgroup>
+                    <optgroup label={`📄 Attached Past Papers & Syllabuses (${mohaActiveClass} ${mohaActiveSubject})`}>
+                      {classSubjectResourcesList
+                        .filter((r) => !r.isBook)
+                        .map((p) => (
+                          <option key={p.id} value={p.id}>
+                            📄 {p.title} ({p.category} · {p.year}) {p.paperUrl || p.customContent ? '✓ [Attached]' : ''}
+                          </option>
+                        ))}
+                    </optgroup>
+                  </select>
+
+                  {mohaFocusedResource && (
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          sendMwalimuMessage(
+                            `Summarize the key chapters, definitions, formulas, and worked examples from the attached resource "${mohaFocusedResource.title}" (${mohaFocusedResource.form} ${mohaFocusedResource.subject}).`
+                          )
+                        }
+                        className="px-2.5 py-1 rounded-lg bg-violet-600 hover:bg-violet-700 text-white font-bold text-[11px] cursor-pointer whitespace-nowrap"
+                      >
+                        📖 Summarize
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          sendMwalimuMessage(
+                            `Solve the examination questions from the attached resource "${mohaFocusedResource.title}" (${mohaFocusedResource.form} ${mohaFocusedResource.subject}) step-by-step with the official NECTA Marking Scheme.`
+                          )
+                        }
+                        className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] cursor-pointer whitespace-nowrap"
+                      >
+                        🧮 Solve Questions
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          startAiQuiz(
+                            mohaFocusedResource.form,
+                            mohaFocusedResource.subject,
+                            mohaFocusedResource.title
+                          )
+                        }
+                        className="px-2.5 py-1 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-[11px] cursor-pointer whitespace-nowrap"
+                      >
+                        🎯 20-Qn Quiz
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewResClass(mohaActiveClass);
+                      setNewResSubject(mohaActiveSubject);
+                      setAttachModalOpen(true);
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold text-[11px] cursor-pointer whitespace-nowrap"
+                  >
+                    ➕ Attach Book / Paper
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      fetchSheetData();
+                      showToast('🔄 Syncing live attached Textbooks & Past Papers from Google Sheet...');
+                    }}
+                    className="px-2 py-1 rounded-lg bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold text-[11px] cursor-pointer whitespace-nowrap"
+                    title="Sync newly attached textbooks and past papers from Google Sheet"
+                  >
+                    🔄 Sync
+                  </button>
+                </div>
+              </div>
+
+              {/* Official TIE Student's Textbook Chapters Bar (Direct Chapter Integration) */}
+              <div className="shrink-0 px-3 sm:px-5 py-1.5 bg-indigo-50/80 border-b border-indigo-200 flex items-center gap-2 overflow-x-auto text-xs">
+                <span className="font-black text-indigo-950 whitespace-nowrap flex items-center gap-1 shrink-0">
+                  📘 TIE Textbook Chapters ({mohaActiveClass} {mohaActiveSubject}):
+                </span>
+                <div className="flex items-center gap-1.5 whitespace-nowrap">
+                  {getSyllabusTopicsForClassSubject(mohaActiveClass, mohaActiveSubject).map((rawChap, cIdx) => {
+                    const cleanChap = rawChap.replace(/^\d+\.\d+\s*/, '').trim();
+                    const shortLabel = cleanChap.split('(')[0].trim();
+                    return (
+                      <button
+                        key={`tie-chap-${cIdx}`}
+                        type="button"
+                        onClick={() => {
+                          setSelectedQuizTopic(cleanChap);
+                          setTsTopic(cleanChap);
+                          sendMwalimuMessage(
+                            `Explain "${cleanChap}" from the Official TIE ${mohaActiveClass} ${mohaActiveSubject} Student's Textbook, including all sub-topics, definitions, formulas, step-by-step worked examples, and NECTA examination questions.`
+                          );
+                        }}
+                        className="px-2.5 py-1 rounded-lg bg-white hover:bg-indigo-600 hover:text-white text-indigo-950 border border-indigo-200 font-bold text-[11px] transition-colors cursor-pointer"
+                        title={`Study "${cleanChap}" from the Official TIE ${mohaActiveClass} ${mohaActiveSubject} Textbook`}
+                      >
+                        Ch.{cIdx + 1}: {shortLabel}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* Compact Single-Line Quick Actions */}
               <div className="shrink-0 px-3 sm:px-5 py-2 bg-slate-100/70 border-b border-slate-200 flex items-center justify-between gap-2 overflow-x-auto text-xs">
                 <div className="flex items-center gap-1.5 whitespace-nowrap">
@@ -4077,7 +4574,7 @@ export default function App() {
                       {
                         id: 'msg-welcome',
                         role: 'ai',
-                        text: `Chat cleared for **${mohaActiveClass} • ${mohaActiveSubject}**. Type your question below while watching my response here.`,
+                        text: `Chat cleared for **${mohaActiveClass} • ${mohaActiveSubject}**. Select any attached Textbook or Past Paper above or type your question below.`,
                       },
                     ])
                   }
@@ -4187,16 +4684,26 @@ export default function App() {
                 )}
               </div>
 
-              {/* Attached Photo Preview */}
+              {/* Attached Photo / PDF Preview */}
               {mohaPendingImage && (
                 <div className="shrink-0 px-4 py-2 bg-violet-50 border-t border-violet-200 flex items-center justify-between">
                   <div className="flex items-center gap-2 text-xs font-bold text-violet-900">
-                    <img
-                      src={mohaPendingImage.previewUrl}
-                      alt="Preview"
-                      className="w-8 h-8 rounded object-cover border border-violet-300"
-                    />
-                    <span>Question photo attached</span>
+                    {mohaPendingImage.previewUrl ? (
+                      <img
+                        src={mohaPendingImage.previewUrl}
+                        alt="Preview"
+                        className="w-8 h-8 rounded object-cover border border-violet-300"
+                      />
+                    ) : (
+                      <span className="px-2 py-1 rounded bg-violet-600 text-white text-[10px] font-black">
+                        PDF
+                      </span>
+                    )}
+                    <span>
+                      {mohaPendingImage.fileName
+                        ? `Attached: ${mohaPendingImage.fileName}`
+                        : 'Question photo / PDF attached'}
+                    </span>
                   </div>
                   <button
                     onClick={() => setMohaPendingImage(null)}
@@ -4211,11 +4718,17 @@ export default function App() {
               <div className="shrink-0 bg-white border-t border-slate-200 px-3 sm:px-5 py-2.5 shadow-[0_-4px_12px_rgba(15,23,42,0.04)]">
                 <div className="flex items-center gap-2">
                   <label
-                    className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer shrink-0"
-                    title="Upload question photo"
+                    className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer shrink-0 flex items-center gap-1 text-xs font-bold"
+                    title="Attach Past Paper PDF, Textbook PDF, or Question Photo"
                   >
                     <Camera className="w-4 h-4" />
-                    <input type="file" accept="image/*" className="hidden" onChange={handleMwalimuImageSelect} />
+                    <span className="hidden sm:inline">PDF/Photo</span>
+                    <input
+                      type="file"
+                      accept="image/*,application/pdf,.txt,.csv"
+                      className="hidden"
+                      onChange={handleMwalimuImageSelect}
+                    />
                   </label>
                   <button
                     type="button"
@@ -4854,11 +5367,23 @@ export default function App() {
                               setMohaActiveSubject(activeChallenge.subject);
                               setSelectedQuizTopic(activeChallenge.topic);
                               if (activeChallenge.questions && activeChallenge.questions.length > 0) {
-                                setQuizItems(activeChallenge.questions);
+                                const fallbackFifteen = buildContentIntegratedQuizQuestions(
+                                  activeChallenge.cls,
+                                  activeChallenge.subject,
+                                  activeChallenge.topic
+                                );
+                                const merged = [...activeChallenge.questions];
+                                for (const fq of fallbackFifteen) {
+                                  if (merged.length >= 15) break;
+                                  if (!merged.some((q) => q.question === fq.question)) {
+                                    merged.push(fq);
+                                  }
+                                }
+                                setQuizItems(merged.slice(0, 15));
                                 setQuizSelectedAnswers({});
                                 setQuizResultSaved(false);
                                 setQuizStartTime(Date.now());
-                                showToast(`🎯 Loaded "${activeChallenge.topic}" challenge questions!`);
+                                showToast(`🎯 Loaded 15 "${activeChallenge.topic}" challenge questions!`);
                               } else {
                                 startAiQuiz(activeChallenge.cls, activeChallenge.subject, activeChallenge.topic);
                               }
@@ -5175,17 +5700,89 @@ export default function App() {
             </div>
           )}
 
-          {/* ==================== VIEW 5: WEBSITE RESOURCE ANALYZER ==================== */}
+          {/* ==================== VIEW 4D: VIRTUAL SCIENCE PRACTICALS LAB (NECTA PAPER 2) ==================== */}
+          {mohaViewMode === 'practical_lab' && (
+            <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-6">
+              <div className="max-w-6xl mx-auto">
+                <VirtualScienceLab
+                  activeClass={mohaActiveClass}
+                  onLaunchPracticalQuiz={(cls, subject, topic) => {
+                    startAiQuiz(cls, subject, topic, 'ALL', 'ALL');
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* ==================== VIEW 4E: TOPIC MASTERY HEATMAP & WEAK-TOPIC REVISION PLANNER ==================== */}
+          {mohaViewMode === 'mastery_planner' && (
+            <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-6">
+              <div className="max-w-6xl mx-auto">
+                <TopicMasteryPlanner
+                  activeClass={mohaActiveClass}
+                  activeSubject={mohaActiveSubject}
+                  quizHistory={quizHistory.map((q) => ({
+                    id: q.id,
+                    cls: q.cls,
+                    subject: q.subject,
+                    topic: q.topic,
+                    score: q.score,
+                    total: q.total,
+                    date: q.timestamp,
+                  }))}
+                  onLaunchTopicQuiz={(cls, subject, topic) => {
+                    startAiQuiz(cls, subject, topic, 'ALL', 'ALL');
+                  }}
+                  onOpenTopicNotes={(cls, subject, topic) => {
+                    setTsClass(cls);
+                    setTsSubject(subject);
+                    setTsTopic(topic);
+                    setTsSubTopic(topic);
+                    setMohaViewMode('studio');
+                    submitTeacherStudioDoc('lessonnotes');
+                  }}
+                  onLogManualPractice={handleLogManualTopicPractice}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* ==================== VIEW 5: WEBSITE RESOURCE ANALYZER & ATTACH HUB ==================== */}
           {mohaViewMode === 'resources' && (
             <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-6">
               <div className="max-w-5xl mx-auto bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-xs space-y-5">
-                <div>
-                  <h2 className="text-base font-black text-slate-900">
-                    📚 Integrated Website Resources ({mohaActiveClass} · {mohaActiveSubject})
-                  </h2>
-                  <p className="text-xs text-slate-500">
-                    Click any syllabus topic or uploaded paper below to generate notes, lesson plans, or marking schemes.
-                  </p>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-base font-black text-slate-900">
+                      📚 Attached Textbooks, Past Papers &amp; Syllabuses ({mohaActiveClass} · {mohaActiveSubject})
+                    </h2>
+                    <p className="text-xs text-slate-500">
+                      Interact with already-attached textbooks &amp; past papers or attach new ones for Moha AI to read, solve &amp; generate 20-question quizzes.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNewResClass(mohaActiveClass);
+                        setNewResSubject(mohaActiveSubject);
+                        setAttachModalOpen(true);
+                      }}
+                      className="px-3.5 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs cursor-pointer"
+                    >
+                      ➕ Attach New Textbook / Past Paper
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        fetchSheetData();
+                        showToast('🔄 Synced latest attached books & past papers from Google Sheet!');
+                      }}
+                      className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs cursor-pointer"
+                    >
+                      🔄 Sync Google Sheet
+                    </button>
+                  </div>
                 </div>
 
                 <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 space-y-2.5">
@@ -5206,7 +5803,7 @@ export default function App() {
                               onClick={() => startAiQuiz(mohaActiveClass, mohaActiveSubject, cleanT)}
                               className="px-2 py-1 rounded bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-[10px] cursor-pointer"
                             >
-                              Quiz
+                              20-Qn Quiz
                             </button>
                             <button
                               onClick={() => {
@@ -5239,26 +5836,37 @@ export default function App() {
 
                 <div className="space-y-2.5">
                   <div className="text-xs font-bold uppercase text-slate-600">
-                    Linked Past Papers &amp; TIE Books on Website
+                    Attached TIE Textbooks &amp; Past Papers for {mohaActiveClass} · {mohaActiveSubject} ({classSubjectResourcesList.length})
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {allPapers
-                      .filter(
-                        (p) =>
-                          p.subject.toLowerCase().includes(mohaActiveSubject.toLowerCase()) ||
-                          mohaActiveSubject.toLowerCase().includes(p.subject.toLowerCase())
-                      )
-                      .slice(0, 8)
-                      .map((item) => (
+                    {classSubjectResourcesList.slice(0, 16).map((item) => {
+                      const isPinned = mohaFocusedResourceId === item.id;
+                      return (
                         <div
                           key={item.id}
-                          className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col justify-between gap-2.5 text-xs"
+                          className={`p-3.5 rounded-xl border flex flex-col justify-between gap-2.5 text-xs ${
+                            isPinned
+                              ? 'bg-violet-50/70 border-violet-400'
+                              : 'bg-slate-50 border-slate-200'
+                          }`}
                         >
                           <div>
-                            <div className="text-[11px] font-bold text-violet-700">
-                              {item.category} · {item.form} · {item.year}
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-[11px] font-bold text-violet-700">
+                                {item.category} · {item.form} · {item.year}
+                              </span>
+                              {(item.paperUrl || item.customContent || item.isUserAttached) && (
+                                <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 font-bold text-[10px]">
+                                  ✓ Attached
+                                </span>
+                              )}
                             </div>
                             <div className="font-bold text-slate-900 mt-0.5">{item.title}</div>
+                            {item.customContent && (
+                              <div className="text-[11px] text-slate-600 line-clamp-2 mt-1">
+                                {item.customContent}
+                              </div>
+                            )}
                           </div>
                           <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-200/70">
                             {item.paperUrl && (
@@ -5270,24 +5878,30 @@ export default function App() {
                               </button>
                             )}
                             <button
-                              onClick={() => startAiQuiz(item.form, item.subject, item.title)}
+                              onClick={() => {
+                                setMohaFocusedResourceId(item.id);
+                                startAiQuiz(item.form, item.subject, item.title);
+                              }}
                               className="px-2.5 py-1 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold cursor-pointer"
                             >
-                              🎯 Quiz This
+                              🎯 20-Qn Quiz
                             </button>
                             <button
-                              onClick={() =>
+                              onClick={() => {
+                                setMohaFocusedResourceId(item.id);
+                                setMohaViewMode('chat');
                                 sendMwalimuMessage(
-                                  `Analyze "${item.title}" (${item.form} ${item.subject}, ${item.year}) and prepare revision notes and worked solutions.`
-                                )
-                              }
+                                  `Analyze the attached resource "${item.title}" (${item.form} ${item.subject}, ${item.year}) and prepare comprehensive revision notes and step-by-step worked solutions.`
+                                );
+                              }}
                               className="px-2.5 py-1 rounded-lg bg-violet-600 hover:bg-violet-700 text-white font-bold cursor-pointer"
                             >
-                              Analyze in Chat
+                              🤖 Interact in Chat
                             </button>
                           </div>
                         </div>
-                      ))}
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -5454,6 +6068,33 @@ export default function App() {
                     </div>
                   </div>
                 </div>
+
+                {/* Integrated Topic Mastery Heatmap & Smart Weak-Topic Revision Timetable inside Profile View */}
+                <TopicMasteryPlanner
+                  activeClass={masteryProgressData.targetCls}
+                  activeSubject={mohaActiveSubject}
+                  quizHistory={quizHistory.map((q) => ({
+                    id: q.id,
+                    cls: q.cls,
+                    subject: q.subject,
+                    topic: q.topic,
+                    score: q.score,
+                    total: q.total,
+                    date: q.timestamp,
+                  }))}
+                  onLaunchTopicQuiz={(cls, subject, topic) => {
+                    startAiQuiz(cls, subject, topic, 'ALL', 'ALL');
+                  }}
+                  onOpenTopicNotes={(cls, subject, topic) => {
+                    setTsClass(cls);
+                    setTsSubject(subject);
+                    setTsTopic(topic);
+                    setTsSubTopic(topic);
+                    setMohaViewMode('studio');
+                    submitTeacherStudioDoc('lessonnotes');
+                  }}
+                  onLogManualPractice={handleLogManualTopicPractice}
+                />
               </div>
             </div>
           )}
@@ -5467,6 +6108,8 @@ export default function App() {
           initialRoute={playRoute}
           initialClass={selectedClass || mohaActiveClass || 'Form 3'}
           initialSubject={selectedSubject || mohaActiveSubject || 'Basic Mathematics'}
+          initialTopic={selectedQuizTopic && selectedQuizTopic !== 'ALL' ? selectedQuizTopic : 'ALL'}
+          allPapers={allPapers}
           onExitPlay={() => {
             if (typeof window !== 'undefined' && window.location.hash) {
               window.history.replaceState(null, '', '#home');
