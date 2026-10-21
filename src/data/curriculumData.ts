@@ -168,7 +168,7 @@ export const TIE_SYLLABUS_COMPETENCES: Record<string, Record<string, string[]>> 
     ],
     'Form 4': [
       'Chapter 1: Coordinate Geometry (Midpoint, Distance Formula, Parallel & Perpendicular Lines m1·m2 = -1)',
-      'Chapter 3: Area and Perimeter (Area of Any Triangle ½ab sin C, Rhombus, Parallelogram & Regular Polygons)',
+      'Chapter 2: Area and Perimeter (Area of Any Triangle ½ab sin C, Rhombus, Parallelogram & Regular Polygons)',
       'Chapter 3: Three-Dimensional Figures (Prisms, Pyramids, Cones, Spheres, Angle Between a Line and a Plane, Surface Area & Volume)',
       'Chapter 4: Probability (Sample Space, Event Probability, Mutually Exclusive Events, Independent Events & Tree Diagrams)',
       'Chapter 5: Trigonometry (Trigonometric Ratios in All 4 Quadrants, Sine Rule, Cosine Rule, Compound Angle Identities & Graphs)',
@@ -713,8 +713,63 @@ export const TIE_SYLLABUS_COMPETENCES: Record<string, Record<string, string[]>> 
     ],
   },
   'Basic Applied Mathematics (BAM)': {
-    'Form 5': ['1.0 Calculating Devices', '2.0 Functions', '3.0 Algebra (Simultaneous Equations, Sequences & Series)', '4.0 Differentiation', '5.0 Integration', '6.0 Statistics'],
-    'Form 6': ['1.0 Probability', '2.0 Trigonometry', '3.0 Exponential and Logarithmic Functions', '4.0 Matrices (3×3 Determinant, Inverse, Cramer Rule)', '5.0 Linear Programming'],
+    'Form 5': ['Chapter 1: Calculating Devices', 'Chapter 2: Functions', 'Chapter 3: Algebra (Simultaneous Equations, Sequences & Series)', 'Chapter 4: Differentiation', 'Chapter 5: Integration', 'Chapter 6: Statistics'],
+    'Form 6': ['Chapter 1: Probability', 'Chapter 2: Trigonometry', 'Chapter 3: Exponential and Logarithmic Functions', 'Chapter 4: Matrices (3×3 Determinant, Inverse, Cramer Rule)', 'Chapter 5: Linear Programming'],
+  },
+  'Economics': {
+    'Form 5': [
+      'Chapter 1: Subject Matter of Economics (Scarcity, Choice, Opportunity Cost, Production Possibility Frontier & Economic Systems)',
+      'Chapter 2: Theory of Production (Factors of Production, Law of Diminishing Returns, Returns to Scale & Economies of Scale)',
+      'Chapter 3: Theory of Demand and Supply (Demand & Supply Laws, Equilibrium Price, Price/Income/Cross Elasticity)',
+      'Chapter 4: Theory of the Firm and Market Structures (Perfect Competition, Monopoly, Monopolistic Competition & Oligopoly)',
+      'Chapter 5: Theory of Money, Banking and Price Indices (Functions of Money, Quantity Theory MV = PT, Inflation & Deflation)',
+      'Chapter 6: Population and Employment (Population Theories: Malthusian vs Optimum, Labour Market & Unemployment)',
+    ],
+    'Form 6': [
+      'Chapter 1: National Income Accounting (GDP, GNP, NNP, Circular Flow of Income, Multiplier & Accelerator Principles)',
+      'Chapter 2: Public Finance and Fiscal Policy (Government Revenue, Taxation Principles, National Budget & Public Debt)',
+      'Chapter 3: Financial Institutions and Monetary Policy (Central Bank BoT Instruments, Commercial Banks & Capital Markets)',
+      'Chapter 4: International Trade and Balance of Payments (Comparative Advantage, Terms of Trade, Exchange Rates & Regional Integration EAC/SADC)',
+      'Chapter 5: Economic Planning, Growth and Development in Tanzania (Indicators of Development, Agriculture, Industrialisation & Environmental Economics)',
+    ],
+  },
+  'Accountancy': {
+    'Form 5': [
+      'Chapter 1: Theoretical Framework of Accounting (Accounting Concepts, Conventions, IFRS/IAS Standards & Double Entry Review)',
+      'Chapter 2: Correction of Errors, Suspense Accounts and Control Accounts',
+      'Chapter 3: Accounting for Depreciation, Bad Debts and Provisions (IAS 16 Property, Plant and Equipment)',
+      'Chapter 4: Single Entry, Incomplete Records and Non-Profit Making Organisations',
+      'Chapter 5: Partnership Accounts (Admission, Retirement, Dissolution & Piecemeal Realisation)',
+    ],
+    'Form 6': [
+      'Chapter 1: Company Accounts (Issue of Shares and Debentures, Redemption & Published Financial Statements IAS 1)',
+      'Chapter 2: Statement of Cash Flows (IAS 7 Operating, Investing & Financing Cash Flows) and Financial Ratio Analysis',
+      'Chapter 3: Branch, Departmental, Consignment and Joint Venture Accounts',
+      'Chapter 4: Cost and Management Accounting (Stock Valuation FIFO/LIFO/AVCO, Marginal vs Absorption Costing, Break-Even & Budgeting)',
+      'Chapter 5: Auditing and Payroll Accounting in Tanzania',
+    ],
+  },
+  'General Studies': {
+    'Form 5': [
+      'Chapter 1: Philosophy and Religion (Concept of Philosophy, Branches of Philosophy, African Philosophy & Role of Religion in Society)',
+      'Chapter 2: Contemporary Cross-Cutting Issues in Tanzania (Gender, HIV/AIDS, Environmental Conservation, Drug Abuse & Corruption)',
+      'Chapter 3: Science and Technology in Development (Role of Science & Technology, Appropriate Technology & Cyber Ethics)',
+    ],
+    'Form 6': [
+      'Chapter 1: Democratic Process and Governance (Pillars of Democracy, Rule of Law, Human Rights & Good Governance in Tanzania)',
+      'Chapter 2: International Affairs and Cooperation (Foreign Policy of Tanzania, Diplomacy, EAC, SADC, AU, Commonwealth & UN)',
+      'Chapter 3: Life Skills, Moral Values and Entrepreneurship',
+    ],
+  },
+  'Maarifa ya Jamii': {
+    'Standard 5': ['Sura ya 1: Mazingira Yetu na Utunzaji Wake', 'Sura ya 2: Kutunza Kumbukumbu za Matukio ya Kihistoria', 'Sura ya 3: Hali ya Hewa na Majanga ya Asili', 'Sura ya 4: Utamaduni, Mashujaa Wetu na Uhusiano na Mataifa Mengine', 'Sura ya 5: Jua, Mfumo wa Jua naKusoma Ramani', 'Sura ya 6: Shughuli za Uzalishaji Mali na Ujasiriamali'],
+    'Standard 6': ['Sura ya 1: Majanga ya Asili na Utunzaji wa Mazingira', 'Sura ya 2: Ukombozi wa Bara la Afrika na Mashujaa wa Afrika', 'Sura ya 3: Tabianchi ya Tanzania na Mabadiliko ya Tabianchi', 'Sura ya 4: Kusoma Ramani, Latitudo na Longitudo', 'Sura ya 5: Rasilimali za Tanzania, Uzalishaji Mali na Ujasiriamali'],
+    'Standard 7': ['Sura ya 1: Mazingira na Majanga ya Asili (Tetemeko la Ardhi na Mlipuko wa Volkano)', 'Sura ya 2: Historia ya Ukombozi na Uhusiano wa Tanzania na Jumuiya za Kimataifa', 'Sura ya 3: Mfumo wa Jua, Kupatwa kwa Jua na Mwezi na Majira ya Mwaka', 'Sura ya 4: Kusoma Ramani, Idadi ya Watu na Makazi', 'Sura ya 5: Uchumi, Biashara na Ujasiriamali'],
+  },
+  'Uraia na Maadili': {
+    'Standard 5': ['Sura ya 1: Kupenda Nchi Yetu na Alama za Taifa', 'Sura ya 2: kujithamini, Kuheshimu Jamii na Kujenga Uhusiano Mwema', 'Sura ya 3: Uwajibikaji, Uadilifu na Haki za Binadamu', 'Sura ya 4: Demokrasia, Utawala Bora na Ushirikiano wa Kimataifa'],
+    'Standard 6': ['Sura ya 1: Kuheshimu Jamii, Tunu za Taifa na Utamaduni', 'Sura ya 2: Uwajibikaji katika Familia na Shule', 'Sura ya 3: Demokrasia, Haki za Binadamu na Kupinga Rushwa', 'Sura ya 4: Uhusiano wa Tanzania na Mataifa Mengine (EAC, SADC, AU, UN)'],
+    'Standard 7': ['Sura ya 1: Kudumisha Amani, Utu na Haki za Binadamu', 'Sura ya 2: Uadilifu, Kupinga Rushwa na Kutunza Rasilimali za Umma', 'Sura ya 3: Mhimili wa Serikali, Bunge na Mahakama nchini Tanzania', 'Sura ya 4: Diplomasia na Ushirikiano wa Kimataifa'],
   },
 };
 
@@ -808,13 +863,13 @@ export function normalizeSubjectName(rawSubject: string, rawTitle = ''): string 
   if (lower === 'htm' || lower.includes('historia ya tanzania') || titleLower.includes('historia ya tanzania na maadili')) {
     return 'Historia ya Tanzania na Maadili';
   }
-  if (lower === 'ict' || lower === 'ics' || lower.includes('computer') || lower.includes('information and computer')) {
+  if (lower === 'ict' || lower === 'ics' || lower.includes('computer') || lower.includes('information and computer') || titleLower.includes('ict tie') || titleLower.includes('ics ')) {
     return 'Computer Science';
   }
-  if (lower === 'english' || lower === 'english language') {
+  if (lower === 'english' || lower === 'english language' || titleLower.includes('english tie')) {
     return 'English Language';
   }
-  if (lower === 'book-keeping' || lower === 'book keeping' || lower === 'bookkeeping') {
+  if (lower === 'book-keeping' || lower === 'book keeping' || lower === 'bookkeeping' || titleLower.includes('book-keeping') || titleLower.includes('book keeping')) {
     return 'Book-Keeping';
   }
   if (lower === 'business studies' || lower === 'bussiness studies' || titleLower.includes('bussiness studies') || titleLower.includes('business studies')) {
@@ -907,22 +962,39 @@ export function getSyllabusTopicsForClassSubject(cls: string, subject: string): 
 export function getTieTextbookChapterContent(
   cls: string,
   subject: string,
-  queryOrTopic = ''
+  queryOrTopic = '',
+  siteResources?: SiteResourceContext
 ): {
   bookTitle: string;
   allChapters: string[];
   matchedChapter: string;
   chapterSummaryMarkdown: string;
+  chapterDeepNotes: string;
 } {
   const cleanCls = normalizeClassName(cls || 'Form 1');
   const cleanSub = normalizeSubjectName(subject || 'Basic Mathematics');
   const allChapters = getSyllabusTopicsForClassSubject(cleanCls, cleanSub);
-  const bookTitle = `${cleanCls} ${cleanSub} — Official TIE Student's Textbook`;
+
+  const attachedBook =
+    (siteResources?.focusedResource &&
+    (siteResources.focusedResource.category?.toLowerCase().includes('book') ||
+      siteResources.focusedResource.title?.toLowerCase().includes('book') ||
+      siteResources.focusedResource.title?.toLowerCase().includes('tie'))
+      ? siteResources.focusedResource
+      : null) ||
+    siteResources?.books?.[0] ||
+    null;
+
+  const bookTitle = attachedBook?.title
+    ? `${attachedBook.title} (${cleanCls} ${cleanSub} — Official TIE Student's Textbook)`
+    : `${cleanCls} ${cleanSub} — Official TIE Student's Textbook`;
 
   const qLower = (queryOrTopic || '').toLowerCase();
   let matchedChapter = allChapters[0] || `Chapter 1: Introduction to ${cleanSub}`;
 
-  const chapNumMatch = qLower.match(/\b(?:chapter|sura\s+ya|topic)\s*(?:(\d+)|(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|kwanza|pili|tatu|nne|tano|sita))\b/i);
+  const chapNumMatch = qLower.match(
+    /\b(?:chapter|sura\s+ya|topic|unit)\s*(?:(\d+)|(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|kwanza|pili|tatu|nne|tano|sita|saba|nane))\b/i
+  );
   const wordMap: Record<string, number> = {
     one: 1, kwanza: 1,
     two: 2, pili: 2,
@@ -930,13 +1002,22 @@ export function getTieTextbookChapterContent(
     four: 4, nne: 4,
     five: 5, tano: 5,
     six: 6, sita: 6,
-    seven: 7,
-    eight: 8,
+    seven: 7, saba: 7,
+    eight: 8, nane: 8,
     nine: 9,
     ten: 10,
     eleven: 11,
     twelve: 12,
   };
+
+  const stopWords = new Set([
+    'chapter', 'sura', 'and', 'the', 'for', 'with', 'from', 'explain', 'official',
+    'textbook', 'student', 'book', 'tie', 'including', 'sub', 'topics', 'definitions',
+    'formulas', 'step', 'worked', 'examples', 'necta', 'examination', 'questions',
+    'syllabus', 'competences', 'integrated', 'website', 'resources', 'what', 'are',
+    'give', 'show', 'summary', 'summarize', 'notes', 'form', 'standard',
+  ]);
+
   if (chapNumMatch) {
     const idx = chapNumMatch[1]
       ? parseInt(chapNumMatch[1], 10) - 1
@@ -951,10 +1032,10 @@ export function getTieTextbookChapterContent(
         .toLowerCase()
         .replace(/[(),:&/-]/g, ' ')
         .split(/\s+/)
-        .filter((w) => w.length >= 3 && !['chapter', 'sura', 'and', 'the', 'for', 'with'].includes(w));
+        .filter((w) => w.length >= 3 && !stopWords.has(w));
       let sc = 0;
       for (const w of chWords) {
-        if (qLower.includes(w)) sc += 3;
+        if (qLower.includes(w)) sc += 4;
         else if (w.length >= 5 && qLower.includes(w.slice(0, 4))) sc += 2;
       }
       if (sc > bestScore) {
@@ -965,25 +1046,39 @@ export function getTieTextbookChapterContent(
   }
 
   const parenMatch = matchedChapter.match(/\(([^)]+)\)/);
+  const cleanChapHeading = matchedChapter
+    .replace(/\s*\([^)]+\)/, '')
+    .replace(/^(?:Chapter\s+\d+|Sura\s+ya\s+\w+|\d+\.\d+):\s*/i, '')
+    .trim();
   const subTopicsList = parenMatch
-    ? parenMatch[1].split(/[,&]/).map((s) => s.trim()).filter(Boolean)
-    : [matchedChapter.replace(/^(?:Chapter\s+\d+|Sura\s+ya\s+\w+|\d+\.\d+):\s*/i, '')];
+    ? parenMatch[1].split(/[,;]/).map((s) => s.trim()).filter(Boolean)
+    : [cleanChapHeading];
 
   const chaptersTocMarkdown = allChapters
-    .map((c) => `${c === matchedChapter ? '👉 ' : '• '}**${c}**`)
+    .map((c, idx) => `${c === matchedChapter ? '👉 ' : `• `}**${c}**${c === matchedChapter ? ' *(Active Matched Chapter)*' : ''}`)
     .join('\n');
 
   const subTopicsMarkdown = subTopicsList
-    .map((st, idx) => `  ${idx + 1}. **${st}** — Core TIE textbook definition, principles, worked examples & class activities.`)
+    .map(
+      (st, idx) =>
+        `  ${idx + 1}. **${st}:** Covers official TIE textbook definitions, governing principles/laws, worked textbook examples, and chapter revision exercises on *${st}*.`
+    )
     .join('\n');
 
-  const chapterSummaryMarkdown = `📖 **Official TIE Textbook Reference:** **${bookTitle}**\n\n**1. 📑 Complete Chapters / Topics in the ${cleanCls} ${cleanSub} TIE Textbook:**\n${chaptersTocMarkdown}\n\n**2. 🔍 Focused Textbook Chapter Breakdown — ${matchedChapter}:**\n**Key Sub-Topics Covered in This Chapter:**\n${subTopicsMarkdown}`;
+  const chapterDeepNotes = `Official TIE Textbook Reference: ${bookTitle}
+Active Matched Textbook Chapter: ${matchedChapter}
+Sub-Topics in ${matchedChapter}: ${subTopicsList.join('; ')}
+All Chapters in ${cleanCls} ${cleanSub} TIE Textbook:
+${allChapters.map((c, i) => `${i + 1}. ${c}`).join('\n')}`;
+
+  const chapterSummaryMarkdown = `📖 **Uploaded TIE Textbook Integrated:** **${bookTitle}**\n\n**1. 📑 Complete Official Chapters & Topics in the ${cleanCls} ${cleanSub} TIE Textbook:**\n${chaptersTocMarkdown}\n\n**2. 🔍 Detailed TIE Textbook Chapter Breakdown — ${matchedChapter}:**\n• **Main Textbook Chapter:** **${matchedChapter}**\n• **Sub-Topics & Concepts in the TIE Student's Book:**\n${subTopicsMarkdown}`;
 
   return {
     bookTitle,
     allChapters,
     matchedChapter,
     chapterSummaryMarkdown,
+    chapterDeepNotes,
   };
 }
 
@@ -1785,8 +1880,15 @@ export function generateLocalSmartTutorReply(
   const cleanInput = (userText || '').trim();
   const lower = cleanInput.toLowerCase();
 
-  const syllabusTopics = getSyllabusTopicsForClassSubject(cls, subject);
-  const topicsList = syllabusTopics.map((t) => `• ${t}`).join('\n');
+  const parsed = parseClassSubjectTopicFromPrompt(cleanInput, cls, subject);
+  const effectiveCls = siteResources?.focusedResource?.form || parsed.cls;
+  const effectiveSub = siteResources?.focusedResource?.subject || parsed.subject;
+  const syllabusTopics = getSyllabusTopicsForClassSubject(effectiveCls, effectiveSub);
+  const effectiveTbInfo = getTieTextbookChapterContent(effectiveCls, effectiveSub, cleanInput, siteResources);
+  const effectiveTopic =
+    parsed.topic && parsed.topic !== 'ALL'
+      ? parsed.topic
+      : effectiveTbInfo.matchedChapter.replace(/^(?:Chapter\s+\d+|Sura\s+ya\s+\w+|\d+\.\d+):\s*/i, '');
 
   const resourceSummaryLines: string[] = [];
   if (siteResources?.focusedResource) {
@@ -1796,20 +1898,30 @@ export function generateLocalSmartTutorReply(
     );
     if (fr.customContent && fr.customContent.trim().length > 0) {
       resourceSummaryLines.push(
-        `• **📄 Attached Excerpt / Notes from "${fr.title}":** ${fr.customContent.trim().slice(0, 450)}`
+        `• **📄 Attached Excerpt / Notes from "${fr.title}":**\n${fr.customContent.trim().slice(0, 1200)}`
       );
     }
   }
   if (siteResources) {
     if (siteResources.books.length > 0) {
-      resourceSummaryLines.push(`• **TIE Books on Website:** ${siteResources.books.slice(0, 4).map((b) => b.title).join(', ')}`);
+      resourceSummaryLines.push(
+        `• **Uploaded TIE Books (${effectiveCls} ${effectiveSub}):** ${siteResources.books
+          .slice(0, 4)
+          .map((b) => `${b.title} (${b.form})`)
+          .join(', ')}`
+      );
     }
     if (siteResources.syllabuses.length > 0) {
-      resourceSummaryLines.push(`• **Official Syllabuses on Website:** ${siteResources.syllabuses.slice(0, 3).map((s) => s.title).join(', ')}`);
+      resourceSummaryLines.push(
+        `• **Official TIE Syllabuses:** ${siteResources.syllabuses
+          .slice(0, 3)
+          .map((s) => `${s.title} (${s.form})`)
+          .join(', ')}`
+      );
     }
     if (siteResources.papers.length > 0) {
       resourceSummaryLines.push(
-        `• **Past Papers on Website (${siteResources.papers.length} attached):** ${siteResources.papers
+        `• **Attached Past Papers (${siteResources.papers.length}):** ${siteResources.papers
           .slice(0, 5)
           .map((p) => `${p.title} (${p.year})`)
           .join(', ')}`
@@ -1818,7 +1930,7 @@ export function generateLocalSmartTutorReply(
   }
   const siteResourcesBlock =
     resourceSummaryLines.length > 0
-      ? `\n\n**📚 Integrated Elimika Website Resources (${cls} ${subject}):**\n${resourceSummaryLines.join('\n')}`
+      ? `\n\n**📚 Integrated Elimika Website Resources (${effectiveCls} ${effectiveSub}):**\n${resourceSummaryLines.join('\n')}`
       : '';
 
   // Check learned memory first
@@ -1832,27 +1944,27 @@ export function generateLocalSmartTutorReply(
     return buildInstantOfficialDocument('lessonnotes', {
       school: 'ELIMIKA SECONDARY SCHOOL',
       teacher: 'SUBJECT TEACHER',
-      cls,
-      subject,
-      topic: syllabusTopics[0] || `${subject} Core Topic`,
-      subTopic: cleanInput.replace(/lesson notes|prepare notes|topic notes/gi, '').trim() || syllabusTopics[0] || subject,
+      cls: effectiveCls,
+      subject: effectiveSub,
+      topic: effectiveTbInfo.matchedChapter || syllabusTopics[0] || `${effectiveSub} Core Topic`,
+      subTopic: cleanInput.replace(/lesson notes|prepare notes|topic notes/gi, '').trim() || effectiveTopic,
       date: new Date().toISOString().split('T')[0],
       siteResources,
     });
   }
 
   // Linear equation solver: e.g., "solve 2x + 5 = 15"
-  const linearEqMatch = cleanInput.match(/solve\s+([+-]?\d*)x\s*([+-]\s*\d+)\s*=\s*([+-]?\d+)/i);
-  if (linearEqMatch) {
+  const linearEqMatch = cleanInput.match(/(?:solve\s+)?([+-]?\d*)x\s*([+-]\s*\d+)\s*=\s*([+-]?\d+)/i);
+  if (linearEqMatch && !cleanInput.includes('x^2')) {
     const a = parseFloat(linearEqMatch[1] || '1');
     const b = parseFloat(linearEqMatch[2].replace(/\s+/g, ''));
     const c = parseFloat(linearEqMatch[3]);
-    if (a !== 0) {
+    if (a !== 0 && !Number.isNaN(a) && !Number.isNaN(b) && !Number.isNaN(c)) {
       const rhs = c - b;
       const xVal = rhs / a;
-      return `📐 **Step-by-Step Mathematical Solution (${cls} ${subject}):**\n\nGiven linear equation:\n$$${a}x ${
+      return `📘 **TIE Textbook Reference:** **${effectiveTbInfo.bookTitle}** (${effectiveTbInfo.matchedChapter})\n\n📐 **Direct Answer & Step-by-Step Solution:**\nGiven linear equation:\n$$${a}x ${
         b >= 0 ? '+ ' + b : '- ' + Math.abs(b)
-      } = ${c}$$\n\n• **Step 1 (Collect like terms):**\n$$${a}x = ${c} - (${b}) = ${rhs}$$\n• **Step 2 (Divide both sides by ${a}):**\n$$x = \\frac{${rhs}}{${a}} = ${xVal}$$\n\n✅ **Final Answer:** $x = ${xVal}$ (02 Marks)${siteResourcesBlock}`;
+      } = ${c}$$\n\n• **Step 1 (Collect like terms):**\n$$${a}x = ${c} - (${b}) = ${rhs}$$ *(M1 — 01 Mark)*\n• **Step 2 (Divide both sides by ${a}):**\n$$x = \\frac{${rhs}}{${a}} = ${xVal}$$ *(A1 — 01 Mark)*\n\n✅ **Final Answer:** $x = ${xVal}$ **(Total: 02 Marks)**${siteResourcesBlock}`;
     }
   }
 
@@ -1866,15 +1978,15 @@ export function generateLocalSmartTutorReply(
     if (disc >= 0 && a !== 0) {
       const r1 = (-b + Math.sqrt(disc)) / (2 * a);
       const r2 = (-b - Math.sqrt(disc)) / (2 * a);
-      return `📐 **Quadratic Equation Solution (${cls} ${subject}):**\n\nGiven:\n$$${a}x^2 ${
+      return `📘 **TIE Textbook Reference:** **${effectiveTbInfo.bookTitle}** (${effectiveTbInfo.matchedChapter})\n\n📐 **Direct Answer & Quadratic Equation Solution:**\nGiven:\n$$${a}x^2 ${
         b >= 0 ? '+ ' + b : '- ' + Math.abs(b)
-      }x ${c >= 0 ? '+ ' + c : '- ' + Math.abs(c)} = 0$$\n\nUsing the quadratic formula:\n$$x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$\n• Discriminant $\\Delta = (${b})^2 - 4(${a})(${c}) = ${disc}$\n• **Roots:** $x_1 = ${r1}$ or $x_2 = ${r2}$${siteResourcesBlock}`;
+      }x ${c >= 0 ? '+ ' + c : '- ' + Math.abs(c)} = 0$$\n\nUsing the TIE Textbook Quadratic Formula:\n$$x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$ *(M1 — 01 Mark)*\n• Discriminant $\\Delta = (${b})^2 - 4(${a})(${c}) = ${disc}$ *(M1 — 01 Mark)*\n• **Roots:** $x_1 = ${r1}$ or $x_2 = ${r2}$ *(A1 — 01 Mark)*${siteResourcesBlock}`;
     }
   }
 
   for (const entry of MOHA_BUILTIN_KNOWLEDGE) {
-    if (entry.keywords.some((kw) => lower.includes(kw))) {
-      return `📘 **${entry.title}**\n\n${entry.content}${siteResourcesBlock}\n\n💡 *Need an official Lesson Plan, Lesson Notes, or Marking Scheme? Click **4-Stage Lesson Plan**, **Lesson Notes**, or **Marking Scheme** in the toolbar above!*`;
+    if (entry.keywords.some((kw) => new RegExp(`\\b${kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i').test(lower))) {
+      return `📘 **Official TIE Textbook Reference:** **${effectiveTbInfo.bookTitle}**\n**Matched Textbook Chapter:** **${effectiveTbInfo.matchedChapter}**\n\n### 📌 Direct Answer (${entry.title}):\n${entry.content}${siteResourcesBlock}`;
     }
   }
 
@@ -1882,16 +1994,14 @@ export function generateLocalSmartTutorReply(
     return buildInstantOfficialDocument('markingscheme', {
       school: 'ELIMIKA SECONDARY SCHOOL',
       teacher: 'SUBJECT EXAMINER',
-      cls,
-      subject,
-      topic: syllabusTopics[0] || `${subject} Core Topic`,
+      cls: effectiveCls,
+      subject: effectiveSub,
+      topic: effectiveTbInfo.matchedChapter || syllabusTopics[0] || `${effectiveSub} Core Topic`,
       subTopic: cleanInput.slice(0, 65),
       date: new Date().toISOString().split('T')[0],
       siteResources,
     });
   }
-
-  const tbInfo = getTieTextbookChapterContent(cls, subject, cleanInput);
 
   if (
     lower.includes('syllabus') ||
@@ -1901,31 +2011,29 @@ export function generateLocalSmartTutorReply(
     lower.includes('table of contents') ||
     lower.includes('sura') ||
     lower.includes('tie book') ||
-    lower.includes('textbook')
+    lower.includes('textbook') ||
+    lower.includes('summary') ||
+    lower.includes('revision') ||
+    lower.includes('summarize')
   ) {
-    return `${tbInfo.chapterSummaryMarkdown}\n\n**3. 📝 Official TIE & NECTA Assessment Structure:**\n• **Continuous Assessment (CA — 30%):** Terminal tests, Form II FTNA, Form III Project & Mock Exams.\n• **National Examination (NECTA — 70%):** Section A (16 Marks), Section B (54 Marks), Section C (30 Marks).${siteResourcesBlock}`;
+    const topicWorked = buildContentIntegratedQuizQuestions(
+      effectiveCls,
+      effectiveSub,
+      effectiveTopic,
+      siteResources,
+      parsed.subTopic
+    );
+    const ex1 = topicWorked[0];
+    const ex2 = topicWorked[1];
+    return `${effectiveTbInfo.chapterSummaryMarkdown}\n\n**3. 📐 Worked Examples & Questions from ${effectiveTbInfo.bookTitle} (${effectiveTbInfo.matchedChapter}):**\n• **Worked Question 1:** ${ex1?.question}\n  - **Step-by-Step Solution:** ${ex1?.explanation}\n  - **Model Answer:** **${ex1?.options[ex1.correctIndex]}** *(02 Marks)*\n• **Worked Question 2:** ${ex2?.question}\n  - **Step-by-Step Solution:** ${ex2?.explanation}\n  - **Model Answer:** **${ex2?.options[ex2.correctIndex]}** *(02 Marks)*${siteResourcesBlock}`;
   }
-
-  if (lower.includes('summary') || lower.includes('revision') || lower.includes('formula') || lower.includes('summarize')) {
-    return `${tbInfo.chapterSummaryMarkdown}\n\n**3. ✅ Easy 3-Step TIE Textbook & NECTA Exam Strategy:**\n• **Step 1 (Definition):** Write the clear TIE textbook definition first (01–02 Marks).\n• **Step 2 (Formula & Substitution):** State the formula before substituting numbers to earn method marks (**M1**).\n• **Step 3 (Final Answer & Units):** Write the final answer clearly with correct SI units (**A1**).${siteResourcesBlock}`;
-  }
-
-  // Smart Class, Subject & Topic extraction from user prompt
-  const parsed = parseClassSubjectTopicFromPrompt(cleanInput, cls, subject);
-  const effectiveCls = parsed.cls;
-  const effectiveSub = parsed.subject;
-  const effectiveTbInfo = getTieTextbookChapterContent(effectiveCls, effectiveSub, cleanInput);
-  const effectiveTopic =
-    parsed.topic && parsed.topic !== 'ALL'
-      ? parsed.topic
-      : effectiveTbInfo.matchedChapter.replace(/^(?:Chapter\s+\d+|Sura\s+ya\s+\w+|\d+\.\d+):\s*/i, '');
 
   if (
     lower.includes('quiz') ||
     lower.includes('test me') ||
     lower.includes('maswali') ||
     lower.includes('practice') ||
-    lower.includes('questions') ||
+    lower.includes('5 high-yield') ||
     lower.includes('exercise')
   ) {
     const topicQuiz = buildContentIntegratedQuizQuestions(
@@ -1936,17 +2044,18 @@ export function generateLocalSmartTutorReply(
       parsed.subTopic
     );
     const formattedQuestions = topicQuiz
+      .slice(0, lower.includes('5 high-yield') ? 5 : 20)
       .map(
         (q, idx) =>
-          `**Question ${idx + 1} (${q.sourceRef || effectiveTbInfo.bookTitle}):**\n${q.question}\n${q.options
+          `**Question ${idx + 1} (${q.sourceRef || effectiveTbInfo.bookTitle} — ${effectiveTbInfo.matchedChapter}):**\n${q.question}\n${q.options
             .map((opt, oIdx) => `   ${String.fromCharCode(65 + oIdx)}) ${opt}`)
             .join('\n')}\n• **Correct Answer:** **${String.fromCharCode(65 + q.correctIndex)}) ${
             q.options[q.correctIndex]
-          }**\n• **Worked Solution:** ${q.explanation}`
+          }**\n• **Step-by-Step Marking Scheme:** ${q.explanation}`
       )
       .join('\n\n');
 
-    return `🎯 **20-Question TIE Textbook & Past Paper Quiz — ${effectiveCls} ${effectiveSub}**\n**Textbook Chapter / Topic:** **${effectiveTbInfo.matchedChapter}**\n\n${formattedQuestions}${siteResourcesBlock}`;
+    return `🎯 **Official TIE Textbook & NECTA Questions — ${effectiveCls} ${effectiveSub}**\n**TIE Textbook Reference:** **${effectiveTbInfo.bookTitle}**\n**Textbook Chapter / Topic:** **${effectiveTbInfo.matchedChapter}**\n\n${formattedQuestions}${siteResourcesBlock}`;
   }
 
   const topicWorked = buildContentIntegratedQuizQuestions(
@@ -1956,11 +2065,17 @@ export function generateLocalSmartTutorReply(
     siteResources,
     parsed.subTopic
   );
-  const sampleQ1 = topicWorked[0];
-  const sampleQ2 = topicWorked[1];
-  const sampleQ3 = topicWorked[2];
+  const bestMatches = [...topicWorked].sort((a, b) => {
+    const qWords = lower.split(/\s+/).filter((w) => w.length >= 4);
+    const scoreA = qWords.reduce((acc, w) => acc + (`${a.question} ${a.explanation}`.toLowerCase().includes(w) ? 2 : 0), 0);
+    const scoreB = qWords.reduce((acc, w) => acc + (`${b.question} ${b.explanation}`.toLowerCase().includes(w) ? 2 : 0), 0);
+    return scoreB - scoreA;
+  });
+  const sampleQ1 = bestMatches[0] || topicWorked[0];
+  const sampleQ2 = bestMatches[1] || topicWorked[1];
+  const sampleQ3 = bestMatches[2] || topicWorked[2];
 
-  return `${effectiveTbInfo.chapterSummaryMarkdown}\n\n**3. 📐 Worked Examples from ${effectiveTbInfo.bookTitle} (${effectiveTopic}):**\n• **Worked Example 1 (${sampleQ1?.sourceRef || 'TIE Textbook'}):**\n  *Problem:* ${sampleQ1?.question}\n  *Step-by-Step Solution:* ${sampleQ1?.explanation}\n  *Correct Answer:* **${sampleQ1?.options[sampleQ1.correctIndex]}**\n\n• **Worked Example 2 (${sampleQ2?.sourceRef || 'TIE Textbook'}):**\n  *Problem:* ${sampleQ2?.question}\n  *Step-by-Step Solution:* ${sampleQ2?.explanation}\n  *Correct Answer:* **${sampleQ2?.options[sampleQ2.correctIndex]}**\n\n• **Worked Example 3 (${sampleQ3?.sourceRef || 'NECTA Past Paper'}):**\n  *Problem:* ${sampleQ3?.question}\n  *Step-by-Step Solution:* ${sampleQ3?.explanation}\n  *Correct Answer:* **${sampleQ3?.options[sampleQ3.correctIndex]}**${siteResourcesBlock}`;
+  return `📘 **Direct Answer According to Official TIE Textbook (${effectiveTbInfo.bookTitle}):**\n• **Question / Prompt Analyzed:** *"${cleanInput}"*\n• **Relevant TIE Textbook Chapter:** **${effectiveTbInfo.matchedChapter}**\n\n${effectiveTbInfo.chapterSummaryMarkdown}\n\n**3. ✅ Step-by-Step Answered Questions on ${effectiveTbInfo.matchedChapter} (${effectiveCls} ${effectiveSub}):**\n• **Question 1 (${sampleQ1?.sourceRef || 'TIE Textbook'}):**\n  *Question:* ${sampleQ1?.question}\n  *Direct Answer:* **${sampleQ1?.options[sampleQ1.correctIndex]}**\n  *Step-by-Step Marking Scheme:* ${sampleQ1?.explanation}\n\n• **Question 2 (${sampleQ2?.sourceRef || 'TIE Textbook'}):**\n  *Question:* ${sampleQ2?.question}\n  *Direct Answer:* **${sampleQ2?.options[sampleQ2.correctIndex]}**\n  *Step-by-Step Marking Scheme:* ${sampleQ2?.explanation}\n\n• **Question 3 (${sampleQ3?.sourceRef || 'NECTA Past Paper'}):**\n  *Question:* ${sampleQ3?.question}\n  *Direct Answer:* **${sampleQ3?.options[sampleQ3.correctIndex]}**\n  *Step-by-Step Marking Scheme:* ${sampleQ3?.explanation}${siteResourcesBlock}`;
 }
 
 export function parseClassSubjectTopicFromPrompt(
@@ -1980,9 +2095,20 @@ export function parseClassSubjectTopicFromPrompt(
   let subject = normalizeSubjectName(defaultSubject || 'Basic Mathematics');
   let matchedFromPrompt = false;
 
+  const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const hasWordPhrase = (text: string, phrase: string): boolean => {
+    const cleanP = phrase.trim();
+    if (!cleanP) return false;
+    return new RegExp(`\\b${escapeRegex(cleanP)}\\b`, 'i').test(text);
+  };
+
   // 1. Detect explicit Class in prompt (e.g., "Form 1", "Form 2", "Standard 7", "Std 4", "Kidato cha 1")
-  const formMatch = lower.match(/\b(?:form|kidato\s*cha)\s*([1-6]|one|two|three|four|five|six|kwanza|pili|tatu|nne|tano|sita|i|ii|iii|iv|v|vi)\b/i);
-  const stdMatch = lower.match(/\b(?:standard|std|darasa\s*la)\s*([1-7]|one|two|three|four|five|six|seven|kwanza|pili|tatu|nne|tano|sita|saba)\b/i);
+  const formMatch = lower.match(
+    /\b(?:form|kidato\s*cha)\s*([1-6]|one|two|three|four|five|six|kwanza|pili|tatu|nne|tano|sita|i|ii|iii|iv|v|vi)\b/i
+  );
+  const stdMatch = lower.match(
+    /\b(?:standard|std|darasa\s*la)\s*([1-7]|one|two|three|four|five|six|seven|kwanza|pili|tatu|nne|tano|sita|saba)\b/i
+  );
   const wordToNum: Record<string, string> = {
     one: '1', kwanza: '1',
     two: '2', pili: '2',
@@ -2012,77 +2138,120 @@ export function parseClassSubjectTopicFromPrompt(
     matchedFromPrompt = true;
   }
 
-  // 2. Detect explicit Subject in prompt ONLY when specific subject names appear (ordered most specific first)
+  // 2. Detect explicit Subject in prompt ONLY using strict word boundaries so "ics" NEVER matches "physics", "civics", "topics", or "mathematics"
   const subjectAliases: Array<{ keywords: string[]; target: string }> = [
     { keywords: ['historia ya tanzania na maadili', 'historia ya tanzania', 'htm'], target: 'Historia ya Tanzania na Maadili' },
     { keywords: ['additional mathematics', 'additional math', 'aditional mathematics'], target: 'Additional Mathematics' },
-    { keywords: ['advanced mathematics', 'advanced math', 'pure math'], target: 'Advanced Mathematics' },
-    { keywords: ['basic applied math', 'bam'], target: 'Basic Applied Mathematics (BAM)' },
-    { keywords: ['basic mathematics', 'hisabati'], target: 'Basic Mathematics' },
+    { keywords: ['advanced mathematics', 'advanced math', 'pure mathematics', 'pure math'], target: 'Advanced Mathematics' },
+    { keywords: ['basic applied mathematics', 'basic applied math', 'bam'], target: 'Basic Applied Mathematics (BAM)' },
+    { keywords: ['basic mathematics', 'mathematics', 'maths', 'math', 'hisabati'], target: 'Basic Mathematics' },
     { keywords: ['business studies', 'bussiness studies'], target: 'Business Studies' },
     { keywords: ['computer science', 'information and computer studies', 'ict', 'ics', 'tehama'], target: 'Computer Science' },
-    { keywords: ['home economics', 'food and human nutrition'], target: 'Home Economics' },
+    { keywords: ['home economics', 'food and human nutrition', 'food and human nutritions'], target: 'Home Economics' },
     { keywords: ['book-keeping', 'book keeping', 'bookkeeping'], target: 'Book-Keeping' },
     { keywords: ['literature in english'], target: 'Literature in English' },
     { keywords: ['physics', 'fizikia'], target: 'Physics' },
     { keywords: ['chemistry', 'kemia'], target: 'Chemistry' },
     { keywords: ['biology', 'baiolojia'], target: 'Biology' },
     { keywords: ['geography', 'jiografia'], target: 'Geography' },
+    { keywords: ['history'], target: 'History' },
     { keywords: ['agriculture', 'kilimo'], target: 'Agriculture' },
     { keywords: ['commerce'], target: 'Commerce' },
+    { keywords: ['accountancy'], target: 'Accountancy' },
     { keywords: ['economics', 'uchumi'], target: 'Economics' },
-    { keywords: ['civics', 'uraia'], target: 'Civics' },
-    { keywords: ['kiswahili', 'fasihi simulizi', 'sarufi'], target: 'Kiswahili' },
-    { keywords: ['english language'], target: 'English Language' },
+    { keywords: ['civics', 'uraia na maadili', 'uraia'], target: 'Civics' },
+    { keywords: ['kiswahili', 'fasihi ya kiswahili', 'fasihi simulizi', 'sarufi'], target: 'Kiswahili' },
+    { keywords: ['english language', 'english'], target: 'English Language' },
     { keywords: ['sayansi na teknolojia'], target: 'Sayansi na Teknolojia' },
+    { keywords: ['maarifa ya jamii'], target: 'Maarifa ya Jamii' },
+    { keywords: ['general studies'], target: 'General Studies' },
   ];
 
+  let explicitSubjectFound = false;
   for (const alias of subjectAliases) {
-    if (alias.keywords.some((kw) => lower.includes(kw))) {
+    if (alias.keywords.some((kw) => hasWordPhrase(lower, kw))) {
       const classSubjects = TIE_CURRICULUM_SUBJECTS[cls] || [];
       const exactInClass = classSubjects.find((s) => matchesSubjectQuery(s, alias.target));
       subject = exactInClass || alias.target;
+      explicitSubjectFound = true;
       matchedFromPrompt = true;
       break;
     }
   }
 
-  // 3. Detect Topic from prompt across current class first, then across all classes for this subject
+  // 3. Detect Topic / Chapter from prompt across current class first
   const currentTopics = getSyllabusTopicsForClassSubject(cls, subject);
   let matchedTopic = '';
+
+  // 3a. Check if the user explicitly specified a Chapter number (e.g., "Chapter 2", "Sura ya Pili", "Topic 3")
+  const chapNumMatch = lower.match(
+    /\b(?:chapter|sura\s+ya|topic|unit)\s*(?:(\d+)|(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|kwanza|pili|tatu|nne|tano|sita|saba|nane))\b/i
+  );
+  const chapWordMap: Record<string, number> = {
+    one: 1, kwanza: 1,
+    two: 2, pili: 2,
+    three: 3, tatu: 3,
+    four: 4, nne: 4,
+    five: 5, tano: 5,
+    six: 6, sita: 6,
+    seven: 7, saba: 7,
+    eight: 8, nane: 8,
+    nine: 9,
+    ten: 10,
+    eleven: 11,
+    twelve: 12,
+  };
+  if (chapNumMatch) {
+    const idx = chapNumMatch[1]
+      ? parseInt(chapNumMatch[1], 10) - 1
+      : (chapWordMap[chapNumMatch[2].toLowerCase()] || 1) - 1;
+    if (idx >= 0 && idx < currentTopics.length) {
+      matchedTopic = currentTopics[idx].replace(/^\d+\.\d+\s*/, '');
+      matchedFromPrompt = true;
+    }
+  }
+
+  const promptStopWords = new Set([
+    'and', 'the', 'for', 'with', 'into', 'from', 'explain', 'official', 'textbook',
+    'student', 'book', 'tie', 'including', 'sub', 'topics', 'definitions', 'formulas',
+    'step', 'worked', 'examples', 'necta', 'examination', 'questions', 'syllabus',
+    'competences', 'integrated', 'website', 'resources', 'what', 'are', 'give', 'show',
+    'summary', 'summarize', 'notes', 'form', 'standard', 'chapter', 'chapters', 'sura',
+  ]);
 
   const scoreTopicMatch = (topicStr: string, queryLower: string): number => {
     const cleanT = topicStr.replace(/^(?:Chapter\s+\d+|Sura\s+ya\s+\w+|\d+\.\d+):\s*/i, '').toLowerCase();
     const words = cleanT
       .replace(/[(),&/-]/g, ' ')
       .split(/\s+/)
-      .filter((w) => w.length >= 3 && !['and', 'the', 'for', 'with', 'into', 'from'].includes(w));
+      .filter((w) => w.length >= 4 && !promptStopWords.has(w));
     let score = 0;
     for (const w of words) {
-      const stem = w.slice(0, Math.max(4, w.length - 2));
-      if (queryLower.includes(w)) score += 3;
-      else if (queryLower.includes(stem)) score += 2;
+      if (hasWordPhrase(queryLower, w)) score += 4;
+      else if (w.length >= 6 && queryLower.includes(w.slice(0, w.length - 1))) score += 2;
     }
     return score;
   };
 
   let bestScore = 0;
-  for (const t of currentTopics) {
-    const sc = scoreTopicMatch(t, lower);
-    if (sc > bestScore) {
-      bestScore = sc;
-      matchedTopic = t.replace(/^\d+\.\d+\s*/, '');
+  if (!matchedTopic) {
+    for (const t of currentTopics) {
+      const sc = scoreTopicMatch(t, lower);
+      if (sc > bestScore) {
+        bestScore = sc;
+        matchedTopic = t.replace(/^\d+\.\d+\s*/, '');
+      }
     }
   }
 
-  // If no strong topic match in current class, check other classes for this subject so e.g. "Logarithms" finds Form 2 Math Logarithms
-  if (bestScore === 0) {
+  // If no topic matched in current class, check other classes ONLY within the SAME subject (so e.g. "Logarithms" in Math finds Form 2 Math Chapter 4)
+  if (!matchedTopic && bestScore === 0) {
     const allClasses = Object.keys(TIE_CURRICULUM_SUBJECTS);
     for (const candidateCls of allClasses) {
       const candidateTopics = getSyllabusTopicsForClassSubject(candidateCls, subject);
       for (const t of candidateTopics) {
         const sc = scoreTopicMatch(t, lower);
-        if (sc > bestScore) {
+        if (sc >= 4 && sc > bestScore) {
           bestScore = sc;
           matchedTopic = t.replace(/^\d+\.\d+\s*/, '');
           if (!explicitClassFound) {
@@ -2093,59 +2262,64 @@ export function parseClassSubjectTopicFromPrompt(
     }
   }
 
-  // Also check direct math/science topic keywords if user typed a short topic name like "indices", "surds", "simultaneous", "differentiation", etc.
+  // Check subject-scoped topic keywords if still not matched
   if (!matchedTopic) {
-    const directTopicMap: Array<{ keywords: string[]; topic: string; defaultForm?: string }> = [
-      { keywords: ['logarithm', 'log ', 'standard form', 'antilog'], topic: 'Logarithms (Standard Form, Laws of Logarithms)', defaultForm: 'Form 2' },
-      { keywords: ['exponent', 'indice', 'index', 'radical', 'surd'], topic: 'Exponents and Radicals (Laws of Indices, Surds)', defaultForm: 'Form 2' },
-      { keywords: ['quadratic', 'factoris', 'completing the square', 'discriminant'], topic: 'Quadratic Equations (Factorisation, Completing the Square, Quadratic Formula)', defaultForm: 'Form 2' },
-      { keywords: ['trigonometr', 'sine', 'cosine', 'tangent', 'sin ', 'cos ', 'tan ', 'bearing', 'elevation'], topic: 'Trigonometry (Sine, Cosine, Tangent Ratios, Sine & Cosine Rules)', defaultForm: 'Form 2' },
-      { keywords: ['pythagoras', 'hypotenuse'], topic: 'Pythagoras Theorem', defaultForm: 'Form 2' },
-      { keywords: ['set', 'venn', 'subset', 'union', 'intersection'], topic: 'Sets (Set Notation, Venn Diagrams, Operations on Sets)', defaultForm: 'Form 2' },
-      { keywords: ['statistic', 'mean', 'median', 'mode', 'histogram', 'ogive', 'variance'], topic: 'Statistics (Mean, Median, Mode, Frequency Distribution)', defaultForm: 'Form 3' },
-      { keywords: ['relation', 'domain', 'range', 'inverse relation'], topic: 'Relations (Domain, Range, Graphs & Inverse of a Relation)', defaultForm: 'Form 3' },
-      { keywords: ['function', 'composite function', 'turning point', 'polynomial'], topic: 'Functions (Linear, Quadratic & Polynomial Functions, Inverse)', defaultForm: 'Form 3' },
-      { keywords: ['sequence', 'series', 'arithmetic progression', 'geometric progression', 'compound interest', 'ap ', 'gp '], topic: 'Sequences and Series (Arithmetic Progression AP, Geometric Progression GP & Compound Interest)', defaultForm: 'Form 3' },
-      { keywords: ['variation', 'direct variation', 'inverse variation', 'joint variation', 'rate'], topic: 'Rates and Variations (Direct, Inverse & Joint Variations)', defaultForm: 'Form 3' },
-      { keywords: ['circle', 'chord', 'arc length', 'sector', 'cyclic'], topic: 'Circles (Chord Properties, Angle Properties, Tangent Properties)', defaultForm: 'Form 3' },
-      { keywords: ['earth as a sphere', 'sphere', 'latitude', 'longitude', 'nautical', 'meridian', 'great circle'], topic: 'The Earth as a Sphere (Latitudes, Longitudes, Distances along Great & Small Circles)', defaultForm: 'Form 3' },
-      { keywords: ['matri', 'determinant', 'cramer', 'singular matrix', 'inverse matrix'], topic: 'Matrices and Transformations (2x2 Operations, Determinants, Inverse, Simultaneous Equations)', defaultForm: 'Form 4' },
-      { keywords: ['vector', 'position vector', 'unit vector', 'magnitude', 'dot product'], topic: 'Vectors (Position Vectors, Magnitude, Direction, Velocity & Force Resolution)', defaultForm: 'Form 4' },
-      { keywords: ['probabilit', 'mutually exclusive', 'independent event', 'tree diagram', 'dice', 'coin'], topic: 'Probability (Mutually Exclusive & Independent Events, Tree Diagrams)', defaultForm: 'Form 4' },
-      { keywords: ['linear programming', 'feasible', 'objective function', 'constraint'], topic: 'Linear Programming (Constraints, Feasible Region & Optimal Objective Value)', defaultForm: 'Form 4' },
-      { keywords: ['three-dimensional', '3d', 'pyramid', 'cone', 'cylinder', 'prism', 'surface area', 'volume'], topic: 'Three-Dimensional Figures (Angles Between Lines & Planes, Surface Area & Volume of Cones, Pyramids, Spheres)', defaultForm: 'Form 4' },
-      { keywords: ['coordinate', 'gradient', 'slope', 'midpoint', 'perpendicular', 'parallel line'], topic: 'Coordinate Geometry (Gradient, Equation of a Line, Parallel & Perpendicular Lines)', defaultForm: 'Form 4' },
-      { keywords: ['simultaneous', 'linear equation', 'inequalit', 'algebra'], topic: 'Algebra (Linear Equations, Simultaneous Equations, Inequalities)', defaultForm: 'Form 1' },
-      { keywords: ['fraction', 'decimal', 'percentage'], topic: 'Fractions, Decimals and Percentages', defaultForm: 'Form 1' },
-      { keywords: ['ratio', 'profit', 'loss', 'simple interest', 'discount'], topic: 'Ratio, Profit and Loss (Simple Interest, Balance Sheet)', defaultForm: 'Form 1' },
-      { keywords: ['approximation', 'significant figure', 'decimal place'], topic: 'Approximations (Rounding Off, Significant Figures, Decimal Places)', defaultForm: 'Form 1' },
-      { keywords: ['congruence', 'similarity', 'similar triangle', 'postulate'], topic: 'Congruence & Similarity of Triangles', defaultForm: 'Form 2' },
-      { keywords: ['calculus', 'differentiat', 'integrat', 'derivative', 'stationary point'], topic: 'Calculus (Differentiation & Definite/Indefinite Integration)', defaultForm: 'Form 5' },
-      { keywords: ['account', 'double entry', 'trial balance', 'ledger', 'balance sheet'], topic: 'Accounts (Double Entry, Trial Balance, Trading, Profit & Loss, Balance Sheet)', defaultForm: 'Form 3' },
-      { keywords: ['ohm', 'resistor', 'current electricity', 'circuit', 'voltage'], topic: "Current Electricity (Ohm's Law, Series & Parallel Resistors)", defaultForm: 'Form 2' },
-      { keywords: ['density', 'archimedes', 'flotation', 'upthrust', 'relative density'], topic: "Archimedes' Principle, Law of Flotation & Density", defaultForm: 'Form 1' },
-      { keywords: ['motion', 'kinematics', 'acceleration', 'velocity', 'newton', 'momentum'], topic: "Equations of Uniformly Accelerated Motion & Newton's Laws", defaultForm: 'Form 2' },
-      { keywords: ['work', 'energy', 'power', 'machine', 'mechanical advantage', 'efficiency'], topic: 'Work, Energy, Power & Simple Machines (MA, VR, Efficiency)', defaultForm: 'Form 2' },
-      { keywords: ['light', 'refraction', 'lens', 'mirror', 'focal length', 'snell'], topic: 'Light, Curved Mirrors, Lenses & Refractive Index', defaultForm: 'Form 3' },
-      { keywords: ['heat', 'thermal', 'specific heat', 'gas law', 'boyle', 'charles'], topic: 'Thermal Expansion, Heat Capacity & Gas Laws', defaultForm: 'Form 3' },
-      { keywords: ['wave', 'sound', 'frequency', 'wavelength', 'echo', 'electromagnetic'], topic: 'Waves, Sound, Echoes & Electromagnetic Induction', defaultForm: 'Form 4' },
-      { keywords: ['radioactiv', 'half-life', 'half life', 'alpha', 'beta', 'nuclear'], topic: 'Radioactivity, Half-Life & Atomic Physics', defaultForm: 'Form 4' },
-      { keywords: ['mole', 'molar mass', 'stoichiometr', 'avogadro', 'empirical formula'], topic: 'The Mole Concept and Volumetric Analysis', defaultForm: 'Form 3' },
-      { keywords: ['titration', 'molarity', 'neutralization', 'acid', 'base'], topic: 'Volumetric Analysis (Acid-Base Titration & Molarity Calculations)', defaultForm: 'Form 3' },
-      { keywords: ['electrolysis', 'faraday', 'cathode', 'anode', 'electrochemical'], topic: 'Ionic Theory and Electrolysis (Faraday First & Second Laws)', defaultForm: 'Form 3' },
-      { keywords: ['organic', 'alkane', 'alkene', 'alkyne', 'alcohol', 'carboxylic', 'polymer'], topic: 'Organic Chemistry (Hydrocarbons, Alcohols, Carboxylic Acids)', defaultForm: 'Form 4' },
-      { keywords: ['genetic', 'mendel', 'monohybrid', 'punnett', 'dna', 'heredity'], topic: 'Genetics (Mendelian Inheritance, Monohybrid Crosses, Sex Linkage)', defaultForm: 'Form 4' },
-      { keywords: ['map', 'scale', 'bearing', 'grid reference', 'topographical'], topic: 'Map Reading and Map Interpretation (Scale, Distance & Area)', defaultForm: 'Form 3' },
+    const directTopicMap: Array<{
+      keywords: string[];
+      topic: string;
+      defaultForm?: string;
+      subjects: string[];
+    }> = [
+      { keywords: ['logarithm', 'standard form', 'antilog'], topic: 'Chapter 4: Logarithms (Standard Form A × 10^n, Laws of Logarithms & Mathematical Tables)', defaultForm: 'Form 2', subjects: ['Basic Mathematics', 'Additional Mathematics', 'Basic Applied Mathematics (BAM)'] },
+      { keywords: ['exponent', 'indices', 'radicals', 'surds'], topic: 'Chapter 1: Exponents and Radicals (Laws of Exponents/Indices, Simplifying Radicals/Surds & Rationalising the Denominator)', defaultForm: 'Form 2', subjects: ['Basic Mathematics'] },
+      { keywords: ['quadratic equation', 'completing the square', 'discriminant', 'factorisation'], topic: 'Chapter 3: Quadratic Equations (Solving by Factorisation, Completing the Square & General Quadratic Formula)', defaultForm: 'Form 2', subjects: ['Basic Mathematics', 'Additional Mathematics'] },
+      { keywords: ['trigonometry', 'sine rule', 'cosine rule', 'angle of elevation', 'angle of depression'], topic: 'Chapter 9: Trigonometry (Sine, Cosine, Tangent Ratios, Special Angles 30°, 45°, 60° & Angles of Elevation/Depression)', defaultForm: 'Form 2', subjects: ['Basic Mathematics', 'Additional Mathematics'] },
+      { keywords: ['pythagoras', 'hypotenuse'], topic: 'Chapter 8: Pythagoras Theorem (Proof & Real-Life Right-Angled Triangle Applications)', defaultForm: 'Form 2', subjects: ['Basic Mathematics'] },
+      { keywords: ['venn diagram', 'subset', 'union of sets', 'intersection of sets'], topic: 'Chapter 10: Sets (Description of Sets, Subsets, Venn Diagrams, Union, Intersection & Complement)', defaultForm: 'Form 2', subjects: ['Basic Mathematics', 'Additional Mathematics'] },
+      { keywords: ['mean', 'median', 'mode', 'histogram', 'ogive', 'cumulative frequency'], topic: 'Chapter 3: Statistics (Mean, Median, Mode for Grouped & Ungrouped Data, Assumed Mean & Ogive/Cumulative Frequency)', defaultForm: 'Form 3', subjects: ['Basic Mathematics', 'Geography', 'Basic Applied Mathematics (BAM)'] },
+      { keywords: ['domain and range', 'inverse relation'], topic: 'Chapter 1: Relations (Relations, Domain & Range, Graphs of Linear/Quadratic Relations & Inverse of a Relation)', defaultForm: 'Form 3', subjects: ['Basic Mathematics'] },
+      { keywords: ['composite function', 'inverse function', 'polynomial function'], topic: 'Chapter 2: Functions (Concept of Function, Linear, Quadratic, Polynomial, Step & Absolute Value Functions, Inverse Functions)', defaultForm: 'Form 3', subjects: ['Basic Mathematics', 'Additional Mathematics'] },
+      { keywords: ['arithmetic progression', 'geometric progression', 'compound interest', 'sequences and series'], topic: 'Chapter 5: Sequences and Series (Arithmetic Progression AP, Geometric Progression GP, Arithmetic/Geometric Mean & Compound Interest)', defaultForm: 'Form 3', subjects: ['Basic Mathematics', 'Additional Mathematics'] },
+      { keywords: ['direct variation', 'inverse variation', 'joint variation'], topic: 'Chapter 4: Rates and Variations (Rates of Exchange, Direct, Inverse, Joint & Partial Variations)', defaultForm: 'Form 3', subjects: ['Basic Mathematics'] },
+      { keywords: ['chord properties', 'cyclic quadrilateral', 'tangent theorem'], topic: 'Chapter 6: Circles (Parts of a Circle, Central & Inscribed Angles, Chord Properties, Cyclic Quadrilaterals & Tangent Theorems)', defaultForm: 'Form 3', subjects: ['Basic Mathematics'] },
+      { keywords: ['earth as a sphere', 'nautical mile', 'great circle', 'small circle'], topic: 'Chapter 7: The Earth as a Sphere (Great & Small Circles, Latitudes & Longitudes, Distance in Kilometres & Nautical Miles)', defaultForm: 'Form 3', subjects: ['Basic Mathematics'] },
+      { keywords: ['determinant', 'cramer', 'singular matrix', 'inverse matrix', 'matrices'], topic: 'Chapter 7: Matrices and Transformations (2×2 Matrix Operations, Determinant, Inverse Matrix, Simultaneous Equations & Linear Transformations)', defaultForm: 'Form 4', subjects: ['Basic Mathematics', 'Additional Mathematics', 'Basic Applied Mathematics (BAM)'] },
+      { keywords: ['position vector', 'unit vector', 'dot product'], topic: 'Chapter 6: Vectors (Displacement & Position Vectors, Magnitude & Direction, Vector Addition, Scalar Multiplication & Bearings)', defaultForm: 'Form 4', subjects: ['Basic Mathematics', 'Physics', 'Additional Mathematics'] },
+      { keywords: ['mutually exclusive', 'independent events', 'tree diagram', 'probability'], topic: 'Chapter 4: Probability (Sample Space, Event Probability, Mutually Exclusive Events, Independent Events & Tree Diagrams)', defaultForm: 'Form 4', subjects: ['Basic Mathematics', 'Additional Mathematics'] },
+      { keywords: ['linear programming', 'feasible region', 'objective function'], topic: 'Chapter 8: Linear Programming (Formulating Constraints, Objective Function, Graphing Feasible Region & Optimal Value)', defaultForm: 'Form 4', subjects: ['Basic Mathematics', 'Basic Applied Mathematics (BAM)'] },
+      { keywords: ['simultaneous equation', 'linear equation', 'linear inequality'], topic: 'Chapter 8: Algebra (Algebraic Expressions, Linear Equations, Simultaneous Equations & Linear Inequalities)', defaultForm: 'Form 1', subjects: ['Basic Mathematics', 'Additional Mathematics'] },
+      { keywords: ['simple interest', 'profit and loss'], topic: 'Chapter 10: Ratios, Profit and Loss (Ratios, Proportions, Profit/Loss Percentage & Simple Interest)', defaultForm: 'Form 1', subjects: ['Basic Mathematics'] },
+      { keywords: ['differentiation', 'integration', 'derivative', 'stationary point', 'calculus'], topic: 'Chapter 3: Differentiation (Limits, First Principles, Chain Rule, Product Rule, Quotient Rule, Tangents & Stationary Points)', defaultForm: 'Form 3', subjects: ['Additional Mathematics', 'Advanced Mathematics', 'Basic Applied Mathematics (BAM)'] },
+      { keywords: ['double entry', 'trial balance', 'ledger', 'balance sheet'], topic: 'Chapter 2: Principles of Double Entry System (Concept of Business Transaction, Debit & Credit Rules for Personal, Real & Nominal Accounts)', defaultForm: 'Form 1', subjects: ['Book-Keeping', 'Business Studies', 'Accountancy', 'Basic Mathematics'] },
+      { keywords: ['ohm law', "ohm's law", 'resistor', 'current electricity'], topic: 'Chapter 2: Current Electricity (Electric Current I = Q/t, Voltage, Ohm Law V = IR, Factors Affecting Resistance & Series/Parallel Resistors)', defaultForm: 'Form 2', subjects: ['Physics'] },
+      { keywords: ['archimedes', 'law of flotation', 'upthrust', 'relative density'], topic: 'Chapter 5: Archimedes Principle and Law of Flotation (Upthrust, Apparent Weight, Relative Density, Sinking, Floating & Hydrometer)', defaultForm: 'Form 1', subjects: ['Physics'] },
+      { keywords: ['newton law', "newton's law", 'uniformly accelerated', 'linear momentum'], topic: 'Chapter 7: Newton Laws of Motion (First Law & Inertia, Second Law & Linear Momentum F = ma, Conservation of Momentum & Third Law)', defaultForm: 'Form 2', subjects: ['Physics'] },
+      { keywords: ['mechanical advantage', 'velocity ratio', 'simple machine', 'pulley'], topic: 'Chapter 5: Simple Machines (Mechanical Advantage, Velocity Ratio, Efficiency, Levers, Pulleys, Inclined Plane, Screw Jack, Wheel & Axle, Hydraulic Press)', defaultForm: 'Form 2', subjects: ['Physics'] },
+      { keywords: ['snell law', 'refractive index', 'total internal reflection', 'curved mirror'], topic: 'Chapter 3: Light (Reflection at Curved Mirrors, Mirror Formula 1/f = 1/u + 1/v, Refraction of Light, Snell Law, Total Internal Reflection, Lenses & Dispersion)', defaultForm: 'Form 3', subjects: ['Physics'] },
+      { keywords: ['specific heat capacity', 'latent heat', 'boyle law', 'charles law'], topic: 'Chapter 7: Measurement of Thermal Energy (Heat Capacity C = mc, Specific Heat Capacity Q = mcΔθ, Change of State & Specific Latent Heat Q = mL)', defaultForm: 'Form 3', subjects: ['Physics'] },
+      { keywords: ['radioactivity', 'half-life', 'half life', 'alpha particle', 'beta particle'], topic: 'Chapter 3: Radioactivity (Structure of the Nucleus, Isotopes, Alpha, Beta & Gamma Radiation, Nuclear Equations, Half-Life Calculations, Nuclear Fission & Fusion)', defaultForm: 'Form 4', subjects: ['Physics', 'Chemistry'] },
+      { keywords: ['mole concept', 'molar mass', 'stoichiometry', 'avogadro', 'empirical formula'], topic: 'Chapter 4: The Mole Concept and Related Calculations (Avogadro Constant, Molar Mass, Molar Gas Volume at STP 22.4 dm³ & Stoichiometric Reacting Masses)', defaultForm: 'Form 3', subjects: ['Chemistry'] },
+      { keywords: ['titration', 'molarity', 'volumetric analysis'], topic: 'Chapter 5: Volumetric Analysis (Standard Solutions, Acid-Base Titration Apparatus, Choice of Indicators, Molarity M = conc/Mr & Percentage Purity/Water of Crystallisation)', defaultForm: 'Form 3', subjects: ['Chemistry'] },
+      { keywords: ['electrolysis', 'faraday', 'cathode', 'anode'], topic: 'Chapter 6: Ionic Theory and Electrolysis (Electrolytes vs Non-Electrolytes, Preferential Discharge of Ions, Faraday First & Second Laws of Electrolysis & Industrial Applications)', defaultForm: 'Form 3', subjects: ['Chemistry'] },
+      { keywords: ['homologous series', 'alkane', 'alkene', 'alkyne', 'carboxylic acid'], topic: 'Chapter 2: Introduction to Organic Chemistry (Homologous Series, Isomerism, Alkanes, Alkenes, Alkynes, Alcohols/Alkanols, Carboxylic Acids/Alkanoic Acids, Esterification & Soap/Polymers)', defaultForm: 'Form 4', subjects: ['Chemistry'] },
+      { keywords: ['photosynthesis', 'digestive system', 'food test', 'balanced diet'], topic: 'Chapter 2: Nutrition (Concept of Nutrition, Food Nutrients, Biochemical Food Tests, Balanced Diet, Nutritional Deficiencies, Digestive System in Humans & Photosynthesis in Plants)', defaultForm: 'Form 2', subjects: ['Biology'] },
+      { keywords: ['osmosis', 'transpiration', 'xylem', 'phloem', 'mammalian heart'], topic: 'Chapter 5: Transport of Materials in Living Things (Diffusion, Osmosis & Mass Flow; Mammalian Heart, Blood Vessels, Blood Components, Blood Groups; Xylem, Phloem & Transpiration)', defaultForm: 'Form 2', subjects: ['Biology'] },
+      { keywords: ['mendel', 'monohybrid', 'punnett', 'sex-linked', 'genetics'], topic: 'Chapter 2: Genetics (Hereditary Material DNA & RNA, Concept of Genetics, Mendel First Law, Monohybrid Inheritance, Incomplete/Co-dominance, Sex Determination, Sex-Linked Traits & Variation/Mutation)', defaultForm: 'Form 4', subjects: ['Biology'] },
+      { keywords: ['topographical map', 'grid reference', 'contour', 'intervisibility'], topic: 'Chapter 5: Map Reading and Map Interpretation (Topographical Maps, Contours, Cross-Section/Relief Profile, Intervisibility, Gradient, Drainage Patterns & Human Settlements)', defaultForm: 'Form 3', subjects: ['Geography'] },
     ];
 
     for (const item of directTopicMap) {
-      if (item.keywords.some((kw) => lower.includes(kw))) {
-        matchedTopic = item.topic;
-        if (!explicitClassFound && item.defaultForm) {
-          cls = item.defaultForm;
+      const subjectCompatible = item.subjects.some((s) => matchesSubjectQuery(s, subject));
+      if (!subjectCompatible && explicitSubjectFound) continue;
+      if (item.keywords.some((kw) => hasWordPhrase(lower, kw))) {
+        if (subjectCompatible) {
+          matchedTopic = item.topic;
+          if (!explicitClassFound && item.defaultForm) {
+            cls = item.defaultForm;
+          }
+          matchedFromPrompt = true;
+          break;
         }
-        matchedFromPrompt = true;
-        break;
       }
     }
   }

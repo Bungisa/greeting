@@ -36,6 +36,7 @@ import {
   getDefaultFlashcardsForSubject,
   getSubTopicsForMainTopic,
   getSyllabusTopicsForClassSubject,
+  getTieTextbookChapterContent,
   LearnedMemoryItem,
   matchesFormRange,
   matchesSubjectQuery,
@@ -255,7 +256,7 @@ function processParsedRows(rows: string[][]): PaperRecord[] {
       if (!rawTitle && !rawSubject) continue;
 
       const form = normalizeClassName(rawForm);
-      const subject = normalizeSubjectName(rawSubject || 'General');
+      const subject = normalizeSubjectName(rawSubject || 'General', rawTitle);
       const year = rawYear || '2025';
       const category = rawCat || 'NECTA';
       const catLower = `${category} ${rawTitle}`.toLowerCase();
@@ -824,6 +825,239 @@ export default function App() {
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
+  // ==================== PHONE & BROWSER BACK BUTTON HISTORY SUPPORT ====================
+  interface ElimikaHistorySnapshot {
+    activePage: typeof activePage;
+    step: 1 | 2 | 3;
+    selectedClass: string;
+    selectedSubject: string;
+    mohaViewMode: typeof mohaViewMode;
+    playRoute: PlayRoute;
+  }
+
+  const navHistoryStackRef = useRef<ElimikaHistorySnapshot[]>([
+    {
+      activePage: 'papers',
+      step: 1,
+      selectedClass: '',
+      selectedSubject: '',
+      mohaViewMode: 'chat',
+      playRoute: 'hub',
+    },
+  ]);
+  const isPoppingHistoryRef = useRef<boolean>(false);
+  const latestNavStateRef = useRef({
+    activePage,
+    step,
+    selectedClass,
+    selectedSubject,
+    mohaViewMode,
+    playRoute,
+    viewerPaper,
+    attachModalOpen,
+    teacherStudioOpen,
+  });
+
+  useEffect(() => {
+    latestNavStateRef.current = {
+      activePage,
+      step,
+      selectedClass,
+      selectedSubject,
+      mohaViewMode,
+      playRoute,
+      viewerPaper,
+      attachModalOpen,
+      teacherStudioOpen,
+    };
+  }, [
+    activePage,
+    step,
+    selectedClass,
+    selectedSubject,
+    mohaViewMode,
+    playRoute,
+    viewerPaper,
+    attachModalOpen,
+    teacherStudioOpen,
+  ]);
+
+  useEffect(() => {
+    if (isPoppingHistoryRef.current) {
+      isPoppingHistoryRef.current = false;
+      return;
+    }
+    const stack = navHistoryStackRef.current;
+    const top = stack[stack.length - 1];
+    const nextSnap: ElimikaHistorySnapshot = {
+      activePage,
+      step,
+      selectedClass,
+      selectedSubject,
+      mohaViewMode,
+      playRoute,
+    };
+    const isSame =
+      top &&
+      top.activePage === nextSnap.activePage &&
+      top.step === nextSnap.step &&
+      top.selectedClass === nextSnap.selectedClass &&
+      top.selectedSubject === nextSnap.selectedSubject &&
+      top.mohaViewMode === nextSnap.mohaViewMode &&
+      top.playRoute === nextSnap.playRoute;
+
+    if (!isSame) {
+      stack.push(nextSnap);
+      try {
+        window.history.pushState(
+          { elimikaNav: true, idx: stack.length - 1, ...nextSnap },
+          ''
+        );
+      } catch {
+        // ignore history push errors in restricted frames
+      }
+    }
+  }, [activePage, step, selectedClass, selectedSubject, mohaViewMode, playRoute]);
+
+  const stepBackFallback = () => {
+    const cur = latestNavStateRef.current;
+    if (cur.viewerPaper) {
+      setViewerPaper(null);
+      return;
+    }
+    if (cur.attachModalOpen) {
+      setAttachModalOpen(false);
+      return;
+    }
+    if (cur.teacherStudioOpen) {
+      setTeacherStudioOpen(false);
+      return;
+    }
+    if (cur.activePage === 'game' && cur.playRoute !== 'hub') {
+      setPlayRoute('hub');
+      return;
+    }
+    if (cur.activePage === 'moha' && cur.mohaViewMode !== 'chat') {
+      setMohaViewMode('chat');
+      return;
+    }
+    if (cur.activePage !== 'papers') {
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
+      setActivePage('papers');
+      return;
+    }
+    if (cur.step === 3) {
+      if (searchQuery.trim().length > 0) {
+        setSearchQuery('');
+        setStep(cur.selectedClass ? 2 : 1);
+      } else {
+        setStep(2);
+      }
+      return;
+    }
+    if (cur.step === 2) {
+      setStep(1);
+    }
+  };
+
+  useEffect(() => {
+    // Seed initial history entry so phone Back button stays inside app
+    try {
+      if (!window.history.state || !window.history.state.elimikaNav) {
+        window.history.replaceState(
+          {
+            elimikaNav: true,
+            idx: 0,
+            activePage: 'papers',
+            step: 1,
+            selectedClass: '',
+            selectedSubject: '',
+            mohaViewMode: 'chat',
+            playRoute: 'hub',
+          },
+          ''
+        );
+      }
+    } catch {
+      // ignore
+    }
+
+    const onPopState = (event: PopStateEvent) => {
+      const cur = latestNavStateRef.current;
+      // If a modal/viewer is open, close it first and keep current page
+      if (cur.viewerPaper || cur.attachModalOpen || cur.teacherStudioOpen) {
+        setViewerPaper(null);
+        setAttachModalOpen(false);
+        setTeacherStudioOpen(false);
+        try {
+          const topSnap = navHistoryStackRef.current[navHistoryStackRef.current.length - 1];
+          if (topSnap) {
+            window.history.pushState({ elimikaNav: true, ...topSnap }, '');
+          }
+        } catch {
+          // ignore
+        }
+        return;
+      }
+
+      const stack = navHistoryStackRef.current;
+      if (stack.length > 1) {
+        stack.pop();
+        const prevSnap = stack[stack.length - 1];
+        if (prevSnap) {
+          isPoppingHistoryRef.current = true;
+          if (window.speechSynthesis) window.speechSynthesis.cancel();
+          setActivePage(prevSnap.activePage);
+          setStep(prevSnap.step);
+          setSelectedClass(prevSnap.selectedClass);
+          setSelectedSubject(prevSnap.selectedSubject);
+          setMohaViewMode(prevSnap.mohaViewMode);
+          setPlayRoute(prevSnap.playRoute);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          return;
+        }
+      }
+
+      if (event.state && event.state.elimikaNav) {
+        isPoppingHistoryRef.current = true;
+        if (window.speechSynthesis) window.speechSynthesis.cancel();
+        setActivePage(event.state.activePage || 'papers');
+        setStep(event.state.step || 1);
+        setSelectedClass(event.state.selectedClass || '');
+        setSelectedSubject(event.state.selectedSubject || '');
+        setMohaViewMode(event.state.mohaViewMode || 'chat');
+        setPlayRoute(event.state.playRoute || 'hub');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+
+      isPoppingHistoryRef.current = true;
+      stepBackFallback();
+    };
+
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
+  function handleGoBack() {
+    if (viewerPaper || attachModalOpen || teacherStudioOpen) {
+      setViewerPaper(null);
+      setAttachModalOpen(false);
+      setTeacherStudioOpen(false);
+      return;
+    }
+    if (navHistoryStackRef.current.length > 1) {
+      try {
+        window.history.back();
+        return;
+      } catch {
+        // fall through to manual step back
+      }
+    }
+    stepBackFallback();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   // Render MathJax 3 & KaTeX math formulas across Chat, Quiz, Daily Quiz, Flashcards & Lesson Notes Studio
   useEffect(() => {
     if (activePage === 'moha' && mohaViewMode === 'chat' && chatContainerRef.current) {
@@ -871,7 +1105,11 @@ export default function App() {
       });
   }, [allPapers, mohaActiveClass, mohaActiveSubject]);
 
-  function buildSiteResourcesForClassSubject(clsVal: string, subVal: string): SiteResourceContext {
+  function buildSiteResourcesForClassSubject(
+    clsVal: string,
+    subVal: string,
+    ignoreMismatchedFocus = false
+  ): SiteResourceContext {
     const sortByRelevance = (items: PaperRecord[]) =>
       [...items].sort((a, b) => {
         const aExactCls = matchesFormRange(a.form, clsVal) ? 1 : 0;
@@ -912,15 +1150,24 @@ export default function App() {
         ? matchingPapers
         : allPapers.filter((p) => !p.isBook && !p.isSyllabus).slice(0, 8);
 
-    // If no manual focusedResource is selected, automatically attach the primary uploaded TIE Book for this exact Class & Subject if available
+    const canUseManualFocus =
+      mohaFocusedResource &&
+      (!ignoreMismatchedFocus ||
+        (matchesFormRange(mohaFocusedResource.form, clsVal) &&
+          matchesSubjectQuery(mohaFocusedResource.subject, subVal)));
+
+    // If no matching manual focusedResource is active, automatically attach the primary TIE Book for this exact Class & Subject
     const autoAttachedBook =
-      !mohaFocusedResource
+      !canUseManualFocus
         ? matchingBooks.find(
             (b) => matchesFormRange(b.form, clsVal) && Boolean(b.paperUrl || b.customContent)
-          ) || null
+          ) ||
+          matchingBooks.find((b) => matchesFormRange(b.form, clsVal)) ||
+          matchingBooks[0] ||
+          null
         : null;
 
-    const effectiveFocused = mohaFocusedResource || autoAttachedBook;
+    const effectiveFocused = (canUseManualFocus ? mohaFocusedResource : null) || autoAttachedBook;
 
     return {
       syllabuses: matchingSyllabuses.slice(0, 6).map((s) => ({
@@ -1716,10 +1963,12 @@ export default function App() {
     const loadingId = `load-${Date.now()}`;
 
     // Parse any specific Class, Subject, and Topic requested in the user's message
+    const baseDefaultCls = mohaFocusedResource?.form || mohaActiveClass;
+    const baseDefaultSub = mohaFocusedResource?.subject || mohaActiveSubject;
     const parsedTarget = parseClassSubjectTopicFromPrompt(
       displayPrompt,
-      mohaActiveClass,
-      mohaActiveSubject
+      baseDefaultCls,
+      baseDefaultSub
     );
     const targetCls = parsedTarget.cls;
     const targetSub = parsedTarget.subject;
@@ -1736,7 +1985,62 @@ export default function App() {
     }
 
     // Build integrated website Books, Syllabuses & Past Papers specifically for targetCls & targetSub
-    const promptSiteResources = buildSiteResourcesForClassSubject(targetCls, targetSub);
+    const promptSiteResources = buildSiteResourcesForClassSubject(
+      targetCls,
+      targetSub,
+      parsedTarget.matchedFromPrompt
+    );
+
+    // Explicitly build systemPromptContext from mohaFocusedResource (when pinned) + TIE Textbook reading comprehension passage
+    const pinnedSource =
+      mohaFocusedResource &&
+      (!parsedTarget.matchedFromPrompt ||
+        (matchesFormRange(mohaFocusedResource.form, targetCls) &&
+          matchesSubjectQuery(mohaFocusedResource.subject, targetSub)))
+        ? mohaFocusedResource
+        : promptSiteResources.focusedResource;
+
+    const tbReadingContext = getTieTextbookChapterContent(
+      targetCls,
+      targetSub,
+      displayPrompt,
+      promptSiteResources
+    );
+    const chaptersListForContext = getSyllabusTopicsForClassSubject(targetCls, targetSub);
+    const sampleComprehensionQns = buildContentIntegratedQuizQuestions(
+      targetCls,
+      targetSub,
+      targetTopic,
+      promptSiteResources,
+      targetSubTopic
+    ).slice(0, 4);
+
+    const systemPromptContext = [
+      pinnedSource
+        ? `PINNED RESOURCE FOR READING COMPREHENSION:
+- Resource Title: "${pinnedSource.title}"
+- Category: ${pinnedSource.category} | Class: ${pinnedSource.form} | Subject: ${pinnedSource.subject} | Year: ${pinnedSource.year}
+- Document URL: ${pinnedSource.paperUrl || 'Attached in Elimika Catalog'}${
+            pinnedSource.customContent
+              ? `\n- Attached Full Text / Excerpt from "${pinnedSource.title}":\n${pinnedSource.customContent}`
+              : ''
+          }`
+        : `ACTIVE TIE TEXTBOOK FOR READING COMPREHENSION: "${tbReadingContext.bookTitle}" (${targetCls} ${targetSub})`,
+      `OFFICIAL TIE TEXTBOOK CHAPTERS (${targetCls} ${targetSub}):\n${chaptersListForContext
+        .map((c, idx) => `${idx + 1}. ${c}`)
+        .join('\n')}`,
+      `MATCHED TIE TEXTBOOK CHAPTER COMPREHENSION PASSAGE (${tbReadingContext.matchedChapter}):\n${tbReadingContext.chapterSummaryMarkdown}`,
+      sampleComprehensionQns.length > 0
+        ? `REFERENCE SOLVED QUESTIONS & MARKING RUBRIC FROM "${pinnedSource?.title || tbReadingContext.bookTitle}" (${tbReadingContext.matchedChapter}):\n${sampleComprehensionQns
+            .map(
+              (q, idx) =>
+                `Q${idx + 1}: ${q.question}\nModel Answer: ${q.options[q.correctIndex]}\nWorking / Marking Scheme: ${q.explanation}`
+            )
+            .join('\n\n')}`
+        : '',
+    ]
+      .filter(Boolean)
+      .join('\n\n');
 
     // If user asked for a quiz/questions in chat, pre-load the interactive Quiz items for this exact Class, Subject & Topic
     if (/\b(quiz|questions|maswali|test me|exercise|practice)\b/i.test(displayPrompt)) {
@@ -1765,7 +2069,9 @@ export default function App() {
         id: loadingId,
         role: 'ai',
         loading: true,
-        text: `Moha AI is analyzing ${targetCls} ${targetSub} (${targetTopic}) with TIE Books, Syllabus, Past Papers & Google Search...`,
+        text: pinnedSource
+          ? `Moha AI is performing reading comprehension on "${pinnedSource.title}" (${tbReadingContext.matchedChapter}) to answer your question...`
+          : `Moha AI is analyzing ${targetCls} ${targetSub} (${tbReadingContext.matchedChapter}) with TIE Books, Syllabus & Past Papers...`,
       },
     ]);
 
@@ -1781,6 +2087,7 @@ export default function App() {
           history: mohaMessages.slice(-6).map((m) => ({ id: m.id, role: m.role, text: m.text })),
           learnedMemory,
           siteResources: promptSiteResources,
+          systemPromptContext,
         }),
       });
 
@@ -2520,10 +2827,10 @@ export default function App() {
           transition={{ duration: 0.22, ease: 'easeOut' }}
           className="flex-grow flex flex-col"
         >
-          <section className="pt-6 pb-8 bg-gradient-to-b from-white via-slate-50 to-slate-100 border-b border-slate-200">
-            <div className="max-w-3xl mx-auto px-4 text-center space-y-4">
+          <section className="pt-5 pb-6 bg-gradient-to-b from-white via-slate-50 to-slate-100 border-b border-slate-200">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center space-y-4">
               <div className="text-xs font-bold text-blue-700 tracking-wide">
-                Tanzania National Examinations (NECTA) · Standard 1–7 &amp; Form 1–6
+                Tanzania National Examinations (NECTA) &amp; TIE Curriculum · Standard 1–7 &amp; Form 1–6
               </div>
 
               <h1 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight leading-snug">
@@ -2531,75 +2838,21 @@ export default function App() {
                 <span className="text-blue-600">Past Papers, TIE Books &amp; Syllabus</span>
               </h1>
 
-              {/* Mode Switcher */}
-              <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
-                <button
-                  onClick={() => setActivePage('papers')}
-                  className="px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm border border-blue-700 bg-blue-600 text-white shadow-sm transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
-                >
-                  <FileText className="w-4 h-4" />
-                  <span>Past Papers</span>
-                </button>
-                <button
-                  onClick={() => openBooksPage()}
-                  className="px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm border border-emerald-600 bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-sm transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
-                >
-                  <BookOpen className="w-4 h-4" />
-                  <span>TIE Books</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => openSyllabusPage()}
-                  className="px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm border border-amber-500 bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-sm transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
-                >
-                  <span>Official Syllabuses</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => openDailyQuizPage()}
-                  className="px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm border border-violet-700 bg-violet-600 hover:bg-violet-700 text-white shadow-sm transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
-                >
-                  <span>🎯 Daily Quiz (20 Qns)</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => openMasteryPlannerPage()}
-                  className="px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm border border-indigo-700 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
-                >
-                  <span>📊 Mastery Heatmap &amp; Planner</span>
-                </button>
-                <button
-                  onClick={() => openVirtualLabPage()}
-                  className="px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm border border-teal-700 bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
-                >
-                  <span>🧪 Virtual Science Lab (Paper 2)</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setPlayRoute('hub');
-                    setActivePage('game');
-                  }}
-                  className="px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm border border-slate-800 bg-slate-900 hover:bg-slate-800 text-amber-300 shadow-sm transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
-                >
-                  <span>🎮 Elimika Play (3 Games)</span>
-                </button>
-              </div>
-
               {/* Smart Search + Voice Search */}
-              <div className="relative max-w-xl mx-auto pt-1">
-                <div className="flex items-center bg-white rounded-2xl shadow-sm border border-slate-300 px-3.5 py-2 focus-within:border-blue-600 transition-colors">
+              <div className="relative max-w-2xl mx-auto">
+                <div className="flex items-center bg-white rounded-2xl shadow-sm border border-slate-300 px-3.5 py-2.5 focus-within:border-blue-600 transition-colors">
                   <Search className="w-5 h-5 text-slate-400 shrink-0 mr-2.5" />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => handleSmartSearchChange(e.target.value)}
-                    placeholder="Search directly (e.g. Form 4 Math 2024)..."
+                    placeholder="Search directly (e.g. Form 4 Math 2024, Form 2 Physics Book)..."
                     className="w-full text-sm sm:text-base font-medium bg-transparent text-slate-800 placeholder-slate-400 focus:outline-none"
                   />
                   {searchQuery.trim().length > 0 && (
                     <button
                       onClick={() => handleSmartSearchChange('')}
-                      className="text-slate-400 hover:text-slate-700 p-1.5 mr-1"
+                      className="text-slate-400 hover:text-slate-700 p-1.5 mr-1 cursor-pointer"
                       title="Clear search"
                     >
                       <X className="w-4 h-4" />
@@ -2614,45 +2867,88 @@ export default function App() {
                   </button>
                 </div>
               </div>
+
+              {/* Clean Segmented Primary Resource Switcher */}
+              <div className="inline-flex flex-wrap items-center justify-center gap-1.5 p-1.5 bg-slate-200/75 rounded-2xl border border-slate-300/70">
+                <button
+                  onClick={() => setActivePage('papers')}
+                  className="px-4 py-2 rounded-xl font-bold text-xs sm:text-sm bg-blue-600 text-white shadow-xs transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
+                >
+                  <FileText className="w-4 h-4" />
+                  <span>Past Papers</span>
+                </button>
+                <button
+                  onClick={() => openBooksPage()}
+                  className="px-4 py-2 rounded-xl font-bold text-xs sm:text-sm bg-white hover:bg-emerald-50 text-slate-900 border border-slate-200/80 transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
+                >
+                  <BookOpen className="w-4 h-4 text-emerald-600" />
+                  <span>TIE Textbooks</span>
+                </button>
+                <button
+                  onClick={() => openSyllabusPage()}
+                  className="px-4 py-2 rounded-xl font-bold text-xs sm:text-sm bg-white hover:bg-amber-50 text-slate-900 border border-slate-200/80 transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
+                >
+                  <span>Official Syllabuses</span>
+                </button>
+                <button
+                  onClick={() => openMwalimuModal()}
+                  className="px-4 py-2 rounded-xl font-bold text-xs sm:text-sm bg-violet-600 hover:bg-violet-700 text-white shadow-xs transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>Moha AI Tutor &amp; Studio</span>
+                </button>
+              </div>
             </div>
           </section>
 
           <main className="flex-grow py-6 pb-24">
             <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-6">
-              {/* Breadcrumbs */}
-              <nav className="flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-500 overflow-x-auto pb-1">
-                <button
-                  onClick={() => setStep(1)}
-                  className={`px-3 py-1.5 rounded-xl whitespace-nowrap shrink-0 cursor-pointer ${
-                    step === 1 ? 'bg-blue-600 text-white font-bold' : 'bg-blue-100 text-blue-800 font-semibold'
-                  }`}
-                >
-                  1. Class Level
-                </button>
-                <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
-                <button
-                  onClick={() => selectedClass && setStep(2)}
-                  disabled={step < 2}
-                  className={`px-3 py-1.5 rounded-xl whitespace-nowrap shrink-0 ${
-                    step === 2
-                      ? 'bg-blue-600 text-white font-bold'
-                      : step > 2
-                      ? 'bg-blue-100 text-blue-800 font-semibold cursor-pointer'
-                      : 'bg-slate-100 text-slate-400 disabled:opacity-60'
-                  }`}
-                >
-                  2. {selectedClass || 'Subject'}
-                </button>
-                <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
-                <button
-                  disabled={step < 3}
-                  className={`px-3 py-1.5 rounded-xl whitespace-nowrap shrink-0 ${
-                    step === 3 ? 'bg-blue-600 text-white font-bold' : 'bg-slate-100 text-slate-400 disabled:opacity-60'
-                  }`}
-                >
-                  3. {selectedSubject || 'Past Papers'}
-                </button>
-              </nav>
+              {/* Breadcrumbs + Step Back Bar */}
+              <div className="flex items-center justify-between gap-2">
+                <nav className="flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-500 overflow-x-auto pb-1">
+                  <button
+                    onClick={() => setStep(1)}
+                    className={`px-3 py-1.5 rounded-xl whitespace-nowrap shrink-0 cursor-pointer ${
+                      step === 1 ? 'bg-blue-600 text-white font-bold' : 'bg-blue-100 text-blue-800 font-semibold'
+                    }`}
+                  >
+                    1. Class Level
+                  </button>
+                  <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
+                  <button
+                    onClick={() => selectedClass && setStep(2)}
+                    disabled={step < 2}
+                    className={`px-3 py-1.5 rounded-xl whitespace-nowrap shrink-0 ${
+                      step === 2
+                        ? 'bg-blue-600 text-white font-bold'
+                        : step > 2
+                        ? 'bg-blue-100 text-blue-800 font-semibold cursor-pointer'
+                        : 'bg-slate-100 text-slate-400 disabled:opacity-60'
+                    }`}
+                  >
+                    2. {selectedClass || 'Subject'}
+                  </button>
+                  <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
+                  <button
+                    disabled={step < 3}
+                    className={`px-3 py-1.5 rounded-xl whitespace-nowrap shrink-0 ${
+                      step === 3 ? 'bg-blue-600 text-white font-bold' : 'bg-slate-100 text-slate-400 disabled:opacity-60'
+                    }`}
+                  >
+                    3. {selectedSubject || 'Past Papers'}
+                  </button>
+                </nav>
+
+                {step > 1 && (
+                  <button
+                    onClick={handleGoBack}
+                    className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 border border-slate-300 text-slate-800 font-bold text-xs flex items-center gap-1.5 shrink-0 cursor-pointer shadow-2xs"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Back</span>
+                  </button>
+                )}
+              </div>
 
               {/* Network Error Banner */}
               {syncStatus === 'error' && (
@@ -2668,161 +2964,306 @@ export default function App() {
                 </div>
               )}
 
-              {/* STEP 1: CHOOSE CLASS */}
+              {/* STEP 1: CHOOSE CLASS & PROFESSIONAL ACADEMIC HUB */}
               {step === 1 && (
-                <section className="space-y-6">
-                  {/* DAILY QUIZ IN HOME — OPENS TO ITS SEPARATE PAGE */}
-                  <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-violet-950 via-slate-900 to-blue-950 text-white border border-violet-700/60 shadow-md space-y-3">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="space-y-1">
-                        <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-md bg-amber-400 text-slate-950 text-[11px] font-black uppercase tracking-wider">
-                          <span>🔥 Daily Solving Quiz · {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                        </div>
-                        <h2 className="text-base sm:text-lg font-black text-white">
-                          Daily Textbook &amp; Past Paper Problem-Solving Quiz
-                        </h2>
-                        <p className="text-xs text-slate-200 max-w-2xl">
-                          Open the dedicated Daily Quiz page to choose your <strong>Class, Subject, Topic, and Sub-Topic</strong>. Every question is a real step-by-step problem from <strong>TIE Textbooks</strong> or <strong>NECTA Past Papers</strong>.
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => openDailyQuizPage()}
-                        className="px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs sm:text-sm shadow-sm whitespace-nowrap shrink-0 cursor-pointer flex items-center justify-center gap-1.5"
-                      >
-                        <span>Open Daily Quiz Page →</span>
-                      </button>
-                    </div>
-
-                    {/* Quick Subject Launchers into the Separate Daily Quiz Page */}
-                    <div className="pt-2 border-t border-white/15 flex flex-wrap items-center gap-1.5 text-xs">
-                      <span className="text-slate-300 font-bold text-[11px] mr-1">
-                        Quick Solve by Subject:
-                      </span>
-                      {[
-                        { cls: 'Form 4', sub: 'Basic Mathematics', label: '📐 Mathematics' },
-                        { cls: 'Form 4', sub: 'Physics', label: '⚡ Physics' },
-                        { cls: 'Form 4', sub: 'Chemistry', label: '🧪 Chemistry' },
-                        { cls: 'Form 4', sub: 'Biology', label: '🧬 Biology' },
-                        { cls: 'Form 4', sub: 'Geography', label: '🌍 Geography' },
-                        { cls: 'Form 4', sub: 'History', label: '🏛️ History' },
-                        { cls: 'Form 4', sub: 'English Language', label: '📘 English' },
-                      ].map((item) => (
-                        <button
-                          key={item.sub}
-                          onClick={() => openDailyQuizPage(item.cls, item.sub)}
-                          className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold text-[11px] border border-white/15 cursor-pointer transition-colors"
-                        >
-                          {item.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
+                <section className="space-y-8">
+                  {/* Quick Resume Bar if user previously selected a class */}
                   {savedClass && (
-                    <div className="p-4 bg-emerald-50 border border-emerald-300 rounded-2xl flex items-center justify-between gap-3">
-                      <div>
-                        <span className="text-[11px] font-bold uppercase text-emerald-700 block">
-                          Last Selected Class
+                    <div className="p-3.5 sm:p-4 bg-emerald-50 border border-emerald-300 rounded-2xl flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="w-9 h-9 rounded-xl bg-emerald-600 text-white font-black text-xs flex items-center justify-center shrink-0">
+                          {savedClass.replace(/[^0-9]/g, '') || '★'}
                         </span>
-                        <span className="text-sm sm:text-base font-bold text-emerald-950">
-                          Continue with {savedClass}
-                        </span>
+                        <div className="min-w-0">
+                          <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 block">
+                            Last Selected Class
+                          </span>
+                          <span className="text-sm sm:text-base font-bold text-emerald-950 truncate block">
+                            Continue with {savedClass} Past Papers &amp; TIE Books
+                          </span>
+                        </div>
                       </div>
                       <button
                         onClick={() => selectClass(savedClass)}
-                        className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm whitespace-nowrap shrink-0 cursor-pointer"
+                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs whitespace-nowrap shrink-0 cursor-pointer"
                       >
                         Open {savedClass} →
                       </button>
                     </div>
                   )}
 
+                  {/* 1. PRIMARY FOCUS: CHOOSE YOUR CLASS LEVEL */}
+                  <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3.5">
+                      <div>
+                        <h2 className="text-base sm:text-lg font-black text-slate-900">
+                          01. Select Your Class Level
+                        </h2>
+                        <p className="text-xs text-slate-500">
+                          Choose a class to browse Past Papers, Marking Schemes, Official TIE Textbooks, and Syllabuses.
+                        </p>
+                      </div>
+                      <span className="text-xs font-semibold text-slate-500 tabular-nums">
+                        13 Official Classes · TIE &amp; NECTA Aligned
+                      </span>
+                    </div>
+
+                    {/* Secondary School (Form 1-6) */}
+                    <div className="space-y-2.5">
+                      <div className="flex items-center justify-between text-xs font-bold text-slate-600">
+                        <span>Secondary School (Ordinary &amp; Advanced Level · Form 1 – Form 6)</span>
+                        <span className="text-slate-400">O-Level &amp; A-Level</span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        {[
+                          { cls: 'Form 1', sub: 'Ordinary Secondary · TIE Books' },
+                          { cls: 'Form 2', sub: 'FTNA National Assessment' },
+                          { cls: 'Form 3', sub: 'Ordinary Secondary · TIE Books' },
+                          { cls: 'Form 4', sub: 'CSEE National Examination' },
+                          { cls: 'Form 5', sub: 'Advanced Level · Combinations' },
+                          { cls: 'Form 6', sub: 'ACSEE National Examination' },
+                        ].map(({ cls, sub }) => {
+                          const isExamYear = cls === 'Form 2' || cls === 'Form 4' || cls === 'Form 6';
+                          return (
+                            <button
+                              key={cls}
+                              onClick={() => selectClass(cls)}
+                              className={`p-4 rounded-xl text-left flex items-center justify-between transition-all cursor-pointer group ${
+                                isExamYear
+                                  ? 'bg-blue-50/70 hover:bg-blue-100/80 border border-blue-300 text-slate-900'
+                                  : 'bg-slate-50/70 hover:bg-blue-50/60 border border-slate-200 hover:border-blue-400 text-slate-900'
+                              }`}
+                            >
+                              <div className="min-w-0 pr-2">
+                                <span className="block text-base font-black text-slate-900 group-hover:text-blue-700">
+                                  {cls}
+                                </span>
+                                <span className="block text-[11px] font-medium text-slate-500 truncate mt-0.5">
+                                  {sub}
+                                </span>
+                              </div>
+                              <ChevronRight
+                                className={`w-5 h-5 shrink-0 transition-transform group-hover:translate-x-0.5 ${
+                                  isExamYear ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-600'
+                                }`}
+                              />
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Primary School (Standard 1-7) */}
+                    <div className="space-y-2.5 pt-2 border-t border-slate-100">
+                      <div className="flex items-center justify-between text-xs font-bold text-slate-600">
+                        <span>Primary School (Standard 1 – Standard 7)</span>
+                        <span className="text-slate-400">SFNA &amp; PSLE</span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                        {[
+                          { cls: 'Standard 1', label: 'Standard 1', sub: 'Primary TIE' },
+                          { cls: 'Standard 2', label: 'Standard 2', sub: 'Primary TIE' },
+                          { cls: 'Standard 3', label: 'Standard 3', sub: 'Primary TIE' },
+                          { cls: 'Standard 4', label: 'Standard 4 (SFNA)', sub: 'National Assessment' },
+                          { cls: 'Standard 5', label: 'Standard 5', sub: 'Primary TIE' },
+                          { cls: 'Standard 6', label: 'Standard 6', sub: 'Primary TIE' },
+                          { cls: 'Standard 7', label: 'Standard 7 (PSLE)', sub: 'Primary Leaving Exam' },
+                        ].map(({ cls, label, sub }) => {
+                          const isStd4 = cls === 'Standard 4';
+                          const isStd7 = cls === 'Standard 7';
+                          return (
+                            <button
+                              key={cls}
+                              onClick={() => selectClass(cls)}
+                              className={`p-3.5 rounded-xl text-left flex items-center justify-between transition-all cursor-pointer group ${
+                                isStd7
+                                  ? 'col-span-2 bg-blue-50/70 hover:bg-blue-100/80 border border-blue-300 text-slate-900'
+                                  : isStd4
+                                  ? 'bg-amber-50/70 hover:bg-amber-100/80 border border-amber-300 text-slate-900'
+                                  : 'bg-slate-50/70 hover:bg-blue-50/60 border border-slate-200 hover:border-blue-400 text-slate-900'
+                              }`}
+                            >
+                              <div className="min-w-0 pr-1">
+                                <span className="block text-sm font-bold text-slate-900 group-hover:text-blue-700 truncate">
+                                  {label}
+                                </span>
+                                <span className="block text-[11px] text-slate-500 truncate">{sub}</span>
+                              </div>
+                              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-blue-600 shrink-0" />
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 2. PROFESSIONAL 2x2 ACADEMIC STUDY, AI COMPREHENSION & PRACTICALS HUB */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between px-1">
+                      <h2 className="text-base sm:text-lg font-black text-slate-900">
+                        02. Interactive Study, AI Textbook Tutor &amp; Science Labs
+                      </h2>
+                      <span className="text-xs font-medium text-slate-500">
+                        TIE Textbooks · Past Papers · Paper 2 Practicals
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Card 1: Daily Solving Quiz */}
+                      <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-violet-950 to-slate-900 text-white border border-slate-800 shadow-xs flex flex-col justify-between gap-4">
+                        <div className="space-y-2">
+                          <div className="text-xs font-bold text-amber-400 tracking-wide">
+                            Daily Problem-Solving Quiz · 20 Questions
+                          </div>
+                          <h3 className="text-base sm:text-lg font-black text-white">
+                            TIE Textbook &amp; Past Paper Workout Quiz
+                          </h3>
+                          <p className="text-xs text-slate-300 leading-relaxed">
+                            Choose your Class, Subject, Main Topic, and Sub-Topic to solve step-by-step problems with NECTA Marking Schemes.
+                          </p>
+                          <div className="pt-1.5 flex flex-wrap items-center gap-1.5">
+                            {[
+                              { cls: 'Form 4', sub: 'Basic Mathematics', label: 'Mathematics' },
+                              { cls: 'Form 4', sub: 'Physics', label: 'Physics' },
+                              { cls: 'Form 4', sub: 'Chemistry', label: 'Chemistry' },
+                              { cls: 'Form 4', sub: 'Biology', label: 'Biology' },
+                              { cls: 'Form 4', sub: 'Geography', label: 'Geography' },
+                            ].map((item) => (
+                              <button
+                                key={item.sub}
+                                onClick={() => openDailyQuizPage(item.cls, item.sub)}
+                                className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white font-semibold text-[11px] border border-white/15 cursor-pointer transition-colors"
+                              >
+                                {item.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => openDailyQuizPage()}
+                          className="w-full py-2.5 px-4 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs sm:text-sm cursor-pointer flex items-center justify-center gap-1.5"
+                        >
+                          <span>Open Daily Solving Quiz →</span>
+                        </button>
+                      </div>
+
+                      {/* Card 2: Moha AI Textbook Reading Comprehension & Teacher Studio */}
+                      <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs flex flex-col justify-between gap-4">
+                        <div className="space-y-2">
+                          <div className="text-xs font-bold text-violet-700 tracking-wide">
+                            Moha AI Tutor &amp; Teacher Studio
+                          </div>
+                          <h3 className="text-base sm:text-lg font-black text-slate-900">
+                            TIE Textbook Reading Comprehension &amp; Q&amp;A
+                          </h3>
+                          <p className="text-xs text-slate-600 leading-relaxed">
+                            Pin any uploaded TIE Textbook or Past Paper for direct reading comprehension, step-by-step question answering, Lesson Plans, Schemes of Work, and Lesson Notes.
+                          </p>
+                          <div className="pt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
+                            <span>📌 Pin TIE Books</span>
+                            <span aria-hidden="true">·</span>
+                            <span>📐 MathJax Solutions</span>
+                            <span aria-hidden="true">·</span>
+                            <span>📋 PO-RALG Lesson Plans</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => openMwalimuModal()}
+                            className="flex-1 py-2.5 px-4 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs sm:text-sm cursor-pointer flex items-center justify-center gap-1.5"
+                          >
+                            <Sparkles className="w-4 h-4" />
+                            <span>Ask Moha AI</span>
+                          </button>
+                          <button
+                            onClick={() => openMwalimuModal(selectedClass || 'Form 4', 'Basic Mathematics', 'studio')}
+                            className="py-2.5 px-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs cursor-pointer shrink-0"
+                          >
+                            Teacher Studio
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Card 3: Virtual Science Practicals Lab (Paper 2) */}
+                      <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs flex flex-col justify-between gap-4">
+                        <div className="space-y-2">
+                          <div className="text-xs font-bold text-teal-700 tracking-wide">
+                            NECTA Paper 2 · Virtual Science Practicals
+                          </div>
+                          <h3 className="text-base sm:text-lg font-black text-slate-900">
+                            Physics, Chemistry &amp; Biology Lab Simulations
+                          </h3>
+                          <p className="text-xs text-slate-600 leading-relaxed">
+                            Conduct interactive Volumetric Analysis (Titration), Qualitative Salt Analysis, Food Tests, Simple Pendulum, and Ohm&apos;s Law experiments.
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => openVirtualLabPage()}
+                          className="w-full py-2.5 px-4 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs sm:text-sm cursor-pointer flex items-center justify-center gap-1.5"
+                        >
+                          <span>Launch Virtual Science Lab →</span>
+                        </button>
+                      </div>
+
+                      {/* Card 4: Topic Mastery Heatmap & Elimika Play */}
+                      <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs flex flex-col justify-between gap-4">
+                        <div className="space-y-2">
+                          <div className="text-xs font-bold text-indigo-700 tracking-wide">
+                            Syllabus Mastery &amp; Educational Games
+                          </div>
+                          <h3 className="text-base sm:text-lg font-black text-slate-900">
+                            Mastery Heatmap, Revision Planner &amp; Elimika Play
+                          </h3>
+                          <p className="text-xs text-slate-600 leading-relaxed">
+                            Track your competence mastery across every TIE chapter, generate a weak-topic timetable, or play NECTA Treasure Hunt &amp; STEM Arena.
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => openMasteryPlannerPage()}
+                            className="flex-1 py-2.5 px-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm cursor-pointer text-center"
+                          >
+                            Mastery Heatmap
+                          </button>
+                          <button
+                            onClick={() => {
+                              setPlayRoute('hub');
+                              setActivePage('game');
+                            }}
+                            className="flex-1 py-2.5 px-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-300 font-bold text-xs sm:text-sm cursor-pointer text-center"
+                          >
+                            🎮 Elimika Play
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 3. RECENTLY OPENED PAPERS */}
                   {recentPapers.length > 0 && (
-                    <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-2.5">
-                      <div className="text-xs font-bold uppercase text-slate-500">Recently Opened Papers</div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="bg-white p-5 rounded-2xl border border-slate-200 space-y-3">
+                      <div className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                        03. Recently Opened Papers &amp; Books
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         {recentPapers.map((item) => (
                           <button
                             key={item.id}
                             onClick={() => openViewer(item.id, 'paper')}
-                            className="p-2.5 rounded-xl bg-slate-50 hover:bg-blue-50 border border-slate-200 text-left flex items-center justify-between gap-2 cursor-pointer"
+                            className="p-3 rounded-xl bg-slate-50 hover:bg-blue-50 border border-slate-200 text-left flex items-center justify-between gap-2 cursor-pointer transition-colors"
                           >
                             <div className="min-w-0">
                               <div className="text-xs font-bold text-slate-900 truncate">{item.title}</div>
                               <div className="text-[11px] font-medium text-slate-500">
-                                {item.form} · {item.subject}
+                                {item.form} · {item.subject} · {item.year}
                               </div>
                             </div>
-                            <span className="text-xs font-bold text-blue-600 shrink-0">Read →</span>
+                            <span className="text-xs font-bold text-blue-600 shrink-0">Open →</span>
                           </button>
                         ))}
                       </div>
                     </div>
                   )}
-
-                  {/* Secondary School (Form 1-6) */}
-                  <div className="space-y-3">
-                    <h2 className="text-sm font-bold tracking-wide text-slate-600">
-                      Secondary School (Form 1 – Form 6)
-                    </h2>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                      {['Form 1', 'Form 2', 'Form 3', 'Form 4', 'Form 5', 'Form 6'].map((cls) => {
-                        const isExamYear = cls === 'Form 4' || cls === 'Form 6';
-                        return (
-                          <button
-                            key={cls}
-                            onClick={() => selectClass(cls)}
-                            className={`p-4 rounded-2xl text-left shadow-sm flex items-center justify-between transition-colors cursor-pointer ${
-                              isExamYear
-                                ? 'bg-blue-50 hover:bg-blue-100 border border-blue-400 text-blue-950'
-                                : 'bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-500 text-slate-900'
-                            }`}
-                          >
-                            <span className="text-base font-bold">{cls}</span>
-                            <ChevronRight
-                              className={`w-5 h-5 ${isExamYear ? 'text-blue-600' : 'text-slate-400'}`}
-                            />
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Primary School (Standard 1-7) */}
-                  <div className="space-y-3">
-                    <h2 className="text-sm font-bold tracking-wide text-slate-600">
-                      Primary School (Standard 1 – 7)
-                    </h2>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      {[
-                        'Standard 1',
-                        'Standard 2',
-                        'Standard 3',
-                        'Standard 4',
-                        'Standard 5',
-                        'Standard 6',
-                        'Standard 7',
-                      ].map((cls) => {
-                        const isStd4 = cls === 'Standard 4';
-                        const isStd7 = cls === 'Standard 7';
-                        return (
-                          <button
-                            key={cls}
-                            onClick={() => selectClass(cls)}
-                            className={`p-3.5 rounded-2xl text-center font-bold transition-colors cursor-pointer ${
-                              isStd7
-                                ? 'col-span-2 bg-blue-50 hover:bg-blue-100 border border-blue-400 text-blue-900'
-                                : isStd4
-                                ? 'bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900'
-                                : 'bg-white hover:bg-blue-50 border border-slate-200 text-slate-800'
-                            }`}
-                          >
-                            {isStd7 ? 'Standard 7 (PSLE)' : cls}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
                 </section>
               )}
 
@@ -2832,7 +3273,7 @@ export default function App() {
                   <div className="bg-white p-4 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
                       <button
-                        onClick={() => setStep(1)}
+                        onClick={handleGoBack}
                         className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 mb-1 cursor-pointer"
                       >
                         <ArrowLeft className="w-3.5 h-3.5" /> Back to Classes
@@ -2895,14 +3336,13 @@ export default function App() {
                   <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <div>
-                        {searchQuery.trim().length === 0 && (
-                          <button
-                            onClick={() => setStep(2)}
-                            className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 mb-1 cursor-pointer"
-                          >
-                            <ArrowLeft className="w-3.5 h-3.5" /> Back to Subjects
-                          </button>
-                        )}
+                        <button
+                          onClick={handleGoBack}
+                          className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 mb-1 cursor-pointer"
+                        >
+                          <ArrowLeft className="w-3.5 h-3.5" />{' '}
+                          {searchQuery.trim().length > 0 ? 'Back to Previous Page' : 'Back to Subjects'}
+                        </button>
                         <h2 className="text-lg sm:text-xl font-bold text-slate-900">
                           {searchQuery.trim().length > 0
                             ? `Search Results for "${searchQuery}"`
@@ -3157,11 +3597,11 @@ export default function App() {
                     <span>Syllabus Page</span>
                   </button>
                   <button
-                    onClick={() => setActivePage('papers')}
+                    onClick={handleGoBack}
                     className="px-4 py-2.5 bg-slate-950 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
                   >
                     <ArrowLeft className="w-4 h-4" />
-                    <span>Back to Past Papers</span>
+                    <span>Back</span>
                   </button>
                 </div>
               </div>
@@ -3337,11 +3777,11 @@ export default function App() {
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <button
-                    onClick={() => setActivePage('papers')}
+                    onClick={handleGoBack}
                     className="px-4 py-2.5 bg-slate-950 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
                   >
                     <ArrowLeft className="w-4 h-4" />
-                    <span>Back to Past Papers</span>
+                    <span>Back</span>
                   </button>
                 </div>
               </div>
@@ -3554,10 +3994,10 @@ export default function App() {
                     🏆 Leaderboard &amp; Friend Challenge
                   </button>
                   <button
-                    onClick={resetToStep1}
+                    onClick={handleGoBack}
                     className="px-3.5 py-2 bg-white/15 hover:bg-white/25 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer"
                   >
-                    <ArrowLeft className="w-4 h-4" /> Back to Home
+                    <ArrowLeft className="w-4 h-4" /> Back
                   </button>
                 </div>
               </div>
@@ -3961,10 +4401,10 @@ export default function App() {
           <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-4">
             <div className="flex items-center justify-between gap-2">
               <button
-                onClick={resetToStep1}
+                onClick={handleGoBack}
                 className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-2xs"
               >
-                <ArrowLeft className="w-4 h-4" /> Back to Home
+                <ArrowLeft className="w-4 h-4" /> Back
               </button>
               <div className="flex items-center gap-2">
                 <button
@@ -4023,10 +4463,10 @@ export default function App() {
           <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-4">
             <div className="flex items-center justify-between gap-2">
               <button
-                onClick={resetToStep1}
+                onClick={handleGoBack}
                 className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-2xs"
               >
-                <ArrowLeft className="w-4 h-4" /> Back to Home
+                <ArrowLeft className="w-4 h-4" /> Back
               </button>
               <div className="flex items-center gap-2">
                 <button
@@ -4059,7 +4499,7 @@ export default function App() {
       {activePage === 'papers' && step > 1 && (
         <div className="fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200 px-4 py-2.5 flex items-center justify-between gap-3 sm:hidden">
           <button
-            onClick={() => setStep((s) => (s === 3 ? 2 : 1))}
+            onClick={handleGoBack}
             className="flex-1 py-2.5 px-3 bg-slate-100 active:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -4237,15 +4677,12 @@ export default function App() {
               {/* Left: Back + Brand + Class & Subject Selectors */}
               <div className="flex flex-wrap items-center gap-2">
                 <button
-                  onClick={() => {
-                    if (window.speechSynthesis) window.speechSynthesis.cancel();
-                    setActivePage('papers');
-                  }}
+                  onClick={handleGoBack}
                   className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center gap-1 cursor-pointer"
-                  title="Return to Past Papers"
+                  title="Go Back"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Exit</span>
+                  <span className="hidden sm:inline">Back</span>
                 </button>
 
                 <div className="flex items-center gap-1.5 font-black text-slate-900 text-sm">
@@ -6110,12 +6547,7 @@ export default function App() {
           initialSubject={selectedSubject || mohaActiveSubject || 'Basic Mathematics'}
           initialTopic={selectedQuizTopic && selectedQuizTopic !== 'ALL' ? selectedQuizTopic : 'ALL'}
           allPapers={allPapers}
-          onExitPlay={() => {
-            if (typeof window !== 'undefined' && window.location.hash) {
-              window.history.replaceState(null, '', '#home');
-            }
-            setActivePage('papers');
-          }}
+          onExitPlay={handleGoBack}
         />
       )}
 

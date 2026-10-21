@@ -43,9 +43,9 @@ function getGenAIClient(): GoogleGenAI | null {
 }
 
 const GEMINI_FALLBACK_MODELS = [
-  'gemini-2.5-flash',
-  'gemini-3-flash-preview',
-  'gemini-2.5-flash-lite',
+  'gemini-3.1-flash-lite',
+  'gemini-3.8-flash',
+  'gemini-flash-latest',
 ] as const;
 const modelCooldownUntil = new Map<string, number>();
 let roundRobinModelCursor = 0;
@@ -113,6 +113,21 @@ async function withHighTrafficDedupe<T>(
   return promise;
 }
 
+function withPromiseTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`Timeout after ${ms}ms`)), ms);
+    promise
+      .then((val) => {
+        clearTimeout(timer);
+        resolve(val);
+      })
+      .catch((err) => {
+        clearTimeout(timer);
+        reject(err);
+      });
+  });
+}
+
 async function generateContentWithQuotaFallback(
   ai: GoogleGenAI,
   params: {
@@ -140,19 +155,25 @@ async function generateContentWithQuotaFallback(
 
       let response;
       try {
-        response = await ai.models.generateContent({
-          model: modelName,
-          contents: params.contents as never,
-          config: configWithTools as never,
-        });
+        response = await withPromiseTimeout(
+          ai.models.generateContent({
+            model: modelName,
+            contents: params.contents as never,
+            config: configWithTools as never,
+          }),
+          14000
+        );
       } catch (innerErr) {
         if (params.useGoogleSearch) {
           // Retry without googleSearch tool if model does not support search grounding on this tier
-          response = await ai.models.generateContent({
-            model: modelName,
-            contents: params.contents as never,
-            config: baseConfig as never,
-          });
+          response = await withPromiseTimeout(
+            ai.models.generateContent({
+              model: modelName,
+              contents: params.contents as never,
+              config: baseConfig as never,
+            }),
+            12000
+          );
         } else {
           throw innerErr;
         }
@@ -185,8 +206,14 @@ async function generateContentWithQuotaFallback(
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED') || msg.includes('quota')) {
-        modelCooldownUntil.set(modelName, Date.now() + 15 * 60 * 1000);
+      if (
+        msg.includes('429') ||
+        msg.includes('RESOURCE_EXHAUSTED') ||
+        msg.includes('quota') ||
+        msg.includes('404') ||
+        msg.includes('not found')
+      ) {
+        modelCooldownUntil.set(modelName, Date.now() + 10 * 60 * 1000);
         continue;
       }
     }
@@ -251,6 +278,55 @@ function extractDriveFileIdFromUrl(rawUrl?: string | null): string | null {
   return match ? match[1] : null;
 }
 
+async function extractBase64PdfText(base64Data?: string, queryText = ''): Promise<string> {
+  if (!base64Data) return '';
+  try {
+    const uint8 = new Uint8Array(Buffer.from(base64Data, 'base64'));
+    if (uint8.byteLength < 100 || Buffer.from(uint8.slice(0, 5)).toString('ascii') !== '%PDF-') {
+      return '';
+    }
+    const pdf = await getDocumentProxy(uint8);
+    const maxPagesToScan = Math.min(pdf.numPages, 60);
+    const pages: string[] = [];
+    for (let p = 1; p <= maxPagesToScan; p++) {
+      const page = await pdf.getPage(p);
+      const content = await page.getTextContent();
+      const text = (content.items as Array<{ str?: string }>)
+        .map((i) => i.str || '')
+        .join(' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      if (text.length > 20) {
+        pages.push(`[Page ${p}] ${text}`);
+      }
+    }
+    if (pages.length === 0) return '';
+    const tocPages = pages.slice(0, 5);
+    const queryWords = (queryText || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .split(/\s+/)
+      .filter((w) => w.length >= 4);
+    let matchedPages: string[] = [];
+    if (queryWords.length > 0 && pages.length > 5) {
+      matchedPages = pages
+        .slice(5)
+        .map((pageText) => {
+          const lowerPage = pageText.toLowerCase();
+          const score = queryWords.reduce((acc, w) => acc + (lowerPage.includes(w) ? 3 : 0), 0);
+          return { pageText, score };
+        })
+        .filter((s) => s.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 5)
+        .map((s) => s.pageText);
+    }
+    return [...tocPages, ...matchedPages].join('\n\n').slice(0, 9500);
+  } catch {
+    return '';
+  }
+}
+
 async function extractGoogleDrivePdfText(
   rawUrl?: string | null,
   queryText = ''
@@ -263,18 +339,24 @@ async function extractGoogleDrivePdfText(
     try {
       const dlUrl = `https://drive.usercontent.google.com/download?id=${encodeURIComponent(driveId)}&export=download&confirm=t`;
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 9000);
+      const timer = setTimeout(() => controller.abort(), 4500);
       const res = await fetch(dlUrl, {
         headers: { 'User-Agent': 'Mozilla/5.0' },
         signal: controller.signal,
       });
-      clearTimeout(timer);
-      if (res.ok) {
+      const contentLen = Number(res.headers.get('content-length') || '0');
+      if (!res.ok || contentLen > 14 * 1024 * 1024) {
+        clearTimeout(timer);
+        // Large scanned-image book PDF (>14MB): record in cache so we don't block future requests, and rely on built-in TIE Textbook chapter content engine
+        cachedDoc = { pages: [], totalPages: 0, fetchedAt: Date.now() };
+        driveExtractedPagesCache.set(driveId, cachedDoc);
+      } else {
         const arrBuf = await res.arrayBuffer();
+        clearTimeout(timer);
         const uint8 = new Uint8Array(arrBuf);
         if (uint8.byteLength > 200 && Buffer.from(uint8.slice(0, 5)).toString('ascii') === '%PDF-') {
           const pdf = await getDocumentProxy(uint8);
-          const maxPagesToScan = Math.min(pdf.numPages, 75);
+          const maxPagesToScan = Math.min(pdf.numPages, 65);
           const pages: string[] = [];
           for (let p = 1; p <= maxPagesToScan; p++) {
             const page = await pdf.getPage(p);
@@ -290,10 +372,14 @@ async function extractGoogleDrivePdfText(
           }
           cachedDoc = { pages, totalPages: pdf.numPages, fetchedAt: Date.now() };
           driveExtractedPagesCache.set(driveId, cachedDoc);
+        } else {
+          cachedDoc = { pages: [], totalPages: 0, fetchedAt: Date.now() };
+          driveExtractedPagesCache.set(driveId, cachedDoc);
         }
       }
     } catch {
-      // ignore timeout or non-text PDF
+      cachedDoc = { pages: [], totalPages: 0, fetchedAt: Date.now() };
+      driveExtractedPagesCache.set(driveId, cachedDoc);
     }
   }
 
@@ -341,18 +427,24 @@ async function fetchGoogleDriveInlinePdf(
   try {
     const dlUrl = `https://drive.usercontent.google.com/download?id=${encodeURIComponent(driveId)}&export=download&confirm=t`;
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 6500);
+    const timer = setTimeout(() => controller.abort(), 4000);
     const res = await fetch(dlUrl, {
       headers: { 'User-Agent': 'Mozilla/5.0' },
       signal: controller.signal,
     });
-    clearTimeout(timer);
-    if (!res.ok) return null;
+    const contentLen = Number(res.headers.get('content-length') || '0');
+    if (!res.ok || contentLen > 6 * 1024 * 1024) {
+      clearTimeout(timer);
+      return null;
+    }
     const contentType = (res.headers.get('content-type') || '').toLowerCase();
-    if (contentType.includes('text/html')) return null;
+    if (contentType.includes('text/html')) {
+      clearTimeout(timer);
+      return null;
+    }
     const buf = Buffer.from(await res.arrayBuffer());
-    // Cap inline PDF at 8MB to stay well within Gemini request payload limits
-    if (buf.byteLength < 100 || buf.byteLength > 8 * 1024 * 1024) return null;
+    clearTimeout(timer);
+    if (buf.byteLength < 100 || buf.byteLength > 6 * 1024 * 1024) return null;
     if (buf.slice(0, 5).toString('ascii') !== '%PDF-') return null;
     const mimeType = 'application/pdf';
     const base64Data = buf.toString('base64');
@@ -372,7 +464,7 @@ app.get('/api/attached-resources', (_req, res) => {
   res.json({ resources: items });
 });
 
-app.post('/api/attached-resources', (req, res) => {
+app.post('/api/attached-resources', async (req, res) => {
   const body = req.body as Partial<AttachedResourceServerItem>;
   const title = (body.title || '').trim();
   const form = (body.form || 'Form 4').trim();
@@ -393,6 +485,13 @@ app.post('/api/attached-resources', (req, res) => {
         catLower.includes('tie')
     );
 
+  let extractedFromUpload = '';
+  if (body.attachedFileBase64 && (body.attachedFileMimeType || '').includes('pdf')) {
+    extractedFromUpload = await extractBase64PdfText(body.attachedFileBase64, `${form} ${subject} ${title}`);
+  }
+
+  const combinedCustomContent = [body.customContent || '', extractedFromUpload].filter(Boolean).join('\n\n').trim();
+
   const id = body.id || `attached-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
   const item: AttachedResourceServerItem = {
     id,
@@ -405,7 +504,7 @@ app.post('/api/attached-resources', (req, res) => {
     answersUrl: body.answersUrl || null,
     isBook,
     isSyllabus,
-    customContent: body.customContent || '',
+    customContent: combinedCustomContent,
     attachedFileMimeType: body.attachedFileMimeType,
     attachedFileBase64: body.attachedFileBase64,
     attachedFileName: body.attachedFileName,
@@ -437,6 +536,7 @@ app.post('/api/moha/chat', async (req, res) => {
     history = [],
     learnedMemory = [],
     siteResources,
+    systemPromptContext = '',
   } = req.body as {
     prompt: string;
     cls?: string;
@@ -445,6 +545,7 @@ app.post('/api/moha/chat', async (req, res) => {
     history?: Array<{ id?: string; role: 'user' | 'ai'; text: string }>;
     learnedMemory?: LearnedMemoryItem[];
     siteResources?: SiteResourceContext;
+    systemPromptContext?: string;
   };
 
   const userPrompt = (prompt || 'Solve this question step-by-step and show the NECTA Marking Scheme.').trim();
@@ -460,10 +561,15 @@ app.post('/api/moha/chat', async (req, res) => {
     }
   }
 
-  // Parse any specific Class, Subject, or Topic mentioned in the user's prompt (e.g., "generate quiz for Form 2 Math on Logarithms")
+  // Parse any specific Class, Subject, or Topic mentioned in the user's prompt
   const parsedTarget = parseClassSubjectTopicFromPrompt(userPrompt, cls, subject);
-  const effectiveCls = siteResources?.focusedResource?.form || parsedTarget.cls;
-  const effectiveSubject = siteResources?.focusedResource?.subject || parsedTarget.subject;
+  // If user explicitly asked for a specific class/subject in prompt, honor it; otherwise use pinned resource class/subject
+  const effectiveCls = parsedTarget.matchedFromPrompt
+    ? parsedTarget.cls
+    : siteResources?.focusedResource?.form || parsedTarget.cls;
+  const effectiveSubject = parsedTarget.matchedFromPrompt
+    ? parsedTarget.subject
+    : siteResources?.focusedResource?.subject || parsedTarget.subject;
   const effectiveTopic = parsedTarget.topic;
   const effectiveSubTopic = parsedTarget.subTopic;
 
@@ -472,7 +578,12 @@ app.post('/api/moha/chat', async (req, res) => {
 
   const ai = getGenAIClient();
   const syllabusTopics = getSyllabusTopicsForClassSubject(effectiveCls, effectiveSubject);
-  const textbookChapterInfo = getTieTextbookChapterContent(effectiveCls, effectiveSubject, userPrompt);
+  const textbookChapterInfo = getTieTextbookChapterContent(
+    effectiveCls,
+    effectiveSubject,
+    userPrompt,
+    siteResources
+  );
   const learnedContext =
     learnedMemory.length > 0
       ? `\n\nTeacher/Student Custom Learned Memory:\n${learnedMemory
@@ -486,38 +597,67 @@ app.post('/api/moha/chat', async (req, res) => {
   const primaryBookForSubject = siteResources?.books?.find((b) => b.paperUrl) || siteResources?.books?.[0];
   const primarySyllabusForSubject = siteResources?.syllabuses?.find((s) => s.paperUrl) || siteResources?.syllabuses?.[0];
 
-  // Automatically extract PDF text from focused resource OR the subject's uploaded TIE Book / Syllabus
+  // Extract PDF text from focused resource, uploaded syllabus, or attached base64 PDF
   const pdfUrlToExtract =
     focusedRes?.paperUrl ||
-    primaryBookForSubject?.paperUrl ||
     primarySyllabusForSubject?.paperUrl ||
+    primaryBookForSubject?.paperUrl ||
     null;
 
   const extractedPdfText = pdfUrlToExtract
     ? await extractGoogleDrivePdfText(pdfUrlToExtract, `${effectiveTopic} ${userPrompt}`)
     : '';
 
+  const extractedInlinePdfText =
+    image?.base64Data && (image.mimeType || '').includes('pdf')
+      ? await extractBase64PdfText(image.base64Data, `${effectiveTopic} ${userPrompt}`)
+      : serverStoredFocused?.attachedFileBase64 && (serverStoredFocused.attachedFileMimeType || '').includes('pdf')
+      ? await extractBase64PdfText(serverStoredFocused.attachedFileBase64, `${effectiveTopic} ${userPrompt}`)
+      : '';
+
   const mergedCustomContent = [
+    systemPromptContext,
     focusedRes?.customContent,
     serverStoredFocused?.customContent,
     primaryBookForSubject?.customContent,
+    extractedInlinePdfText,
     extractedPdfText,
+    textbookChapterInfo.chapterSummaryMarkdown,
   ]
     .filter(Boolean)
     .join('\n\n');
 
+  // Enrich siteResources with extracted PDF text so local fallback also has full reading comprehension
+  const enrichedSiteResources: SiteResourceContext | undefined = siteResources
+    ? {
+        ...siteResources,
+        focusedResource: siteResources.focusedResource
+          ? {
+              ...siteResources.focusedResource,
+              customContent: [
+                siteResources.focusedResource.customContent,
+                serverStoredFocused?.customContent,
+                extractedInlinePdfText,
+                extractedPdfText,
+              ]
+                .filter(Boolean)
+                .join('\n\n'),
+            }
+          : null,
+      }
+    : undefined;
+
   const focusedResourceBlock = focusedRes
-    ? `\n\nPRIMARY PINNED / ATTACHED DOCUMENT TO INTERACT WITH:
-- Title: "${focusedRes.title}"
+    ? `\n\n=== PINNED / ATTACHED RESOURCE FOR READING COMPREHENSION ===
+- Pinned Document Title: "${focusedRes.title}"
 - Category: ${focusedRes.category} | Class: ${focusedRes.form} | Subject: ${focusedRes.subject} | Year: ${focusedRes.year}
-- Direct Document Link: ${focusedRes.paperUrl || 'Attached in Elimika Catalog'}${
-        mergedCustomContent
-          ? `\n- Extracted Textbook / Document Content:\n${mergedCustomContent.slice(0, 9500)}`
-          : ''
-      }`
-    : mergedCustomContent
-    ? `\n\nEXTRACTED CONTENT FROM UPLOADED ${effectiveCls.toUpperCase()} ${effectiveSubject.toUpperCase()} TIE TEXTBOOK / SYLLABUS:\n${mergedCustomContent.slice(0, 9500)}`
-    : '';
+- Direct Document Link: ${focusedRes.paperUrl || 'Attached in Elimika Catalog'}
+- Pinned Document & TIE Textbook Reading Comprehension Passage / Content:
+${mergedCustomContent.slice(0, 12000)}
+=== END OF PINNED RESOURCE PASSAGE ===`
+    : `\n\n=== OFFICIAL ${effectiveCls.toUpperCase()} ${effectiveSubject.toUpperCase()} TIE TEXTBOOK READING COMPREHENSION REFERENCE ===
+${mergedCustomContent.slice(0, 12000)}
+=== END OF TIE TEXTBOOK REFERENCE ===`;
 
   const siteResourcesContext = siteResources
     ? `\n\nUploaded & Attached Elimika Website Resources Integrated for ${effectiveCls} ${effectiveSubject}:${focusedResourceBlock}
@@ -533,14 +673,14 @@ app.post('/api/moha/chat', async (req, res) => {
         siteResources.papers.map((p) => `${p.title} [${p.category} ${p.year}]`).join('; ') ||
         `NECTA ${effectiveCls} ${effectiveSubject} Past Papers`
       }`
-    : '';
+    : focusedResourceBlock;
 
   const topicQuizQuestions = isQuizRequest
     ? buildContentIntegratedQuizQuestions(
         effectiveCls,
         effectiveSubject,
         effectiveTopic,
-        siteResources,
+        enrichedSiteResources,
         effectiveSubTopic
       )
     : undefined;
@@ -559,40 +699,39 @@ app.post('/api/moha/chat', async (req, res) => {
         };
       }
 
-      // Only fetch raw inline PDF if unpdf didn't already extract text and the PDF is small (<8MB)
       if (!activeInlineFile && !extractedPdfText && focusedRes?.paperUrl) {
         activeInlineFile = await fetchGoogleDriveInlinePdf(focusedRes.paperUrl);
       }
 
       const chatCacheKey =
         !activeInlineFile
-          ? `chat:${effectiveCls}:${effectiveSubject}:${effectiveTopic}:${focusedRes?.title || 'ALL'}:${userPrompt.toLowerCase().slice(0, 220)}`
+          ? `chat:v2:${effectiveCls}:${effectiveSubject}:${effectiveTopic}:${focusedRes?.title || 'ALL'}:${userPrompt.toLowerCase().slice(0, 220)}`
           : '';
 
       const runChatGeneration = async () => {
-        const systemInstruction = `You are Moha AI, the official Tanzanian TIE (Tanzania Institute of Education) & NECTA Assistant for ${effectiveCls} ${effectiveSubject}.
+        const systemInstruction = `You are Moha AI, the official Tanzanian TIE (Tanzania Institute of Education) & NECTA Academic Assistant for ${effectiveCls} ${effectiveSubject}.
 Specified Class: ${effectiveCls}
 Specified Subject: ${effectiveSubject}
-Specified Textbook Chapter / Topic: ${textbookChapterInfo.matchedChapter}${
-          focusedRes ? `\nActive Pinned Textbook / Past Paper: "${focusedRes.title}" (${focusedRes.category} · ${focusedRes.year})` : ''
+Matched TIE Textbook Chapter / Topic: ${textbookChapterInfo.matchedChapter}
+Active TIE Textbook: "${textbookChapterInfo.bookTitle}"${
+          focusedRes ? `\nPinned Active Resource: "${focusedRes.title}" (${focusedRes.category} · ${focusedRes.form} · ${focusedRes.subject} · ${focusedRes.year})` : ''
         }
 
-OFFICIAL TIE STUDENT'S TEXTBOOK CHAPTERS & TOPICS FOR ${effectiveCls.toUpperCase()} ${effectiveSubject.toUpperCase()}:
-${syllabusTopics.map((t) => `- ${t}`).join('\n')}
+OFFICIAL TIE STUDENT'S TEXTBOOK CHAPTERS & TABLE OF CONTENTS FOR ${effectiveCls.toUpperCase()} ${effectiveSubject.toUpperCase()}:
+${syllabusTopics.map((t, i) => `${i + 1}. ${t}`).join('\n')}
 ${siteResourcesContext}${learnedContext}
 
-CRITICAL TIE TEXTBOOK, PAST PAPER & MATHJAX RULES:
-1. You MUST strictly refer to the chapters, topics, sub-topics, definitions, laws, and examples from the uploaded Official TIE ${effectiveCls} ${effectiveSubject} Student's Textbook (${textbookChapterInfo.bookTitle}) listed above.${
-          focusedRes
-            ? ` Because the user has pinned or attached "${focusedRes.title}", directly reference, quote, analyze, and solve problems from "${focusedRes.title}"!`
-            : ''
-        }
-2. When the user asks about topics, chapters, summaries, or notes for ${effectiveCls} ${effectiveSubject}, ALWAYS list the exact Official TIE Textbook Chapters shown above and explain the matched chapter (${textbookChapterInfo.matchedChapter}) thoroughly with textbook definitions and worked examples.
-3. Arrange every answer into 3 clear, numbered sections:
-   **1. 📌 Official TIE Textbook Chapter & Direct Concept (${effectiveCls} • ${textbookChapterInfo.matchedChapter}):** State the exact TIE Textbook chapter, sub-topics, and core definitions.
-   **2. 📐 Detailed Explanation / Step-by-Step Worked Examples:** Use numbered steps (Step 1, Step 2, Step 3) or clear bullet points (•) grounded in the TIE Student's Book.
-   **3. ✅ NECTA Marking Tip & Integrated TIE Textbook Reference:** Show how marks are awarded (e.g., [02 Marks]) and cite the uploaded TIE Textbook and Past Papers.
-4. LESSON NOTES RULE: Never put Lesson Notes or study notes inside a table. Format Lesson Notes with clean numbered headings, well-spaced paragraphs, bullet points (•), and step-by-step worked examples.
+CRITICAL READING COMPREHENSION, TIE TEXTBOOK & QUESTION-ANSWERING RULES:
+1. READING COMPREHENSION FIRST: Before answering, carefully read the "PINNED / ATTACHED RESOURCE FOR READING COMPREHENSION" and "OFFICIAL TIE STUDENT'S TEXTBOOK CHAPTERS" provided above. Ground every definition, formula, law, sub-topic, and worked solution directly in "${focusedRes?.title || textbookChapterInfo.bookTitle}" and the matched TIE Textbook Chapter (${textbookChapterInfo.matchedChapter}).
+2. ANSWER ACCORDING TO THE QUESTIONS ASKED:
+   - Directly answer the exact question(s) asked by the student or teacher!
+   - If the student asks a specific question (e.g., "What is...", "Define...", "Calculate...", "Solve...", "Explain Chapter 2...", or pastes numbered/lettered exam questions 1, 2, 3 or a, b, c), answer EVERY part directly, completely, and step-by-step.
+   - If the student asks for the topics or chapters of the textbook, list all official TIE textbook chapters for ${effectiveCls} ${effectiveSubject} and explain ${textbookChapterInfo.matchedChapter} in detail.
+3. CLEAR 3-PART RESPONSE STRUCTURE:
+   **1. 📌 Direct Answer & TIE Textbook Reference (${effectiveCls} • ${textbookChapterInfo.matchedChapter}):** Directly answer the user's question first, citing "${focusedRes?.title || textbookChapterInfo.bookTitle}" and Chapter "${textbookChapterInfo.matchedChapter}".
+   **2. 📐 Step-by-Step Worked Solution / Textbook Explanation:** Show every step clearly (Given -> Formula -> Substitution -> Final Answer with units, or numbered points from the TIE Student's Book).
+   **3. ✅ NECTA Marking Scheme Allocation & Practice Check:** Show mark allocation (e.g., [M1], [A1], Total Marks) and 1-2 solved practice questions from the chapter/paper.
+4. LESSON NOTES RULE: Never put Lesson Notes inside a table. Format Lesson Notes with clean numbered headings, bullet points (•), and step-by-step worked examples.
 5. STRICT MATHJAX RULE: ALWAYS format all mathematical expressions, equations, fractions (\\frac{a}{b}), square roots (\\sqrt{x}), exponents (x^2), subscripts (a_1), logarithms (\\log_{10}(x)), trigonometry (\\sin\\theta, \\cos\\theta), derivatives (\\frac{dy}{dx}), integrals (\\int), vectors, and physics/chemistry formulas using LaTeX MathJax delimiters ($...$ for inline math and $$...$$ for display equations).`;
 
         const recentHistoryParts = history
@@ -602,8 +741,8 @@ CRITICAL TIE TEXTBOOK, PAST PAPER & MATHJAX RULES:
           .join('\n\n');
 
         const fullPromptText = recentHistoryParts
-          ? `Previous conversation context:\n${recentHistoryParts}\n\nCurrent Request (Class: ${effectiveCls}, Subject: ${effectiveSubject}, TIE Textbook Chapter: ${textbookChapterInfo.matchedChapter}${focusedRes ? `, Attached Source: "${focusedRes.title}"` : ''}):\n${userPrompt}`
-          : `Class: ${effectiveCls} | Subject: ${effectiveSubject} | TIE Textbook Chapter: ${textbookChapterInfo.matchedChapter}${focusedRes ? ` | Attached Resource: "${focusedRes.title}"` : ''}\nRequest: ${userPrompt}`;
+          ? `Previous conversation context:\n${recentHistoryParts}\n\nPinned Textbook / Paper Context: "${focusedRes?.title || textbookChapterInfo.bookTitle}" (${effectiveCls} ${effectiveSubject} — ${textbookChapterInfo.matchedChapter})\nStudent/Teacher Question:\n${userPrompt}`
+          : `Pinned Textbook / Paper Context: "${focusedRes?.title || textbookChapterInfo.bookTitle}" (${effectiveCls} ${effectiveSubject} — ${textbookChapterInfo.matchedChapter})\nStudent/Teacher Question:\n${userPrompt}`;
 
         const parts: Array<{ text?: string; inlineData?: { mimeType: string; data: string } }> = [];
         if (activeInlineFile && activeInlineFile.base64Data && activeInlineFile.mimeType) {
@@ -620,7 +759,7 @@ CRITICAL TIE TEXTBOOK, PAST PAPER & MATHJAX RULES:
           contents: { parts },
           config: {
             systemInstruction,
-            temperature: 0.35,
+            temperature: 0.3,
           },
           useGoogleSearch: !activeInlineFile,
         });
@@ -647,13 +786,13 @@ CRITICAL TIE TEXTBOOK, PAST PAPER & MATHJAX RULES:
     }
   }
 
-  // Fallback to built-in curriculum engine (which generates distinct topic-, class-, and resource-specific questions!)
+  // Fallback to built-in curriculum engine (which generates distinct topic-, class-, and resource-specific answers!)
   const fallbackReply = generateLocalSmartTutorReply(
     userPrompt,
     effectiveCls,
     effectiveSubject,
     learnedMemory,
-    siteResources
+    enrichedSiteResources
   );
   return res.json({
     reply: fallbackReply,
