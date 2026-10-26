@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
+import { jsPDF } from 'jspdf';
 import {
   ArrowLeft,
   Award,
@@ -31,6 +32,7 @@ import {
   buildInstantOfficialDocument,
   CONFIG,
   escapeHtml,
+  extractTextbookChaptersFromText,
   FlashcardItem,
   generateLocalSmartTutorReply,
   getDefaultFlashcardsForSubject,
@@ -42,6 +44,7 @@ import {
   matchesSubjectQuery,
   normalizeClassName,
   normalizeSubjectName,
+  OFFICIAL_ATTACHED_TIE_BOOKS,
   OfficialDocType,
   PaperRecord,
   parseClassSubjectTopicFromPrompt,
@@ -55,12 +58,16 @@ import {
 import { DiagramPreset, InteractiveDiagramLab } from './components/InteractiveDiagramLab';
 import { OfflineIndicator, PWAInstallButton } from './components/PWAInstallButton';
 import { StemArenaGame } from './components/StemArenaGame';
-import { BioscienceWorkbench } from './components/BioscienceWorkbench';
-import { VeoVideoStudio } from './components/VeoVideoStudio';
 import { ElimikaPlayHub, PlayGameRoute } from './components/ElimikaPlayHub';
 import { TopicMasteryPlanner } from './components/TopicMasteryPlanner';
 import { VirtualScienceLab } from './components/VirtualScienceLab';
-import { MathText, renderMathTextToHtml, typesetMathInElement } from './utils/mathRenderer';
+import {
+  MathText,
+  renderLatexSnippet,
+  renderMathTextToHtml,
+  renderRichMathParagraphToPng,
+  typesetMathInElement,
+} from './utils/mathRenderer';
 
 declare global {
   interface Window {
@@ -136,7 +143,12 @@ function detectDiagramPreset(promptText: string, subject: string): DiagramPreset
     lowerPrompt.includes('graph') ||
     lowerPrompt.includes('circuit') ||
     lowerPrompt.includes('simulation') ||
-    lowerPrompt.includes('plot');
+    lowerPrompt.includes('plot') ||
+    lowerPrompt.includes('notes') ||
+    lowerPrompt.includes('lessonnotes') ||
+    lowerPrompt.includes('chapter') ||
+    lowerPrompt.includes('sura') ||
+    lowerPrompt.includes('illustrate');
 
   if (!wantsVisual) return undefined;
   if (q.includes('titration') || q.includes('acid') || q.includes('burette') || q.includes('chemi')) {
@@ -241,6 +253,7 @@ function parseCSV(text: string): string[][] {
 function processParsedRows(rows: string[][]): PaperRecord[] {
   const records: PaperRecord[] = [];
   const seenBooks = new Set<string>();
+  const seenSyllabuses = new Set<string>();
 
   if (Array.isArray(rows) && rows.length >= 2) {
     for (let i = 1; i < rows.length; i++) {
@@ -258,8 +271,8 @@ function processParsedRows(rows: string[][]): PaperRecord[] {
       const form = normalizeClassName(rawForm);
       const subject = normalizeSubjectName(rawSubject || 'General', rawTitle);
       const year = rawYear || '2025';
-      const category = rawCat || 'NECTA';
-      const catLower = `${category} ${rawTitle}`.toLowerCase();
+      const rawCatClean = rawCat || 'NECTA';
+      const catLower = `${rawCatClean} ${rawTitle}`.toLowerCase();
 
       const isSyllabus = catLower.includes('syllabus') || catLower.includes('muhtasari');
       const isBook =
@@ -269,8 +282,24 @@ function processParsedRows(rows: string[][]): PaperRecord[] {
           catLower.includes('textbook') ||
           catLower.includes('tie'));
 
+      const normalizedExamCat =
+        /mid[- ]?term|nusu\s*muhula/i.test(catLower)
+          ? 'Midterm'
+          : /annual|terminal/i.test(catLower)
+          ? 'Annual'
+          : /pre[- ]?necta/i.test(catLower)
+          ? 'Pre-NECTA'
+          : /mock/i.test(catLower)
+          ? 'Mock'
+          : /necta|ftna|csee|acsee|psle|sfna/i.test(catLower)
+          ? 'NECTA'
+          : rawCatClean;
+
       if (isBook) {
         seenBooks.add(`${form.toLowerCase()}__${subject.toLowerCase()}`);
+      }
+      if (isSyllabus) {
+        seenSyllabuses.add(`${form.toLowerCase()}__${subject.toLowerCase()}`);
       }
 
       records.push({
@@ -279,13 +308,28 @@ function processParsedRows(rows: string[][]): PaperRecord[] {
         form,
         subject,
         year,
-        category: isSyllabus ? 'TIE Syllabus' : isBook ? 'TIE Book' : category,
+        category: isSyllabus ? 'TIE Syllabus' : isBook ? 'TIE Book' : normalizedExamCat,
         paperUrl,
         answersUrl,
         isBook,
         isSyllabus,
       });
     }
+  }
+
+  const existingDriveIds = new Set<string>();
+  for (const r of records) {
+    const m = r.paperUrl?.match(/\/d\/([a-zA-Z0-9_-]{20,})/);
+    if (m && m[1]) existingDriveIds.add(m[1]);
+  }
+
+  for (const officialBook of OFFICIAL_ATTACHED_TIE_BOOKS) {
+    const m = officialBook.paperUrl?.match(/\/d\/([a-zA-Z0-9_-]{20,})/);
+    const driveId = m?.[1] || '';
+    if (driveId && existingDriveIds.has(driveId)) continue;
+    if (driveId) existingDriveIds.add(driveId);
+    records.push(officialBook);
+    seenBooks.add(`${officialBook.form.toLowerCase()}__${officialBook.subject.toLowerCase()}`);
   }
 
   Object.entries(TIE_CURRICULUM_SUBJECTS).forEach(([cls, subjects]) => {
@@ -303,6 +347,20 @@ function processParsedRows(rows: string[][]): PaperRecord[] {
           answersUrl: null,
           isBook: true,
           isSyllabus: false,
+        });
+      }
+      if (!seenSyllabuses.has(key)) {
+        records.push({
+          id: `tie-syllabus-${cls.replace(/\s+/g, '')}-${idx}`,
+          title: `${cls} ${sub} — Official TIE Competence-Based Syllabus`,
+          form: cls,
+          subject: sub,
+          year: '2025',
+          category: 'TIE Syllabus',
+          paperUrl: null,
+          answersUrl: null,
+          isBook: false,
+          isSyllabus: true,
         });
       }
     });
@@ -327,12 +385,140 @@ function matchesSyllabusTier(formStr: string, tier: string): boolean {
   return true;
 }
 
+function sanitizeAndNormalizeSvgBlock(svgRaw: string): string {
+  let s = String(svgRaw || '').trim();
+  if (!s) return '';
+
+  // Strip surrounding markdown code fences if present
+  s = s
+    .replace(/^```(?:xml|svg|html)?\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim();
+
+  // If SVG tags were HTML-escaped (&lt;svg ...&gt;), unescape them back to valid SVG XML
+  if (/&lt;svg\b/i.test(s) || (!s.includes('<svg') && s.includes('&lt;'))) {
+    s = s
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&apos;/g, "'")
+      .replace(/&amp;(?!lt;|gt;|quot;|apos;|amp;|#\d+;|#x[0-9a-fA-F]+;)/g, '&');
+  }
+
+  const startIdx = s.search(/<svg\b/i);
+  if (startIdx === -1) return '';
+  s = s.slice(startIdx);
+
+  // Clean raw LaTeX $ delimiters inside <text>...</text> nodes so SVG labels look clean
+  s = s.replace(/<text\b([^>]*)>([\s\S]*?)<\/text>/gi, (_m, attrs, inner) => {
+    const cleanInner = String(inner)
+      .replace(/\$\$/g, '')
+      .replace(/\$/g, '')
+      .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1)/($2)')
+      .replace(/\\sqrt\{([^}]+)\}/g, '√($1)')
+      .replace(/\\le\b/g, '≤')
+      .replace(/\\ge\b/g, '≥')
+      .replace(/\\times\b/g, '×')
+      .replace(/\\theta\b/g, 'θ')
+      .replace(/\\pi\b/g, 'π')
+      .replace(/&(?!amp;|lt;|gt;|quot;|apos;|#\d+;|#x[0-9a-fA-F]+;)/g, '&amp;');
+    return `<text${attrs}>${cleanInner}</text>`;
+  });
+
+  // If the SVG was truncated before </svg>, repair trailing incomplete tags and close </svg>
+  if (!/<\/svg\s*>/i.test(s)) {
+    // Remove any trailing unclosed tag at the end (e.g. `<line x1="50" ...`)
+    s = s.replace(/<[^>]*$/, '').trim();
+    // If an open <text> tag was not closed, close it
+    const openTextCount = (s.match(/<text\b/gi) || []).length;
+    const closeTextCount = (s.match(/<\/text>/gi) || []).length;
+    if (openTextCount > closeTextCount) {
+      s += '</text>'.repeat(openTextCount - closeTextCount);
+    }
+    const openGCount = (s.match(/<g\b/gi) || []).length;
+    const closeGCount = (s.match(/<\/g>/gi) || []).length;
+    if (openGCount > closeGCount) {
+      s += '</g>'.repeat(openGCount - closeGCount);
+    }
+    s += '\n</svg>';
+  } else {
+    const closeIdx = s.search(/<\/svg\s*>/i);
+    if (closeIdx !== -1) {
+      s = s.slice(0, closeIdx) + '</svg>';
+    }
+  }
+
+  // Ensure xmlns and white background styling on the root <svg> element
+  s = s.replace(/<svg\b([^>]*)>/i, (_m, attrs) => {
+    let updatedAttrs = String(attrs || '');
+    if (!/\bxmlns\s*=/i.test(updatedAttrs)) {
+      updatedAttrs += ' xmlns="http://www.w3.org/2000/svg"';
+    }
+    if (!/\bviewBox\s*=/i.test(updatedAttrs)) {
+      updatedAttrs += ' viewBox="0 0 600 240"';
+    }
+    if (!/\bstyle\s*=/i.test(updatedAttrs)) {
+      updatedAttrs +=
+        ' style="width:100%; max-width:600px; height:auto; display:block; margin:10px auto; background:#ffffff; border:1px solid #cbd5e1; border-radius:8px;"';
+    }
+    return `<svg${updatedAttrs}>`;
+  });
+
+  return `<div class="moha-svg-diagram" style="margin:12px 0; padding:12px; background:#ffffff; border:1px solid #cbd5e1; border-radius:10px; overflow-x:auto;">${s}</div>`;
+}
+
 function formatMwalimuHtml(raw: string): string {
   if (!raw) return '';
-  if (raw.includes('official-tie-doc')) return raw;
+  if (raw.includes('official-tie-doc')) {
+    // Ensure any escaped <svg> inside official-tie-doc is unescaped and math delimiters are rendered
+    const withFixedSvg = raw.replace(
+      /&lt;svg\b[\s\S]*?(?:&lt;\/svg&gt;|$)/gi,
+      (match) => sanitizeAndNormalizeSvgBlock(match)
+    );
+    const svgTokens: string[] = [];
+    const protectedSvgs = withFixedSvg.replace(/<svg\b[\s\S]*?<\/svg>/gi, (m) => {
+      const idx = svgTokens.length;
+      svgTokens.push(m);
+      return `__OFFICIAL_DOC_SVG_${idx}__`;
+    });
+    const withMath = protectedSvgs
+      .replace(/\$\$([\s\S]+?)\$\$/g, (_m, tex) => renderLatexSnippet(String(tex), true))
+      .replace(/\$([^$\n]+?)\$/g, (_m, tex) => renderLatexSnippet(String(tex), false));
+    return withMath.replace(/__OFFICIAL_DOC_SVG_(\d+)__/g, (_m, idx) => svgTokens[Number(idx)] || '');
+  }
+
+  const diagramPlaceholders: string[] = [];
+  const stashDiagram = (htmlBlock: string): string => {
+    const token = `__TIE_DIAGRAM_BLOCK_${diagramPlaceholders.length}__`;
+    diagramPlaceholders.push(htmlBlock);
+    return `\n${token}\n`;
+  };
+
+  // 1. Extract explicit <!--DIAGRAM_START-->...<!--DIAGRAM_END--> blocks
+  let preProcessed = raw.replace(
+    /<!--DIAGRAM_START-->([\s\S]*?)<!--DIAGRAM_END-->/g,
+    (_m, svgHtml) => stashDiagram(String(svgHtml))
+  );
+
+  // 2. Strip markdown code fences wrapping <svg> or &lt;svg&gt;
+  preProcessed = preProcessed.replace(
+    /```(?:xml|svg|html)?\s*((?:<svg|&lt;svg)\b[\s\S]*?(?:<\/svg>|&lt;\/svg&gt;|$))\s*```?/gi,
+    (_m, svgInner) => stashDiagram(sanitizeAndNormalizeSvgBlock(String(svgInner)))
+  );
+
+  // 3. Extract any standalone <svg>...</svg> or escaped &lt;svg&gt;...&lt;/svg&gt; (including truncated <svg at end of text)
+  preProcessed = preProcessed.replace(
+    /<svg\b[\s\S]*?(?:<\/svg\s*>|$)/gi,
+    (svgMatch) => stashDiagram(sanitizeAndNormalizeSvgBlock(svgMatch))
+  );
+  preProcessed = preProcessed.replace(
+    /&lt;svg\b[\s\S]*?(?:&lt;\/svg&gt;|$)/gi,
+    (svgMatch) => stashDiagram(sanitizeAndNormalizeSvgBlock(svgMatch))
+  );
 
   // Collapse multi-line display math blocks ($$...$$) onto single lines so line splitting never breaks LaTeX
-  const collapsedDisplayMath = raw.replace(/\$\$([\s\S]+?)\$\$/g, (_m, inner) => {
+  const collapsedDisplayMath = preProcessed.replace(/\$\$([\s\S]+?)\$\$/g, (_m, inner) => {
     return `$$${String(inner).replace(/\n+/g, ' ').trim()}$$`;
   });
 
@@ -343,6 +529,16 @@ function formatMwalimuHtml(raw: string): string {
 
   while (i < lines.length) {
     const line = lines[i].trim();
+    const diagMatch = line.match(/^__TIE_DIAGRAM_BLOCK_(\d+)__$/);
+    if (diagMatch) {
+      const dIdx = Number(diagMatch[1]);
+      if (diagramPlaceholders[dIdx]) {
+        outLines.push(diagramPlaceholders[dIdx]);
+      }
+      i++;
+      continue;
+    }
+
     if (line.startsWith('|') && line.endsWith('|') && i + 1 < lines.length && lines[i + 1].trim().startsWith('|')) {
       const tableLines: string[] = [];
       while (i < lines.length && lines[i].trim().startsWith('|') && lines[i].trim().endsWith('|')) {
@@ -370,7 +566,10 @@ function formatMwalimuHtml(raw: string): string {
       }
     }
 
-    const formattedLine = renderMathTextToHtml(lines[i]);
+    const formattedLine = renderMathTextToHtml(lines[i]).replace(
+      /__TIE_DIAGRAM_BLOCK_(\d+)__/g,
+      (_m, dIdxStr) => diagramPlaceholders[Number(dIdxStr)] || ''
+    );
     const trimmed = formattedLine.trim();
     if (/^<strong>[1-9]\.\s/.test(trimmed)) {
       outLines.push(
@@ -404,6 +603,19 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [selectedYear, setSelectedYear] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [recentSearchQueries, setRecentSearchQueries] = useState<string[]>(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('recentSearchQueries') || '[]');
+      return Array.isArray(saved)
+        ? saved.filter((q): q is string => typeof q === 'string' && q.trim().length > 0)
+        : [];
+    } catch {
+      return [];
+    }
+  });
+  const [showSearchSuggestions, setShowSearchSuggestions] = useState<boolean>(false);
+  const searchBoxContainerRef = useRef<HTMLDivElement | null>(null);
+  const searchSaveTimerRef = useRef<number | null>(null);
   const [page, setPage] = useState<number>(1);
 
   // Saved Class & Recent Papers
@@ -435,18 +647,7 @@ export default function App() {
 
   // Moha AI Full-Page Site State
   const [mohaOpen, setMohaOpen] = useState<boolean>(false);
-  const [mohaViewMode, setMohaViewMode] = useState<
-    | 'chat'
-    | 'studio'
-    | 'quiz'
-    | 'diagram'
-    | 'practical_lab'
-    | 'mastery_planner'
-    | 'bioscience'
-    | 'video'
-    | 'resources'
-    | 'profile'
-  >('chat');
+  const [mohaViewMode, setMohaViewMode] = useState<'chat' | 'studio' | 'quiz' | 'diagram' | 'profile'>('chat');
   const [activeDiagramPreset, setActiveDiagramPreset] = useState<DiagramPreset>('physics_ohm');
   const [mohaActiveClass, setMohaActiveClass] = useState<string>('Form 3');
   const [mohaActiveSubject, setMohaActiveSubject] = useState<string>('Basic Mathematics');
@@ -459,6 +660,7 @@ export default function App() {
     fileName?: string;
   } | null>(null);
   const [mohaFocusedResourceId, setMohaFocusedResourceId] = useState<string>('ALL');
+  const [extractedBookChaptersMap, setExtractedBookChaptersMap] = useState<Record<string, string[]>>({});
   const [customAttachedPapers, setCustomAttachedPapers] = useState<PaperRecord[]>(() => {
     try {
       const saved = JSON.parse(localStorage.getItem('elimika_custom_attached_resources_v1') || '[]');
@@ -485,10 +687,251 @@ export default function App() {
   const [learnTopicInput, setLearnTopicInput] = useState<string>('');
   const [learnAnswerInput, setLearnAnswerInput] = useState<string>('');
   const [learnedMemory, setLearnedMemory] = useState<LearnedMemoryItem[]>([]);
+  const [legalModalType, setLegalModalType] = useState<'privacy' | 'terms' | 'about' | null>(null);
+  const [whatsappModalOpen, setWhatsappModalOpen] = useState<boolean>(false);
+  const [whatsappTab, setWhatsappTab] = useState<'join' | 'broadcast' | 'logo' | 'setup' | 'adsense'>('join');
+  const [whatsappAdminUnlocked, setWhatsappAdminUnlocked] = useState<boolean>(false);
+  const [whatsappAdminPinPrompt, setWhatsappAdminPinPrompt] = useState<boolean>(false);
+  const [whatsappAdminPinInput, setWhatsappAdminPinInput] = useState<string>('');
+  const [adsensePubId, setAdsensePubId] = useState<string>(() => {
+    try {
+      return localStorage.getItem('elimika_adsense_pub_id') || 'ca-pub-7502193981138651';
+    } catch {
+      return 'ca-pub-7502193981138651';
+    }
+  });
+  const [profileLogoTheme, setProfileLogoTheme] = useState<'blue_black' | 'blue_white' | 'black_blue'>('blue_black');
+  const [whatsappConfig, setWhatsappConfig] = useState<{
+    channelName: string;
+    mainChannelUrl: string;
+    oLevelGroupUrl: string;
+    aLevelGroupUrl: string;
+    primaryGroupUrl: string;
+    teachersGroupUrl: string;
+  }>(() => {
+    try {
+      const saved = localStorage.getItem('elimika_whatsapp_community_v3');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (
+          parsed.mainChannelUrl &&
+          parsed.mainChannelUrl !== 'https://whatsapp.com/channel/0029VaElimikaOnline'
+        ) {
+          return parsed;
+        }
+      }
+    } catch {
+      // ignore storage errors
+    }
+    return {
+      channelName: 'Elimika Online',
+      mainChannelUrl: 'https://whatsapp.com/channel/0029VbE4Ctl0G0Xbp8kQwu0t',
+      oLevelGroupUrl: 'https://chat.whatsapp.com/ElimikaOLevelForm1to4',
+      aLevelGroupUrl: 'https://chat.whatsapp.com/ElimikaALevelForm5to6',
+      primaryGroupUrl: 'https://chat.whatsapp.com/ElimikaPrimaryStd1to7',
+      teachersGroupUrl: 'https://chat.whatsapp.com/ElimikaTeachersNetwork',
+    };
+  });
+  const [broadcastTemplateType, setBroadcastTemplateType] = useState<'paper' | 'quiz' | 'book' | 'teacher'>('paper');
+
+  const saveWhatsappConfig = (nextConfig: typeof whatsappConfig) => {
+    setWhatsappConfig(nextConfig);
+    try {
+      localStorage.setItem('elimika_whatsapp_community_v3', JSON.stringify(nextConfig));
+      showToast('✅ WhatsApp Channel & Community links saved!');
+    } catch {
+      showToast('⚠️ Could not save links in browser storage.');
+    }
+  };
+
+  useEffect(() => {
+    const cleaned = adsensePubId.trim();
+    if (!cleaned || !cleaned.startsWith('ca-pub-')) return;
+    let meta = document.querySelector('meta[name="google-adsense-account"]') as HTMLMetaElement | null;
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.name = 'google-adsense-account';
+      document.head.appendChild(meta);
+    }
+    meta.content = cleaned;
+
+    const scriptId = 'elimika-google-adsense-script';
+    if (!document.getElementById(scriptId)) {
+      const script = document.createElement('script');
+      script.id = scriptId;
+      script.async = true;
+      script.crossOrigin = 'anonymous';
+      script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(cleaned)}`;
+      document.head.appendChild(script);
+    }
+  }, [adsensePubId]);
+
+  const downloadElimikaProfilePicPng = (theme: 'blue_black' | 'blue_white' | 'black_blue' = profileLogoTheme) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1080;
+    canvas.height = 1080;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const isLight = theme === 'blue_white';
+
+    // 1. Background gradient (Blue + Black + White combinations)
+    const bgGrad = ctx.createLinearGradient(0, 0, 1080, 1080);
+    if (theme === 'blue_black') {
+      bgGrad.addColorStop(0, '#050811');
+      bgGrad.addColorStop(0.5, '#1d4ed8');
+      bgGrad.addColorStop(1, '#090d16');
+    } else if (theme === 'blue_white') {
+      bgGrad.addColorStop(0, '#ffffff');
+      bgGrad.addColorStop(0.55, '#eff6ff');
+      bgGrad.addColorStop(1, '#dbeafe');
+    } else {
+      bgGrad.addColorStop(0, '#020617');
+      bgGrad.addColorStop(0.5, '#0f172a');
+      bgGrad.addColorStop(1, '#020617');
+    }
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, 1080, 1080);
+
+    // 2. Subtle glowing radial spotlight in center
+    const radGrad = ctx.createRadialGradient(540, 460, 60, 540, 540, 480);
+    radGrad.addColorStop(
+      0,
+      theme === 'blue_black'
+        ? 'rgba(59, 130, 246, 0.35)'
+        : theme === 'blue_white'
+        ? 'rgba(37, 99, 235, 0.12)'
+        : 'rgba(37, 99, 235, 0.40)'
+    );
+    radGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = radGrad;
+    ctx.fillRect(0, 0, 1080, 1080);
+
+    // 3. Outer circular safe-zone ring (Blue, Black & White double crest ring)
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(540, 540, 480, 0, Math.PI * 2);
+    ctx.lineWidth = 16;
+    ctx.strokeStyle = isLight ? '#1d4ed8' : theme === 'blue_black' ? '#ffffff' : '#2563eb';
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(540, 540, 454, 0, Math.PI * 2);
+    ctx.lineWidth = 10;
+    ctx.strokeStyle = isLight ? '#090d16' : theme === 'blue_black' ? '#38bdf8' : '#ffffff';
+    ctx.stroke();
+    ctx.restore();
+
+    // 4. Draw Sleek Graduation Cap (Mortarboard) at top center in Blue, Black & White
+    ctx.save();
+    ctx.translate(540, 295);
+    // Diamond top
+    ctx.beginPath();
+    ctx.moveTo(0, -95);
+    ctx.lineTo(195, -15);
+    ctx.lineTo(0, 65);
+    ctx.lineTo(-195, -15);
+    ctx.closePath();
+    ctx.fillStyle = theme === 'black_blue' ? '#ffffff' : '#2563eb';
+    ctx.fill();
+    ctx.lineWidth = 8;
+    ctx.strokeStyle = isLight ? '#090d16' : theme === 'black_blue' ? '#2563eb' : '#ffffff';
+    ctx.stroke();
+
+    // Cap skull base
+    ctx.beginPath();
+    ctx.moveTo(-105, 25);
+    ctx.lineTo(-105, 95);
+    ctx.quadraticCurveTo(0, 145, 105, 95);
+    ctx.lineTo(105, 25);
+    ctx.lineTo(0, 68);
+    ctx.closePath();
+    ctx.fillStyle = isLight ? '#090d16' : '#ffffff';
+    ctx.fill();
+
+    // Tassel on right side
+    ctx.beginPath();
+    ctx.moveTo(0, -15);
+    ctx.lineTo(155, 20);
+    ctx.lineTo(155, 95);
+    ctx.lineWidth = 10;
+    ctx.strokeStyle = isLight ? '#2563eb' : '#38bdf8';
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(155, 102, 14, 0, Math.PI * 2);
+    ctx.fillStyle = isLight ? '#2563eb' : '#38bdf8';
+    ctx.fill();
+    ctx.restore();
+
+    // 5. Draw Open Book Emblem below Cap
+    ctx.save();
+    ctx.translate(540, 475);
+    ctx.beginPath();
+    // Left page
+    ctx.moveTo(0, 20);
+    ctx.quadraticCurveTo(-80, -15, -150, 5);
+    ctx.lineTo(-150, -55);
+    ctx.quadraticCurveTo(-80, -75, 0, -40);
+    // Right page
+    ctx.quadraticCurveTo(80, -75, 150, -55);
+    ctx.lineTo(150, 5);
+    ctx.quadraticCurveTo(80, -15, 0, 20);
+    ctx.closePath();
+    ctx.fillStyle = isLight ? 'rgba(37, 99, 235, 0.14)' : 'rgba(255, 255, 255, 0.16)';
+    ctx.fill();
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = isLight ? '#1d4ed8' : '#ffffff';
+    ctx.stroke();
+    ctx.restore();
+
+    // 6. Main Brand Title: ELIMIKA.
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.fillStyle = isLight ? '#090d16' : '#ffffff';
+    ctx.font = '900 132px Inter, system-ui, -apple-system, sans-serif';
+    ctx.shadowColor = isLight ? 'rgba(37, 99, 235, 0.18)' : 'rgba(0, 0, 0, 0.55)';
+    ctx.shadowBlur = 18;
+    ctx.fillText('ELIMIKA', 540, 650);
+
+    // Subtitle pill: ONLINE (Blue, Black & White contrast)
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = theme === 'blue_black' ? '#ffffff' : '#2563eb';
+    ctx.beginPath();
+    ctx.roundRect(330, 690, 420, 68, 34);
+    ctx.fill();
+
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = theme === 'blue_black' ? '#090d16' : '#ffffff';
+    ctx.stroke();
+
+    ctx.fillStyle = theme === 'blue_black' ? '#090d16' : '#ffffff';
+    ctx.font = '900 42px Inter, system-ui, -apple-system, sans-serif';
+    ctx.fillText('ONLINE', 540, 739);
+
+    // Bottom tagline inside circle
+    ctx.fillStyle = isLight ? '#0f172a' : '#ffffff';
+    ctx.font = '700 28px Inter, system-ui, -apple-system, sans-serif';
+    ctx.fillText('PAST PAPERS • TIE BOOKS • MOHA AI', 540, 825);
+
+    ctx.fillStyle = isLight ? '#1d4ed8' : '#60a5fa';
+    ctx.font = '800 24px Inter, system-ui, -apple-system, sans-serif';
+    ctx.fillText('STD 1–7  |  FORM 1–6', 540, 875);
+    ctx.restore();
+
+    const dataUrl = canvas.toDataURL('image/png');
+    const link = document.createElement('a');
+    link.download = `Elimika-Online-Logo-${theme}.png`;
+    link.href = dataUrl;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('✅ Downloaded HD 1080×1080 Elimika Online Logo (Blue, Black & White)!');
+  };
+
 
   // User Profile & Mastery Progress State
   const [userProfile, setUserProfile] = useState<UserProfileData>({
-    name: 'Mwl. / Student',
+    name: 'Teacher / Student',
     school: 'Elimika Secondary School',
     role: 'Teacher',
     targetClass: 'Form 4',
@@ -747,6 +1190,12 @@ export default function App() {
     try {
       const sc = localStorage.getItem('elimika_saved_class');
       if (sc) setSavedClass(sc);
+      const rsq = JSON.parse(localStorage.getItem('recentSearchQueries') || '[]');
+      if (Array.isArray(rsq)) {
+        setRecentSearchQueries(
+          rsq.filter((q): q is string => typeof q === 'string' && q.trim().length > 0)
+        );
+      }
       const rp = JSON.parse(localStorage.getItem('elimika_recent_papers') || '[]');
       if (Array.isArray(rp)) setRecentPapers(rp);
       const lm = JSON.parse(localStorage.getItem('elimika_moha_learned_v1') || '[]');
@@ -792,6 +1241,9 @@ export default function App() {
     } else if (window.location.hash === '#play') {
       setPlayRoute('hub');
       setActivePage('game');
+    } else if (window.location.hash === '#stem-builder') {
+      setPlayRoute('stem_builder');
+      setActivePage('game');
     } else if (window.location.hash === '#treasure-hunt') {
       setPlayRoute('treasure_hunt');
       setActivePage('game');
@@ -809,6 +1261,9 @@ export default function App() {
         loadSharedChallengeFromUrl(ch.id, ch.cls, ch.sub, ch.topic, ch.by);
       } else if (window.location.hash === '#play') {
         setPlayRoute('hub');
+        setActivePage('game');
+      } else if (window.location.hash === '#stem-builder') {
+        setPlayRoute('stem_builder');
         setActivePage('game');
       } else if (window.location.hash === '#treasure-hunt') {
         setPlayRoute('treasure_hunt');
@@ -832,7 +1287,7 @@ export default function App() {
     selectedClass: string;
     selectedSubject: string;
     mohaViewMode: typeof mohaViewMode;
-    playRoute: PlayRoute;
+    playRoute: typeof playRoute;
   }
 
   const navHistoryStackRef = useRef<ElimikaHistorySnapshot[]>([
@@ -1108,7 +1563,8 @@ export default function App() {
   function buildSiteResourcesForClassSubject(
     clsVal: string,
     subVal: string,
-    ignoreMismatchedFocus = false
+    ignoreMismatchedFocus = false,
+    explicitFocusedDoc?: PaperRecord | null
   ): SiteResourceContext {
     const sortByRelevance = (items: PaperRecord[]) =>
       [...items].sort((a, b) => {
@@ -1150,11 +1606,15 @@ export default function App() {
         ? matchingPapers
         : allPapers.filter((p) => !p.isBook && !p.isSyllabus).slice(0, 8);
 
+    const candidateManualFocus = explicitFocusedDoc || mohaFocusedResource;
     const canUseManualFocus =
-      mohaFocusedResource &&
-      (!ignoreMismatchedFocus ||
-        (matchesFormRange(mohaFocusedResource.form, clsVal) &&
-          matchesSubjectQuery(mohaFocusedResource.subject, subVal)));
+      Boolean(explicitFocusedDoc) ||
+      Boolean(
+        candidateManualFocus &&
+          (!ignoreMismatchedFocus ||
+            (matchesFormRange(candidateManualFocus.form, clsVal) &&
+              matchesSubjectQuery(candidateManualFocus.subject, subVal)))
+      );
 
     // If no matching manual focusedResource is active, automatically attach the primary TIE Book for this exact Class & Subject
     const autoAttachedBook =
@@ -1167,7 +1627,7 @@ export default function App() {
           null
         : null;
 
-    const effectiveFocused = (canUseManualFocus ? mohaFocusedResource : null) || autoAttachedBook;
+    const effectiveFocused = (canUseManualFocus ? candidateManualFocus : null) || autoAttachedBook;
 
     return {
       syllabuses: matchingSyllabuses.slice(0, 6).map((s) => ({
@@ -1210,6 +1670,8 @@ export default function App() {
             paperUrl: effectiveFocused.paperUrl,
             answersUrl: effectiveFocused.answersUrl,
             customContent: effectiveFocused.customContent,
+            isBook: effectiveFocused.isBook,
+            isSyllabus: effectiveFocused.isSyllabus,
           }
         : null,
     };
@@ -1562,12 +2024,72 @@ export default function App() {
     showToast(`✅ Recorded ${scoreOutOf20}/20 for ${cls} ${subject} (${topic}) in Mastery Heatmap!`);
   }
 
-  function handleSmartSearchChange(val: string) {
+  useEffect(() => {
+    function handleDocumentMouseDown(e: MouseEvent) {
+      if (
+        searchBoxContainerRef.current &&
+        !searchBoxContainerRef.current.contains(e.target as Node)
+      ) {
+        setShowSearchSuggestions(false);
+      }
+    }
+    document.addEventListener('mousedown', handleDocumentMouseDown);
+    return () => document.removeEventListener('mousedown', handleDocumentMouseDown);
+  }, []);
+
+  function saveRecentSearchQuery(rawQuery: string) {
+    const clean = rawQuery.trim();
+    if (clean.length < 2) return;
+    setRecentSearchQueries((prev) => {
+      const filtered = prev.filter((item) => item.toLowerCase() !== clean.toLowerCase());
+      const updated = [clean, ...filtered].slice(0, 8);
+      try {
+        localStorage.setItem('recentSearchQueries', JSON.stringify(updated));
+      } catch {
+        // ignore storage errors
+      }
+      return updated;
+    });
+  }
+
+  function removeRecentSearchQuery(queryToRemove: string) {
+    setRecentSearchQueries((prev) => {
+      const updated = prev.filter((item) => item !== queryToRemove);
+      try {
+        localStorage.setItem('recentSearchQueries', JSON.stringify(updated));
+      } catch {
+        // ignore storage errors
+      }
+      return updated;
+    });
+  }
+
+  function clearRecentSearchQueries() {
+    setRecentSearchQueries([]);
+    try {
+      localStorage.removeItem('recentSearchQueries');
+    } catch {
+      // ignore storage errors
+    }
+  }
+
+  function handleSmartSearchChange(val: string, saveImmediately = false) {
     setSearchQuery(val);
     setPage(1);
+    if (searchSaveTimerRef.current) {
+      window.clearTimeout(searchSaveTimerRef.current);
+      searchSaveTimerRef.current = null;
+    }
     if (val.trim().length > 0) {
       setActivePage('papers');
       setStep(3);
+      if (saveImmediately) {
+        saveRecentSearchQuery(val);
+      } else if (val.trim().length >= 2) {
+        searchSaveTimerRef.current = window.setTimeout(() => {
+          saveRecentSearchQuery(val);
+        }, 900);
+      }
     } else {
       setStep(selectedClass ? 2 : 1);
     }
@@ -1585,7 +2107,7 @@ export default function App() {
     recognition.onresult = (event) => {
       const transcript = event.results?.[0]?.[0]?.transcript || '';
       if (transcript) {
-        handleSmartSearchChange(transcript);
+        handleSmartSearchChange(transcript, true);
       }
     };
     recognition.start();
@@ -1647,17 +2169,7 @@ export default function App() {
   function openMwalimuModal(
     cls?: string,
     sub?: string,
-    initialView:
-      | 'chat'
-      | 'studio'
-      | 'quiz'
-      | 'diagram'
-      | 'practical_lab'
-      | 'mastery_planner'
-      | 'bioscience'
-      | 'video'
-      | 'resources'
-      | 'profile' = 'chat',
+    initialView: 'chat' | 'studio' | 'quiz' | 'diagram' | 'profile' = 'chat',
     focusedDoc?: PaperRecord
   ) {
     const targetCls = focusedDoc?.form || cls || selectedClass || 'Form 3';
@@ -1687,7 +2199,7 @@ export default function App() {
           {
             id: `msg-pin-${Date.now()}`,
             role: 'ai',
-            text: `📌 **Active Attached Resource Pinned:** **${focusedDoc.title}** (${focusedDoc.category} · ${focusedDoc.form} · ${focusedDoc.subject} · ${focusedDoc.year}).\n\nYou can now ask me to:\n• **Solve any question** or section from **${focusedDoc.title}** step-by-step with the NECTA Marking Scheme\n• **Summarize chapters, definitions & formulas** from this textbook/paper\n• Click **🎯 20-Qn Quiz from This** above to test yourself on 20 questions generated directly from **${focusedDoc.title}**!`,
+            text: `📌 **${focusedDoc.title}** (${focusedDoc.form} ${focusedDoc.subject}) selected.`,
           },
         ];
       }
@@ -1696,7 +2208,7 @@ export default function App() {
         {
           id: 'msg-welcome',
           role: 'ai',
-          text: `Hello! I am **Moha AI** for **${targetCls} • ${targetSub}**.\nSelect any attached **TIE Textbook** or **Past Paper** in the bar above, attach a PDF/photo (**📎**), or ask any question below!`,
+          text: `Ready for **${targetCls} • ${targetSub}**. Select a book/chapter above or ask your question below.`,
         },
       ];
     });
@@ -1789,9 +2301,22 @@ export default function App() {
     }
   }
 
+  function deleteMohaLearnedItem(topicToDelete: string) {
+    const updated = learnedMemory.filter(
+      (x) => x.topic.toLowerCase() !== topicToDelete.trim().toLowerCase()
+    );
+    setLearnedMemory(updated);
+    try {
+      localStorage.setItem('elimika_moha_learned_v1', JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+    showToast(`Removed "${topicToDelete}" from Moha AI memory.`);
+  }
+
   function handleSaveLearnedFromForm() {
     if (!learnTopicInput.trim() || !learnAnswerInput.trim()) {
-      showToast('Please enter both Topic and Knowledge.');
+      showToast('Please enter both a Topic/Question and Custom Notes.');
       return;
     }
     const t = learnTopicInput.trim();
@@ -1801,13 +2326,13 @@ export default function App() {
     setLearnAnswerInput('');
     setMohaLearnPanelOpen(false);
     setMohaViewMode('chat');
-    showToast(`🧠 Moha AI permanently learned "${t}" & updated your Mastery Chart!`);
+    showToast(`🧠 Moha AI permanently learned "${t}" in localStorage!`);
     setMohaMessages((prev) => [
       ...prev,
       {
         id: `ai-learn-${Date.now()}`,
         role: 'ai',
-        text: `🧠 **New Knowledge Saved to Permanent Memory & Mastery Progress!**\n• **Subject:** ${mohaActiveClass} ${mohaActiveSubject}\n• **Topic:** ${t}\n• **Knowledge:** ${a}`,
+        text: `🧠 **New Knowledge Saved to Permanent Memory!**\n• **Class & Subject:** ${mohaActiveClass} — ${mohaActiveSubject}\n• **Topic / Trigger:** ${t}\n• **Custom Notes:** ${a}\n\n*(Stored permanently in your browser's localStorage — ask me about "${t}" anytime!)*`,
       },
     ]);
   }
@@ -1870,28 +2395,40 @@ export default function App() {
       {
         id: userMsgId,
         role: 'user',
-        text: `Generate official ${docLabels[type]} for ${meta.cls} ${meta.subject} — Topic: ${meta.topic} (${meta.subTopic}), integrating website TIE Books, Syllabus & Past Papers.`,
+        text: `${docLabels[type]}: ${meta.topic}`,
       },
       {
         id: loadingMsgId,
         role: 'ai',
         loading: true,
-        text: `Preparing official ${docLabels[type]} using website syllabus, TIE books & past papers...`,
+        text: `Generating ${docLabels[type]}...`,
       },
     ]);
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
       const response = await fetch('/api/moha/generate-doc', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type, meta }),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
       if (response.ok) {
         const data = await response.json();
         if (data.html) {
           setStudioPreviewHtml(data.html);
           setMohaMessages((prev) =>
-            prev.map((m) => (m.id === loadingMsgId ? { id: `ai-doc-${Date.now()}`, role: 'ai', text: data.html } : m))
+            prev.map((m) =>
+              m.id === loadingMsgId
+                ? {
+                    id: `ai-doc-${Date.now()}`,
+                    role: 'ai',
+                    text: data.html,
+                  }
+                : m
+            )
           );
           setGeneratingDocType(null);
           showToast(`✅ Generated ${docLabels[type]}!`);
@@ -1899,19 +2436,30 @@ export default function App() {
         }
       }
     } catch {
-      // fallback below
+      // Instant local fallback below
     }
 
     const instantHtml = buildInstantOfficialDocument(type, meta);
     setStudioPreviewHtml(instantHtml);
     setMohaMessages((prev) =>
-      prev.map((m) => (m.id === loadingMsgId ? { id: `ai-doc-${Date.now()}`, role: 'ai', text: instantHtml } : m))
+      prev.map((m) =>
+        m.id === loadingMsgId
+          ? {
+              id: `ai-doc-${Date.now()}`,
+              role: 'ai',
+              text: instantHtml,
+            }
+          : m
+      )
     );
     setGeneratingDocType(null);
     showToast(`✅ Generated ${docLabels[type]}!`);
   }
 
-  async function sendMwalimuMessage(overridePrompt?: string) {
+  async function sendMwalimuMessage(
+    overridePrompt?: string,
+    explicitFocusedDoc?: PaperRecord | null
+  ) {
     const rawText = overridePrompt !== undefined ? overridePrompt : mohaInput;
     const userText = rawText.trim();
     const attachedImg = mohaPendingImage;
@@ -1921,6 +2469,20 @@ export default function App() {
     setMohaViewMode('chat');
     setMohaInput('');
     setMohaPendingImage(null);
+
+    if (explicitFocusedDoc) {
+      setMohaFocusedResourceId(explicitFocusedDoc.id);
+      if (explicitFocusedDoc.form) {
+        setMohaActiveClass(explicitFocusedDoc.form);
+        setTsClass(explicitFocusedDoc.form);
+      }
+      if (explicitFocusedDoc.subject) {
+        setMohaActiveSubject(explicitFocusedDoc.subject);
+        setTsSubject(explicitFocusedDoc.subject);
+      }
+    }
+
+    const activeFocusedDoc = explicitFocusedDoc || mohaFocusedResource;
 
     // Check if user is teaching Moha AI via "learn: Topic = Explanation"
     const learnMatch = userText.match(/^(?:learn|teach|remember)\s*:\s*([^=:-]+)[=:-](.+)$/i);
@@ -1959,23 +2521,23 @@ export default function App() {
       return;
     }
 
-    const displayPrompt = userText || 'Solve this question step-by-step and show the NECTA Marking Scheme.';
+    const displayPrompt = userText || 'Solve this question step-by-step.';
     const loadingId = `load-${Date.now()}`;
 
     // Parse any specific Class, Subject, and Topic requested in the user's message
-    const baseDefaultCls = mohaFocusedResource?.form || mohaActiveClass;
-    const baseDefaultSub = mohaFocusedResource?.subject || mohaActiveSubject;
+    const baseDefaultCls = activeFocusedDoc?.form || mohaActiveClass;
+    const baseDefaultSub = activeFocusedDoc?.subject || mohaActiveSubject;
     const parsedTarget = parseClassSubjectTopicFromPrompt(
       displayPrompt,
       baseDefaultCls,
       baseDefaultSub
     );
-    const targetCls = parsedTarget.cls;
-    const targetSub = parsedTarget.subject;
+    const targetCls = explicitFocusedDoc?.form || parsedTarget.cls;
+    const targetSub = explicitFocusedDoc?.subject || parsedTarget.subject;
     const targetTopic = parsedTarget.topic;
     const targetSubTopic = parsedTarget.subTopic;
 
-    if (parsedTarget.matchedFromPrompt) {
+    if (parsedTarget.matchedFromPrompt && !explicitFocusedDoc) {
       setMohaActiveClass(targetCls);
       setMohaActiveSubject(targetSub);
       setTsClass(targetCls);
@@ -1988,17 +2550,27 @@ export default function App() {
     const promptSiteResources = buildSiteResourcesForClassSubject(
       targetCls,
       targetSub,
-      parsedTarget.matchedFromPrompt
+      !explicitFocusedDoc && parsedTarget.matchedFromPrompt,
+      activeFocusedDoc
     );
 
-    // Explicitly build systemPromptContext from mohaFocusedResource (when pinned) + TIE Textbook reading comprehension passage
     const pinnedSource =
-      mohaFocusedResource &&
+      explicitFocusedDoc ||
+      (activeFocusedDoc &&
       (!parsedTarget.matchedFromPrompt ||
-        (matchesFormRange(mohaFocusedResource.form, targetCls) &&
-          matchesSubjectQuery(mohaFocusedResource.subject, targetSub)))
-        ? mohaFocusedResource
-        : promptSiteResources.focusedResource;
+        (matchesFormRange(activeFocusedDoc.form, targetCls) &&
+          matchesSubjectQuery(activeFocusedDoc.subject, targetSub)))
+        ? activeFocusedDoc
+        : promptSiteResources.focusedResource);
+
+    const isPinnedPastPaper = Boolean(
+      pinnedSource &&
+        !pinnedSource.isBook &&
+        !pinnedSource.isSyllabus &&
+        !/\b(book|kitabu|textbook|syllabus|muhtasari)\b/i.test(
+          `${pinnedSource.category} ${pinnedSource.title}`
+        )
+    );
 
     const tbReadingContext = getTieTextbookChapterContent(
       targetCls,
@@ -2007,40 +2579,39 @@ export default function App() {
       promptSiteResources
     );
     const chaptersListForContext = getSyllabusTopicsForClassSubject(targetCls, targetSub);
-    const sampleComprehensionQns = buildContentIntegratedQuizQuestions(
-      targetCls,
-      targetSub,
-      targetTopic,
-      promptSiteResources,
-      targetSubTopic
-    ).slice(0, 4);
 
-    const systemPromptContext = [
-      pinnedSource
-        ? `PINNED RESOURCE FOR READING COMPREHENSION:
-- Resource Title: "${pinnedSource.title}"
+    const systemPromptContext = isPinnedPastPaper && pinnedSource
+      ? [
+          `PINNED PAST EXAMINATION PAPER DIRECTIVE:
+- Paper Title: "${pinnedSource.title}"
 - Category: ${pinnedSource.category} | Class: ${pinnedSource.form} | Subject: ${pinnedSource.subject} | Year: ${pinnedSource.year}
 - Document URL: ${pinnedSource.paperUrl || 'Attached in Elimika Catalog'}${
             pinnedSource.customContent
-              ? `\n- Attached Full Text / Excerpt from "${pinnedSource.title}":\n${pinnedSource.customContent}`
+              ? `\n- Extracted Paper Text:\n${pinnedSource.customContent}`
               : ''
-          }`
-        : `ACTIVE TIE TEXTBOOK FOR READING COMPREHENSION: "${tbReadingContext.bookTitle}" (${targetCls} ${targetSub})`,
-      `OFFICIAL TIE TEXTBOOK CHAPTERS (${targetCls} ${targetSub}):\n${chaptersListForContext
-        .map((c, idx) => `${idx + 1}. ${c}`)
-        .join('\n')}`,
-      `MATCHED TIE TEXTBOOK CHAPTER COMPREHENSION PASSAGE (${tbReadingContext.matchedChapter}):\n${tbReadingContext.chapterSummaryMarkdown}`,
-      sampleComprehensionQns.length > 0
-        ? `REFERENCE SOLVED QUESTIONS & MARKING RUBRIC FROM "${pinnedSource?.title || tbReadingContext.bookTitle}" (${tbReadingContext.matchedChapter}):\n${sampleComprehensionQns
-            .map(
-              (q, idx) =>
-                `Q${idx + 1}: ${q.question}\nModel Answer: ${q.options[q.correctIndex]}\nWorking / Marking Scheme: ${q.explanation}`
-            )
-            .join('\n\n')}`
-        : '',
-    ]
-      .filter(Boolean)
-      .join('\n\n');
+          }
+- CRITICAL INSTRUCTION: Read the actual questions printed inside this attached PDF examination paper ("${pinnedSource.title}") across Section A, Section B, and Section C, and solve/explain those exact questions step-by-step. Do NOT invent different questions or explain unrelated textbook chapters.`,
+        ].join('\n\n')
+      : [
+          `DIRECT PROBLEM-SOLVING & TEXTBOOK DIRECTIVE:
+1. Solve ANY question asked by the user directly and step-by-step.
+2. If the question is unrelated to ${targetCls} ${targetSub}, solve the user's exact question directly without restricting to the textbook below.`,
+          pinnedSource
+            ? `PINNED RESOURCE CONTEXT:
+- Title: "${pinnedSource.title}" (${pinnedSource.form} ${pinnedSource.subject} · ${pinnedSource.year})
+- Document URL: ${pinnedSource.paperUrl || 'Attached in Elimika Catalog'}${
+                pinnedSource.customContent
+                  ? `\n- Attached Content:\n${pinnedSource.customContent}`
+                  : ''
+              }`
+            : `ACTIVE TIE TEXTBOOK: "${tbReadingContext.bookTitle}"`,
+          `OFFICIAL TIE TEXTBOOK CHAPTERS (${targetCls} ${targetSub}):\n${chaptersListForContext
+            .map((c, idx) => `${idx + 1}. ${c}`)
+            .join('\n')}`,
+          `TEXTBOOK CHAPTER REFERENCE (${tbReadingContext.matchedChapter}):\n${tbReadingContext.chapterSummaryMarkdown}`,
+        ]
+          .filter(Boolean)
+          .join('\n\n');
 
     // If user asked for a quiz/questions in chat, pre-load the interactive Quiz items for this exact Class, Subject & Topic
     if (/\b(quiz|questions|maswali|test me|exercise|practice)\b/i.test(displayPrompt)) {
@@ -2069,13 +2640,43 @@ export default function App() {
         id: loadingId,
         role: 'ai',
         loading: true,
-        text: pinnedSource
-          ? `Moha AI is performing reading comprehension on "${pinnedSource.title}" (${tbReadingContext.matchedChapter}) to answer your question...`
-          : `Moha AI is analyzing ${targetCls} ${targetSub} (${tbReadingContext.matchedChapter}) with TIE Books, Syllabus & Past Papers...`,
+        text: isPinnedPastPaper ? `Reading & solving ${pinnedSource?.title}...` : 'Thinking...',
       },
     ]);
 
+    // Check if conversational greeting or custom learned memory can be answered immediately without delay
+    const strippedLower = displayPrompt.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+    const isQuickConversational =
+      !attachedImg &&
+      /^(hi|hello|hey|hii|helo|greetings|good\s+(morning|afternoon|evening|day)|hi\s+moha|hello\s+moha|hey\s+moha|how\s+are\s+you|how\s+are\s+you\s+doing|how\s+is\s+it\s+going|who\s+are\s+you|what\s+is\s+your\s+name|what\s+can\s+you\s+do|help|how\s+to\s+use|thank\s+you|thanks|thx|ok|okay|got\s+it|nice|great|awesome|cool)$/i.test(
+        strippedLower
+      );
+
+    if (isQuickConversational) {
+      const quickReply = generateLocalSmartTutorReply(
+        displayPrompt,
+        targetCls,
+        targetSub,
+        learnedMemory,
+        promptSiteResources
+      );
+      setMohaMessages((prev) =>
+        prev.map((m) =>
+          m.id === loadingId
+            ? {
+                id: `ai-${Date.now()}`,
+                role: 'ai',
+                text: quickReply,
+              }
+            : m
+        )
+      );
+      return;
+    }
+
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8500);
       const response = await fetch('/api/moha/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2089,15 +2690,23 @@ export default function App() {
           siteResources: promptSiteResources,
           systemPromptContext,
         }),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
 
       if (response.ok) {
         const data = await response.json();
         if (Array.isArray(data.quizQuestions) && data.quizQuestions.length > 0) {
           setQuizItems(data.quizQuestions);
         }
+        if (Array.isArray(data.extractedBookChapters) && data.extractedBookChapters.length > 0) {
+          const mapKey = `${targetCls}__${targetSub}`;
+          setExtractedBookChaptersMap((prev) => ({
+            ...prev,
+            [mapKey]: data.extractedBookChapters,
+          }));
+        }
         if (data.reply) {
-          const matchedPreset = detectDiagramPreset(displayPrompt, targetSub);
           setMohaMessages((prev) =>
             prev.map((m) =>
               m.id === loadingId
@@ -2105,7 +2714,6 @@ export default function App() {
                     id: `ai-${Date.now()}`,
                     role: 'ai',
                     text: data.reply,
-                    diagramPreset: matchedPreset,
                     quizTarget: {
                       cls: targetCls,
                       subject: targetSub,
@@ -2120,7 +2728,7 @@ export default function App() {
         }
       }
     } catch {
-      // fallback to local smart tutor below
+      // Instant fallback to local smart tutor below (never hangs or displays "Connection busy")
     }
 
     const localReply = generateLocalSmartTutorReply(
@@ -2130,7 +2738,6 @@ export default function App() {
       learnedMemory,
       promptSiteResources
     );
-    const matchedPreset = detectDiagramPreset(displayPrompt, targetSub);
     setMohaMessages((prev) =>
       prev.map((m) =>
         m.id === loadingId
@@ -2138,7 +2745,6 @@ export default function App() {
               id: `ai-${Date.now()}`,
               role: 'ai',
               text: localReply,
-              diagramPreset: matchedPreset,
               quizTarget: {
                 cls: targetCls,
                 subject: targetSub,
@@ -2183,22 +2789,27 @@ export default function App() {
     customTopic?: string,
     customSubTopic?: string,
     customSourceFilter?: 'ALL' | 'textbook' | 'past_paper',
-    stayOnDailyQuizPage?: boolean
+    stayOnDailyQuizPage?: boolean,
+    explicitFocusedDoc?: PaperRecord | null
   ) {
-    const targetCls = customClass || mohaActiveClass;
-    const targetSub = customSubject || mohaActiveSubject;
+    const activeDoc = explicitFocusedDoc || mohaFocusedResource;
+    const targetCls = explicitFocusedDoc?.form || customClass || mohaActiveClass;
+    const targetSub = explicitFocusedDoc?.subject || customSubject || mohaActiveSubject;
     const targetTopic = customTopic !== undefined ? customTopic : selectedQuizTopic;
     const targetSubTopic = customSubTopic !== undefined ? customSubTopic : selectedQuizSubTopic;
     const targetSourceFilter =
       customSourceFilter !== undefined ? customSourceFilter : selectedQuizSourceFilter;
 
-    if (customClass) {
-      setMohaActiveClass(customClass);
-      setTsClass(customClass);
+    if (explicitFocusedDoc) {
+      setMohaFocusedResourceId(explicitFocusedDoc.id);
     }
-    if (customSubject) {
-      setMohaActiveSubject(customSubject);
-      setTsSubject(customSubject);
+    if (targetCls) {
+      setMohaActiveClass(targetCls);
+      setTsClass(targetCls);
+    }
+    if (targetSub) {
+      setMohaActiveSubject(targetSub);
+      setTsSubject(targetSub);
     }
     if (customTopic !== undefined) setSelectedQuizTopic(customTopic);
     if (customSubTopic !== undefined) setSelectedQuizSubTopic(customSubTopic);
@@ -2218,7 +2829,12 @@ export default function App() {
     setQuizStartTime(Date.now());
 
     // Build site resources context for the target class and subject so the quiz integrates available website contents
-    const quizSiteResources = buildSiteResourcesForClassSubject(targetCls, targetSub);
+    const quizSiteResources = buildSiteResourcesForClassSubject(
+      targetCls,
+      targetSub,
+      false,
+      activeDoc
+    );
 
     try {
       const response = await fetch('/api/moha/quiz', {
@@ -2232,7 +2848,7 @@ export default function App() {
           sourceFilter: targetSourceFilter,
           siteResources: quizSiteResources,
           count: 20,
-          specificResourceTitle: mohaFocusedResource?.title,
+          specificResourceTitle: activeDoc?.title,
         }),
       });
       if (response.ok) {
@@ -2566,21 +3182,247 @@ export default function App() {
     window.speechSynthesis.speak(utter);
   }
 
-  function downloadMwalimuDocPdf(msgId: string, orientation: 'portrait' | 'landscape' = 'portrait') {
+  async function downloadMwalimuDocPdf(msgId: string, orientation: 'portrait' | 'landscape' = 'portrait') {
     const target = document.getElementById(`msg-body-${msgId}`);
     if (!target) return;
-    showToast(`⏳ Generating ${orientation.toUpperCase()} PDF...`);
-    const opt = {
-      margin: 8,
-      filename: `${mohaActiveClass}_${mohaActiveSubject}_Moha_AI.pdf`.replace(/\s+/g, '_'),
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'mm', format: 'a4', orientation },
+    showToast(`⏳ Downloading PDF...`);
+
+    const cleanForPdfHeader = (raw: string): string => {
+      return String(raw || '')
+        .replace(/[^\x20-\x7E]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
     };
-    if (window.html2pdf) {
-      window.html2pdf().set(opt).from(target).save();
-    } else {
-      window.print();
+
+    try {
+      const pdf = new jsPDF({ orientation, unit: 'mm', format: 'a4' });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const margin = 12;
+      const contentW = pageW - margin * 2;
+      let y = margin;
+
+      const paintWhitePageBackground = () => {
+        pdf.setFillColor(255, 255, 255);
+        pdf.rect(0, 0, pageW, pageH, 'F');
+      };
+
+      // Always paint 100% pure white background (#ffffff) on the first page
+      paintWhitePageBackground();
+
+      const ensureSpace = (needed: number) => {
+        if (y + needed > pageH - margin) {
+          pdf.addPage();
+          paintWhitePageBackground();
+          y = margin;
+        }
+      };
+
+      // Pure White Header with dark text and crisp bottom rule (never dark/black background)
+      pdf.setFillColor(255, 255, 255);
+      pdf.rect(margin, y, contentW, 13, 'F');
+      pdf.setTextColor(15, 23, 42);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(11);
+      pdf.text('ELIMIKA TANZANIA - MOHA AI', margin, y + 5);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8.5);
+      pdf.setTextColor(51, 65, 85);
+      const docSubtitle = cleanForPdfHeader(
+        `${mohaActiveClass} | ${mohaActiveSubject}${mohaFocusedResource ? ` | ${mohaFocusedResource.title}` : ''}`
+      );
+      pdf.text(docSubtitle.slice(0, 95), margin, y + 10);
+      pdf.setDrawColor(203, 213, 225);
+      pdf.setLineWidth(0.35);
+      pdf.line(margin, y + 12.5, margin + contentW, y + 12.5);
+      y += 16;
+
+      // 1. Render any HTML tables inside target with pure white cell backgrounds and MathJax cell rendering
+      const tables = Array.from(target.querySelectorAll('table'));
+      for (const tbl of tables) {
+        const rows = Array.from(tbl.querySelectorAll('tr'));
+        for (let rIdx = 0; rIdx < rows.length; rIdx++) {
+          const cells = Array.from(rows[rIdx].querySelectorAll('th, td'));
+          if (cells.length === 0) continue;
+          const isHeader = rows[rIdx].querySelector('th') !== null || rIdx === 0;
+          const colW = contentW / cells.length;
+
+          const cellRenderList = cells.map((cell) => {
+            const rawCellTxt = ((cell as HTMLElement).innerText || cell.textContent || '-').trim();
+            return renderRichMathParagraphToPng(rawCellTxt || '-', Math.max(12, colW - 3), isHeader);
+          });
+
+          const maxCellH = Math.max(
+            6,
+            ...cellRenderList.map((cr) => (cr ? cr.heightMm + 3 : 6))
+          );
+          ensureSpace(maxCellH + 2);
+
+          for (let cIdx = 0; cIdx < cells.length; cIdx++) {
+            const x = margin + cIdx * colW;
+            // Pure white background for all table cells
+            pdf.setFillColor(255, 255, 255);
+            pdf.setDrawColor(148, 163, 184);
+            pdf.setLineWidth(isHeader ? 0.35 : 0.25);
+            pdf.rect(x, y, colW, maxCellH, 'FD');
+
+            const cellImg = cellRenderList[cIdx];
+            if (cellImg) {
+              pdf.addImage(
+                cellImg.dataUrl,
+                'PNG',
+                x + 1.5,
+                y + 1.5,
+                cellImg.widthMm,
+                cellImg.heightMm
+              );
+            }
+          }
+          y += maxCellH;
+        }
+        y += 4;
+      }
+
+      // 2. Render text and MathJax mathematical expressions onto pure white background blocks
+      const matchedMsg = mohaMessages.find((m) => m.id === msgId);
+      const clone = target.cloneNode(true) as HTMLElement;
+      clone.querySelectorAll('table, svg, style, script').forEach((el) => el.remove());
+
+      const rawSource =
+        tables.length === 0 && matchedMsg && !matchedMsg.text.includes('<table')
+          ? matchedMsg.text
+              .replace(/<!--DIAGRAM_START-->[\s\S]*?<!--DIAGRAM_END-->/g, '')
+              .replace(/<svg[\s\S]*?<\/svg>/gi, '')
+              .replace(/\$\$([\s\S]+?)\$\$/g, (_m, inner) => `\n$$${String(inner).replace(/\r?\n/g, ' ').trim()}$$\n`)
+              .replace(/<br\s*\/?>/gi, '\n')
+              .replace(/<\/(p|div|h[1-6]|li|tr)>/gi, '\n')
+              .replace(/<[^>]+>/g, '')
+          : clone.innerText || clone.textContent || '';
+
+      const paragraphs = rawSource.split(/\r?\n/);
+      for (const rawLine of paragraphs) {
+        const trimmedRaw = rawLine.trim();
+        if (!trimmedRaw) {
+          y += 1.5;
+          continue;
+        }
+        const isHeading =
+          /^(\*\*|#{1,4}\s|[0-9]+\.\s|Section\s+[A-Z]|Final\s+Answer|Step\s+[0-9])/i.test(trimmedRaw);
+
+        const mathBlockPng = renderRichMathParagraphToPng(trimmedRaw, contentW, isHeading);
+        if (mathBlockPng) {
+          ensureSpace(mathBlockPng.heightMm + 2);
+          pdf.addImage(
+            mathBlockPng.dataUrl,
+            'PNG',
+            margin,
+            y,
+            mathBlockPng.widthMm,
+            mathBlockPng.heightMm
+          );
+          y += mathBlockPng.heightMm + (isHeading ? 1.8 : 1.0);
+        }
+      }
+
+      // 3. Render any SVG diagrams inside target onto a pure white (#ffffff) offscreen canvas and embed into PDF
+      const svgs = Array.from(target.querySelectorAll('svg'));
+      for (const svgEl of svgs) {
+        try {
+          const svgClone = svgEl.cloneNode(true) as SVGSVGElement;
+          if (!svgClone.getAttribute('xmlns')) {
+            svgClone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+          }
+          svgClone.style.background = '#ffffff';
+          const viewBox = svgClone.getAttribute('viewBox')?.split(/\s+/).map(Number);
+          const svgW = (viewBox && viewBox[2]) || svgEl.clientWidth || 640;
+          const svgH = (viewBox && viewBox[3]) || svgEl.clientHeight || 245;
+          svgClone.setAttribute('width', String(svgW));
+          svgClone.setAttribute('height', String(svgH));
+
+          const svgXml = new XMLSerializer().serializeToString(svgClone);
+          const svgDataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgXml)}`;
+
+          const pngUrl = await new Promise<string | null>((resolve) => {
+            const img = new Image();
+            const timer = window.setTimeout(() => resolve(null), 1500);
+            img.onload = () => {
+              window.clearTimeout(timer);
+              try {
+                const canvas = document.createElement('canvas');
+                canvas.width = svgW * 2;
+                canvas.height = svgH * 2;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                  resolve(null);
+                  return;
+                }
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.scale(2, 2);
+                ctx.drawImage(img, 0, 0, svgW, svgH);
+                resolve(canvas.toDataURL('image/png'));
+              } catch {
+                resolve(null);
+              }
+            };
+            img.onerror = () => {
+              window.clearTimeout(timer);
+              resolve(null);
+            };
+            img.src = svgDataUrl;
+          });
+
+          if (pngUrl) {
+            const pdfImgW = Math.min(contentW, 170);
+            const pdfImgH = Math.round((pdfImgW * svgH) / Math.max(1, svgW));
+            ensureSpace(pdfImgH + 6);
+            y += 2;
+            pdf.addImage(pngUrl, 'PNG', margin, y, pdfImgW, pdfImgH);
+            y += pdfImgH + 4;
+          }
+        } catch {
+          // ignore individual SVG error
+        }
+      }
+
+      // 4. Add a faint, centered 'elimika.online' watermark across every page of the generated PDF
+      const totalPages = pdf.getNumberOfPages();
+      for (let p = 1; p <= totalPages; p++) {
+        pdf.setPage(p);
+        try {
+          pdf.saveGraphicsState();
+          const gStateCtor = (
+            pdf as unknown as { GState?: new (opts: { opacity: number }) => unknown }
+          ).GState;
+          if (gStateCtor) {
+            pdf.setGState(new gStateCtor({ opacity: 0.14 }) as never);
+            pdf.setTextColor(100, 116, 139);
+          } else {
+            pdf.setTextColor(226, 232, 240);
+          }
+          pdf.setFont('helvetica', 'bold');
+          pdf.setFontSize(42);
+          pdf.text('elimika.online', pageW / 2, pageH / 2, {
+            align: 'center',
+            angle: 35,
+          });
+          pdf.restoreGraphicsState();
+        } catch {
+          pdf.setFont('helvetica', 'bold');
+          pdf.setFontSize(42);
+          pdf.setTextColor(226, 232, 240);
+          pdf.text('elimika.online', pageW / 2, pageH / 2, {
+            align: 'center',
+            angle: 35,
+          });
+        }
+      }
+
+      const filename = `${mohaActiveClass}_${mohaActiveSubject}_Moha_AI.pdf`.replace(/[^a-zA-Z0-9_.-]+/g, '_');
+      pdf.save(filename);
+      showToast(`✅ Downloaded ${filename}`);
+    } catch {
+      showToast('Unable to generate PDF right now.');
     }
   }
 
@@ -2609,26 +3451,34 @@ export default function App() {
     let baseMatches: PaperRecord[] = [];
     if (searchQuery.trim().length > 0) {
       const q = searchQuery.toLowerCase();
-      baseMatches = allPapers.filter((p) =>
-        `${p.title} ${p.subject} ${p.form} ${p.year} ${p.category}`.toLowerCase().includes(q)
-      );
+      baseMatches = allPapers.filter((p) => {
+        if (p.isSyllabus || p.isBook) return false;
+        return `${p.title} ${p.subject} ${p.form} ${p.year} ${p.category}`.toLowerCase().includes(q);
+      });
     } else {
       baseMatches = allPapers.filter((p) => {
         if (p.isSyllabus || p.isBook) return false;
         const matchClass = p.form.toLowerCase() === selectedClass.toLowerCase();
         const matchSub = p.subject.toLowerCase() === selectedSubject.toLowerCase();
-        const matchCat =
-          selectedCategory === 'ALL' || p.category.toLowerCase() === selectedCategory.toLowerCase();
-        return matchClass && matchSub && matchCat;
+        return matchClass && matchSub;
       });
     }
 
-    const years = Array.from(new Set(baseMatches.map((p) => p.year).filter((y) => y && y !== 'N/A'))).sort((a, b) =>
+    const dataYears = baseMatches.map((p) => p.year).filter((y) => y && y !== 'N/A');
+    const standardYears = ['2026', '2025', '2024', '2023', '2022'];
+    const years = Array.from(new Set([...dataYears, ...standardYears])).sort((a, b) =>
       b.localeCompare(a)
     );
 
-    const matches =
-      selectedYear === 'ALL' ? baseMatches : baseMatches.filter((p) => p.year === selectedYear);
+    const matches = baseMatches.filter((p) => {
+      const matchYr = selectedYear === 'ALL' || p.year === selectedYear;
+      const matchCat =
+        selectedCategory === 'ALL' ||
+        p.category.toLowerCase() === selectedCategory.toLowerCase() ||
+        (selectedCategory === 'Annual' && /annual|terminal/i.test(p.category)) ||
+        (selectedCategory === 'Midterm' && /mid[- ]?term/i.test(`${p.category} ${p.title}`));
+      return matchYr && matchCat;
+    });
     matches.sort((a, b) => (b.year || '').localeCompare(a.year || ''));
 
     return { filteredPapers: matches, availableYears: years };
@@ -2691,14 +3541,83 @@ export default function App() {
     });
   }, [allPapers, syllabusPageLevel, syllabusSearchQuery]);
 
-  const activeSyllabusTopics = React.useMemo(
-    () => getSyllabusTopicsForClassSubject(tsClass || mohaActiveClass, tsSubject || mohaActiveSubject),
-    [tsClass, mohaActiveClass, tsSubject, mohaActiveSubject]
-  );
+  // Automatically extract real chapters from any attached TIE Textbook PDF when Class/Subject/Book changes
+  useEffect(() => {
+    const targetCls = mohaViewMode === 'studio' ? tsClass || mohaActiveClass : mohaActiveClass || tsClass;
+    const targetSub = mohaViewMode === 'studio' ? tsSubject || mohaActiveSubject : mohaActiveSubject || tsSubject;
+    const mapKey = `${targetCls}__${targetSub}`;
+    if (extractedBookChaptersMap[mapKey]?.length) return;
+
+    const focused = activeSiteResources.focusedResource;
+    const bookWithPdf =
+      (focused && focused.isBook && focused.paperUrl ? focused : null) ||
+      activeSiteResources.books.find((b) => b.paperUrl) ||
+      null;
+
+    if (!bookWithPdf?.paperUrl) return;
+
+    let cancelled = false;
+    fetch('/api/moha/extract-book-chapters', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        paperUrl: bookWithPdf.paperUrl,
+        cls: targetCls,
+        subject: targetSub,
+        customContent: bookWithPdf.customContent || '',
+      }),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!cancelled && data && Array.isArray(data.chapters) && data.chapters.length > 0 && data.extractedCount > 0) {
+          setExtractedBookChaptersMap((prev) => ({
+            ...prev,
+            [mapKey]: data.chapters,
+          }));
+        }
+      })
+      .catch(() => {
+        // ignore background extraction error
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [mohaViewMode, tsClass, mohaActiveClass, tsSubject, mohaActiveSubject, activeSiteResources, extractedBookChaptersMap]);
+
+  const activeSyllabusTopics = React.useMemo(() => {
+    const targetCls = mohaViewMode === 'studio' ? tsClass || mohaActiveClass : mohaActiveClass || tsClass;
+    const targetSub = mohaViewMode === 'studio' ? tsSubject || mohaActiveSubject : mohaActiveSubject || tsSubject;
+    const baseTopics = getSyllabusTopicsForClassSubject(targetCls, targetSub);
+    const mapKey = `${targetCls}__${targetSub}`;
+
+    // If chapters were extracted from the attached PDF textbook for this class/subject, prioritize them
+    if (extractedBookChaptersMap[mapKey]?.length) {
+      return extractedBookChaptersMap[mapKey];
+    }
+
+    // If the pinned or attached book has explicit chapters/topics in customContent, extract and prioritize them
+    const focused = activeSiteResources.focusedResource;
+    const rawCustom = focused?.customContent || activeSiteResources.books[0]?.customContent || '';
+    if (rawCustom) {
+      const extractedChapters = extractTextbookChaptersFromText(rawCustom);
+      if (extractedChapters.length > 0) {
+        const combined = [...extractedChapters];
+        for (const bt of baseTopics) {
+          if (!combined.some((c) => c.toLowerCase() === bt.toLowerCase())) {
+            combined.push(bt);
+          }
+        }
+        return combined;
+      }
+    }
+    return baseTopics;
+  }, [mohaViewMode, tsClass, mohaActiveClass, tsSubject, mohaActiveSubject, activeSiteResources, extractedBookChaptersMap]);
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-canvas)] text-[var(--text-primary)] transition-colors">
-      {/* TOP BAR CONTRACT: 3 Zones (Brand, Nav Links, Primary Action) */}
+      {/* TOP BAR CONTRACT: 3 Zones (Brand, Nav Links, Primary Action) — hidden in full-viewport Moha AI & Game modes */}
+      {activePage !== 'moha' && activePage !== 'game' && (
       <header className="sticky top-0 z-40 bg-[var(--bg-surface-glass)] backdrop-blur-md border-b border-[var(--border-subtle)] transition-colors">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4 sm:gap-8">
           <a
@@ -2730,7 +3649,7 @@ export default function App() {
                 activePage === 'books' ? 'text-emerald-700 font-bold underline underline-offset-4' : ''
               }`}
             >
-              TIE Books
+              📚 TIE Books
             </button>
             <button
               onClick={() => openSyllabusPage()}
@@ -2738,7 +3657,7 @@ export default function App() {
                 activePage === 'syllabus' ? 'text-amber-700 font-bold underline underline-offset-4' : ''
               }`}
             >
-              Syllabuses
+              📜 Syllabus
             </button>
             <button
               onClick={() => openDailyQuizPage()}
@@ -2770,7 +3689,7 @@ export default function App() {
                 setActivePage('game');
               }}
               className={`hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 cursor-pointer flex items-center gap-1 ${
-                activePage === 'game' ? 'text-emerald-700 font-bold underline underline-offset-4' : ''
+                (activePage as string) === 'game' ? 'text-emerald-700 font-bold underline underline-offset-4' : ''
               }`}
             >
               <span>🎮 Elimika Play</span>
@@ -2798,21 +3717,26 @@ export default function App() {
             </button>
 
             <button
+              onClick={() => setWhatsappModalOpen(true)}
+              className="px-3 py-2 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-1.5 shadow-xs transition-colors whitespace-nowrap shrink-0 cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white"
+              title="Join or Manage Elimika WhatsApp Channel & Community"
+            >
+              <span>💬 WhatsApp</span>
+            </button>
+
+            <button
               onClick={() => openMwalimuModal()}
-              className={`px-3.5 sm:px-4 py-2 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-1.5 shadow-sm transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                activePage === 'moha'
-                  ? 'bg-slate-900 text-white ring-2 ring-violet-400'
-                  : 'bg-violet-600 hover:bg-violet-700 text-white'
-              }`}
+              className="px-3.5 sm:px-4 py-2 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-1.5 shadow-sm transition-colors whitespace-nowrap shrink-0 cursor-pointer bg-violet-600 hover:bg-violet-700 text-white"
             >
               <Sparkles className="w-4 h-4" />
-              <span>{activePage === 'moha' ? 'Moha AI Portal (Active)' : 'Open Moha AI Site'}</span>
+              <span>Open Moha AI Site</span>
             </button>
 
             <PWAInstallButton />
           </div>
         </div>
       </header>
+      )}
 
       <OfflineIndicator />
 
@@ -2838,20 +3762,36 @@ export default function App() {
                 <span className="text-blue-600">Past Papers, TIE Books &amp; Syllabus</span>
               </h1>
 
-              {/* Smart Search + Voice Search */}
-              <div className="relative max-w-2xl mx-auto">
+              {/* Smart Search + Voice Search + Recent Search Queries Dropdown */}
+              <div ref={searchBoxContainerRef} className="relative max-w-2xl mx-auto">
                 <div className="flex items-center bg-white rounded-2xl shadow-sm border border-slate-300 px-3.5 py-2.5 focus-within:border-blue-600 transition-colors">
                   <Search className="w-5 h-5 text-slate-400 shrink-0 mr-2.5" />
                   <input
                     type="text"
                     value={searchQuery}
-                    onChange={(e) => handleSmartSearchChange(e.target.value)}
+                    onFocus={() => setShowSearchSuggestions(true)}
+                    onClick={() => setShowSearchSuggestions(true)}
+                    onChange={(e) => {
+                      handleSmartSearchChange(e.target.value);
+                      setShowSearchSuggestions(true);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && searchQuery.trim().length >= 2) {
+                        saveRecentSearchQuery(searchQuery);
+                        setShowSearchSuggestions(false);
+                      } else if (e.key === 'Escape') {
+                        setShowSearchSuggestions(false);
+                      }
+                    }}
                     placeholder="Search directly (e.g. Form 4 Math 2024, Form 2 Physics Book)..."
                     className="w-full text-sm sm:text-base font-medium bg-transparent text-slate-800 placeholder-slate-400 focus:outline-none"
                   />
                   {searchQuery.trim().length > 0 && (
                     <button
-                      onClick={() => handleSmartSearchChange('')}
+                      onClick={() => {
+                        handleSmartSearchChange('');
+                        setShowSearchSuggestions(true);
+                      }}
                       className="text-slate-400 hover:text-slate-700 p-1.5 mr-1 cursor-pointer"
                       title="Clear search"
                     >
@@ -2866,6 +3806,68 @@ export default function App() {
                     <Mic className="w-4 h-4" />
                   </button>
                 </div>
+
+                {showSearchSuggestions && recentSearchQueries.length > 0 && (() => {
+                  const qLower = searchQuery.trim().toLowerCase();
+                  const matchingQueries = qLower
+                    ? recentSearchQueries.filter((item) => item.toLowerCase().includes(qLower))
+                    : recentSearchQueries;
+                  const displayList = matchingQueries.length > 0 ? matchingQueries : recentSearchQueries;
+
+                  return (
+                    <div className="absolute left-0 right-0 top-full mt-2 z-30 bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden text-left">
+                      <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
+                          Recent Searches
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            clearRecentSearchQueries();
+                            setShowSearchSuggestions(false);
+                          }}
+                          className="text-[11px] font-bold text-rose-600 hover:text-rose-700 cursor-pointer"
+                        >
+                          Clear All
+                        </button>
+                      </div>
+                      <div className="max-h-60 overflow-y-auto divide-y divide-slate-100">
+                        {displayList.map((term) => (
+                          <div
+                            key={term}
+                            className="flex items-center justify-between px-4 py-2.5 hover:bg-blue-50/70 transition-colors group"
+                          >
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleSmartSearchChange(term, true);
+                                setShowSearchSuggestions(false);
+                              }}
+                              className="flex items-center gap-2.5 flex-1 min-w-0 text-left cursor-pointer"
+                            >
+                              <Search className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600 shrink-0" />
+                              <span className="text-xs sm:text-sm font-semibold text-slate-700 group-hover:text-blue-700 truncate">
+                                {term}
+                              </span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeRecentSearchQuery(term);
+                              }}
+                              className="p-1 text-slate-400 hover:text-rose-600 rounded-lg cursor-pointer shrink-0"
+                              title="Remove from recent searches"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Clean Segmented Primary Resource Switcher */}
@@ -2881,14 +3883,13 @@ export default function App() {
                   onClick={() => openBooksPage()}
                   className="px-4 py-2 rounded-xl font-bold text-xs sm:text-sm bg-white hover:bg-emerald-50 text-slate-900 border border-slate-200/80 transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
                 >
-                  <BookOpen className="w-4 h-4 text-emerald-600" />
-                  <span>TIE Textbooks</span>
+                  <span>📚 TIE Books</span>
                 </button>
                 <button
                   onClick={() => openSyllabusPage()}
                   className="px-4 py-2 rounded-xl font-bold text-xs sm:text-sm bg-white hover:bg-amber-50 text-slate-900 border border-slate-200/80 transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
                 >
-                  <span>Official Syllabuses</span>
+                  <span>📜 Syllabus</span>
                 </button>
                 <button
                   onClick={() => openMwalimuModal()}
@@ -3369,28 +4370,11 @@ export default function App() {
                       </div>
                     </div>
 
-                    {/* Category Filter Controls */}
-                    <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-100">
-                      {['ALL', 'NECTA', 'Mock', 'Pre-NECTA', 'Terminal'].map((cat) => (
-                        <button
-                          key={cat}
-                          onClick={() => {
-                            setSelectedCategory(cat);
-                            setPage(1);
-                          }}
-                          className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                            selectedCategory === cat
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                          }`}
-                        >
-                          {cat === 'ALL' ? 'All' : cat}
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* Year Filter Controls */}
-                    {availableYears.length > 1 && (
+                    {/* 1. Select Year */}
+                    <div className="space-y-1.5 pt-2 border-t border-slate-100">
+                      <div className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
+                        1. Select Year
+                      </div>
                       <div className="flex flex-wrap items-center gap-1.5">
                         {['ALL', ...availableYears].map((yr) => (
                           <button
@@ -3399,24 +4383,50 @@ export default function App() {
                               setSelectedYear(yr);
                               setPage(1);
                             }}
-                            className={`px-2.5 py-1 text-xs font-bold rounded-lg tabular-nums whitespace-nowrap shrink-0 cursor-pointer ${
+                            className={`px-3 py-1.5 text-xs font-bold rounded-xl tabular-nums whitespace-nowrap shrink-0 cursor-pointer ${
                               selectedYear === yr
                                 ? 'bg-slate-900 text-white'
-                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                             }`}
                           >
                             {yr === 'ALL' ? 'All Years' : yr}
                           </button>
                         ))}
                       </div>
-                    )}
+                    </div>
+
+                    {/* 2. Select Type of Paper (Annual, Mock, Midterm, NECTA, Pre-NECTA) */}
+                    <div className="space-y-1.5 pt-2 border-t border-slate-100">
+                      <div className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
+                        2. Select Type of Paper (Annual, Mock, Midterm, NECTA or Pre-NECTA)
+                      </div>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {['ALL', 'Annual', 'Mock', 'Midterm', 'NECTA', 'Pre-NECTA'].map((cat) => (
+                          <button
+                            key={cat}
+                            onClick={() => {
+                              setSelectedCategory(cat);
+                              setPage(1);
+                            }}
+                            className={`px-3.5 py-2 text-xs font-bold rounded-xl transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                              selectedCategory === cat
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                            }`}
+                          >
+                            {cat === 'ALL' ? 'All Types' : cat}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
 
                   {/* Results List */}
                   {paginatedPapers.length === 0 ? (
                     <div className="py-10 text-center bg-white rounded-2xl border border-slate-200 p-6 space-y-3">
                       <h4 className="font-bold text-slate-800">
-                        No past papers matched this filter yet — use Moha AI for instant practice questions, lesson notes &amp; marking schemes!
+                        No {selectedCategory !== 'ALL' ? selectedCategory : ''} papers found for{' '}
+                        {selectedYear !== 'ALL' ? selectedYear : 'this selection'} yet.
                       </h4>
                       <div className="flex flex-wrap justify-center gap-2">
                         <button
@@ -3426,27 +4436,26 @@ export default function App() {
                           }}
                           className="px-4 py-2 bg-blue-600 text-white font-bold text-xs rounded-xl cursor-pointer"
                         >
-                          Reset Filters
+                          Show All Years &amp; Paper Types
                         </button>
                         <button
                           onClick={() => openMwalimuModal(selectedClass, selectedSubject)}
-                          className="px-4 py-2 bg-violet-600 text-white font-bold text-xs rounded-xl cursor-pointer"
+                          className="px-4 py-2 bg-emerald-600 text-white font-bold text-xs rounded-xl cursor-pointer"
                         >
-                          Ask Moha AI ({selectedClass || 'Form 4'} {selectedSubject || 'Subject'})
+                          ✅ Solution in Moha AI ({selectedClass || 'Form 4'} {selectedSubject || 'Subject'})
                         </button>
                       </div>
                     </div>
                   ) : (
-                    <div className="space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                       {paginatedPapers.map((p) => {
                         const hasPaper = Boolean(p.paperUrl);
                         const hasAnswers = Boolean(p.answersUrl);
-                        const inBasket = printBasket.some((x) => x.id === p.id);
 
                         return (
                           <article
                             key={p.id}
-                            className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 hover:border-blue-400 shadow-sm transition-colors space-y-3"
+                            className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 hover:border-blue-400 shadow-sm transition-colors flex flex-col justify-between gap-3"
                           >
                             <div>
                               <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500 mb-1 tabular-nums">
@@ -3461,74 +4470,47 @@ export default function App() {
                               <h3 className="text-base font-bold text-slate-900">{p.title}</h3>
                             </div>
 
-                            <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
+                            <div className="flex flex-wrap items-center gap-2 pt-2.5 border-t border-slate-100">
                               {hasPaper ? (
                                 <>
                                   <button
                                     onClick={() => openViewer(p.id, 'paper')}
-                                    className="px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-800 text-xs font-bold rounded-xl flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
+                                    className="flex-1 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
                                   >
                                     <BookOpen className="w-3.5 h-3.5" />
-                                    <span>Preview Paper</span>
+                                    <span>Read</span>
                                   </button>
                                   <button
                                     onClick={() => triggerDirectDownloadUrl(p.paperUrl, `${p.title}.pdf`)}
-                                    className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-sm whitespace-nowrap shrink-0 cursor-pointer"
+                                    className="flex-1 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm whitespace-nowrap cursor-pointer"
                                   >
                                     <Download className="w-3.5 h-3.5" />
-                                    <span>Direct Download PDF</span>
+                                    <span>Download</span>
                                   </button>
                                 </>
                               ) : (
-                                <span className="text-xs font-medium text-amber-700 bg-amber-50 px-3 py-2 rounded-xl border border-amber-200">
-                                  Google Drive link pending upload
+                                <span className="flex-1 text-center text-xs font-medium text-amber-700 bg-amber-50 px-3 py-2 rounded-xl border border-amber-200">
+                                  PDF Pending
                                 </span>
                               )}
 
-                              {hasAnswers && (
-                                <>
-                                  <button
-                                    onClick={() => openViewer(p.id, 'answers')}
-                                    className="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 text-xs font-bold rounded-xl flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
-                                  >
-                                    <CheckCircle2 className="w-3.5 h-3.5" />
-                                    <span>Marking Scheme</span>
-                                  </button>
-                                  <button
-                                    onClick={() => triggerDirectDownloadUrl(p.answersUrl, `${p.title}_Answers.pdf`)}
-                                    className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl whitespace-nowrap shrink-0 cursor-pointer"
-                                  >
-                                    Download Answers
-                                  </button>
-                                </>
-                              )}
-
-                              <button
-                                onClick={() => openMwalimuModal(p.form, p.subject, 'chat', p)}
-                                className="px-3 py-2 bg-violet-50 hover:bg-violet-100 text-violet-900 border border-violet-200 text-xs font-bold rounded-xl whitespace-nowrap shrink-0 cursor-pointer"
-                              >
-                                🤖 Ask Moha AI on This Paper
-                              </button>
                               <button
                                 onClick={() => {
-                                  setMohaFocusedResourceId(p.id);
-                                  startAiQuiz(p.form, p.subject, p.title);
+                                  if (hasAnswers) {
+                                    openViewer(p.id, 'answers');
+                                  } else {
+                                    openMwalimuModal(p.form, p.subject, 'chat', p);
+                                    sendMwalimuMessage(
+                                      `Solve and explain the questions in "${p.title}" (${p.form} ${p.subject} · ${p.category} ${p.year}).`,
+                                      p
+                                    );
+                                  }
                                 }}
-                                className="px-3 py-2 bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300 text-xs font-bold rounded-xl whitespace-nowrap shrink-0 cursor-pointer"
+                                className="flex-1 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
                               >
-                                🎯 20-Qn Quiz
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                <span>Solution</span>
                               </button>
-
-                              {hasPaper && (
-                                <button
-                                  onClick={() => togglePrintBasketItem(p.id)}
-                                  className={`px-3 py-2 text-xs font-bold rounded-xl whitespace-nowrap shrink-0 cursor-pointer ${
-                                    inBasket ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'
-                                  }`}
-                                >
-                                  {inBasket ? '✓ In Print List' : '+ Print List'}
-                                </button>
-                              )}
                             </div>
                           </article>
                         );
@@ -3706,41 +4688,40 @@ export default function App() {
                         <span>{p.title}</span>
                       </h3>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-slate-100">
+                    <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2">
                       {hasUrl ? (
                         <>
                           <button
-                            onClick={() => triggerDirectDownloadUrl(p.paperUrl, `${p.title}.pdf`)}
-                            className="flex-1 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm whitespace-nowrap shrink-0 cursor-pointer"
+                            onClick={() => openViewer(p.id, 'paper')}
+                            className="flex-1 px-3.5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm whitespace-nowrap cursor-pointer"
                           >
-                            <Download className="w-4 h-4" /> Download Book (PDF)
+                            <BookOpen className="w-4 h-4" /> Read Book
                           </button>
                           <button
-                            onClick={() => openViewer(p.id, 'paper')}
-                            className="px-3.5 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-950 border border-emerald-300 text-xs font-bold rounded-xl whitespace-nowrap shrink-0 cursor-pointer"
+                            onClick={() => triggerDirectDownloadUrl(p.paperUrl, `${p.title}.pdf`)}
+                            className="flex-1 px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm whitespace-nowrap cursor-pointer"
                           >
-                            Read
+                            <Download className="w-4 h-4" /> Download PDF
                           </button>
                         </>
                       ) : (
-                        <span className="text-xs font-medium text-amber-800 bg-amber-50 px-3 py-2 rounded-xl border border-amber-200 flex-1 text-center">
-                          Add Google Drive Link in Sheet (Category: TIE Book)
-                        </span>
+                        <button
+                          onClick={() => {
+                            openMwalimuModal(p.form, p.subject, 'studio', p);
+                            setTsClass(p.form);
+                            setTsSubject(p.subject);
+                            submitTeacherStudioDoc('lessonnotes');
+                          }}
+                          className="flex-1 px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm whitespace-nowrap cursor-pointer"
+                        >
+                          <BookOpen className="w-4 h-4" /> Open Study Notes &amp; Chapters
+                        </button>
                       )}
                       <button
                         onClick={() => openMwalimuModal(p.form, p.subject, 'chat', p)}
-                        className="px-3 py-2.5 bg-violet-50 hover:bg-violet-100 text-violet-900 border border-violet-200 text-xs font-bold rounded-xl whitespace-nowrap shrink-0 cursor-pointer"
+                        className="px-3.5 py-2.5 bg-violet-50 hover:bg-violet-100 text-violet-900 border border-violet-200 text-xs font-bold rounded-xl cursor-pointer whitespace-nowrap"
                       >
-                        🤖 Study Book with Moha AI
-                      </button>
-                      <button
-                        onClick={() => {
-                          setMohaFocusedResourceId(p.id);
-                          startAiQuiz(p.form, p.subject, p.title);
-                        }}
-                        className="px-3 py-2.5 bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300 text-xs font-bold rounded-xl whitespace-nowrap shrink-0 cursor-pointer"
-                      >
-                        🎯 20-Qn Quiz
+                        🤖 Ask Moha AI
                       </button>
                     </div>
                   </article>
@@ -3894,15 +4875,26 @@ export default function App() {
                             </button>
                           </>
                         ) : (
-                          <span className="text-xs font-medium text-amber-700 bg-amber-50 px-3 py-2 rounded-xl border border-amber-200 flex-1 text-center">
-                            Google Drive Link Pending
-                          </span>
+                          <button
+                            onClick={() => {
+                              openMwalimuModal(p.form, p.subject, 'studio', p);
+                              setTsClass(p.form);
+                              setTsSubject(p.subject);
+                              submitTeacherStudioDoc('schemeofwork');
+                            }}
+                            className="flex-1 px-3.5 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 cursor-pointer"
+                          >
+                            <Download className="w-4 h-4" /> Open Syllabus &amp; Scheme PDF
+                          </button>
                         )}
                         <button
-                          onClick={() => openMwalimuModal(p.form, p.subject)}
+                          onClick={() => {
+                            openMwalimuModal(p.form, p.subject, 'chat', p);
+                            sendMwalimuMessage(`List all official TIE syllabus topics and competences for ${p.form} ${p.subject}.`, p);
+                          }}
                           className="px-3 py-2.5 bg-violet-50 hover:bg-violet-100 text-violet-900 border border-violet-200 text-xs font-bold rounded-xl cursor-pointer"
                         >
-                          Moha AI
+                          📜 View Topics
                         </button>
                         <button
                           onClick={() => startAiQuiz(p.form, p.subject, 'ALL')}
@@ -4627,10 +5619,17 @@ export default function App() {
                 <button
                   onClick={() => {
                     const doc = viewerPaper;
+                    const activeUrl =
+                      viewerType === 'answers' && doc.answersUrl ? doc.answersUrl : doc.paperUrl;
+                    const docToSolve: PaperRecord = {
+                      ...doc,
+                      paperUrl: activeUrl || doc.paperUrl,
+                    };
                     setViewerPaper(null);
-                    openMwalimuModal(doc.form, doc.subject, 'chat', doc);
+                    openMwalimuModal(docToSolve.form, docToSolve.subject, 'chat', docToSolve);
                     sendMwalimuMessage(
-                      `Analyze "${doc.title}" (${doc.form} ${doc.subject} · ${doc.category} ${doc.year}) and solve its key questions step-by-step with the official NECTA Marking Scheme.`
+                      `Solve and explain the questions in "${docToSolve.title}" (${docToSolve.form} ${docToSolve.subject} · ${docToSolve.category} ${docToSolve.year}).`,
+                      docToSolve
                     );
                   }}
                   className="px-3.5 py-2 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-xl cursor-pointer"
@@ -4640,9 +5639,23 @@ export default function App() {
                 <button
                   onClick={() => {
                     const doc = viewerPaper;
+                    const activeUrl =
+                      viewerType === 'answers' && doc.answersUrl ? doc.answersUrl : doc.paperUrl;
+                    const docForQuiz: PaperRecord = {
+                      ...doc,
+                      paperUrl: activeUrl || doc.paperUrl,
+                    };
                     setViewerPaper(null);
-                    setMohaFocusedResourceId(doc.id);
-                    startAiQuiz(doc.form, doc.subject, doc.title);
+                    setMohaFocusedResourceId(docForQuiz.id);
+                    startAiQuiz(
+                      docForQuiz.form,
+                      docForQuiz.subject,
+                      docForQuiz.title,
+                      'ALL',
+                      'past_paper',
+                      false,
+                      docForQuiz
+                    );
                   }}
                   className="px-3.5 py-2 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold rounded-xl cursor-pointer"
                 >
@@ -4669,30 +5682,31 @@ export default function App() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -6 }}
           transition={{ duration: 0.22, ease: 'easeOut' }}
-          className="h-[calc(100vh-4rem)] bg-slate-50 flex flex-col overflow-hidden"
+          className="h-screen bg-slate-50 flex flex-col overflow-hidden"
         >
-          {/* Compact Single-Row Top Bar: Class/Subject + Mode Tabs */}
-          <div className="shrink-0 bg-white border-b border-slate-200 px-3 sm:px-6 py-2 shadow-xs">
-            <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-2">
-              {/* Left: Back + Brand + Class & Subject Selectors */}
-              <div className="flex flex-wrap items-center gap-2">
+          {/* Single-Row Unified Navigation & Context Bar (No Redundant Headers) */}
+          <div className="shrink-0 bg-white border-b border-slate-200 px-2.5 sm:px-4 py-1.5 shadow-2xs">
+            <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
+              {/* Left: Back + Brand + Compact Class/Subject/Book/Chapter Selectors */}
+              <div className="flex items-center gap-1.5 shrink-0">
                 <button
                   onClick={handleGoBack}
-                  className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center gap-1 cursor-pointer"
-                  title="Go Back"
+                  className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center gap-1 cursor-pointer shrink-0"
+                  title="Back to Elimika"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Back</span>
+                  <span className="hidden md:inline">Back</span>
                 </button>
 
-                <div className="flex items-center gap-1.5 font-black text-slate-900 text-sm">
-                  <span className="w-7 h-7 rounded-lg bg-violet-600 text-white flex items-center justify-center text-sm">
+                <div className="flex items-center gap-1 font-black text-slate-900 text-xs sm:text-sm shrink-0 pr-1">
+                  <span className="w-5 h-5 rounded-md bg-violet-600 text-white flex items-center justify-center text-[11px]">
                     🤖
                   </span>
-                  <span>Moha AI</span>
+                  <span className="hidden sm:inline">Moha AI</span>
                 </div>
 
-                <div className="flex items-center gap-1 bg-slate-100 rounded-lg px-2 py-1 text-xs border border-slate-200">
+                {/* Class & Subject Selector Pill */}
+                <div className="flex items-center gap-1 bg-slate-100 rounded-lg px-2 py-1 text-xs border border-slate-200 shrink-0">
                   <select
                     value={mohaActiveClass}
                     onChange={(e) => {
@@ -4724,7 +5738,7 @@ export default function App() {
                       setSelectedQuizTopic('ALL');
                       setFlashcards(getDefaultFlashcardsForSubject(mohaActiveClass, nextSub));
                     }}
-                    className="bg-transparent text-violet-700 font-bold focus:outline-none cursor-pointer max-w-[150px] sm:max-w-[200px] truncate"
+                    className="bg-transparent text-violet-700 font-bold focus:outline-none cursor-pointer max-w-[115px] sm:max-w-[150px] truncate"
                   >
                     {(TIE_CURRICULUM_SUBJECTS[mohaActiveClass] || ['Basic Mathematics']).map((s) => (
                       <option key={s} value={s}>
@@ -4733,96 +5747,9 @@ export default function App() {
                     ))}
                   </select>
                 </div>
-              </div>
 
-              {/* Right: Clean Horizontal Segmented Navigation */}
-              <div className="flex items-center gap-1 overflow-x-auto py-0.5">
-                {[
-                  { id: 'chat' as const, label: '💬 Chat' },
-                  { id: 'quiz' as const, label: '🎯 Quiz (20 Qns)' },
-                  { id: 'mastery_planner' as const, label: '📊 Mastery & Timetable' },
-                  { id: 'practical_lab' as const, label: '🧪 Paper 2 Practicals' },
-                  { id: 'studio' as const, label: '📘 Lesson Notes & Docs' },
-                  { id: 'diagram' as const, label: '🔬 Diagrams' },
-                  { id: 'bioscience' as const, label: '🧬 Protein & Drug Lab' },
-                  { id: 'video' as const, label: '🎬 Veo Video' },
-                  { id: 'resources' as const, label: '📚 Resources' },
-                  { id: 'profile' as const, label: `👤 Profile (${masteryProgressData.totalMasteredTopics})` },
-                ].map((tab) => {
-                  const active = mohaViewMode === tab.id;
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => {
-                        if (tab.id === 'diagram') {
-                          setActiveDiagramPreset(detectDiagramPreset('diagram', mohaActiveSubject) || 'physics_ohm');
-                        }
-                        if (tab.id === 'quiz' && quizItems.length === 0) {
-                          startAiQuiz();
-                          return;
-                        }
-                        setMohaViewMode(tab.id);
-                      }}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-                        active
-                          ? 'bg-violet-600 text-white shadow-xs'
-                          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                      }`}
-                    >
-                      {tab.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* Collapsible Permanent AI Memory Bar */}
-          {mohaLearnPanelOpen && (
-            <div className="shrink-0 bg-emerald-50 border-b border-emerald-200 px-3 sm:px-6 py-2.5 text-xs">
-              <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                <span className="font-bold text-emerald-950 shrink-0">🧠 Teach Moha AI:</span>
-                <input
-                  type="text"
-                  value={learnTopicInput}
-                  onChange={(e) => setLearnTopicInput(e.target.value)}
-                  placeholder="Topic / Formula (e.g. Ohm's Law)"
-                  className="px-2.5 py-1.5 rounded-lg border border-emerald-300 font-bold bg-white sm:w-48"
-                />
-                <input
-                  type="text"
-                  value={learnAnswerInput}
-                  onChange={(e) => setLearnAnswerInput(e.target.value)}
-                  placeholder="Notes or marking steps to remember permanently..."
-                  className="flex-1 px-2.5 py-1.5 rounded-lg border border-emerald-300 font-medium bg-white"
-                />
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <button
-                    onClick={handleSaveLearnedFromForm}
-                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg cursor-pointer"
-                  >
-                    Save
-                  </button>
-                  <button
-                    onClick={() => setMohaLearnPanelOpen(false)}
-                    className="px-2 py-1.5 text-slate-500 hover:text-slate-800 font-bold cursor-pointer"
-                  >
-                    ✕
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ==================== VIEW 1: CLEAN SPLIT CHAT (OBSERVE OUTPUT + VISIBLE INPUT BOX) ==================== */}
-          {mohaViewMode === 'chat' && (
-            <div className="flex-1 min-h-0 flex flex-col max-w-5xl w-full mx-auto overflow-hidden">
-              {/* Active Attached Textbook & Past Paper Context Selector Bar */}
-              <div className="shrink-0 px-3 sm:px-5 py-2 bg-violet-50/90 border-b border-violet-200 flex flex-wrap items-center justify-between gap-2 text-xs">
-                <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
-                  <span className="font-black text-violet-950 whitespace-nowrap flex items-center gap-1">
-                    📚 Attached Book / Past Paper:
-                  </span>
+                {/* Compact Book & Chapter Selectors */}
+                <div className="flex items-center gap-1 bg-slate-50 rounded-lg px-1.5 py-0.5 border border-slate-200 text-xs shrink-0">
                   <select
                     value={mohaFocusedResourceId}
                     onChange={(e) => {
@@ -4830,76 +5757,37 @@ export default function App() {
                       setMohaFocusedResourceId(val);
                       const found = allPapers.find((p) => p.id === val);
                       if (found) {
-                        showToast(`📌 Pinned "${found.title}" to Moha AI!`);
+                        if (found.form && !found.form.includes('-')) {
+                          setMohaActiveClass(found.form);
+                          setTsClass(found.form);
+                        }
+                        if (found.subject) {
+                          setMohaActiveSubject(found.subject);
+                          setTsSubject(found.subject);
+                        }
                       }
                     }}
-                    className="px-2.5 py-1.5 rounded-lg border border-violet-300 bg-white text-slate-900 font-bold text-xs max-w-xs sm:max-w-md truncate cursor-pointer"
+                    title="Select TIE Textbook or Past Paper"
+                    className="max-w-[125px] lg:max-w-[175px] bg-transparent text-slate-800 font-semibold text-[11px] truncate focus:outline-none cursor-pointer"
                   >
                     <option value="ALL">
-                      All Attached {mohaActiveClass} {mohaActiveSubject} Textbooks &amp; Past Papers ({classSubjectResourcesList.length})
+                      📘 TIE {mohaActiveClass} ({classSubjectResourcesList.length})
                     </option>
-                    <optgroup label={`📘 Attached TIE Textbooks (${mohaActiveClass} ${mohaActiveSubject})`}>
-                      {classSubjectResourcesList
-                        .filter((r) => r.isBook)
-                        .map((b) => (
-                          <option key={b.id} value={b.id}>
-                            📘 {b.title} {b.paperUrl || b.customContent ? '✓ [Attached]' : ''}
-                          </option>
-                        ))}
-                    </optgroup>
-                    <optgroup label={`📄 Attached Past Papers & Syllabuses (${mohaActiveClass} ${mohaActiveSubject})`}>
-                      {classSubjectResourcesList
-                        .filter((r) => !r.isBook)
-                        .map((p) => (
-                          <option key={p.id} value={p.id}>
-                            📄 {p.title} ({p.category} · {p.year}) {p.paperUrl || p.customContent ? '✓ [Attached]' : ''}
-                          </option>
-                        ))}
-                    </optgroup>
+                    {classSubjectResourcesList
+                      .filter((r) => r.isBook)
+                      .map((b) => (
+                        <option key={b.id} value={b.id}>
+                          📘 {b.title}
+                        </option>
+                      ))}
+                    {classSubjectResourcesList
+                      .filter((r) => !r.isBook)
+                      .map((p) => (
+                        <option key={p.id} value={p.id}>
+                          📄 {p.title} ({p.year})
+                        </option>
+                      ))}
                   </select>
-
-                  {mohaFocusedResource && (
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          sendMwalimuMessage(
-                            `Summarize the key chapters, definitions, formulas, and worked examples from the attached resource "${mohaFocusedResource.title}" (${mohaFocusedResource.form} ${mohaFocusedResource.subject}).`
-                          )
-                        }
-                        className="px-2.5 py-1 rounded-lg bg-violet-600 hover:bg-violet-700 text-white font-bold text-[11px] cursor-pointer whitespace-nowrap"
-                      >
-                        📖 Summarize
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          sendMwalimuMessage(
-                            `Solve the examination questions from the attached resource "${mohaFocusedResource.title}" (${mohaFocusedResource.form} ${mohaFocusedResource.subject}) step-by-step with the official NECTA Marking Scheme.`
-                          )
-                        }
-                        className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] cursor-pointer whitespace-nowrap"
-                      >
-                        🧮 Solve Questions
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          startAiQuiz(
-                            mohaFocusedResource.form,
-                            mohaFocusedResource.subject,
-                            mohaFocusedResource.title
-                          )
-                        }
-                        className="px-2.5 py-1 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-[11px] cursor-pointer whitespace-nowrap"
-                      >
-                        🎯 20-Qn Quiz
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-1.5 shrink-0">
                   <button
                     type="button"
                     onClick={() => {
@@ -4907,101 +5795,179 @@ export default function App() {
                       setNewResSubject(mohaActiveSubject);
                       setAttachModalOpen(true);
                     }}
-                    className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold text-[11px] cursor-pointer whitespace-nowrap"
+                    title="Attach Resource"
+                    className="px-1.5 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-white font-bold text-[10px] cursor-pointer shrink-0"
                   >
-                    ➕ Attach Book / Paper
+                    +Book
+                  </button>
+                  <span className="text-slate-300">|</span>
+                  <select
+                    value={
+                      selectedQuizTopic && selectedQuizTopic !== 'ALL'
+                        ? selectedQuizTopic
+                        : activeSyllabusTopics[0]?.replace(/^\d+\.\d+\s*/, '').trim() || ''
+                    }
+                    onChange={(e) => {
+                      const chosenChap = e.target.value;
+                      setSelectedQuizTopic(chosenChap);
+                      setTsTopic(chosenChap);
+                      setTsSubTopic(chosenChap);
+                    }}
+                    title="Select Syllabus Chapter / Topic"
+                    className="max-w-[125px] lg:max-w-[175px] bg-transparent text-slate-800 font-semibold text-[11px] truncate focus:outline-none cursor-pointer"
+                  >
+                    {activeSyllabusTopics.map((rawChap, cIdx) => {
+                      const cleanChap = rawChap.replace(/^\d+\.\d+\s*/, '').trim();
+                      return (
+                        <option key={`top-chap-${cIdx}`} value={cleanChap}>
+                          {cleanChap.startsWith('Chapter') || cleanChap.startsWith('Sura')
+                            ? cleanChap
+                            : `Ch.${cIdx + 1}: ${cleanChap}`}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+              </div>
+
+              {/* Right: Single-Row Workspace Tab Switcher + Teach AI */}
+              <div className="flex items-center gap-1 shrink-0">
+                {[
+                  { id: 'chat' as const, label: '💬 Chat' },
+                  { id: 'studio' as const, label: '📘 Studio & Docs' },
+                  { id: 'quiz' as const, label: '🎯 Quiz' },
+                  { id: 'diagram' as const, label: '📐 Diagrams' },
+                  { id: 'profile' as const, label: '👤 Profile' },
+                ].map((tab) => {
+                  const active = mohaViewMode === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => {
+                        if (tab.id === 'quiz' && quizItems.length === 0) {
+                          startAiQuiz();
+                          return;
+                        }
+                        setMohaViewMode(tab.id);
+                      }}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                        active
+                          ? 'bg-violet-600 text-white shadow-2xs'
+                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  );
+                })}
+                <button
+                  type="button"
+                  onClick={() => setMohaLearnPanelOpen(true)}
+                  className="px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-2xs cursor-pointer flex items-center gap-1"
+                  title="Teach Moha AI custom notes or topics (Saved permanently in localStorage)"
+                >
+                  <span>🧠 Teach AI</span>
+                  {learnedMemory.length > 0 && (
+                    <span className="px-1.5 py-0.2 rounded-full bg-slate-950 text-amber-300 text-[10px] font-black">
+                      {learnedMemory.length}
+                    </span>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* ==================== VIEW 1: CLEAN CHAT ==================== */}
+          {mohaViewMode === 'chat' && (
+            <div className="flex-1 min-h-0 flex flex-col max-w-5xl w-full mx-auto overflow-hidden">
+              {/* Minimal Single-Row Quick Actions */}
+              <div className="shrink-0 px-3 sm:px-5 py-1.5 bg-slate-100/80 border-b border-slate-200 flex items-center justify-between gap-2 overflow-x-auto text-xs">
+                <div className="flex items-center gap-1.5 whitespace-nowrap">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const activeChap =
+                        selectedQuizTopic && selectedQuizTopic !== 'ALL'
+                          ? selectedQuizTopic
+                          : activeSyllabusTopics[0]?.replace(/^\d+\.\d+\s*/, '').trim() || 'Core Topic';
+                      setTsClass(mohaActiveClass);
+                      setTsSubject(mohaActiveSubject);
+                      setTsTopic(activeChap);
+                      setTsSubTopic(activeChap);
+                      setMohaViewMode('studio');
+                      submitTeacherStudioDoc('lessonplan');
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] cursor-pointer"
+                  >
+                    📋 4-Stage Lesson Plan
                   </button>
                   <button
                     type="button"
                     onClick={() => {
-                      fetchSheetData();
-                      showToast('🔄 Syncing live attached Textbooks & Past Papers from Google Sheet...');
+                      const activeChap =
+                        selectedQuizTopic && selectedQuizTopic !== 'ALL'
+                          ? selectedQuizTopic
+                          : activeSyllabusTopics[0]?.replace(/^\d+\.\d+\s*/, '').trim() || 'Core Topic';
+                      setTsClass(mohaActiveClass);
+                      setTsSubject(mohaActiveSubject);
+                      setTsTopic(activeChap);
+                      setTsSubTopic(activeChap);
+                      setMohaViewMode('studio');
+                      submitTeacherStudioDoc('schemeofwork');
                     }}
-                    className="px-2 py-1 rounded-lg bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold text-[11px] cursor-pointer whitespace-nowrap"
-                    title="Sync newly attached textbooks and past papers from Google Sheet"
+                    className="px-2.5 py-1 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-[11px] cursor-pointer"
                   >
-                    🔄 Sync
-                  </button>
-                </div>
-              </div>
-
-              {/* Official TIE Student's Textbook Chapters Bar (Direct Chapter Integration) */}
-              <div className="shrink-0 px-3 sm:px-5 py-1.5 bg-indigo-50/80 border-b border-indigo-200 flex items-center gap-2 overflow-x-auto text-xs">
-                <span className="font-black text-indigo-950 whitespace-nowrap flex items-center gap-1 shrink-0">
-                  📘 TIE Textbook Chapters ({mohaActiveClass} {mohaActiveSubject}):
-                </span>
-                <div className="flex items-center gap-1.5 whitespace-nowrap">
-                  {getSyllabusTopicsForClassSubject(mohaActiveClass, mohaActiveSubject).map((rawChap, cIdx) => {
-                    const cleanChap = rawChap.replace(/^\d+\.\d+\s*/, '').trim();
-                    const shortLabel = cleanChap.split('(')[0].trim();
-                    return (
-                      <button
-                        key={`tie-chap-${cIdx}`}
-                        type="button"
-                        onClick={() => {
-                          setSelectedQuizTopic(cleanChap);
-                          setTsTopic(cleanChap);
-                          sendMwalimuMessage(
-                            `Explain "${cleanChap}" from the Official TIE ${mohaActiveClass} ${mohaActiveSubject} Student's Textbook, including all sub-topics, definitions, formulas, step-by-step worked examples, and NECTA examination questions.`
-                          );
-                        }}
-                        className="px-2.5 py-1 rounded-lg bg-white hover:bg-indigo-600 hover:text-white text-indigo-950 border border-indigo-200 font-bold text-[11px] transition-colors cursor-pointer"
-                        title={`Study "${cleanChap}" from the Official TIE ${mohaActiveClass} ${mohaActiveSubject} Textbook`}
-                      >
-                        Ch.{cIdx + 1}: {shortLabel}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Compact Single-Line Quick Actions */}
-              <div className="shrink-0 px-3 sm:px-5 py-2 bg-slate-100/70 border-b border-slate-200 flex items-center justify-between gap-2 overflow-x-auto text-xs">
-                <div className="flex items-center gap-1.5 whitespace-nowrap">
-                  <button
-                    onClick={() => sendQuickMwalimuPrompt('syllabus')}
-                    className="px-2.5 py-1 rounded-lg bg-white hover:bg-amber-50 text-slate-800 border border-slate-200 font-bold cursor-pointer"
-                  >
-                    📜 Syllabus
+                    📅 12-Col Scheme of Work
                   </button>
                   <button
-                    onClick={() => sendQuickMwalimuPrompt('lessonnotes')}
-                    className="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-950 border border-indigo-200 font-bold cursor-pointer"
-                  >
-                    📘 Lesson Notes
-                  </button>
-                  <button
-                    onClick={() => sendQuickMwalimuPrompt('summary')}
-                    className="px-2.5 py-1 rounded-lg bg-white hover:bg-blue-50 text-slate-800 border border-slate-200 font-bold cursor-pointer"
-                  >
-                    📝 Summary
-                  </button>
-                  <button
-                    onClick={() => sendQuickMwalimuPrompt('questions')}
-                    className="px-2.5 py-1 rounded-lg bg-white hover:bg-violet-50 text-slate-800 border border-slate-200 font-bold cursor-pointer"
-                  >
-                    ❓ 5 NECTA Qs
-                  </button>
-                  <button
-                    onClick={() => sendQuickMwalimuPrompt('table_diagram')}
-                    className="px-2.5 py-1 rounded-lg bg-white hover:bg-teal-50 text-teal-900 border border-teal-200 font-bold cursor-pointer"
-                  >
-                    📊 Table &amp; Diagram
-                  </button>
-                  <button
+                    type="button"
                     onClick={() => {
-                      if (quizItems.length === 0) startAiQuiz();
-                      else setMohaViewMode('quiz');
+                      const activeChap =
+                        selectedQuizTopic && selectedQuizTopic !== 'ALL'
+                          ? selectedQuizTopic
+                          : activeSyllabusTopics[0]?.replace(/^\d+\.\d+\s*/, '').trim() || 'Core Topic';
+                      setTsClass(mohaActiveClass);
+                      setTsSubject(mohaActiveSubject);
+                      setTsTopic(activeChap);
+                      setTsSubTopic(activeChap);
+                      submitTeacherStudioDoc('lessonnotes');
                     }}
-                    className="px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-950 font-bold cursor-pointer"
+                    className="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] cursor-pointer"
                   >
-                    🤝 Challenge a Friend
+                    📘 Notes + Diagram
                   </button>
                   <button
-                    onClick={() => setMohaLearnPanelOpen((v) => !v)}
-                    className="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 font-bold cursor-pointer"
+                    type="button"
+                    onClick={() => {
+                      const activeChap =
+                        selectedQuizTopic && selectedQuizTopic !== 'ALL'
+                          ? selectedQuizTopic
+                          : activeSyllabusTopics[0]?.replace(/^\d+\.\d+\s*/, '').trim() || 'Chapter 1';
+                      sendMwalimuMessage(`Explain ${activeChap}`);
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 font-bold text-[11px] cursor-pointer"
                   >
-                    🧠 Teach AI ({learnedMemory.length})
+                    📖 Explain Chapter
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const activeChap =
+                        selectedQuizTopic && selectedQuizTopic !== 'ALL'
+                          ? selectedQuizTopic
+                          : activeSyllabusTopics[0]?.replace(/^\d+\.\d+\s*/, '').trim() || 'Chapter 1';
+                      sendMwalimuMessage(`Solve questions on ${activeChap}`);
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 font-bold text-[11px] cursor-pointer"
+                  >
+                    🧮 Solve Questions
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMohaLearnPanelOpen(true)}
+                    className="px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300 font-bold text-[11px] cursor-pointer"
+                  >
+                    🧠 Teach AI
                   </button>
                 </div>
 
@@ -5011,30 +5977,30 @@ export default function App() {
                       {
                         id: 'msg-welcome',
                         role: 'ai',
-                        text: `Chat cleared for **${mohaActiveClass} • ${mohaActiveSubject}**. Select any attached Textbook or Past Paper above or type your question below.`,
+                        text: `Ready for **${mohaActiveClass} • ${mohaActiveSubject}**.`,
                       },
                     ])
                   }
-                  className="text-slate-500 hover:text-rose-600 font-bold flex items-center gap-1 shrink-0 cursor-pointer"
+                  className="px-2 py-1 rounded-lg text-slate-500 hover:text-rose-600 font-bold flex items-center gap-1 cursor-pointer shrink-0"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Clear</span>
+                  <span>Clear</span>
                 </button>
               </div>
 
-              {/* Scrollable Messages Viewport (Always stays above the pinned bottom input box) */}
+              {/* Scrollable Messages Viewport */}
               <div
                 ref={chatContainerRef}
-                className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-5 py-4 space-y-3 bg-slate-50"
+                className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-5 py-3 space-y-3 bg-slate-50"
               >
                 {mohaMessages.map((m) =>
                   m.role === 'user' ? (
                     <div key={m.id} className="flex justify-end">
-                      <div className="max-w-[82%] bg-violet-600 text-white px-4 py-2.5 rounded-2xl rounded-br-xs text-xs sm:text-sm font-semibold shadow-xs space-y-2">
+                      <div className="max-w-[82%] bg-violet-600 text-white px-3.5 py-2 rounded-2xl rounded-br-xs text-xs sm:text-sm font-semibold shadow-2xs space-y-2">
                         {m.imagePreview && (
                           <img
                             src={m.imagePreview}
-                            alt="Uploaded question"
+                            alt="Uploaded"
                             className="max-h-40 rounded-lg border border-white/30 object-contain"
                           />
                         )}
@@ -5043,75 +6009,35 @@ export default function App() {
                     </div>
                   ) : (
                     <div key={m.id} className="flex justify-start">
-                      <div className="max-w-[96%] w-full bg-white border border-slate-200 p-4 rounded-2xl rounded-bl-xs shadow-xs space-y-2.5">
+                      <div className="max-w-[96%] w-full bg-white border border-slate-200 p-3.5 rounded-2xl rounded-bl-xs shadow-2xs space-y-2">
                         {m.loading ? (
-                          <div className="flex items-center gap-2.5 font-bold text-violet-700 text-xs sm:text-sm">
-                            <span className="w-4 h-4 border-2 border-violet-600 border-t-transparent rounded-full animate-spin" />
+                          <div className="flex items-center gap-2 font-bold text-violet-700 text-xs">
+                            <span className="w-3.5 h-3.5 border-2 border-violet-600 border-t-transparent rounded-full animate-spin" />
                             <span>{m.text}</span>
                           </div>
                         ) : (
                           <>
                             <div
                               id={`msg-body-${m.id}`}
-                              className="text-xs sm:text-sm text-slate-800 leading-relaxed overflow-x-auto space-y-2.5"
+                              className="text-xs sm:text-sm text-slate-800 leading-relaxed overflow-x-auto"
                             >
                               <div dangerouslySetInnerHTML={{ __html: formatMwalimuHtml(m.text) }} />
-                              {m.diagramPreset && (
-                                <div className="pt-2">
-                                  <InteractiveDiagramLab
-                                    initialPreset={m.diagramPreset}
-                                    activeClass={mohaActiveClass}
-                                    activeSubject={mohaActiveSubject}
-                                  />
-                                </div>
-                              )}
                             </div>
-                            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100">
-                              <div className="flex flex-wrap items-center gap-1.5">
-                                <button
-                                  onClick={() => speakMwalimuText(m.id, m.text)}
-                                  className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-[11px] flex items-center gap-1 cursor-pointer"
-                                >
-                                  <Volume2 className="w-3 h-3" />
-                                  <span>{speakingMsgId === m.id ? 'Stop' : 'Listen'}</span>
-                                </button>
-                                <button
-                                  onClick={() => downloadMwalimuDocPdf(m.id, 'portrait')}
-                                  className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] flex items-center gap-1 cursor-pointer"
-                                >
-                                  <Download className="w-3 h-3" />
-                                  <span>PDF</span>
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    setActiveDiagramPreset(
-                                      m.diagramPreset ||
-                                        detectDiagramPreset('diagram', mohaActiveSubject) ||
-                                        'physics_ohm'
-                                    );
-                                    setMohaViewMode('diagram');
-                                  }}
-                                  className="px-2.5 py-1 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-900 border border-teal-200 font-bold text-[11px] cursor-pointer"
-                                >
-                                  🔬 Diagram Lab
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    const qt = m.quizTarget;
-                                    if (qt) {
-                                      startAiQuiz(qt.cls, qt.subject, qt.topic, qt.subTopic);
-                                    } else {
-                                      startAiQuiz();
-                                    }
-                                  }}
-                                  className="px-2.5 py-1 rounded-lg bg-violet-600 hover:bg-violet-700 text-white font-bold text-[11px] cursor-pointer"
-                                >
-                                  🎯 Solve Interactive Quiz ({m.quizTarget ? `${m.quizTarget.cls} • ${m.quizTarget.topic.slice(0, 24)}` : `${mohaActiveClass} ${mohaActiveSubject}`})
-                                </button>
-                              </div>
-                              <span className="text-[10px] font-bold text-slate-400">
-                                {m.quizTarget ? `${m.quizTarget.cls} · ${m.quizTarget.subject} · ${m.quizTarget.topic}` : `${mohaActiveClass} · ${mohaActiveSubject}`}
-                              </span>
+                            <div className="flex items-center gap-1.5 pt-1.5 border-t border-slate-100">
+                              <button
+                                onClick={() => speakMwalimuText(m.id, m.text)}
+                                className="px-2 py-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] flex items-center gap-1 cursor-pointer"
+                              >
+                                <Volume2 className="w-3 h-3" />
+                                <span>{speakingMsgId === m.id ? 'Stop' : 'Listen'}</span>
+                              </button>
+                              <button
+                                onClick={() => downloadMwalimuDocPdf(m.id, 'portrait')}
+                                className="px-2 py-1 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] flex items-center gap-1 cursor-pointer"
+                              >
+                                <Download className="w-3 h-3" />
+                                <span>PDF</span>
+                              </button>
                             </div>
                           </>
                         )}
@@ -5123,43 +6049,27 @@ export default function App() {
 
               {/* Attached Photo / PDF Preview */}
               {mohaPendingImage && (
-                <div className="shrink-0 px-4 py-2 bg-violet-50 border-t border-violet-200 flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-xs font-bold text-violet-900">
-                    {mohaPendingImage.previewUrl ? (
-                      <img
-                        src={mohaPendingImage.previewUrl}
-                        alt="Preview"
-                        className="w-8 h-8 rounded object-cover border border-violet-300"
-                      />
-                    ) : (
-                      <span className="px-2 py-1 rounded bg-violet-600 text-white text-[10px] font-black">
-                        PDF
-                      </span>
-                    )}
-                    <span>
-                      {mohaPendingImage.fileName
-                        ? `Attached: ${mohaPendingImage.fileName}`
-                        : 'Question photo / PDF attached'}
-                    </span>
-                  </div>
+                <div className="shrink-0 px-4 py-1.5 bg-violet-50 border-t border-violet-200 flex items-center justify-between">
+                  <span className="text-xs font-bold text-violet-900 truncate">
+                    {mohaPendingImage.fileName || 'File attached'}
+                  </span>
                   <button
                     onClick={() => setMohaPendingImage(null)}
                     className="text-xs font-bold text-rose-600 cursor-pointer"
                   >
-                    Remove ✕
+                    ✕
                   </button>
                 </div>
               )}
 
-              {/* Pinned Bottom Input Dock (Always visible while observing what Moha AI writes above) */}
-              <div className="shrink-0 bg-white border-t border-slate-200 px-3 sm:px-5 py-2.5 shadow-[0_-4px_12px_rgba(15,23,42,0.04)]">
-                <div className="flex items-center gap-2">
+              {/* Bottom Input Dock */}
+              <div className="shrink-0 bg-white border-t border-slate-200 px-3 sm:px-5 py-2">
+                <div className="flex items-center gap-1.5">
                   <label
-                    className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer shrink-0 flex items-center gap-1 text-xs font-bold"
-                    title="Attach Past Paper PDF, Textbook PDF, or Question Photo"
+                    className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer shrink-0"
+                    title="Attach PDF or Photo"
                   >
                     <Camera className="w-4 h-4" />
-                    <span className="hidden sm:inline">PDF/Photo</span>
                     <input
                       type="file"
                       accept="image/*,application/pdf,.txt,.csv"
@@ -5170,8 +6080,8 @@ export default function App() {
                   <button
                     type="button"
                     onClick={startMohaVoiceDictation}
-                    className="p-2.5 rounded-xl bg-violet-50 hover:bg-violet-100 text-violet-700 cursor-pointer shrink-0"
-                    title="Voice Dictation"
+                    className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer shrink-0"
+                    title="Voice Input"
                   >
                     <Mic className="w-4 h-4" />
                   </button>
@@ -5179,21 +6089,16 @@ export default function App() {
                     ref={chatInputRef}
                     type="text"
                     value={mohaInput}
-                    onChange={(e) => {
-                      setMohaInput(e.target.value);
-                      if (chatContainerRef.current) {
-                        chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-                      }
-                    }}
+                    onChange={(e) => setMohaInput(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') sendMwalimuMessage();
                     }}
-                    placeholder={`Type your ${mohaActiveClass} ${mohaActiveSubject} question here while observing Moha AI above...`}
-                    className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-violet-600 focus:outline-none text-xs sm:text-sm font-medium bg-white"
+                    placeholder="Ask a question..."
+                    className="flex-1 px-3 py-2 rounded-xl border border-slate-300 focus:border-violet-600 focus:outline-none text-xs sm:text-sm font-medium bg-white"
                   />
                   <button
                     onClick={() => sendMwalimuMessage()}
-                    className="px-4 sm:px-5 py-2.5 bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs sm:text-sm rounded-xl shrink-0 flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs sm:text-sm rounded-xl shrink-0 flex items-center gap-1 cursor-pointer"
                   >
                     <span>Send</span>
                     <Send className="w-3.5 h-3.5" />
@@ -5889,198 +6794,212 @@ export default function App() {
             );
           })()}
 
-          {/* ==================== VIEW 3: TEACHER & EXAM STUDIO (7 OFFICIAL DOCUMENTS) ==================== */}
+          {/* ==================== VIEW 3: NOTES & TEACHER STUDIO (SINGLE-ROW TOOLBAR + MAXIMIZED EDITABLE WORKSPACE) ==================== */}
           {mohaViewMode === 'studio' && (
-            <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-6">
-              <div className="max-w-5xl mx-auto space-y-5">
-                <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-xs space-y-4 text-xs">
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                    <div>
-                      <h2 className="text-base font-black text-slate-900">
-                        📋 Official TIE, PO-RALG &amp; NECTA Document Studio
-                      </h2>
-                      <p className="text-xs text-slate-500">
-                        Generates ready-to-print Lesson Plans, Schemes of Work, Notes &amp; Exams from website Syllabuses &amp; Books
-                      </p>
-                    </div>
+            <div className="flex-1 min-h-0 flex flex-col overflow-hidden bg-slate-100">
+              {/* Single-Row Studio Document Bar: Doc Types + Inline Metadata + PDF Export */}
+              <div className="shrink-0 bg-white border-b border-slate-200 px-2.5 sm:px-4 py-1.5">
+                <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 overflow-x-auto no-scrollbar text-xs">
+                  {/* Left: Single-Row Document Type Tabs */}
+                  <div className="flex items-center gap-1 shrink-0">
+                    {[
+                      { id: 'lessonplan' as const, label: '📋 4-Stage Lesson Plan', activeBg: 'bg-blue-600 text-white' },
+                      { id: 'schemeofwork' as const, label: '📅 12-Col Scheme of Work', activeBg: 'bg-emerald-700 text-white' },
+                      { id: 'lessonnotes' as const, label: '📘 Notes', activeBg: 'bg-indigo-600 text-white' },
+                      { id: 'exampaper' as const, label: '📝 Exam', activeBg: 'bg-amber-500 text-slate-950' },
+                      { id: 'markingscheme' as const, label: '✅ Marking', activeBg: 'bg-rose-600 text-white' },
+                      { id: 'blueprint' as const, label: '📐 Blueprint', activeBg: 'bg-teal-700 text-white' },
+                      { id: 'logbook' as const, label: '📓 Log Book', activeBg: 'bg-slate-800 text-white' },
+                    ].map((docBtn) => (
+                      <button
+                        key={docBtn.id}
+                        disabled={generatingDocType !== null}
+                        onClick={() => submitTeacherStudioDoc(docBtn.id)}
+                        className={`px-2.5 py-1 rounded-lg font-bold text-[11px] whitespace-nowrap transition-colors cursor-pointer disabled:opacity-50 ${docBtn.activeBg} hover:opacity-90`}
+                      >
+                        {generatingDocType === docBtn.id ? '⏳...' : docBtn.label}
+                      </button>
+                    ))}
                   </div>
 
-                  {/* Teacher & Topic Metadata Form */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div>
-                      <label className="font-bold text-slate-700 block mb-1">School Name *</label>
-                      <input
-                        type="text"
-                        value={tsSchool}
-                        onChange={(e) => setTsSchool(e.target.value)}
-                        placeholder="e.g. Kipingo Secondary School"
-                        className="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold bg-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="font-bold text-slate-700 block mb-1">Teacher Name *</label>
-                      <input
-                        type="text"
-                        value={tsTeacher}
-                        onChange={(e) => setTsTeacher(e.target.value)}
-                        placeholder="e.g. Mwl. Mohamed Shabani"
-                        className="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold bg-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="font-bold text-slate-700 block mb-1">Date *</label>
-                      <input
-                        type="date"
-                        value={tsDate}
-                        onChange={(e) => setTsDate(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold bg-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="font-bold text-slate-700 block mb-1">Class / Form *</label>
-                      <input
-                        type="text"
-                        value={tsClass}
-                        onChange={(e) => setTsClass(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold bg-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="font-bold text-slate-700 block mb-1">Subject *</label>
-                      <input
-                        type="text"
-                        value={tsSubject}
-                        onChange={(e) => setTsSubject(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold bg-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="font-bold text-slate-700 block mb-1">Duration</label>
-                      <input
-                        type="text"
-                        value={tsDuration}
-                        onChange={(e) => setTsDuration(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold bg-white"
-                      />
-                    </div>
-                    <div className="sm:col-span-2">
-                      <label className="font-bold text-slate-700 block mb-1">Main Topic / Competence *</label>
-                      <input
-                        type="text"
-                        value={tsTopic}
-                        onChange={(e) => setTsTopic(e.target.value)}
-                        placeholder="Select or type main competence..."
-                        className="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold bg-white"
-                      />
-                      {activeSyllabusTopics.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mt-1.5">
-                          {activeSyllabusTopics.map((t) => {
-                            const cleanT = t.replace(/^\d+\.\d+\s*/, '');
-                            return (
-                              <button
-                                key={t}
-                                type="button"
-                                onClick={() => setTsTopic(cleanT)}
-                                className="text-[10px] px-2 py-0.5 rounded-md bg-violet-50 hover:bg-violet-100 text-violet-900 border border-violet-200 font-bold cursor-pointer"
-                              >
-                                + {cleanT}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <label className="font-bold text-slate-700 block mb-1">Sub-Topic *</label>
-                      <input
-                        type="text"
-                        value={tsSubTopic}
-                        onChange={(e) => setTsSubTopic(e.target.value)}
-                        placeholder="e.g. Practical Calculations"
-                        className="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold bg-white"
-                      />
-                    </div>
+                  {/* Center: Compact Inline Metadata Fields + Full Metadata Toggle */}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <input
+                      type="text"
+                      value={tsSchool}
+                      onChange={(e) => setTsSchool(e.target.value)}
+                      placeholder="School Name"
+                      title="School Name"
+                      className="w-28 lg:w-36 px-2 py-1 rounded-md border border-slate-200 bg-slate-50 focus:bg-white focus:border-violet-500 focus:outline-none font-semibold text-[11px]"
+                    />
+                    <input
+                      type="text"
+                      value={tsTeacher}
+                      onChange={(e) => setTsTeacher(e.target.value)}
+                      placeholder="Teacher Name"
+                      title="Teacher Name"
+                      className="w-24 lg:w-32 px-2 py-1 rounded-md border border-slate-200 bg-slate-50 focus:bg-white focus:border-violet-500 focus:outline-none font-semibold text-[11px]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setTeacherStudioOpen((v) => !v)}
+                      className={`px-2.5 py-1 rounded-lg font-bold text-[11px] border cursor-pointer whitespace-nowrap ${
+                        teacherStudioOpen
+                          ? 'bg-violet-600 text-white border-violet-600'
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300'
+                      }`}
+                      title="Open Full Teacher Metadata Form (Attendance, Duration, Topic, Sub-Topic)"
+                    >
+                      ⚙️ Teacher Metadata
+                    </button>
                   </div>
 
-                  {/* 7 Official Document Generator Buttons */}
-                  <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center gap-2">
+                  {/* Right: Direct PDF Export Actions */}
+                  <div className="flex items-center gap-1 shrink-0">
                     <button
-                      disabled={generatingDocType !== null}
-                      onClick={() => submitTeacherStudioDoc('lessonplan')}
-                      className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl cursor-pointer disabled:opacity-50"
+                      onClick={() => downloadMwalimuDocPdf('studio-preview', 'portrait')}
+                      className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                      title="Download Direct HTML-to-PDF (Portrait)"
                     >
-                      1. 4-Stage Lesson Plan
+                      <Download className="w-3 h-3" /> Portrait PDF
                     </button>
                     <button
-                      disabled={generatingDocType !== null}
-                      onClick={() => submitTeacherStudioDoc('schemeofwork')}
-                      className="px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl cursor-pointer disabled:opacity-50"
+                      onClick={() => downloadMwalimuDocPdf('studio-preview', 'landscape')}
+                      className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                      title="Download Direct HTML-to-PDF (Landscape for 12-Col Scheme of Work)"
                     >
-                      2. PO-RALG Scheme (2026)
-                    </button>
-                    <button
-                      disabled={generatingDocType !== null}
-                      onClick={() => submitTeacherStudioDoc('lessonnotes')}
-                      className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl cursor-pointer disabled:opacity-50"
-                    >
-                      3. Lesson Notes
-                    </button>
-                    <button
-                      disabled={generatingDocType !== null}
-                      onClick={() => submitTeacherStudioDoc('exampaper')}
-                      className="px-3 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl cursor-pointer disabled:opacity-50"
-                    >
-                      4. Full NECTA Exam
-                    </button>
-                    <button
-                      disabled={generatingDocType !== null}
-                      onClick={() => submitTeacherStudioDoc('blueprint')}
-                      className="px-3 py-2 bg-teal-700 hover:bg-teal-800 text-white font-bold rounded-xl cursor-pointer disabled:opacity-50"
-                    >
-                      5. Exam Blueprint
-                    </button>
-                    <button
-                      disabled={generatingDocType !== null}
-                      onClick={() => submitTeacherStudioDoc('markingscheme')}
-                      className="px-3 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl cursor-pointer disabled:opacity-50"
-                    >
-                      6. Marking Scheme
-                    </button>
-                    <button
-                      disabled={generatingDocType !== null}
-                      onClick={() => submitTeacherStudioDoc('logbook')}
-                      className="px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl cursor-pointer disabled:opacity-50"
-                    >
-                      7. Log Book
+                      <Download className="w-3 h-3" /> Landscape PDF
                     </button>
                   </div>
                 </div>
 
-                {/* Live Generated Document Preview & Direct PDF Export */}
-                <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-xs space-y-3">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <h3 className="text-sm font-black text-slate-900">
-                      {generatingDocType ? '⏳ Generating official document...' : '📄 Official Document Preview'}
-                    </h3>
-                    <div className="flex flex-wrap items-center gap-2">
+                {/* Collapsible Teacher Metadata Collection Panel for 4-Stage TIE Lesson Plan & 12-Column PO-RALG Scheme of Work */}
+                {teacherStudioOpen && (
+                  <div className="max-w-7xl mx-auto mt-2 pt-2 border-t border-slate-200 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 text-xs">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase">School Name</label>
+                      <input
+                        type="text"
+                        value={tsSchool}
+                        onChange={(e) => setTsSchool(e.target.value)}
+                        placeholder="e.g. Azania Secondary"
+                        className="w-full px-2 py-1 rounded border border-slate-300 font-semibold text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase">Teacher Name</label>
+                      <input
+                        type="text"
+                        value={tsTeacher}
+                        onChange={(e) => setTsTeacher(e.target.value)}
+                        placeholder="e.g. Mr. J. Nyerere"
+                        className="w-full px-2 py-1 rounded border border-slate-300 font-semibold text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase">Main Topic</label>
+                      <input
+                        type="text"
+                        value={tsTopic}
+                        onChange={(e) => setTsTopic(e.target.value)}
+                        placeholder={activeSyllabusTopics[0] || 'Main Topic'}
+                        className="w-full px-2 py-1 rounded border border-slate-300 font-semibold text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase">Sub-Topic</label>
+                      <input
+                        type="text"
+                        value={tsSubTopic}
+                        onChange={(e) => setTsSubTopic(e.target.value)}
+                        placeholder="Sub-Topic"
+                        className="w-full px-2 py-1 rounded border border-slate-300 font-semibold text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase">Duration &amp; Date</label>
+                      <div className="flex gap-1">
+                        <input
+                          type="text"
+                          value={tsDuration}
+                          onChange={(e) => setTsDuration(e.target.value)}
+                          placeholder="80 Min"
+                          className="w-1/2 px-1.5 py-1 rounded border border-slate-300 font-semibold text-xs"
+                        />
+                        <input
+                          type="date"
+                          value={tsDate}
+                          onChange={(e) => setTsDate(e.target.value)}
+                          className="w-1/2 px-1 py-1 rounded border border-slate-300 font-semibold text-[11px]"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase">Registered (Girls / Boys)</label>
+                      <div className="flex gap-1">
+                        <input
+                          type="number"
+                          value={tsRegG}
+                          onChange={(e) => setTsRegG(Number(e.target.value) || 0)}
+                          className="w-1/2 px-2 py-1 rounded border border-slate-300 font-semibold text-xs"
+                          title="Registered Girls"
+                        />
+                        <input
+                          type="number"
+                          value={tsRegB}
+                          onChange={(e) => setTsRegB(Number(e.target.value) || 0)}
+                          className="w-1/2 px-2 py-1 rounded border border-slate-300 font-semibold text-xs"
+                          title="Registered Boys"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase">Present (Girls / Boys)</label>
+                      <div className="flex gap-1">
+                        <input
+                          type="number"
+                          value={tsPresG}
+                          onChange={(e) => setTsPresG(Number(e.target.value) || 0)}
+                          className="w-1/2 px-2 py-1 rounded border border-slate-300 font-semibold text-xs"
+                          title="Present Girls"
+                        />
+                        <input
+                          type="number"
+                          value={tsPresB}
+                          onChange={(e) => setTsPresB(Number(e.target.value) || 0)}
+                          className="w-1/2 px-2 py-1 rounded border border-slate-300 font-semibold text-xs"
+                          title="Present Boys"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-end gap-1">
                       <button
-                        onClick={() => downloadMwalimuDocPdf('studio-preview', 'portrait')}
-                        className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1 cursor-pointer"
+                        type="button"
+                        onClick={() => submitTeacherStudioDoc('lessonplan')}
+                        className="flex-1 px-2 py-1.5 rounded bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] cursor-pointer"
                       >
-                        <Download className="w-3.5 h-3.5" /> Portrait PDF
+                        📋 Lesson Plan
                       </button>
                       <button
-                        onClick={() => downloadMwalimuDocPdf('studio-preview', 'landscape')}
-                        className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1 cursor-pointer"
+                        type="button"
+                        onClick={() => submitTeacherStudioDoc('schemeofwork')}
+                        className="flex-1 px-2 py-1.5 rounded bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-[11px] cursor-pointer"
                       >
-                        <Download className="w-3.5 h-3.5" /> Landscape PDF
+                        📅 Scheme
                       </button>
                     </div>
                   </div>
+                )}
+              </div>
 
+              {/* Maximized Full-Viewport Editable Document Canvas */}
+              <div className="flex-1 min-h-0 overflow-y-auto px-2 sm:px-6 py-3">
+                <div className="max-w-6xl mx-auto bg-white rounded-xl border border-slate-200 shadow-xs p-4 sm:p-6 min-h-full">
                   <div
                     id="msg-body-studio-preview"
-                    className="overflow-x-auto"
+                    contentEditable
+                    suppressContentEditableWarning
+                    className="overflow-x-auto focus:outline-none min-h-[calc(100vh-8rem)]"
                     dangerouslySetInnerHTML={{
                       __html:
                         studioPreviewHtml ||
@@ -6106,241 +7025,15 @@ export default function App() {
             </div>
           )}
 
-          {/* ==================== VIEW 4: INTERACTIVE DIAGRAM & TABLE LAB ==================== */}
+          {/* ==================== VIEW 4: INTERACTIVE DIAGRAM LAB ==================== */}
           {mohaViewMode === 'diagram' && (
             <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-6">
-              <div className="max-w-5xl mx-auto space-y-4">
+              <div className="max-w-5xl mx-auto">
                 <InteractiveDiagramLab
                   initialPreset={activeDiagramPreset}
                   activeClass={mohaActiveClass}
                   activeSubject={mohaActiveSubject}
                 />
-              </div>
-            </div>
-          )}
-
-          {/* ==================== VIEW 4B: BIOSCIENCE PROTEIN & DRUG DISCOVERY WORKBENCH ==================== */}
-          {mohaViewMode === 'bioscience' && (
-            <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-6">
-              <div className="max-w-6xl mx-auto">
-                <BioscienceWorkbench />
-              </div>
-            </div>
-          )}
-
-          {/* ==================== VIEW 4C: VEO 3.1 PHOTO-TO-VIDEO ANIMATION STUDIO ==================== */}
-          {mohaViewMode === 'video' && (
-            <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-6">
-              <div className="max-w-5xl mx-auto">
-                <VeoVideoStudio />
-              </div>
-            </div>
-          )}
-
-          {/* ==================== VIEW 4D: VIRTUAL SCIENCE PRACTICALS LAB (NECTA PAPER 2) ==================== */}
-          {mohaViewMode === 'practical_lab' && (
-            <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-6">
-              <div className="max-w-6xl mx-auto">
-                <VirtualScienceLab
-                  activeClass={mohaActiveClass}
-                  onLaunchPracticalQuiz={(cls, subject, topic) => {
-                    startAiQuiz(cls, subject, topic, 'ALL', 'ALL');
-                  }}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* ==================== VIEW 4E: TOPIC MASTERY HEATMAP & WEAK-TOPIC REVISION PLANNER ==================== */}
-          {mohaViewMode === 'mastery_planner' && (
-            <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-6">
-              <div className="max-w-6xl mx-auto">
-                <TopicMasteryPlanner
-                  activeClass={mohaActiveClass}
-                  activeSubject={mohaActiveSubject}
-                  quizHistory={quizHistory.map((q) => ({
-                    id: q.id,
-                    cls: q.cls,
-                    subject: q.subject,
-                    topic: q.topic,
-                    score: q.score,
-                    total: q.total,
-                    date: q.timestamp,
-                  }))}
-                  onLaunchTopicQuiz={(cls, subject, topic) => {
-                    startAiQuiz(cls, subject, topic, 'ALL', 'ALL');
-                  }}
-                  onOpenTopicNotes={(cls, subject, topic) => {
-                    setTsClass(cls);
-                    setTsSubject(subject);
-                    setTsTopic(topic);
-                    setTsSubTopic(topic);
-                    setMohaViewMode('studio');
-                    submitTeacherStudioDoc('lessonnotes');
-                  }}
-                  onLogManualPractice={handleLogManualTopicPractice}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* ==================== VIEW 5: WEBSITE RESOURCE ANALYZER & ATTACH HUB ==================== */}
-          {mohaViewMode === 'resources' && (
-            <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-6">
-              <div className="max-w-5xl mx-auto bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-xs space-y-5">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <h2 className="text-base font-black text-slate-900">
-                      📚 Attached Textbooks, Past Papers &amp; Syllabuses ({mohaActiveClass} · {mohaActiveSubject})
-                    </h2>
-                    <p className="text-xs text-slate-500">
-                      Interact with already-attached textbooks &amp; past papers or attach new ones for Moha AI to read, solve &amp; generate 20-question quizzes.
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setNewResClass(mohaActiveClass);
-                        setNewResSubject(mohaActiveSubject);
-                        setAttachModalOpen(true);
-                      }}
-                      className="px-3.5 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs cursor-pointer"
-                    >
-                      ➕ Attach New Textbook / Past Paper
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        fetchSheetData();
-                        showToast('🔄 Synced latest attached books & past papers from Google Sheet!');
-                      }}
-                      className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs cursor-pointer"
-                    >
-                      🔄 Sync Google Sheet
-                    </button>
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 space-y-2.5">
-                  <div className="text-xs font-bold uppercase text-amber-950">
-                    Official TIE Syllabus Competences ({mohaActiveClass} {mohaActiveSubject})
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {activeSyllabusTopics.map((topicItem) => {
-                      const cleanT = topicItem.replace(/^\d+\.\d+\s*/, '');
-                      return (
-                        <div
-                          key={topicItem}
-                          className="p-2.5 rounded-lg bg-white border border-amber-200 flex items-center justify-between gap-2 text-xs"
-                        >
-                          <span className="font-bold text-slate-800">{topicItem}</span>
-                          <div className="flex items-center gap-1 shrink-0">
-                            <button
-                              onClick={() => startAiQuiz(mohaActiveClass, mohaActiveSubject, cleanT)}
-                              className="px-2 py-1 rounded bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-[10px] cursor-pointer"
-                            >
-                              20-Qn Quiz
-                            </button>
-                            <button
-                              onClick={() => {
-                                setTsTopic(cleanT);
-                                setTsSubTopic(cleanT);
-                                setMohaViewMode('studio');
-                                submitTeacherStudioDoc('lessonnotes');
-                              }}
-                              className="px-2 py-1 rounded bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] cursor-pointer"
-                            >
-                              Notes
-                            </button>
-                            <button
-                              onClick={() => {
-                                setTsTopic(cleanT);
-                                setTsSubTopic(cleanT);
-                                setMohaViewMode('studio');
-                                submitTeacherStudioDoc('lessonplan');
-                              }}
-                              className="px-2 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] cursor-pointer"
-                            >
-                              Plan
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="space-y-2.5">
-                  <div className="text-xs font-bold uppercase text-slate-600">
-                    Attached TIE Textbooks &amp; Past Papers for {mohaActiveClass} · {mohaActiveSubject} ({classSubjectResourcesList.length})
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {classSubjectResourcesList.slice(0, 16).map((item) => {
-                      const isPinned = mohaFocusedResourceId === item.id;
-                      return (
-                        <div
-                          key={item.id}
-                          className={`p-3.5 rounded-xl border flex flex-col justify-between gap-2.5 text-xs ${
-                            isPinned
-                              ? 'bg-violet-50/70 border-violet-400'
-                              : 'bg-slate-50 border-slate-200'
-                          }`}
-                        >
-                          <div>
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-[11px] font-bold text-violet-700">
-                                {item.category} · {item.form} · {item.year}
-                              </span>
-                              {(item.paperUrl || item.customContent || item.isUserAttached) && (
-                                <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 font-bold text-[10px]">
-                                  ✓ Attached
-                                </span>
-                              )}
-                            </div>
-                            <div className="font-bold text-slate-900 mt-0.5">{item.title}</div>
-                            {item.customContent && (
-                              <div className="text-[11px] text-slate-600 line-clamp-2 mt-1">
-                                {item.customContent}
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-200/70">
-                            {item.paperUrl && (
-                              <button
-                                onClick={() => openViewer(item.id, 'paper')}
-                                className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold cursor-pointer"
-                              >
-                                Preview PDF
-                              </button>
-                            )}
-                            <button
-                              onClick={() => {
-                                setMohaFocusedResourceId(item.id);
-                                startAiQuiz(item.form, item.subject, item.title);
-                              }}
-                              className="px-2.5 py-1 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold cursor-pointer"
-                            >
-                              🎯 20-Qn Quiz
-                            </button>
-                            <button
-                              onClick={() => {
-                                setMohaFocusedResourceId(item.id);
-                                setMohaViewMode('chat');
-                                sendMwalimuMessage(
-                                  `Analyze the attached resource "${item.title}" (${item.form} ${item.subject}, ${item.year}) and prepare comprehensive revision notes and step-by-step worked solutions.`
-                                );
-                              }}
-                              className="px-2.5 py-1 rounded-lg bg-violet-600 hover:bg-violet-700 text-white font-bold cursor-pointer"
-                            >
-                              🤖 Interact in Chat
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
               </div>
             </div>
           )}
@@ -6388,8 +7081,8 @@ export default function App() {
                         }
                         className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-semibold bg-white"
                       >
-                        <option value="Teacher">Teacher (Mwalimu)</option>
-                        <option value="Student">Student (Mwanafunzi)</option>
+                        <option value="Teacher">Teacher</option>
+                        <option value="Student">Student</option>
                       </select>
                     </div>
                     <div>
@@ -6558,12 +7251,868 @@ export default function App() {
         </div>
       )}
 
+      {/* 🧠 TEACH MOHA AI MODAL (PERMANENT SELF-LEARNING MEMORY IN LOCALSTORAGE) */}
+      {mohaLearnPanelOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4"
+          onClick={() => setMohaLearnPanelOpen(false)}
+        >
+          <div
+            className="bg-white rounded-3xl max-w-xl w-full p-5 sm:p-6 border border-slate-200 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3">
+              <div>
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-amber-600">
+                  Self-Learning Memory Engine (localStorage)
+                </span>
+                <h3 className="text-lg font-black text-slate-900">
+                  🧠 Teach Moha AI Custom Notes &amp; Topics
+                </h3>
+              </div>
+              <button
+                onClick={() => setMohaLearnPanelOpen(false)}
+                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
+              >
+                ✕ Close
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Add custom school notes, definitions, marking rubrics, or topic explanations below. Moha AI permanently saves them in your browser&apos;s <strong>localStorage</strong> and automatically recalls them whenever you or your students ask about that topic.
+            </p>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">
+                  Topic Name or Trigger Question ({mohaActiveClass} — {mohaActiveSubject})
+                </label>
+                <input
+                  type="text"
+                  value={learnTopicInput}
+                  onChange={(e) => setLearnTopicInput(e.target.value)}
+                  placeholder="e.g. Osmosis in Plant Cells, or School Exam Rule"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-violet-600 focus:outline-none font-semibold"
+                />
+              </div>
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">
+                  Custom Notes / Answer to Remember Permanently
+                </label>
+                <textarea
+                  rows={4}
+                  value={learnAnswerInput}
+                  onChange={(e) => setLearnAnswerInput(e.target.value)}
+                  placeholder="Write the exact definition, worked example, or teaching notes that Moha AI should remember..."
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-violet-600 focus:outline-none font-medium"
+                />
+              </div>
+              <div className="flex items-center justify-end gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setMohaLearnPanelOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveLearnedFromForm}
+                  className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold cursor-pointer"
+                >
+                  🧠 Save to Permanent Memory
+                </button>
+              </div>
+            </div>
+
+            {learnedMemory.length > 0 && (
+              <div className="pt-3 border-t border-slate-200 space-y-2">
+                <div className="text-xs font-black text-slate-800">
+                  Saved Memory Items ({learnedMemory.length})
+                </div>
+                <div className="max-h-48 overflow-y-auto space-y-2 pr-1">
+                  {learnedMemory.map((item, idx) => (
+                    <div
+                      key={`${item.topic}-${idx}`}
+                      className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-start justify-between gap-2 text-xs"
+                    >
+                      <div className="space-y-0.5 min-w-0">
+                        <div className="font-bold text-slate-900 truncate">
+                          {item.topic}{' '}
+                          <span className="text-[10px] font-semibold text-violet-700">
+                            ({item.cls} · {item.subject})
+                          </span>
+                        </div>
+                        <div className="text-slate-600 line-clamp-2">{item.content}</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => deleteMohaLearnedItem(item.topic)}
+                        className="px-2 py-1 rounded bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[10px] shrink-0 cursor-pointer"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* GOOGLE ADSENSE & LEGAL COMPLIANCE MODAL (PRIVACY POLICY / TERMS OF SERVICE / ABOUT) */}
+      {legalModalType && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4"
+          onClick={() => setLegalModalType(null)}
+        >
+          <div
+            className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 border border-slate-200 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto text-slate-700 text-xs sm:text-sm leading-relaxed"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-3 border-b border-slate-200 pb-3">
+              <h2 className="text-lg sm:text-xl font-black text-slate-900">
+                {legalModalType === 'privacy'
+                  ? 'Privacy Policy — Elimika Tanzania'
+                  : legalModalType === 'terms'
+                  ? 'Terms of Service — Elimika Tanzania'
+                  : 'About Elimika Tanzania & Contact'}
+              </h2>
+              <button
+                onClick={() => setLegalModalType(null)}
+                className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs cursor-pointer"
+              >
+                ✕ Close
+              </button>
+            </div>
+
+            {legalModalType === 'privacy' && (
+              <div className="space-y-3">
+                <p>
+                  <strong>Effective Date:</strong> January 1, 2026
+                </p>
+                <p>
+                  At <strong>Elimika Tanzania</strong>, we respect and protect the privacy of all students, teachers, and visitors using our educational web platform. This Privacy Policy explains how information is handled when you browse Past Papers, TIE Books, Official Syllabuses, and Moha AI Teacher Tools.
+                </p>
+                <h3 className="font-bold text-slate-900">1. Information Stored Locally</h3>
+                <p>
+                  Elimika uses your browser&apos;s <code>localStorage</code> to save your preferred class level, quiz progress, teacher document metadata, and custom notes added via the <strong>Teach AI</strong> feature. This data stays on your device and can be cleared by you at any time.
+                </p>
+                <h3 className="font-bold text-slate-900">2. Cookies &amp; Google AdSense Compliance</h3>
+                <p>
+                  Third-party vendors, including Google, use cookies to serve ads based on a user&apos;s prior visits to this website or other websites. Google&apos;s use of advertising cookies enables it and its partners to serve ads to users based on their visit to Elimika and/or other sites on the Internet. Users may opt out of personalized advertising by visiting{' '}
+                  <a
+                    href="https://www.google.com/settings/ads"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-blue-600 underline font-semibold"
+                  >
+                    Google Ads Settings
+                  </a>
+                  .
+                </p>
+                <h3 className="font-bold text-slate-900">3. Educational Resources &amp; Third-Party Links</h3>
+                <p>
+                  Our library links to publicly accessible educational PDFs hosted on Google Drive for curriculum study and revision. We do not sell, rent, or trade personal user data to third parties.
+                </p>
+              </div>
+            )}
+
+            {legalModalType === 'terms' && (
+              <div className="space-y-3">
+                <p>
+                  <strong>Last Updated:</strong> January 1, 2026
+                </p>
+                <p>
+                  Welcome to <strong>Elimika Tanzania</strong>. By accessing or using our platform, you agree to comply with and be bound by the following Terms of Service.
+                </p>
+                <h3 className="font-bold text-slate-900">1. Educational Use Only</h3>
+                <p>
+                  All Past Papers, Marking Schemes, TIE Textbooks, Official Syllabuses, and AI-generated Lesson Plans or Schemes of Work provided on Elimika are intended strictly for educational, classroom teaching, and examination revision purposes in accordance with Tanzania Institute of Education (TIE) and NECTA guidelines.
+                </p>
+                <h3 className="font-bold text-slate-900">2. User Conduct &amp; Content</h3>
+                <p>
+                  Teachers and students using Moha AI, Quiz Challenges, or the Teacher Document Studio agree to use the tools responsibly for academic growth. Automated scraping or redistribution of the platform code for commercial resale is prohibited.
+                </p>
+                <h3 className="font-bold text-slate-900">3. Disclaimer of Warranties</h3>
+                <p>
+                  While Elimika strives to keep all curriculum materials, worked solutions, and generated teacher documents accurate and aligned with current PO-RALG and TIE standards, materials are provided &ldquo;as is&rdquo; and teachers should review generated lesson plans and schemes for their specific school calendar.
+                </p>
+              </div>
+            )}
+
+            {legalModalType === 'about' && (
+              <div className="space-y-3">
+                <p>
+                  <strong>Elimika Tanzania</strong> is a comprehensive digital learning and teacher productivity platform built for Primary (Standard 1–7), Ordinary Secondary (Form 1–4), and Advanced Secondary (Form 5–6) schools across Tanzania.
+                </p>
+                <p>
+                  <strong>Key Features:</strong> Official TIE Textbooks, Syllabuses, NECTA Past Examination Papers, Interactive 3D Virtual Science Labs, Daily Solving Quizzes, and Moha AI with instant 4-Stage TIE Lesson Plan and 12-Column PO-RALG Scheme of Work PDF generation.
+                </p>
+                <p>
+                  <strong>Contact &amp; Support:</strong> For curriculum inquiries, resource contributions, or school partnerships, contact the Elimika Academic Desk at <code>support@elimika.ac.tz</code>.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 💬 WHATSAPP COMMUNITY & CHANNEL STUDIO MODAL */}
+      {whatsappModalOpen && (() => {
+        const siteUrl = typeof window !== 'undefined' ? window.location.origin : 'https://elimika.ac.tz';
+        const activeCls = selectedClass || mohaActiveClass || 'Form 4';
+        const activeSub = selectedSubject || mohaActiveSubject || 'Basic Mathematics';
+
+        const broadcastMessage =
+          broadcastTemplateType === 'paper'
+            ? `📢 *NEW NECTA & MOCK PAST PAPERS UPDATE — ELIMIKA ONLINE* 🇹🇿\n\n📚 *Class:* ${activeCls}\n📖 *Subject:* ${activeSub}\n✅ Includes Full Question Papers + Marking Schemes & Step-by-Step Solutions!\n\n👉 *Download & Read Free Here:* ${siteUrl}\n🔔 *Follow Elimika Online on WhatsApp:* ${whatsappConfig.mainChannelUrl}`
+            : broadcastTemplateType === 'quiz'
+            ? `🎯 *DAILY 20-QUESTION NECTA QUIZ CHALLENGE — ELIMIKA ONLINE!* 🏆\n\nCan you score 18/20 or higher in today's *${activeCls} ${activeSub}* revision challenge?\n\n⚡ Instant marking + worked explanations\n🏅 Compete with students across Tanzania\n\n👉 *Start the Quiz Now:* ${siteUrl}\n🔔 *Follow Elimika Online on WhatsApp:* ${whatsappConfig.mainChannelUrl}`
+            : broadcastTemplateType === 'book'
+            ? `📚 *OFFICIAL TIE TEXTBOOKS & SYLLABUSES — ELIMIKA ONLINE* 🇹🇿\n\nAccess all competency-based TIE Student Books and Official Syllabuses (Std 1–7 & Form 1–6) for *${activeCls} ${activeSub}* in one click.\n\n👉 *Open TIE Library:* ${siteUrl}\n🔔 *Follow Elimika Online:* ${whatsappConfig.mainChannelUrl}`
+            : `🧑‍🏫 *FOR TEACHERS: INSTANT TIE LESSON PLANS & 12-COLUMN PO-RALG SCHEMES* ✍️\n\nGenerate printable, curriculum-aligned *4-Stage TIE Lesson Plans* and *12-Column Schemes of Work* for *${activeCls} ${activeSub}* in seconds on *Elimika Online*.\n\n👉 *Generate & Download PDF:* ${siteUrl}\n🔔 *Follow Elimika Online on WhatsApp:* ${whatsappConfig.mainChannelUrl}`;
+
+        return (
+          <div
+            className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4"
+            onClick={() => setWhatsappModalOpen(false)}
+          >
+            <div
+              className="bg-white rounded-3xl max-w-2xl w-full p-5 sm:p-7 border border-slate-200 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto text-slate-800"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between gap-3 border-b border-slate-200 pb-3">
+                <div>
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-600">
+                    Official Student &amp; Teacher Network
+                  </span>
+                  <h2 className="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
+                    <span>💬 {whatsappConfig.channelName}</span>
+                  </h2>
+                </div>
+                <button
+                  onClick={() => setWhatsappModalOpen(false)}
+                  className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs cursor-pointer"
+                >
+                  ✕ Close
+                </button>
+              </div>
+
+              {/* Navigation Tabs inside WhatsApp Hub (Visible ONLY to Admin when unlocked) */}
+              {whatsappAdminUnlocked && (
+                <div className="space-y-2.5">
+                  <div className="p-3 rounded-2xl bg-slate-900 text-white flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
+                    <div>
+                      <span className="font-black text-emerald-400">🌐 Full Standalone Website HTML Code:</span>{' '}
+                      <span className="text-slate-300">WhatsApp Channel Only (No Community groups).</span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            const res = await fetch('/elimika-tanzania-website.html');
+                            const htmlCode = await res.text();
+                            await navigator.clipboard?.writeText(htmlCode);
+                            showToast('✅ Full Website HTML Code copied to clipboard! Paste it into your website.');
+                          } catch {
+                            showToast('⚠️ Could not copy HTML code — click Download HTML File instead.');
+                          }
+                        }}
+                        className="px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs cursor-pointer inline-flex items-center gap-1 shadow-xs"
+                      >
+                        <span>📋 Copy Full HTML Code</span>
+                      </button>
+                      <a
+                        href="/elimika-tanzania-website.html"
+                        download="index.html"
+                        className="px-3 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs inline-flex items-center gap-1 shadow-xs"
+                      >
+                        <span>⬇️ Download index.html</span>
+                      </a>
+                      <a
+                        href="/ads.txt"
+                        download="ads.txt"
+                        className="px-3 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs inline-flex items-center gap-1 shadow-xs"
+                      >
+                        <span>⬇️ Download ads.txt</span>
+                      </a>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 p-1 bg-slate-100 rounded-2xl border border-slate-200 text-xs font-bold">
+                  <button
+                    type="button"
+                    onClick={() => setWhatsappTab('join')}
+                    className={`py-2 px-2.5 rounded-xl transition-colors cursor-pointer ${
+                      whatsappTab === 'join'
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    📲 Join Channel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setWhatsappTab('broadcast')}
+                    className={`py-2 px-2.5 rounded-xl transition-colors cursor-pointer ${
+                      whatsappTab === 'broadcast'
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    📢 Post Generator
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setWhatsappTab('adsense')}
+                    className={`py-2 px-2.5 rounded-xl transition-colors cursor-pointer ${
+                      whatsappTab === 'adsense'
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    💰 Google Ads
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setWhatsappTab('logo')}
+                    className={`py-2 px-2.5 rounded-xl transition-colors cursor-pointer ${
+                      whatsappTab === 'logo'
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    🎨 Profile Pic
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setWhatsappTab('setup')}
+                    className={`py-2 px-2.5 rounded-xl transition-colors cursor-pointer ${
+                      whatsappTab === 'setup'
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    ⚙️ Setup Links
+                  </button>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 0: OFFICIAL ELIMIKA WHATSAPP PROFILE PICTURE & 1-CLICK HD DOWNLOAD (Admin Only) */}
+              {whatsappAdminUnlocked && whatsappTab === 'logo' && (
+                <div className="space-y-4 text-xs">
+                  <div className="flex flex-col sm:flex-row items-center gap-5 p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200">
+                    {/* Live Vector Circular Profile Picture Preview (Blue, Black & White) */}
+                    <div className="shrink-0 flex flex-col items-center gap-2">
+                      <div
+                        className={`w-48 h-48 rounded-full p-1.5 shadow-xl border-4 flex flex-col items-center justify-center text-center relative overflow-hidden ${
+                          profileLogoTheme === 'blue_black'
+                            ? 'bg-gradient-to-br from-slate-950 via-blue-700 to-slate-950 border-white ring-2 ring-blue-500'
+                            : profileLogoTheme === 'blue_white'
+                            ? 'bg-gradient-to-br from-white via-blue-50 to-blue-100 border-blue-700 ring-2 ring-slate-950'
+                            : 'bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 border-blue-600 ring-2 ring-white'
+                        }`}
+                      >
+                        <div
+                          className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-1.5 shadow-inner border ${
+                            profileLogoTheme === 'blue_white'
+                              ? 'bg-blue-600 border-slate-950 text-white'
+                              : profileLogoTheme === 'black_blue'
+                              ? 'bg-white border-blue-500 text-blue-700'
+                              : 'bg-blue-600/40 border-white/80 text-white'
+                          }`}
+                        >
+                          <GraduationCap className="w-7 h-7" />
+                        </div>
+                        <div
+                          className={`text-xl font-black tracking-tight leading-none ${
+                            profileLogoTheme === 'blue_white' ? 'text-slate-950' : 'text-white'
+                          }`}
+                        >
+                          ELIMIKA
+                        </div>
+                        <div
+                          className={`mt-1 px-3 py-0.5 rounded-full font-black text-[10px] tracking-widest border ${
+                            profileLogoTheme === 'blue_black'
+                              ? 'bg-white text-slate-950 border-slate-950'
+                              : 'bg-blue-600 text-white border-white'
+                          }`}
+                        >
+                          ONLINE
+                        </div>
+                        <div
+                          className={`mt-1.5 text-[8px] font-extrabold tracking-wider uppercase ${
+                            profileLogoTheme === 'blue_white' ? 'text-slate-900' : 'text-white'
+                          }`}
+                        >
+                          Past Papers • TIE Books • AI
+                        </div>
+                        <div
+                          className={`text-[8px] font-extrabold ${
+                            profileLogoTheme === 'blue_white' ? 'text-blue-700' : 'text-sky-300'
+                          }`}
+                        >
+                          Std 1–7 | Form 1–6
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-bold text-slate-500">
+                        Circular WhatsApp Crop Preview
+                      </span>
+                    </div>
+
+                    {/* Controls & 1-Click 1080x1080 PNG Download */}
+                    <div className="flex-1 space-y-3 text-center sm:text-left">
+                      <div>
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-blue-700">
+                          1080 × 1080 HD Square &amp; Circular Safe-Zone
+                        </span>
+                        <h3 className="text-base font-black text-slate-900">
+                          Elimika Online Logo (Blue, Black &amp; White)
+                        </h3>
+                        <p className="text-slate-600 text-xs mt-0.5 leading-relaxed">
+                          Styled in crisp <strong>Royal Blue, Jet Black, and Pure White</strong> to match your Elimika brand header and fit WhatsApp&apos;s circular profile frame cleanly.
+                        </p>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="font-bold text-slate-700 block">Choose Blue / Black / White Style:</label>
+                        <div className="flex flex-wrap justify-center sm:justify-start gap-2">
+                          {[
+                            { id: 'blue_black', label: '🔵⚫ Royal Blue, Black & White' },
+                            { id: 'blue_white', label: '⚪🔵 Crisp White, Blue & Black' },
+                            { id: 'black_blue', label: '⚫🔵 Pitch Black & Electric Blue' },
+                          ].map((t) => (
+                            <button
+                              key={t.id}
+                              type="button"
+                              onClick={() => setProfileLogoTheme(t.id as 'blue_black' | 'blue_white' | 'black_blue')}
+                              className={`px-3 py-1.5 rounded-xl font-bold cursor-pointer border ${
+                                profileLogoTheme === t.id
+                                  ? 'bg-blue-600 text-white border-blue-600'
+                                  : 'bg-white text-slate-800 border-slate-300 hover:bg-slate-100'
+                              }`}
+                            >
+                              {t.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="pt-1 flex flex-wrap justify-center sm:justify-start gap-2">
+                        <button
+                          type="button"
+                          onClick={() => downloadElimikaProfilePicPng(profileLogoTheme)}
+                          className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs shadow-sm cursor-pointer inline-flex items-center gap-1.5"
+                        >
+                          <span>⬇️ Download HD Profile Picture (1080×1080 PNG)</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 1: JOIN CHANNEL & CLASS GROUPS (Always shown to public users) */}
+              {(!whatsappAdminUnlocked || whatsappTab === 'join') && (
+                <div className="space-y-4">
+                  <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-700 text-white flex flex-col sm:flex-row items-center justify-between gap-4 shadow-md">
+                    <div className="space-y-1 text-center sm:text-left">
+                      <span className="inline-block px-2.5 py-0.5 rounded-md bg-white/20 text-[10px] font-extrabold uppercase tracking-wider">
+                        Official Broadcast Channel (Unlimited Followers)
+                      </span>
+                      <h3 className="text-base sm:text-lg font-black">{whatsappConfig.channelName}</h3>
+                      <p className="text-xs text-emerald-50">
+                        Get daily NECTA Past Papers, Marking Schemes, TIE Textbooks, and 20-Question Quiz links straight to your phone. Phone numbers stay 100% private.
+                      </p>
+                      <div className="pt-2 flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                        <a
+                          href={whatsappConfig.mainChannelUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="px-4 py-2 rounded-xl bg-white text-emerald-800 hover:bg-emerald-50 font-black text-xs shadow-xs inline-flex items-center gap-1.5"
+                        >
+                          <span>🔔 Follow WhatsApp Channel</span>
+                        </a>
+                        <a
+                          href={`https://wa.me/?text=${encodeURIComponent(
+                            `📚 *Follow ${whatsappConfig.channelName} on WhatsApp* for daily NECTA Past Papers, Marking Schemes, TIE Books & Quiz Challenges:\n👉 ${whatsappConfig.mainChannelUrl}`
+                          )}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="px-3 py-2 rounded-xl bg-emerald-900/60 hover:bg-emerald-900 text-white font-bold text-xs inline-flex items-center gap-1"
+                        >
+                          <span>📲 Share with Classmates</span>
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard?.writeText(whatsappConfig.mainChannelUrl);
+                            showToast('📋 Channel invite link copied to clipboard!');
+                          }}
+                          className="px-3 py-2 rounded-xl bg-emerald-800/60 hover:bg-emerald-800 text-white font-bold text-xs cursor-pointer"
+                        >
+                          📋 Copy Link
+                        </button>
+                      </div>
+                    </div>
+                    <div className="bg-white p-2 rounded-2xl shrink-0 shadow-sm text-center">
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${encodeURIComponent(
+                          whatsappConfig.mainChannelUrl
+                        )}`}
+                        alt="WhatsApp Channel QR"
+                        className="w-24 h-24 rounded-lg"
+                      />
+                      <span className="block text-[10px] font-bold text-slate-600 mt-1">Scan to Follow</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 2: WHATSAPP BROADCAST POST GENERATOR (Admin Only) */}
+              {whatsappAdminUnlocked && whatsappTab === 'broadcast' && (
+                <div className="space-y-3 text-xs">
+                  <p className="text-slate-600">
+                    Generate ready-to-post WhatsApp announcements formatted with bold headings and direct links to drive students and teachers from WhatsApp back to your website.
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      { id: 'paper', label: '📄 New Past Paper Post' },
+                      { id: 'quiz', label: '🎯 Daily 20-Qn Quiz Challenge' },
+                      { id: 'book', label: '📚 TIE Books & Syllabus Alert' },
+                      { id: 'teacher', label: '🧑‍🏫 Teacher Lesson Plan Promo' },
+                    ].map((tpl) => (
+                      <button
+                        key={tpl.id}
+                        type="button"
+                        onClick={() => setBroadcastTemplateType(tpl.id as 'paper' | 'quiz' | 'book' | 'teacher')}
+                        className={`px-3 py-1.5 rounded-xl font-bold cursor-pointer border ${
+                          broadcastTemplateType === tpl.id
+                            ? 'bg-emerald-600 text-white border-emerald-600'
+                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        {tpl.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <textarea
+                    readOnly
+                    rows={8}
+                    value={broadcastMessage}
+                    className="w-full p-3.5 rounded-2xl bg-slate-900 text-emerald-100 font-mono text-xs leading-relaxed border border-slate-800 focus:outline-none"
+                  />
+
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard?.writeText(broadcastMessage);
+                        showToast('✅ Broadcast message copied! Paste it in your WhatsApp Channel.');
+                      }}
+                      className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold cursor-pointer"
+                    >
+                      📋 Copy Broadcast Text
+                    </button>
+                    <a
+                      href={`https://wa.me/?text=${encodeURIComponent(broadcastMessage)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold inline-flex items-center gap-1.5"
+                    >
+                      <span>📲 Share Directly on WhatsApp</span>
+                    </a>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 3: SETUP & STEP-BY-STEP GUIDE FOR ADMIN (Admin Only) */}
+              {whatsappAdminUnlocked && whatsappTab === 'setup' && (
+                <div className="space-y-4 text-xs">
+                  <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-2 text-emerald-950">
+                    <div className="font-black text-sm">
+                      🚀 Official WhatsApp Channel Configuration
+                    </div>
+                    <p className="text-[11px] leading-relaxed">
+                      Update your WhatsApp Channel name or invite link below. All Follow buttons and the QR code across Elimika Online update immediately.
+                    </p>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">WhatsApp Channel Display Name</label>
+                      <input
+                        type="text"
+                        value={whatsappConfig.channelName}
+                        onChange={(e) =>
+                          setWhatsappConfig((prev) => ({ ...prev, channelName: e.target.value }))
+                        }
+                        className="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">
+                        Official WhatsApp Channel URL (https://whatsapp.com/channel/...)
+                      </label>
+                      <input
+                        type="url"
+                        value={whatsappConfig.mainChannelUrl}
+                        onChange={(e) =>
+                          setWhatsappConfig((prev) => ({ ...prev, mainChannelUrl: e.target.value }))
+                        }
+                        className="w-full px-3 py-2 rounded-xl border border-slate-300 font-medium"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => saveWhatsappConfig(whatsappConfig)}
+                      className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold cursor-pointer"
+                    >
+                      💾 Save WhatsApp Channel
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 4: GOOGLE ADSENSE MONETIZATION SETUP (Admin Only) */}
+              {whatsappAdminUnlocked && whatsappTab === 'adsense' && (
+                <div className="space-y-4 text-xs">
+                  <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 space-y-2 text-slate-800">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-black text-sm text-blue-950">
+                        💰 Connect Elimika Online to Google AdSense
+                      </span>
+                      <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-bold text-[10px]">
+                        Privacy Policy &amp; Terms Ready ✓
+                      </span>
+                    </div>
+                    <ol className="list-decimal pl-5 space-y-1.5 leading-relaxed text-slate-700">
+                      <li>
+                        <strong>Step 1 — Get a Custom Domain:</strong> Google AdSense requires a top-level custom domain (such as <code>elimikaonline.co.tz</code> or <code>elimika.com</code>) rather than a temporary preview URL.
+                      </li>
+                      <li>
+                        <strong>Step 2 — Sign Up at Google AdSense:</strong> Go to{' '}
+                        <a
+                          href="https://www.google.com/adsense/start/"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-blue-600 underline font-bold"
+                        >
+                          google.com/adsense
+                        </a>{' '}
+                        with your Gmail (<code>mohamedshabani751@gmail.com</code>) and add your website URL.
+                      </li>
+                      <li>
+                        <strong>Step 3 — Copy Your Publisher ID:</strong> Google will give you a Publisher ID that looks like <code>ca-pub-1234567890123456</code>. Paste it below (or send it in chat so we hardcode it into <code>index.html</code> and <code>/public/ads.txt</code>).
+                      </li>
+                      <li>
+                        <strong>Step 4 — Turn On Auto Ads:</strong> In your AdSense dashboard under <strong>Ads → Overview → By site</strong>, toggle <strong>Auto ads ON</strong> so Google automatically places clean educational banners without slowing down past papers or quizzes.
+                      </li>
+                    </ol>
+                  </div>
+
+                  <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50 space-y-3">
+                    <label className="font-bold text-slate-800 block">
+                      Your Google AdSense Publisher ID (e.g. <code>ca-pub-1234567890123456</code>)
+                    </label>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <input
+                        type="text"
+                        value={adsensePubId}
+                        onChange={(e) => setAdsensePubId(e.target.value)}
+                        placeholder="ca-pub-XXXXXXXXXXXXXXXX"
+                        className="flex-1 px-3 py-2 rounded-xl border border-slate-300 font-mono text-xs bg-white"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const cleaned = adsensePubId.trim();
+                          try {
+                            localStorage.setItem('elimika_adsense_pub_id', cleaned);
+                            showToast('✅ Google AdSense Publisher ID saved & injected into <head>!');
+                          } catch {
+                            showToast('⚠️ Could not save Publisher ID.');
+                          }
+                        }}
+                        className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold cursor-pointer shrink-0"
+                      >
+                        💾 Activate AdSense Tag
+                      </button>
+                    </div>
+                    <div className="text-[11px] text-slate-600 space-y-2 pt-1 border-t border-slate-200">
+                      <div>
+                        Your <code>https://elimika.online/ads.txt</code> content for Google verification:{' '}
+                        <code className="bg-slate-200 px-1.5 py-0.5 rounded text-slate-900 font-bold">
+                          google.com, pub-7502193981138651, DIRECT, f08c47fec0942fa0
+                        </code>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <a
+                          href="/elimika-tanzania-website.html"
+                          download="index.html"
+                          className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs inline-flex items-center gap-1"
+                        >
+                          <span>⬇️ Download index.html (for elimika.online)</span>
+                        </a>
+                        <a
+                          href="/ads.txt"
+                          download="ads.txt"
+                          className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs inline-flex items-center gap-1"
+                        >
+                          <span>⬇️ Download ads.txt (for elimika.online)</span>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Discreet Owner / Admin Footer Bar */}
+              <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+                <span>🔒 100% Private WhatsApp Channel — Followers cannot see your phone number</span>
+                {whatsappAdminUnlocked ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setWhatsappAdminUnlocked(false);
+                      setWhatsappTab('join');
+                      setWhatsappAdminPinPrompt(false);
+                      setWhatsappAdminPinInput('');
+                    }}
+                    className="text-rose-600 hover:text-rose-700 font-bold cursor-pointer"
+                  >
+                    🔒 Lock Admin Mode
+                  </button>
+                ) : whatsappAdminPinPrompt ? (
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="password"
+                      value={whatsappAdminPinInput}
+                      onChange={(e) => setWhatsappAdminPinInput(e.target.value)}
+                      placeholder="Admin Code"
+                      className="px-2 py-1 rounded-lg border border-slate-300 text-slate-700 text-[11px] w-24 focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const cleaned = whatsappAdminPinInput.trim().toLowerCase();
+                        if (cleaned === 'elimika' || cleaned === '2026' || cleaned === 'admin') {
+                          setWhatsappAdminUnlocked(true);
+                          setWhatsappTab('broadcast');
+                          setWhatsappAdminPinPrompt(false);
+                          setWhatsappAdminPinInput('');
+                          showToast('🔓 Admin Tools unlocked (Post Generator, Logo & Setup).');
+                        } else {
+                          showToast('❌ Invalid Admin Code.');
+                        }
+                      }}
+                      className="px-2 py-1 rounded-lg bg-slate-800 text-white font-bold cursor-pointer"
+                    >
+                      Unlock
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setWhatsappAdminPinPrompt(false);
+                        setWhatsappAdminPinInput('');
+                      }}
+                      className="text-slate-400 hover:text-slate-600 px-1 cursor-pointer"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setWhatsappAdminPinPrompt(true)}
+                    className="text-slate-300 hover:text-slate-500 transition-colors cursor-pointer"
+                    title="Channel Owner Tools"
+                  >
+                    ⚙️ Admin
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* FOOTER (Hidden when inside full-viewport Moha AI workspace or full-screen Game) */}
       {activePage !== 'moha' && activePage !== 'game' && (
         <footer className="bg-slate-900 text-slate-400 py-8 border-t border-slate-800 text-xs text-center mt-auto">
-          <div className="max-w-5xl mx-auto px-4 space-y-1.5">
-            <div className="font-bold text-white text-sm">ELIMIKA TANZANIA</div>
-            <p>Past Papers, Marking Schemes, TIE Books, Official Syllabuses &amp; Moha AI.</p>
+          <div className="max-w-5xl mx-auto px-4 space-y-4">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="text-left">
+                <div className="font-black text-white text-sm tracking-tight">ELIMIKA TANZANIA</div>
+                <p className="text-slate-400 text-xs">
+                  Past Papers, Marking Schemes, TIE Books, Official Syllabuses &amp; Moha AI Teacher Studio.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-bold text-slate-300">
+                <a
+                  href={whatsappConfig.mainChannelUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-emerald-400 hover:text-emerald-300 underline underline-offset-4"
+                >
+                  🔔 Follow Elimika Online Channel
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setWhatsappModalOpen(true)}
+                  className="text-sky-400 hover:text-sky-300 underline underline-offset-4 cursor-pointer"
+                >
+                  💬 WhatsApp Channel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openBooksPage()}
+                  className="hover:text-white underline underline-offset-4 cursor-pointer"
+                >
+                  📚 TIE Books
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openSyllabusPage()}
+                  className="hover:text-white underline underline-offset-4 cursor-pointer"
+                >
+                  📜 Syllabus
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLegalModalType('privacy')}
+                  className="hover:text-white underline underline-offset-4 cursor-pointer"
+                >
+                  Privacy Policy
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLegalModalType('terms')}
+                  className="hover:text-white underline underline-offset-4 cursor-pointer"
+                >
+                  Terms of Service
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLegalModalType('about')}
+                  className="hover:text-white underline underline-offset-4 cursor-pointer"
+                >
+                  About &amp; Contact
+                </button>
+              </div>
+            </div>
+            <div className="pt-3 border-t border-slate-800/80 text-[11px] text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2">
+              <span>© {new Date().getFullYear()} Elimika Tanzania. All rights reserved.</span>
+              <span>100% English Interface · TIE &amp; NECTA Curriculum Aligned</span>
+            </div>
           </div>
         </footer>
       )}

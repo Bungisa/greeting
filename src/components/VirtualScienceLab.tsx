@@ -4,13 +4,20 @@ import {
   CheckCircle2,
   FlaskConical,
   Gauge,
+  Maximize2,
   Microscope,
   Play,
   RotateCcw,
   Sparkles,
+  X,
   Zap,
 } from 'lucide-react';
 import { MathText } from '../utils/mathRenderer';
+import {
+  Lab3DSceneMode,
+  LabSolveStepId,
+  ScienceLab3DViewport,
+} from '../games/stemBuilder/ScienceLab3DViewport';
 
 export interface VirtualScienceLabProps {
   activeClass?: string;
@@ -558,6 +565,139 @@ export const VirtualScienceLab: React.FC<VirtualScienceLabProps> = ({
     [selectedSaltId]
   );
 
+  // ==================== 4. 3D INTERACTIVE & FULL-SCREEN SOLVING STATE ====================
+  const [is3DFullscreen, setIs3DFullscreen] = useState<boolean>(false);
+  const [show3DSolverDrawer, setShow3DSolverDrawer] = useState<boolean>(false);
+  const [active3DSolveStep, setActive3DSolveStep] = useState<LabSolveStepId>('investigate');
+  const [solverNumericInput, setSolverNumericInput] = useState<string>('');
+  const [solverFeedback, setSolverFeedback] = useState<{
+    correct: boolean;
+    text: string;
+  } | null>(null);
+
+  const current3DSceneConfig = useMemo(() => {
+    if (subjectTab === 'chemistry') {
+      return {
+        sceneMode: 'titration' as Lab3DSceneMode,
+        title:
+          chemMode === 'titration'
+            ? `3D Volumetric Titration (${
+                titrationPreset === 'hcl_naoh' ? '0.10 M HCl vs NaOH' : '0.125 M H₂SO₄ vs Na₂CO₃'
+              })`
+            : `3D Qualitative Salt Analysis (${activeSalt.code})`,
+        subtitle: `Chemistry 2A • ${activeClass} • Endpoint = ${trueEndpointVol.toFixed(2)} cm³`,
+        paramLabel: 'Burette Volume Added (V_A)',
+        paramValue: buretteVolAdded,
+        paramMin: 0,
+        paramMax: 50,
+        paramStep: 0.1,
+        paramUnit: 'cm³',
+        targetVal: trueEndpointVol,
+        liquidHex: flaskColorInfo.hex,
+        expectedCalcValue: Number(
+          (
+            ((titrationPreset === 'hcl_naoh' ? 0.1 : 0.125) * trueEndpointVol) /
+            pipetteVol
+          ).toFixed(4)
+        ),
+        calcPrompt: `Calculate the Molarity of the Base (M_B) in mol/dm³ at the equivalence point V_A = ${trueEndpointVol.toFixed(
+          2
+        )} cm³ (Pipette V_B = ${pipetteVol}.0 cm³):`,
+        calcUnit: 'M',
+      };
+    }
+    if (subjectTab === 'physics') {
+      if (physMode === 'pendulum') {
+        const periodT = Number(
+          (2 * Math.PI * Math.sqrt(selectedLengthCm / 100 / 9.81)).toFixed(2)
+        );
+        return {
+          sceneMode: 'pendulum' as Lab3DSceneMode,
+          title: `3D Simple Pendulum Mechanics (L = ${selectedLengthCm} cm)`,
+          subtitle: `Physics 2A • ${activeClass} • Period T = ${periodT} s`,
+          paramLabel: 'Pendulum String Length (L)',
+          paramValue: selectedLengthCm,
+          paramMin: 20,
+          paramMax: 100,
+          paramStep: 20,
+          paramUnit: 'cm',
+          targetVal: 60,
+          liquidHex: '#38bdf8',
+          expectedCalcValue: 9.81,
+          calcPrompt:
+            'Using the slope S = ΔT²/ΔL = 4.025 s²/m from the 3D pendulum experiment, calculate acceleration due to gravity g = 4π²/S (in m/s²):',
+          calcUnit: 'm/s²',
+        };
+      }
+      const currentI = Number((3.0 / (4.0 + rheostatOhm)).toFixed(2));
+      return {
+        sceneMode: 'circuit' as Lab3DSceneMode,
+        title: `3D Ohm's Law Circuit (Rheostat = ${rheostatOhm} Ω, I = ${currentI} A)`,
+        subtitle: `Physics 2A • ${activeClass} • Unknown Resistor R_x = 4.0 Ω`,
+        paramLabel: 'Rheostat Resistance (R_rheo)',
+        paramValue: rheostatOhm,
+        paramMin: 1,
+        paramMax: 16,
+        paramStep: 1,
+        paramUnit: 'Ω',
+        targetVal: 4,
+        liquidHex: '#f59e0b',
+        expectedCalcValue: 4.0,
+        calcPrompt:
+          'From the 3D Ammeter and Voltmeter readings (V = 2.0 V when I = 0.50 A), calculate the unknown resistance R_x = V / I (in Ω):',
+        calcUnit: 'Ω',
+      };
+    }
+    return {
+      sceneMode: (bioMode === 'food_tests' ? 'food_tests' : 'cell_osmosis') as Lab3DSceneMode,
+      title:
+        bioMode === 'food_tests'
+          ? `3D Biochemical Food Test Rack (${selectedFoodSample})`
+          : '3D Plant Cell Osmosis & Specimen Stage',
+      subtitle: `Biology 2A • ${activeClass} • ${activeTubeColor.label}`,
+      paramLabel: 'Reagent Reaction Intensity',
+      paramValue: selectedFoodSample === 'S1' ? 25 : selectedFoodSample === 'S2' ? 35 : 45,
+      paramMin: 10,
+      paramMax: 50,
+      paramStep: 5,
+      paramUnit: 'cm³',
+      targetVal: 25,
+      liquidHex: activeTubeColor.hex,
+      expectedCalcValue: 100,
+      calcPrompt:
+        'When Benedict’s solution is boiled with a reducing sugar (e.g., Glucose in Sample S1), at what boiling water-bath temperature (°C) does the brick-red Cu₂O precipitate form?',
+      calcUnit: '°C',
+    };
+  }, [
+    subjectTab,
+    chemMode,
+    titrationPreset,
+    activeSalt.code,
+    activeClass,
+    trueEndpointVol,
+    buretteVolAdded,
+    flaskColorInfo.hex,
+    pipetteVol,
+    physMode,
+    selectedLengthCm,
+    rheostatOhm,
+    bioMode,
+    selectedFoodSample,
+    activeTubeColor,
+  ]);
+
+  const handle3DParamChange = (val: number) => {
+    if (subjectTab === 'chemistry') {
+      setBuretteVolAdded(Number(val.toFixed(2)));
+    } else if (subjectTab === 'physics') {
+      if (physMode === 'pendulum') {
+        handleMeasurePendulumLength(val);
+      } else {
+        setRheostatOhm(val);
+      }
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Top Laboratory Header & Subject Switcher */}
@@ -656,7 +796,344 @@ export const VirtualScienceLab: React.FC<VirtualScienceLabProps> = ({
             </div>
           </div>
         )}
+
+        {/* Instant Full-Screen 3D Interactive Lab Launch Banner */}
+        <div className="p-3.5 rounded-2xl bg-gradient-to-r from-slate-950 via-slate-900 to-emerald-950 text-white flex flex-wrap items-center justify-between gap-3 border border-emerald-500/40">
+          <div className="flex items-center gap-2.5 text-xs">
+            <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+            <span>
+              <strong>New 3D Interactive &amp; Animated Science Lab:</strong> Orbit 3D apparatus, trigger animated reactions, and solve NECTA Paper 2 calculations directly inside Full Screen!
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setIs3DFullscreen(true);
+              setShow3DSolverDrawer(false);
+            }}
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-emerald-400 hover:from-amber-300 hover:to-emerald-300 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-md cursor-pointer"
+          >
+            <Maximize2 className="w-3.5 h-3.5" />
+            <span>Launch Full-Screen 3D Lab &amp; Solve</span>
+          </button>
+        </div>
       </div>
+
+      {/* ==================== 3D INTERACTIVE & ANIMATED LAB STAGE (WITH IN-FULLSCREEN SOLVING) ==================== */}
+      <ScienceLab3DViewport
+        sceneMode={current3DSceneConfig.sceneMode}
+        title={current3DSceneConfig.title}
+        subtitle={current3DSceneConfig.subtitle}
+        parameterLabel={current3DSceneConfig.paramLabel}
+        parameterValue={current3DSceneConfig.paramValue}
+        parameterMin={current3DSceneConfig.paramMin}
+        parameterMax={current3DSceneConfig.paramMax}
+        parameterStep={current3DSceneConfig.paramStep}
+        parameterUnit={current3DSceneConfig.paramUnit}
+        targetParameterValue={current3DSceneConfig.targetVal}
+        liquidColorHex={current3DSceneConfig.liquidHex}
+        isFullscreen={is3DFullscreen}
+        onToggleFullscreen={() => setIs3DFullscreen((prev) => !prev)}
+        onParameterChange={handle3DParamChange}
+        onSelectSolveStep={(step) => {
+          setActive3DSolveStep(step);
+          setShow3DSolverDrawer(true);
+        }}
+        onResetLab={() => {
+          if (subjectTab === 'chemistry') setBuretteVolAdded(0);
+          if (subjectTab === 'physics' && physMode === 'pendulum') setIsSwinging(false);
+          setSolverFeedback(null);
+        }}
+      >
+        {/* Top-Left Subject Switcher & Solver Toggle Inside 3D Fullscreen */}
+        <div className="pointer-events-auto absolute top-3 left-3 z-30 flex flex-wrap items-center gap-1.5">
+          {(['chemistry', 'physics', 'biology'] as ScienceSubjectTab[]).map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => {
+                setSubjectTab(tab);
+                setSolverFeedback(null);
+              }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-black capitalize cursor-pointer border transition-all ${
+                subjectTab === tab
+                  ? 'bg-amber-400 text-slate-950 border-amber-300 shadow'
+                  : 'bg-slate-900/90 text-slate-200 border-slate-700 hover:bg-slate-800'
+              }`}
+            >
+              {tab} 3D
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => setShow3DSolverDrawer((prev) => !prev)}
+            className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black flex items-center gap-1 shadow cursor-pointer"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>{show3DSolverDrawer ? 'Hide Solver' : 'Solve Inside 3D Lab'}</span>
+          </button>
+        </div>
+
+        {/* Interactive Full-Screen Problem Solving Modal Inside Full-Screen 3D Lab */}
+        {show3DSolverDrawer && (
+          <div className="pointer-events-auto absolute inset-0 z-[150] bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-6">
+            <div className="w-full max-w-lg max-h-[88vh] bg-slate-950 border-2 border-emerald-500/60 rounded-3xl p-4 sm:p-5 flex flex-col justify-between shadow-2xl overflow-y-auto text-white">
+              <div className="space-y-3.5">
+              <div className="flex items-start justify-between gap-2 border-b border-slate-800 pb-2.5">
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400">
+                    Full-Screen 3D Practical Solver ({active3DSolveStep})
+                  </span>
+                  <h4 className="text-sm font-black text-white">
+                    {current3DSceneConfig.title}
+                  </h4>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShow3DSolverDrawer(false)}
+                  className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Subject-Specific Interactive 3D Controls Inside Fullscreen */}
+              {subjectTab === 'chemistry' && (
+                <div className="p-3 rounded-2xl bg-slate-900 border border-slate-800 space-y-2.5 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-sky-300">
+                      Burette Reading: {buretteVolAdded.toFixed(2)} cm³
+                    </span>
+                    <span className="font-bold text-amber-300">{flaskColorInfo.label}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => handleAddTitrant(5.0)}
+                      className="py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 font-bold text-sky-300 cursor-pointer"
+                    >
+                      +5.00 cm³
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAddTitrant(1.0)}
+                      className="py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 font-bold text-sky-300 cursor-pointer"
+                    >
+                      +1.00 cm³
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAddTitrant(0.1)}
+                      className="py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 font-black text-slate-950 cursor-pointer"
+                    >
+                      +0.10 cm³
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleAutoFillConcordantTable}
+                      className="flex-1 py-1.5 px-2.5 rounded-xl bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 font-black cursor-pointer"
+                    >
+                      ⚡ Auto-Reach Endpoint ({trueEndpointVol.toFixed(2)} cm³)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleRecordCurrentTitre}
+                      className="py-1.5 px-3 rounded-xl bg-emerald-400 text-slate-950 font-black cursor-pointer"
+                    >
+                      Record Titre
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {subjectTab === 'physics' && (
+                <div className="p-3 rounded-2xl bg-slate-900 border border-slate-800 space-y-2.5 text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setPhysMode('pendulum')}
+                      className={`flex-1 py-1.5 rounded-xl font-black cursor-pointer ${
+                        physMode === 'pendulum'
+                          ? 'bg-sky-400 text-slate-950'
+                          : 'bg-slate-800 text-slate-300'
+                      }`}
+                    >
+                      3D Pendulum
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPhysMode('ohm')}
+                      className={`flex-1 py-1.5 rounded-xl font-black cursor-pointer ${
+                        physMode === 'ohm'
+                          ? 'bg-amber-400 text-slate-950'
+                          : 'bg-slate-800 text-slate-300'
+                      }`}
+                    >
+                      3D Ohm&apos;s Circuit
+                    </button>
+                  </div>
+                  {physMode === 'pendulum' ? (
+                    <div className="flex flex-wrap gap-1.5">
+                      {[20, 40, 60, 80, 100].map((len) => (
+                        <button
+                          key={len}
+                          type="button"
+                          onClick={() => handleMeasurePendulumLength(len)}
+                          className={`px-2.5 py-1 rounded-lg font-bold cursor-pointer ${
+                            selectedLengthCm === len
+                              ? 'bg-sky-400 text-slate-950'
+                              : 'bg-slate-800 text-slate-300'
+                          }`}
+                        >
+                          {len} cm
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-slate-300 font-mono">
+                      Rheostat = {rheostatOhm} Ω | I = {(3.0 / (4.0 + rheostatOhm)).toFixed(2)} A | V ={' '}
+                      {((3.0 / (4.0 + rheostatOhm)) * 4.0).toFixed(2)} V
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {subjectTab === 'biology' && (
+                <div className="p-3 rounded-2xl bg-slate-900 border border-slate-800 space-y-2 text-xs">
+                  <div className="font-bold text-violet-300">
+                    Trigger 3D Biochemical Reagent Test ({selectedFoodSample}):
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => runBiologyFoodReagentTest('iodine')}
+                      className="py-1.5 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold cursor-pointer"
+                    >
+                      + Iodine (Starch)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => runBiologyFoodReagentTest('benedict')}
+                      className="py-1.5 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sky-300 font-bold cursor-pointer"
+                    >
+                      + Benedict&apos;s
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => runBiologyFoodReagentTest('biuret')}
+                      className="py-1.5 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-purple-300 font-bold cursor-pointer"
+                    >
+                      + Biuret (Protein)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => runBiologyFoodReagentTest('sudan')}
+                      className="py-1.5 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-rose-300 font-bold cursor-pointer"
+                    >
+                      + Sudan III (Lipid)
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Interactive Numerical Calculation Solver Inside Full-Screen */}
+              <div className="p-3.5 rounded-2xl bg-slate-900 border border-amber-500/40 space-y-2.5 text-xs">
+                <div className="font-black text-amber-300">
+                  Interactive Paper 2 Problem Solver:
+                </div>
+                <p className="text-slate-200 leading-relaxed font-semibold">
+                  {current3DSceneConfig.calcPrompt}
+                </p>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    step="any"
+                    value={solverNumericInput}
+                    onChange={(e) => setSolverNumericInput(e.target.value)}
+                    placeholder={`Enter answer (${current3DSceneConfig.calcUnit})`}
+                    className="flex-1 px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white font-bold focus:outline-none focus:border-amber-400"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSolverNumericInput(String(current3DSceneConfig.expectedCalcValue));
+                      setSolverFeedback({
+                        correct: true,
+                        text: `✓ Solved! Exact value = ${current3DSceneConfig.expectedCalcValue} ${current3DSceneConfig.calcUnit}.`,
+                      });
+                    }}
+                    className="px-2.5 py-2 rounded-xl bg-amber-400/20 border border-amber-400/50 text-amber-300 font-black cursor-pointer"
+                    title="Auto-fill exact calculated value"
+                  >
+                    ⚡ Solve
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const userVal = Number(solverNumericInput.trim());
+                    const target = current3DSceneConfig.expectedCalcValue;
+                    const ok =
+                      solverNumericInput.trim() !== '' &&
+                      !Number.isNaN(userVal) &&
+                      Math.abs(userVal - target) <= Math.max(0.02, target * 0.05);
+                    setSolverFeedback({
+                      correct: ok,
+                      text: ok
+                        ? `🎉 Correct! ${target} ${current3DSceneConfig.calcUnit} verified by 3D apparatus!`
+                        : `Expected ${target} ${current3DSceneConfig.calcUnit}. Tap "⚡ Solve" to inspect the exact step!`,
+                    });
+                  }}
+                  className="w-full py-2 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 font-black cursor-pointer"
+                >
+                  Check Practical Calculation
+                </button>
+
+                {solverFeedback && (
+                  <div
+                    className={`p-2.5 rounded-xl border font-bold ${
+                      solverFeedback.correct
+                        ? 'bg-emerald-950/90 border-emerald-400 text-emerald-200'
+                        : 'bg-amber-950/90 border-amber-400 text-amber-200'
+                    }`}
+                  >
+                    {solverFeedback.text}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-2 text-[11px] text-slate-400">
+              <span>Click 3D apparatus to animate</span>
+              {onLaunchPracticalQuiz && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIs3DFullscreen(false);
+                    onLaunchPracticalQuiz(
+                      activeClass,
+                      subjectTab === 'chemistry'
+                        ? 'Chemistry'
+                        : subjectTab === 'physics'
+                        ? 'Physics'
+                        : 'Biology',
+                      'Paper 2 Practical Exam'
+                    );
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-amber-400 text-slate-950 font-black cursor-pointer"
+                >
+                  20-Qn Practical Quiz →
+                </button>
+              )}
+            </div>
+            </div>
+          </div>
+        )}
+      </ScienceLab3DViewport>
 
       {/* ==================== 1. CHEMISTRY PAPER 2 PRACTICAL LAB ==================== */}
       {subjectTab === 'chemistry' && (

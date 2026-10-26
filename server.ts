@@ -2,16 +2,19 @@ import 'dotenv/config';
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { GenerateVideosOperation, GoogleGenAI, Type } from '@google/genai';
+import { GenerateVideosOperation, GoogleGenAI, ThinkingLevel, Type } from '@google/genai';
 import { getDocumentProxy } from 'unpdf';
 import {
   buildContentIntegratedQuizQuestions,
   buildInstantOfficialDocument,
+  buildTopicDiagramSvg,
+  extractTextbookChaptersFromText,
   generateLocalSmartTutorReply,
   getDefaultFlashcardsForSubject,
   getSyllabusTopicsForClassSubject,
   getTieTextbookChapterContent,
   parseClassSubjectTopicFromPrompt,
+  renderTopicDiagramBlockHtml,
   type LearnedMemoryItem,
   type OfficialDocType,
   type SiteResourceContext,
@@ -43,12 +46,15 @@ function getGenAIClient(): GoogleGenAI | null {
 }
 
 const GEMINI_FALLBACK_MODELS = [
-  'gemini-3.1-flash-lite',
   'gemini-3.8-flash',
   'gemini-flash-latest',
+  'gemini-3.1-flash-lite',
+  'gemini-3.5-flash',
+  'gemini-3-flash-preview',
+  'gemini-3.5-flash-lite',
+  'gemini-flash-lite-latest',
 ] as const;
 const modelCooldownUntil = new Map<string, number>();
-let roundRobinModelCursor = 0;
 
 // ==================== HIGH-CONCURRENCY MULTI-USER CACHE & DEDUPLICATION ====================
 interface CacheRecord<T> {
@@ -134,20 +140,30 @@ async function generateContentWithQuotaFallback(
     contents: unknown;
     config?: Record<string, unknown>;
     useGoogleSearch?: boolean;
+    enableThinking?: boolean;
   }
 ): Promise<string | null> {
   const now = Date.now();
   const totalModels = GEMINI_FALLBACK_MODELS.length;
-  const startIdx = roundRobinModelCursor++ % totalModels;
 
-  for (let offset = 0; offset < totalModels; offset++) {
-    const modelName = GEMINI_FALLBACK_MODELS[(startIdx + offset) % totalModels];
+  for (let idx = 0; idx < totalModels; idx++) {
+    const modelName = GEMINI_FALLBACK_MODELS[idx];
     const cooldown = modelCooldownUntil.get(modelName) || 0;
-    if (now < cooldown) {
+    if (now < cooldown && idx < totalModels - 1) {
       continue;
     }
     try {
-      const baseConfig = params.config || {};
+      const baseConfig: Record<string, unknown> = { ...(params.config || {}) };
+      if (
+        params.enableThinking !== false &&
+        !baseConfig.thinkingConfig &&
+        modelName.startsWith('gemini-3')
+      ) {
+        baseConfig.thinkingConfig = {
+          thinkingLevel: ThinkingLevel.MEDIUM,
+        };
+      }
+
       const configWithTools =
         params.useGoogleSearch && !baseConfig.responseMimeType
           ? { ...baseConfig, tools: [{ googleSearch: {} }] }
@@ -161,27 +177,34 @@ async function generateContentWithQuotaFallback(
             contents: params.contents as never,
             config: configWithTools as never,
           }),
-          14000
+          35000
         );
       } catch (innerErr) {
-        if (params.useGoogleSearch) {
-          // Retry without googleSearch tool if model does not support search grounding on this tier
-          response = await withPromiseTimeout(
-            ai.models.generateContent({
-              model: modelName,
-              contents: params.contents as never,
-              config: baseConfig as never,
-            }),
-            12000
-          );
-        } else {
+        const innerMsg = innerErr instanceof Error ? innerErr.message : String(innerErr);
+        if (
+          innerMsg.includes('429') ||
+          innerMsg.includes('RESOURCE_EXHAUSTED') ||
+          innerMsg.includes('quota') ||
+          innerMsg.includes('503') ||
+          innerMsg.includes('high demand')
+        ) {
           throw innerErr;
         }
+        // Retry with clean base config (without thinkingConfig or googleSearch if unsupported by specific model variant)
+        const cleanConfig: Record<string, unknown> = { ...(params.config || {}) };
+        delete cleanConfig.thinkingConfig;
+        response = await withPromiseTimeout(
+          ai.models.generateContent({
+            model: modelName,
+            contents: params.contents as never,
+            config: cleanConfig as never,
+          }),
+          28000
+        );
       }
 
       let text = response.text?.trim();
       if (text) {
-        // Append verified Google Search grounding links if present
         const chunks = (
           response.candidates?.[0] as {
             groundingMetadata?: {
@@ -209,11 +232,17 @@ async function generateContentWithQuotaFallback(
       if (
         msg.includes('429') ||
         msg.includes('RESOURCE_EXHAUSTED') ||
-        msg.includes('quota') ||
-        msg.includes('404') ||
-        msg.includes('not found')
+        msg.includes('quota')
       ) {
-        modelCooldownUntil.set(modelName, Date.now() + 10 * 60 * 1000);
+        modelCooldownUntil.set(modelName, Date.now() + 15 * 60 * 1000);
+        continue;
+      }
+      if (msg.includes('503') || msg.includes('high demand')) {
+        modelCooldownUntil.set(modelName, Date.now() + 15 * 1000);
+        continue;
+      }
+      if (msg.includes('404') || msg.includes('not found')) {
+        modelCooldownUntil.set(modelName, Date.now() + 30 * 60 * 1000);
         continue;
       }
     }
@@ -327,6 +356,76 @@ async function extractBase64PdfText(base64Data?: string, queryText = ''): Promis
   }
 }
 
+function stripScannerWatermarks(rawText: string): string {
+  return rawText
+    .replace(/FOR\s+MORE\s+VISIT\s*[;:]?\s*https?:\/\/[^\s]+/gi, '')
+    .replace(/https?:\/\/(?:www\.)?elimika\.online[^\s]*/gi, '')
+    .replace(/\bCS\s*CamScanner\b/gi, '')
+    .replace(/\bScanned\s+with\s+CamScanner\b/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+async function fetchGoogleDriveInlinePdf(
+  rawUrl?: string | null
+): Promise<{ mimeType: string; base64Data: string } | null> {
+  const driveId = extractDriveFileIdFromUrl(rawUrl);
+  if (!driveId) return null;
+
+  const cached = drivePdfCache.get(driveId);
+  if (cached && Date.now() - cached.fetchedAt < 60 * 60 * 1000) {
+    return { mimeType: cached.mimeType, base64Data: cached.base64Data };
+  }
+
+  const MAX_PDF_BYTES = 30 * 1024 * 1024;
+  const candidateUrls = [
+    `https://drive.usercontent.google.com/download?id=${encodeURIComponent(driveId)}&export=download&confirm=t`,
+    `https://drive.google.com/uc?export=download&id=${encodeURIComponent(driveId)}&confirm=t`,
+  ];
+
+  for (const dlUrl of candidateUrls) {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 18000);
+      let res = await fetch(dlUrl, {
+        headers: { 'User-Agent': 'Mozilla/5.0' },
+        signal: controller.signal,
+      });
+      const contentType = (res.headers.get('content-type') || '').toLowerCase();
+      if (contentType.includes('text/html')) {
+        const html = await res.text();
+        const uuidMatch = html.match(/name="uuid"\s+value="([^"]+)"/i);
+        if (uuidMatch && uuidMatch[1]) {
+          const confirmUrl = `https://drive.usercontent.google.com/download?id=${encodeURIComponent(driveId)}&export=download&confirm=t&uuid=${encodeURIComponent(uuidMatch[1])}`;
+          res = await fetch(confirmUrl, {
+            headers: { 'User-Agent': 'Mozilla/5.0' },
+            signal: controller.signal,
+          });
+        } else {
+          clearTimeout(timer);
+          continue;
+        }
+      }
+      const contentLen = Number(res.headers.get('content-length') || '0');
+      if (!res.ok || contentLen > MAX_PDF_BYTES) {
+        clearTimeout(timer);
+        continue;
+      }
+      const buf = Buffer.from(await res.arrayBuffer());
+      clearTimeout(timer);
+      if (buf.byteLength < 100 || buf.byteLength > MAX_PDF_BYTES) continue;
+      if (buf.slice(0, 5).toString('ascii') !== '%PDF-') continue;
+      const mimeType = 'application/pdf';
+      const base64Data = buf.toString('base64');
+      drivePdfCache.set(driveId, { mimeType, base64Data, fetchedAt: Date.now() });
+      return { mimeType, base64Data };
+    } catch {
+      // try next URL
+    }
+  }
+  return null;
+}
+
 async function extractGoogleDrivePdfText(
   rawUrl?: string | null,
   queryText = ''
@@ -336,54 +435,42 @@ async function extractGoogleDrivePdfText(
 
   let cachedDoc = driveExtractedPagesCache.get(driveId);
   if (!cachedDoc || Date.now() - cachedDoc.fetchedAt > 2 * 60 * 60 * 1000) {
+    const inlinePdf = await fetchGoogleDriveInlinePdf(rawUrl);
+    if (!inlinePdf) {
+      return '';
+    }
     try {
-      const dlUrl = `https://drive.usercontent.google.com/download?id=${encodeURIComponent(driveId)}&export=download&confirm=t`;
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 4500);
-      const res = await fetch(dlUrl, {
-        headers: { 'User-Agent': 'Mozilla/5.0' },
-        signal: controller.signal,
-      });
-      const contentLen = Number(res.headers.get('content-length') || '0');
-      if (!res.ok || contentLen > 14 * 1024 * 1024) {
-        clearTimeout(timer);
-        // Large scanned-image book PDF (>14MB): record in cache so we don't block future requests, and rely on built-in TIE Textbook chapter content engine
-        cachedDoc = { pages: [], totalPages: 0, fetchedAt: Date.now() };
-        driveExtractedPagesCache.set(driveId, cachedDoc);
-      } else {
-        const arrBuf = await res.arrayBuffer();
-        clearTimeout(timer);
-        const uint8 = new Uint8Array(arrBuf);
-        if (uint8.byteLength > 200 && Buffer.from(uint8.slice(0, 5)).toString('ascii') === '%PDF-') {
-          const pdf = await getDocumentProxy(uint8);
-          const maxPagesToScan = Math.min(pdf.numPages, 65);
-          const pages: string[] = [];
-          for (let p = 1; p <= maxPagesToScan; p++) {
-            const page = await pdf.getPage(p);
-            const content = await page.getTextContent();
-            const text = (content.items as Array<{ str?: string }>)
-              .map((i) => i.str || '')
-              .join(' ')
-              .replace(/\s+/g, ' ')
-              .trim();
-            if (text.length > 20) {
-              pages.push(`[Page ${p}] ${text}`);
-            }
-          }
-          cachedDoc = { pages, totalPages: pdf.numPages, fetchedAt: Date.now() };
-          driveExtractedPagesCache.set(driveId, cachedDoc);
-        } else {
-          cachedDoc = { pages: [], totalPages: 0, fetchedAt: Date.now() };
-          driveExtractedPagesCache.set(driveId, cachedDoc);
+      const uint8 = new Uint8Array(Buffer.from(inlinePdf.base64Data, 'base64'));
+      const pdf = await getDocumentProxy(uint8);
+      const maxPagesToScan = Math.min(pdf.numPages, 35);
+      const pages: string[] = [];
+      for (let p = 1; p <= maxPagesToScan; p++) {
+        const page = await pdf.getPage(p);
+        const content = await page.getTextContent();
+        const rawPageText = (content.items as Array<{ str?: string }>)
+          .map((i) => i.str || '')
+          .join(' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+        const cleanedPageText = stripScannerWatermarks(rawPageText);
+        // Ignore pages that only contain a short scanner watermark (scanned image pages)
+        if (cleanedPageText.length >= 45) {
+          pages.push(`[Page ${p}] ${cleanedPageText}`);
         }
       }
-    } catch {
-      cachedDoc = { pages: [], totalPages: 0, fetchedAt: Date.now() };
+      cachedDoc = { pages, totalPages: pdf.numPages, fetchedAt: Date.now() };
       driveExtractedPagesCache.set(driveId, cachedDoc);
+    } catch {
+      return '';
     }
   }
 
   if (!cachedDoc || cachedDoc.pages.length === 0) return '';
+
+  // For past examination papers (typically <= 20 pages), return all pages so Section A, Section B, and Section C are all included
+  if (cachedDoc.totalPages <= 20) {
+    return cachedDoc.pages.join('\n\n').slice(0, 14000);
+  }
 
   const tocPages = cachedDoc.pages.slice(0, 6);
   const queryWords = (queryText || '')
@@ -405,54 +492,12 @@ async function extractGoogleDrivePdfText(
     matchedPages = scored
       .filter((s) => s.score > 0)
       .sort((a, b) => b.score - a.score)
-      .slice(0, 5)
+      .slice(0, 6)
       .map((s) => s.pageText);
   }
 
   const combined = [...tocPages, ...matchedPages].join('\n\n');
-  return combined.slice(0, 9500);
-}
-
-async function fetchGoogleDriveInlinePdf(
-  rawUrl?: string | null
-): Promise<{ mimeType: string; base64Data: string } | null> {
-  const driveId = extractDriveFileIdFromUrl(rawUrl);
-  if (!driveId) return null;
-
-  const cached = drivePdfCache.get(driveId);
-  if (cached && Date.now() - cached.fetchedAt < 60 * 60 * 1000) {
-    return { mimeType: cached.mimeType, base64Data: cached.base64Data };
-  }
-
-  try {
-    const dlUrl = `https://drive.usercontent.google.com/download?id=${encodeURIComponent(driveId)}&export=download&confirm=t`;
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 4000);
-    const res = await fetch(dlUrl, {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-      signal: controller.signal,
-    });
-    const contentLen = Number(res.headers.get('content-length') || '0');
-    if (!res.ok || contentLen > 6 * 1024 * 1024) {
-      clearTimeout(timer);
-      return null;
-    }
-    const contentType = (res.headers.get('content-type') || '').toLowerCase();
-    if (contentType.includes('text/html')) {
-      clearTimeout(timer);
-      return null;
-    }
-    const buf = Buffer.from(await res.arrayBuffer());
-    clearTimeout(timer);
-    if (buf.byteLength < 100 || buf.byteLength > 6 * 1024 * 1024) return null;
-    if (buf.slice(0, 5).toString('ascii') !== '%PDF-') return null;
-    const mimeType = 'application/pdf';
-    const base64Data = buf.toString('base64');
-    drivePdfCache.set(driveId, { mimeType, base64Data, fetchedAt: Date.now() });
-    return { mimeType, base64Data };
-  } catch {
-    return null;
-  }
+  return combined.slice(0, 12000);
 }
 
 app.get('/api/attached-resources', (_req, res) => {
@@ -526,6 +571,50 @@ app.delete('/api/attached-resources/:id', (req, res) => {
   return res.json({ deleted: true, id });
 });
 
+// Extract Chapters / Table of Contents from Attached Textbook PDF
+app.post('/api/moha/extract-book-chapters', async (req, res) => {
+  try {
+    const {
+      paperUrl = '',
+      cls = 'Form 2',
+      subject = 'Basic Mathematics',
+      customContent = '',
+    } = req.body as {
+      paperUrl?: string;
+      cls?: string;
+      subject?: string;
+      customContent?: string;
+    };
+
+    const baseTopics = getSyllabusTopicsForClassSubject(cls, subject);
+    let rawText = customContent || '';
+    if (paperUrl) {
+      const pdfTocText = await extractGoogleDrivePdfText(
+        paperUrl,
+        'table of contents chapter sura topic unit'
+      );
+      if (pdfTocText) {
+        rawText = `${rawText}\n${pdfTocText}`;
+      }
+    }
+
+    const extracted = extractTextbookChaptersFromText(rawText);
+    const merged =
+      extracted.length > 0
+        ? [
+            ...extracted,
+            ...baseTopics.filter(
+              (bt) => !extracted.some((ex) => ex.toLowerCase() === bt.toLowerCase())
+            ),
+          ]
+        : baseTopics;
+
+    return res.json({ chapters: merged, extractedCount: extracted.length });
+  } catch {
+    return res.json({ chapters: [], extractedCount: 0 });
+  }
+});
+
 // Moha AI Chat & Multimodal Textbook / Past Paper Solver Endpoint
 app.post('/api/moha/chat', async (req, res) => {
   const {
@@ -553,12 +642,34 @@ app.post('/api/moha/chat', async (req, res) => {
   // Check if user is explicitly querying a learned item first
   const lower = userPrompt.toLowerCase();
   for (const item of learnedMemory) {
-    if (lower === item.topic.toLowerCase()) {
+    const itemTopicLower = (item.topic || '').trim().toLowerCase();
+    if (!itemTopicLower) continue;
+    const topicWords = itemTopicLower.split(/\s+/).filter((w) => w.length >= 3);
+    if (
+      lower === itemTopicLower ||
+      lower.includes(itemTopicLower) ||
+      (topicWords.length > 0 && topicWords.every((w) => lower.includes(w)))
+    ) {
       return res.json({
-        reply: `🧠 **Moha AI (Learned Memory — ${item.topic}):**\n\n${item.content}\n\n*(Saved on ${item.timestamp})*`,
+        reply: `🧠 **From Custom Teacher Memory — ${item.topic}:**\n\n${item.content}\n\n*(Saved on ${item.timestamp})*`,
         source: 'memory',
       });
     }
+  }
+
+  // Fast conversational routing for greetings, help, and pleasantries (never dump syllabuses or hang)
+  const strippedPunct = lower.replace(/[^a-z0-9\s]/g, '').trim();
+  const isConversationalGreeting =
+    /^(hi|hello|hey|hii|helo|greetings|good\s+(morning|afternoon|evening|day)|hi\s+moha|hello\s+moha|hey\s+moha|how\s+are\s+you|how\s+are\s+you\s+doing|how\s+is\s+it\s+going|who\s+are\s+you|what\s+is\s+your\s+name|what\s+can\s+you\s+do|help|how\s+to\s+use|thank\s+you|thanks|thx|ok|okay|got\s+it|nice|great|awesome|cool)$/i.test(
+      strippedPunct
+    );
+
+  if (isConversationalGreeting && !image) {
+    const instantReply = generateLocalSmartTutorReply(userPrompt, cls, subject, learnedMemory, siteResources);
+    return res.json({
+      reply: instantReply,
+      source: 'local-conversational',
+    });
   }
 
   // Parse any specific Class, Subject, or Topic mentioned in the user's prompt
@@ -593,19 +704,26 @@ app.post('/api/moha/chat', async (req, res) => {
       : '';
 
   const focusedRes = siteResources?.focusedResource;
+  const isFocusedPastPaper = Boolean(
+    focusedRes &&
+      !focusedRes.isBook &&
+      !focusedRes.isSyllabus &&
+      !/\b(book|kitabu|textbook|syllabus|muhtasari)\b/i.test(`${focusedRes.category} ${focusedRes.title}`)
+  );
   const serverStoredFocused = focusedRes?.id ? serverAttachedResources.get(focusedRes.id) : undefined;
   const primaryBookForSubject = siteResources?.books?.find((b) => b.paperUrl) || siteResources?.books?.[0];
-  const primarySyllabusForSubject = siteResources?.syllabuses?.find((s) => s.paperUrl) || siteResources?.syllabuses?.[0];
 
-  // Extract PDF text from focused resource, uploaded syllabus, or attached base64 PDF
+  // Only extract remote Google Drive PDF when a specific resource is explicitly pinned by the user
   const pdfUrlToExtract =
-    focusedRes?.paperUrl ||
-    primarySyllabusForSubject?.paperUrl ||
-    primaryBookForSubject?.paperUrl ||
-    null;
+    focusedRes && focusedRes.id && focusedRes.id !== 'ALL'
+      ? focusedRes.paperUrl || focusedRes.answersUrl || null
+      : null;
 
   const extractedPdfText = pdfUrlToExtract
-    ? await extractGoogleDrivePdfText(pdfUrlToExtract, `${effectiveTopic} ${userPrompt}`)
+    ? await Promise.race([
+        extractGoogleDrivePdfText(pdfUrlToExtract, `${effectiveTopic} ${userPrompt}`),
+        new Promise<string>((resolve) => setTimeout(() => resolve(''), 3500)),
+      ])
     : '';
 
   const extractedInlinePdfText =
@@ -615,14 +733,15 @@ app.post('/api/moha/chat', async (req, res) => {
       ? await extractBase64PdfText(serverStoredFocused.attachedFileBase64, `${effectiveTopic} ${userPrompt}`)
       : '';
 
+  // When solving a Past Paper, DO NOT inject generic textbookChapterInfo.chapterSummaryMarkdown into mergedCustomContent
   const mergedCustomContent = [
     systemPromptContext,
     focusedRes?.customContent,
     serverStoredFocused?.customContent,
-    primaryBookForSubject?.customContent,
+    !isFocusedPastPaper ? primaryBookForSubject?.customContent : '',
     extractedInlinePdfText,
     extractedPdfText,
-    textbookChapterInfo.chapterSummaryMarkdown,
+    !isFocusedPastPaper ? textbookChapterInfo.chapterSummaryMarkdown : '',
   ]
     .filter(Boolean)
     .join('\n\n');
@@ -648,31 +767,21 @@ app.post('/api/moha/chat', async (req, res) => {
     : undefined;
 
   const focusedResourceBlock = focusedRes
-    ? `\n\n=== PINNED / ATTACHED RESOURCE FOR READING COMPREHENSION ===
-- Pinned Document Title: "${focusedRes.title}"
+    ? `\n\n=== PINNED / ATTACHED RESOURCE ===
+- Document Title: "${focusedRes.title}"
 - Category: ${focusedRes.category} | Class: ${focusedRes.form} | Subject: ${focusedRes.subject} | Year: ${focusedRes.year}
-- Direct Document Link: ${focusedRes.paperUrl || 'Attached in Elimika Catalog'}
-- Pinned Document & TIE Textbook Reading Comprehension Passage / Content:
-${mergedCustomContent.slice(0, 12000)}
-=== END OF PINNED RESOURCE PASSAGE ===`
-    : `\n\n=== OFFICIAL ${effectiveCls.toUpperCase()} ${effectiveSubject.toUpperCase()} TIE TEXTBOOK READING COMPREHENSION REFERENCE ===
+- Document Link: ${focusedRes.paperUrl || 'Attached in Elimika Catalog'}${
+        mergedCustomContent.trim()
+          ? `\n- Document Content / Context:\n${mergedCustomContent.slice(0, 14000)}`
+          : '\n- Document Content: Attached directly as inline PDF file (read the visual pages of the attached PDF directly).'
+      }
+=== END OF PINNED RESOURCE ===`
+    : `\n\n=== OFFICIAL ${effectiveCls.toUpperCase()} ${effectiveSubject.toUpperCase()} TIE TEXTBOOK REFERENCE ===
 ${mergedCustomContent.slice(0, 12000)}
 === END OF TIE TEXTBOOK REFERENCE ===`;
 
   const siteResourcesContext = siteResources
-    ? `\n\nUploaded & Attached Elimika Website Resources Integrated for ${effectiveCls} ${effectiveSubject}:${focusedResourceBlock}
-- TIE Textbooks Available: ${
-        siteResources.books.map((b) => `${b.title} (${b.form} ${b.subject})`).join('; ') ||
-        `Official TIE ${effectiveCls} ${effectiveSubject} Student's Book`
-      }
-- Official Syllabuses Available: ${
-        siteResources.syllabuses.map((s) => `${s.title} (${s.form} ${s.subject})`).join('; ') ||
-        `Official TIE ${effectiveCls} ${effectiveSubject} Syllabus`
-      }
-- Past Examination Papers Available: ${
-        siteResources.papers.map((p) => `${p.title} [${p.category} ${p.year}]`).join('; ') ||
-        `NECTA ${effectiveCls} ${effectiveSubject} Past Papers`
-      }`
+    ? `\n\nUploaded & Attached Elimika Website Resources for ${effectiveCls} ${effectiveSubject}:${focusedResourceBlock}`
     : focusedResourceBlock;
 
   const topicQuizQuestions = isQuizRequest
@@ -692,93 +801,171 @@ ${mergedCustomContent.slice(0, 12000)}
           ? { mimeType: image.mimeType, base64Data: image.base64Data }
           : null;
 
-      if (!activeInlineFile && serverStoredFocused?.attachedFileBase64 && serverStoredFocused?.attachedFileMimeType) {
+      if (
+        !activeInlineFile &&
+        serverStoredFocused?.attachedFileBase64 &&
+        serverStoredFocused?.attachedFileMimeType &&
+        serverStoredFocused.attachedFileBase64.length < 15_000_000
+      ) {
         activeInlineFile = {
           mimeType: serverStoredFocused.attachedFileMimeType,
           base64Data: serverStoredFocused.attachedFileBase64,
         };
       }
 
-      if (!activeInlineFile && !extractedPdfText && focusedRes?.paperUrl) {
-        activeInlineFile = await fetchGoogleDriveInlinePdf(focusedRes.paperUrl);
+      if (
+        !activeInlineFile &&
+        focusedRes &&
+        focusedRes.id &&
+        focusedRes.id !== 'ALL' &&
+        (focusedRes.paperUrl || focusedRes.answersUrl)
+      ) {
+        const drivePdf = await Promise.race([
+          (focusedRes.paperUrl ? fetchGoogleDriveInlinePdf(focusedRes.paperUrl) : Promise.resolve(null)).then(
+            (resPdf) => resPdf || (focusedRes.answersUrl ? fetchGoogleDriveInlinePdf(focusedRes.answersUrl) : null)
+          ),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 3500)),
+        ]);
+        if (drivePdf) {
+          activeInlineFile = drivePdf;
+        }
       }
 
+      const needsWebGrounding = /\b(search the web|google search|latest news|current events)\b/i.test(
+        userPrompt
+      );
+
       const chatCacheKey =
-        !activeInlineFile
-          ? `chat:v2:${effectiveCls}:${effectiveSubject}:${effectiveTopic}:${focusedRes?.title || 'ALL'}:${userPrompt.toLowerCase().slice(0, 220)}`
+        history.length <= 2
+          ? `chat:v11:${effectiveCls}:${effectiveSubject}:${focusedRes?.id || 'ALL'}:${focusedRes?.paperUrl || 'NOURL'}:${userPrompt.toLowerCase().slice(0, 220)}`
           : '';
 
       const runChatGeneration = async () => {
-        const systemInstruction = `You are Moha AI, the official Tanzanian TIE (Tanzania Institute of Education) & NECTA Academic Assistant for ${effectiveCls} ${effectiveSubject}.
-Specified Class: ${effectiveCls}
-Specified Subject: ${effectiveSubject}
-Matched TIE Textbook Chapter / Topic: ${textbookChapterInfo.matchedChapter}
-Active TIE Textbook: "${textbookChapterInfo.bookTitle}"${
-          focusedRes ? `\nPinned Active Resource: "${focusedRes.title}" (${focusedRes.category} · ${focusedRes.form} · ${focusedRes.subject} · ${focusedRes.year})` : ''
-        }
-
-OFFICIAL TIE STUDENT'S TEXTBOOK CHAPTERS & TABLE OF CONTENTS FOR ${effectiveCls.toUpperCase()} ${effectiveSubject.toUpperCase()}:
-${syllabusTopics.map((t, i) => `${i + 1}. ${t}`).join('\n')}
+        const systemInstruction = isFocusedPastPaper
+          ? `You are Moha AI, an expert NECTA Examination Solver & Academic Tutor on Elimika.
+IMPORTANT: Respond strictly in 100% English at all times.
+Active Examination Paper: "${focusedRes?.title}" (${effectiveCls} ${effectiveSubject} · ${focusedRes?.category} ${focusedRes?.year}).
 ${siteResourcesContext}${learnedContext}
 
-CRITICAL READING COMPREHENSION, TIE TEXTBOOK & QUESTION-ANSWERING RULES:
-1. READING COMPREHENSION FIRST: Before answering, carefully read the "PINNED / ATTACHED RESOURCE FOR READING COMPREHENSION" and "OFFICIAL TIE STUDENT'S TEXTBOOK CHAPTERS" provided above. Ground every definition, formula, law, sub-topic, and worked solution directly in "${focusedRes?.title || textbookChapterInfo.bookTitle}" and the matched TIE Textbook Chapter (${textbookChapterInfo.matchedChapter}).
-2. ANSWER ACCORDING TO THE QUESTIONS ASKED:
-   - Directly answer the exact question(s) asked by the student or teacher!
-   - If the student asks a specific question (e.g., "What is...", "Define...", "Calculate...", "Solve...", "Explain Chapter 2...", or pastes numbered/lettered exam questions 1, 2, 3 or a, b, c), answer EVERY part directly, completely, and step-by-step.
-   - If the student asks for the topics or chapters of the textbook, list all official TIE textbook chapters for ${effectiveCls} ${effectiveSubject} and explain ${textbookChapterInfo.matchedChapter} in detail.
-3. CLEAR 3-PART RESPONSE STRUCTURE:
-   **1. 📌 Direct Answer & TIE Textbook Reference (${effectiveCls} • ${textbookChapterInfo.matchedChapter}):** Directly answer the user's question first, citing "${focusedRes?.title || textbookChapterInfo.bookTitle}" and Chapter "${textbookChapterInfo.matchedChapter}".
-   **2. 📐 Step-by-Step Worked Solution / Textbook Explanation:** Show every step clearly (Given -> Formula -> Substitution -> Final Answer with units, or numbered points from the TIE Student's Book).
-   **3. ✅ NECTA Marking Scheme Allocation & Practice Check:** Show mark allocation (e.g., [M1], [A1], Total Marks) and 1-2 solved practice questions from the chapter/paper.
-4. LESSON NOTES RULE: Never put Lesson Notes inside a table. Format Lesson Notes with clean numbered headings, bullet points (•), and step-by-step worked examples.
-5. STRICT MATHJAX RULE: ALWAYS format all mathematical expressions, equations, fractions (\\frac{a}{b}), square roots (\\sqrt{x}), exponents (x^2), subscripts (a_1), logarithms (\\log_{10}(x)), trigonometry (\\sin\\theta, \\cos\\theta), derivatives (\\frac{dy}{dx}), integrals (\\int), vectors, and physics/chemistry formulas using LaTeX MathJax delimiters ($...$ for inline math and $$...$$ for display equations).`;
+CRITICAL RULES FOR SOLVING THIS PAST PAPER:
+1. 100% ENGLISH: Write all explanations, headings, and steps strictly in English.
+2. READ THE ACTUAL PAPER ONLY: Read the exact questions printed inside the attached PDF document or extracted paper text above.
+3. CLEAR STEP-BY-STEP SOLUTIONS: Organize your response cleanly by Section and Question Number, showing clear step-by-step working/points and the **Final Answer** for each question.
+4. INCLUDE LABELED SVG DIAGRAMS WHEN NEEDED: Whenever a question or its solution requires a diagram, graph, geometric figure, circuit, apparatus, or biological structure, include a neat, well-labeled inline \`<svg viewBox="0 0 600 230" style="width:100%; max-width:580px; height:auto; display:block; margin:10px auto; background:#ffffff; border:1px solid #cbd5e1; border-radius:8px;">...</svg>\` with a pure white (#ffffff) background.
+5. MATHJAX: Format all mathematical and scientific equations inside $...$ (inline) or $$...$$ (display).`
+          : `You are Moha AI, a direct, clear, and intelligent Academic Tutor & Problem Solver on Elimika with full mastery of all subjects and the Tanzanian TIE & NECTA curriculum.
+IMPORTANT: Respond strictly in 100% English at all times.
+Active Context (use ONLY if relevant to the user's question): ${effectiveCls} ${effectiveSubject} — "${focusedRes?.title || textbookChapterInfo.bookTitle}" (${textbookChapterInfo.matchedChapter}).
+${siteResourcesContext}${learnedContext}
+
+RULES:
+1. 100% ENGLISH & CONVERSATIONAL INTELLIGENCE: Write strictly in clear English. If the user asks a conversational or general question, reply naturally and directly without dumping unrequested textbook chapters or syllabuses.
+2. BE CONCISE & DIRECT: Answer the user's exact question immediately.
+3. CLEAR STEP-BY-STEP WORKING: For academic or problem-solving questions, state the formula/principle briefly, show the step-by-step calculation or points clearly, and state the **Final Answer**.
+4. INCLUDE LABELED SVG DIAGRAMS WHEN NEEDED: Whenever the topic involves a diagram, graph, geometry, trigonometry, vectors, sets/Venn diagrams, physics circuits/forces/rays, chemistry laboratory apparatus, or biological structures, include a clean, labeled inline \`<svg viewBox="0 0 600 230" style="width:100%; max-width:580px; height:auto; display:block; margin:10px auto; background:#ffffff; border:1px solid #cbd5e1; border-radius:8px;">...</svg>\` with a pure white (#ffffff) background.
+5. LESSON NOTES: Format notes with clean headings and bullet points (never inside a table).
+6. MATHJAX: Format all mathematical and scientific equations inside $...$ (inline) or $$...$$ (display).`;
 
         const recentHistoryParts = history
           .filter((h) => !h.text.includes('official-tie-doc') && h.id !== 'msg-welcome')
-          .slice(-6)
-          .map((h) => `${h.role === 'user' ? 'Student/Teacher' : 'Moha AI'}: ${h.text}`)
+          .slice(-4)
+          .map((h) => `${h.role === 'user' ? 'User' : 'Moha AI'}: ${h.text}`)
           .join('\n\n');
 
-        const fullPromptText = recentHistoryParts
-          ? `Previous conversation context:\n${recentHistoryParts}\n\nPinned Textbook / Paper Context: "${focusedRes?.title || textbookChapterInfo.bookTitle}" (${effectiveCls} ${effectiveSubject} — ${textbookChapterInfo.matchedChapter})\nStudent/Teacher Question:\n${userPrompt}`
-          : `Pinned Textbook / Paper Context: "${focusedRes?.title || textbookChapterInfo.bookTitle}" (${effectiveCls} ${effectiveSubject} — ${textbookChapterInfo.matchedChapter})\nStudent/Teacher Question:\n${userPrompt}`;
+        const fullPromptText = isFocusedPastPaper
+          ? `Read the attached examination paper "${focusedRes?.title}" (${effectiveCls} ${effectiveSubject} ${focusedRes?.year}) carefully. ${userPrompt}\n\nIMPORTANT: Respond in 100% English. Solve and explain the exact questions printed inside the attached PDF examination paper in order.`
+          : recentHistoryParts
+          ? `${recentHistoryParts}\n\nQuestion: ${userPrompt}`
+          : userPrompt;
 
-        const parts: Array<{ text?: string; inlineData?: { mimeType: string; data: string } }> = [];
         if (activeInlineFile && activeInlineFile.base64Data && activeInlineFile.mimeType) {
-          parts.push({
-            inlineData: {
-              mimeType: activeInlineFile.mimeType,
-              data: activeInlineFile.base64Data,
+          const multimodalRes = await generateContentWithQuotaFallback(ai, {
+            contents: {
+              parts: [
+                {
+                  inlineData: {
+                    mimeType: activeInlineFile.mimeType,
+                    data: activeInlineFile.base64Data,
+                  },
+                },
+                { text: fullPromptText },
+              ],
             },
+            config: {
+              systemInstruction,
+              temperature: 0.2,
+            },
+            useGoogleSearch: false,
+            enableThinking: false,
           });
+          if (multimodalRes) return multimodalRes;
         }
-        parts.push({ text: fullPromptText });
 
         return generateContentWithQuotaFallback(ai, {
-          contents: { parts },
+          contents: fullPromptText,
           config: {
             systemInstruction,
-            temperature: 0.3,
+            temperature: 0.25,
           },
-          useGoogleSearch: !activeInlineFile,
+          useGoogleSearch: needsWebGrounding,
+          enableThinking: false,
         });
       };
 
-      const replyText = chatCacheKey
-        ? await withHighTrafficDedupe(
+      const rawGenerationPromise = chatCacheKey
+        ? withHighTrafficDedupe(
             chatCacheKey,
             runChatGeneration,
             (val) => Boolean(val && val.length > 0)
           )
-        : await runChatGeneration();
+        : runChatGeneration();
+
+      const replyText = await Promise.race([
+        rawGenerationPromise,
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 8500)),
+      ]);
 
       if (replyText && replyText.length > 0) {
+        // Unwrap any markdown code fences around <svg> blocks
+        let cleanedReply = replyText.replace(
+          /```(?:xml|svg|html)?\s*(<svg\b[\s\S]*?<\/svg>)\s*```/gi,
+          '$1'
+        );
+
+        // If Gemini started an <svg> block that got cut off before </svg>, strip the broken fragment so we append a complete diagram below
+        if (/<svg\b/i.test(cleanedReply) && !/<\/svg\s*>/i.test(cleanedReply)) {
+          cleanedReply = cleanedReply
+            .replace(/```(?:xml|svg|html)?\s*<svg\b[\s\S]*$/i, '')
+            .replace(/<svg\b[\s\S]*$/i, '')
+            .trim();
+        }
+
+        const combinedCheck = `${userPrompt} ${effectiveTopic} ${effectiveSubject} ${cleanedReply}`.toLowerCase();
+        const needsDiagram =
+          /\b(notes|lesson notes|prepare notes|study notes|diagram|draw|chora|sketch|graph|plot|variation|rate|trig|pythagoras|triangle|circle|chord|tangent|venn|set|vector|coordinate|linear programming|feasible|circuit|ohm|force|pulley|mirror|lens|ray|titration|apparatus|electrolysis|cell|photosynthesis|heart|nephron|digestive|map|contour|relief|explain|solve)\b/i.test(
+            combinedCheck
+          );
+
+        const finalReply =
+          needsDiagram && !cleanedReply.includes('<!--DIAGRAM_START-->') && !cleanedReply.includes('<svg')
+            ? `${cleanedReply}\n\n<!--DIAGRAM_START-->${renderTopicDiagramBlockHtml(
+                effectiveCls,
+                effectiveSubject,
+                textbookChapterInfo.matchedChapter || effectiveTopic,
+                effectiveSubTopic || effectiveTopic
+              )}<!--DIAGRAM_END-->`
+            : cleanedReply;
+
+        const extractedBookChapters = extractTextbookChaptersFromText(
+          `${extractedPdfText}\n${extractedInlinePdfText}`
+        );
+
         return res.json({
-          reply: replyText,
+          reply: finalReply,
           source: 'gemini',
           parsedTarget,
           quizQuestions: topicQuizQuestions,
+          extractedBookChapters,
         });
       }
     } catch {
@@ -809,16 +996,23 @@ app.post('/api/moha/generate-doc', async (req, res) => {
     meta: TeacherMetadata;
   };
 
+  const tbInfo = getTieTextbookChapterContent(
+    meta.cls,
+    meta.subject,
+    `${meta.topic} ${meta.subTopic}`,
+    meta.siteResources
+  );
+
   const resourceSummary = meta.siteResources
-    ? `Uploaded Website Books: ${meta.siteResources.books.map((b) => b.title).join(', ')}. Uploaded Syllabuses: ${meta.siteResources.syllabuses.map((s) => s.title).join(', ')}. Uploaded Past Papers: ${meta.siteResources.papers.map((p) => `${p.title} (${p.year})`).join(', ')}.`
-    : '';
+    ? `Attached Textbook: "${tbInfo.bookTitle}" (Matched Chapter: ${tbInfo.matchedChapter}; Sub-topics: ${tbInfo.subTopicsList.join(', ')}${tbInfo.attachedExcerpt ? `; Excerpt: ${tbInfo.attachedExcerpt.slice(0, 1500)}` : ''}). Uploaded Website Books: ${meta.siteResources.books.map((b) => b.title).join(', ')}. Uploaded Syllabuses: ${meta.siteResources.syllabuses.map((s) => s.title).join(', ')}. Uploaded Past Papers: ${meta.siteResources.papers.map((p) => `${p.title} (${p.year})`).join(', ')}.`
+    : `Attached Textbook: "${tbInfo.bookTitle}" (Matched Chapter: ${tbInfo.matchedChapter}; Sub-topics: ${tbInfo.subTopicsList.join(', ')}).`;
 
   const ai = getGenAIClient();
   if (ai && (type === 'lessonplan' || type === 'markingscheme' || type === 'lessonnotes')) {
     try {
       if (type === 'lessonplan') {
         const jsonText = await generateContentWithQuotaFallback(ai, {
-          contents: `Create specific, curriculum-authentic Tanzanian TIE 4-stage lesson plan activities for Class: ${meta.cls}, Subject: ${meta.subject}, Main Topic: ${meta.topic}, Sub-Topic: ${meta.subTopic}, Present Students: ${meta.presTotal}. Integrate these website resources: ${resourceSummary}`,
+          contents: `Create specific, curriculum-authentic Tanzanian TIE 4-stage lesson plan activities for Class: ${meta.cls}, Subject: ${meta.subject}, Main Topic: ${meta.topic}, Sub-Topic: ${meta.subTopic}, Present Students: ${meta.presTotal}. Strictly follow the attached textbook contents: ${resourceSummary}`,
           config: {
             responseMimeType: 'application/json',
             responseSchema: {
@@ -858,12 +1052,12 @@ app.post('/api/moha/generate-doc', async (req, res) => {
           return res.json({ html: docHtml, source: 'gemini' });
         }
       } else if (type === 'lessonnotes') {
-        const docCacheKey = `doc:lessonnotes:${meta.cls}:${meta.subject}:${meta.topic}:${meta.subTopic}`;
+        const docCacheKey = `doc:lessonnotes:v2:${meta.cls}:${meta.subject}:${meta.topic}:${meta.subTopic}:${tbInfo.bookTitle}`;
         const jsonText = await withHighTrafficDedupe(
           docCacheKey,
           () =>
             generateContentWithQuotaFallback(ai, {
-              contents: `Create comprehensive official Tanzanian TIE Lesson Notes for Class: ${meta.cls}, Subject: ${meta.subject}, Main Topic: ${meta.topic}, Sub-Topic: ${meta.subTopic}. Integrate concepts from the TIE textbook, official syllabus, and past examination papers (${resourceSummary}). Include 3 detailed keyConcepts, 2 step-by-step workedExamples, and 3 NECTA-style practiceQuestions with marking hints. STRICT MATHJAX RULE: Format all mathematical expressions, formulas, fractions (\\frac{a}{b}), roots (\\sqrt{x}), exponents (x^2), logarithms (\\log_{10}(x)), and scientific equations inside $...$ inline LaTeX delimiters.`,
+              contents: `Create comprehensive official Tanzanian TIE Lesson Notes for Class: ${meta.cls}, Subject: ${meta.subject}, Main Topic: ${meta.topic}, Sub-Topic: ${meta.subTopic}. Strictly follow the attached textbook "${tbInfo.bookTitle}" (${tbInfo.matchedChapter}) and its sub-topics (${tbInfo.subTopicsList.join(', ')}): ${resourceSummary}. Include 3 detailed keyConcepts (directly explaining the textbook sub-topics and labeled diagram components), 2 step-by-step workedExamples, and 3 NECTA-style practiceQuestions with marking hints. STRICT MATHJAX RULE: Format all mathematical expressions, formulas, fractions (\\frac{a}{b}), roots (\\sqrt{x}), exponents (x^2), logarithms (\\log_{10}(x)), and scientific equations inside $...$ inline LaTeX delimiters.`,
               config: {
                 responseMimeType: 'application/json',
                 responseSchema: {
@@ -1052,7 +1246,7 @@ IMPORTANT RULES:
 4. Provide 4 clear options, correctIndex (0 to 3), a step-by-step worked solution in "explanation" (Step 1 -> Step 2 -> Final Answer), the "topic", the "subTopic", and the exact uploaded Book or Past Paper title in "sourceRef".`;
 
           let inlinePdf: { mimeType: string; base64Data: string } | null = null;
-          if (!extractedQuizPdfText && focusedRes?.paperUrl) {
+          if (focusedRes?.paperUrl) {
             inlinePdf = await fetchGoogleDriveInlinePdf(focusedRes.paperUrl);
           }
 
@@ -1619,6 +1813,11 @@ app.post('/api/video-download', async (req, res) => {
       error: err instanceof Error ? err.message : 'Failed to download generated video.',
     });
   }
+});
+
+app.get('/ads.txt', (_req, res) => {
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  res.send('google.com, pub-7502193981138651, DIRECT, f08c47fec0942fa0\n');
 });
 
 async function startServer() {

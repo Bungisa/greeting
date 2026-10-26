@@ -1,6 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Hammer, Maximize2, Minimize2 } from 'lucide-react';
+import { StemBuilderGame } from '../games/stemBuilder/StemBuilderGame';
 
 type GameState = 'TITLE_MENU' | 'PLAYING' | 'PAUSED' | 'VICTORY' | 'GAME_OVER';
+type ArenaExperienceMode = 'interceptor' | 'bridge_3d';
 
 interface StemArenaGameProps {
   onExitGame: () => void;
@@ -59,13 +62,34 @@ const CHALLENGES: MathChallenge[] = [
 ];
 
 export const StemArenaGame: React.FC<StemArenaGameProps> = ({ onExitGame }) => {
+  const [arenaMode, setArenaMode] = useState<ArenaExperienceMode>('interceptor');
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [gameState, setGameState] = useState<GameState>('TITLE_MENU');
   const [score, setScore] = useState<number>(0);
   const [wave, setWave] = useState<number>(1);
   const [lives, setLives] = useState<number>(3);
   const [challengeIdx, setChallengeIdx] = useState<number>(0);
 
+  const arenaContainerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  const toggleFullscreen = useCallback(() => {
+    setIsFullscreen((prev) => {
+      const next = !prev;
+      if (typeof document !== 'undefined') {
+        const targetEl = arenaContainerRef.current || document.documentElement;
+        if (next && !document.fullscreenElement) {
+          targetEl.requestFullscreen?.().catch(() => {});
+        } else if (!next && document.fullscreenElement) {
+          document.exitFullscreen?.().catch(() => {});
+        }
+      }
+      window.setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+      }, 60);
+      return next;
+    });
+  }, []);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const keysRef = useRef<Record<string, boolean>>({});
   const stateRef = useRef<{
@@ -330,8 +354,46 @@ export const StemArenaGame: React.FC<StemArenaGameProps> = ({ onExitGame }) => {
 
   const activeChallenge = CHALLENGES[challengeIdx % CHALLENGES.length];
 
+  if (arenaMode === 'bridge_3d') {
+    return (
+      <div
+        ref={arenaContainerRef}
+        className={`fixed inset-0 ${
+          isFullscreen ? 'z-[100] w-screen h-[100dvh]' : 'z-50 w-screen h-screen'
+        } overflow-y-auto bg-slate-950`}
+      >
+        <div className="fixed top-3 right-16 z-[110] flex items-center gap-2">
+          <button
+            type="button"
+            onClick={toggleFullscreen}
+            aria-label={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+            className="px-3.5 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-xl cursor-pointer"
+          >
+            {isFullscreen ? (
+              <>
+                <Minimize2 className="w-4 h-4" />
+                <span>Exit Fullscreen</span>
+              </>
+            ) : (
+              <>
+                <Maximize2 className="w-4 h-4" />
+                <span>Fullscreen</span>
+              </>
+            )}
+          </button>
+        </div>
+        <StemBuilderGame onBack={() => setArenaMode('interceptor')} />
+      </div>
+    );
+  }
+
   return (
-    <div className="fixed inset-0 z-50 w-screen h-screen overflow-hidden bg-[#090d16] select-none">
+    <div
+      ref={arenaContainerRef}
+      className={`fixed inset-0 ${
+        isFullscreen ? 'z-[100] w-screen h-[100dvh]' : 'z-50 w-screen h-screen'
+      } overflow-hidden bg-[#090d16] select-none`}
+    >
       <canvas
         ref={canvasRef}
         onClick={(e) => {
@@ -344,7 +406,7 @@ export const StemArenaGame: React.FC<StemArenaGameProps> = ({ onExitGame }) => {
       />
 
       {/* Lightweight Translucent HUD */}
-      <div className="fixed top-4 left-4 right-4 flex items-center justify-between pointer-events-none">
+      <div className="fixed top-4 left-4 right-4 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
         <div className="bg-slate-900/80 backdrop-blur-md border border-slate-700/80 px-4 py-2 rounded-xl text-white font-mono text-xs sm:text-sm pointer-events-auto flex items-center gap-4 tabular-nums">
           <span>SCORE: {score}</span>
           <span>WAVE: {wave}/20</span>
@@ -357,7 +419,36 @@ export const StemArenaGame: React.FC<StemArenaGameProps> = ({ onExitGame }) => {
           </div>
         )}
 
-        <div className="flex items-center gap-2 pointer-events-auto">
+        <div className="flex flex-wrap items-center gap-2 pointer-events-auto">
+          <button
+            type="button"
+            onClick={() => setArenaMode('bridge_3d')}
+            className="px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black flex items-center gap-1.5 cursor-pointer"
+          >
+            <Hammer className="w-3.5 h-3.5" />
+            <span>3D Bridge Builder</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={toggleFullscreen}
+            aria-label={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+            className="px-3 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-black flex items-center gap-1.5 cursor-pointer"
+            title="Expand Canvas to Full Mobile Screen"
+          >
+            {isFullscreen ? (
+              <>
+                <Minimize2 className="w-3.5 h-3.5" />
+                <span>Exit Fullscreen</span>
+              </>
+            ) : (
+              <>
+                <Maximize2 className="w-3.5 h-3.5" />
+                <span>Fullscreen</span>
+              </>
+            )}
+          </button>
+
           {gameState === 'PLAYING' && (
             <button
               onClick={() => setGameState('PAUSED')}
@@ -389,14 +480,14 @@ export const StemArenaGame: React.FC<StemArenaGameProps> = ({ onExitGame }) => {
               {gameState === 'GAME_OVER' && 'Mission Complete'}
             </h2>
             <p className="text-xs text-slate-300 leading-relaxed">
-              Use <strong>WASD / Arrow Keys</strong> or <strong>Click/Tap</strong> to pilot your interceptor into the orb matching the correct mathematical solution.
+              Use <strong>WASD / Arrow Keys</strong> or <strong>Click/Tap</strong> to pilot your interceptor into the orb matching the correct mathematical solution, or switch to the Fullscreen 3D Bridge Builder.
             </p>
             {gameState !== 'TITLE_MENU' && (
               <div className="p-3 rounded-xl bg-slate-800 font-mono text-sm tabular-nums">
                 Final Score: <strong>{score}</strong> · Wave: <strong>{wave}/20</strong>
               </div>
             )}
-            <div className="flex items-center justify-center gap-3 pt-2">
+            <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
               {gameState === 'PAUSED' ? (
                 <button
                   onClick={() => setGameState('PLAYING')}
@@ -410,6 +501,13 @@ export const StemArenaGame: React.FC<StemArenaGameProps> = ({ onExitGame }) => {
                 className="px-5 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-black text-xs sm:text-sm cursor-pointer"
               >
                 {gameState === 'TITLE_MENU' ? 'Start Mission' : 'Play Again'}
+              </button>
+              <button
+                onClick={() => setArenaMode('bridge_3d')}
+                className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs sm:text-sm flex items-center gap-1.5 cursor-pointer"
+              >
+                <Hammer className="w-4 h-4" />
+                <span>3D Bridge Builder</span>
               </button>
               <button
                 onClick={onExitGame}
