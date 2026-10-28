@@ -25,6 +25,15 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+  next();
+});
 app.use(express.json({ limit: '15mb' }));
 
 function getGenAIClient(): GoogleGenAI | null {
@@ -46,12 +55,11 @@ function getGenAIClient(): GoogleGenAI | null {
 }
 
 const GEMINI_FALLBACK_MODELS = [
-  'gemini-3.8-flash',
   'gemini-flash-latest',
+  'gemini-3.8-flash',
   'gemini-3.1-flash-lite',
-  'gemini-3.5-flash',
+  'gemini-2.5-flash',
   'gemini-3-flash-preview',
-  'gemini-3.5-flash-lite',
   'gemini-flash-lite-latest',
 ] as const;
 const modelCooldownUntil = new Map<string, number>();
@@ -154,15 +162,7 @@ async function generateContentWithQuotaFallback(
     }
     try {
       const baseConfig: Record<string, unknown> = { ...(params.config || {}) };
-      if (
-        params.enableThinking !== false &&
-        !baseConfig.thinkingConfig &&
-        modelName.startsWith('gemini-3')
-      ) {
-        baseConfig.thinkingConfig = {
-          thinkingLevel: ThinkingLevel.MEDIUM,
-        };
-      }
+      delete baseConfig.thinkingConfig;
 
       const configWithTools =
         params.useGoogleSearch && !baseConfig.responseMimeType
@@ -177,7 +177,7 @@ async function generateContentWithQuotaFallback(
             contents: params.contents as never,
             config: configWithTools as never,
           }),
-          35000
+          14000
         );
       } catch (innerErr) {
         const innerMsg = innerErr instanceof Error ? innerErr.message : String(innerErr);
@@ -186,20 +186,22 @@ async function generateContentWithQuotaFallback(
           innerMsg.includes('RESOURCE_EXHAUSTED') ||
           innerMsg.includes('quota') ||
           innerMsg.includes('503') ||
-          innerMsg.includes('high demand')
+          innerMsg.includes('high demand') ||
+          innerMsg.includes('404') ||
+          innerMsg.includes('not found')
         ) {
           throw innerErr;
         }
-        // Retry with clean base config (without thinkingConfig or googleSearch if unsupported by specific model variant)
         const cleanConfig: Record<string, unknown> = { ...(params.config || {}) };
         delete cleanConfig.thinkingConfig;
+        delete cleanConfig.tools;
         response = await withPromiseTimeout(
           ai.models.generateContent({
             model: modelName,
             contents: params.contents as never,
             config: cleanConfig as never,
           }),
-          28000
+          12000
         );
       }
 
@@ -713,16 +715,16 @@ app.post('/api/moha/chat', async (req, res) => {
   const serverStoredFocused = focusedRes?.id ? serverAttachedResources.get(focusedRes.id) : undefined;
   const primaryBookForSubject = siteResources?.books?.find((b) => b.paperUrl) || siteResources?.books?.[0];
 
-  // Only extract remote Google Drive PDF when a specific resource is explicitly pinned by the user
+  // Only extract remote Google Drive PDF when a specific Past Examination Paper is explicitly pinned
   const pdfUrlToExtract =
-    focusedRes && focusedRes.id && focusedRes.id !== 'ALL'
+    isFocusedPastPaper && focusedRes && focusedRes.id && focusedRes.id !== 'ALL'
       ? focusedRes.paperUrl || focusedRes.answersUrl || null
       : null;
 
   const extractedPdfText = pdfUrlToExtract
     ? await Promise.race([
         extractGoogleDrivePdfText(pdfUrlToExtract, `${effectiveTopic} ${userPrompt}`),
-        new Promise<string>((resolve) => setTimeout(() => resolve(''), 3500)),
+        new Promise<string>((resolve) => setTimeout(() => resolve(''), 2000)),
       ])
     : '';
 
@@ -733,7 +735,11 @@ app.post('/api/moha/chat', async (req, res) => {
       ? await extractBase64PdfText(serverStoredFocused.attachedFileBase64, `${effectiveTopic} ${userPrompt}`)
       : '';
 
-  // When solving a Past Paper, DO NOT inject generic textbookChapterInfo.chapterSummaryMarkdown into mergedCustomContent
+  const userAskedForChaptersOrSyllabus =
+    /\b(chapters|table of contents|syllabus|topics in|show me the official tie textbook chapters)\b/i.test(
+      userPrompt
+    );
+
   const mergedCustomContent = [
     systemPromptContext,
     focusedRes?.customContent,
@@ -741,12 +747,11 @@ app.post('/api/moha/chat', async (req, res) => {
     !isFocusedPastPaper ? primaryBookForSubject?.customContent : '',
     extractedInlinePdfText,
     extractedPdfText,
-    !isFocusedPastPaper ? textbookChapterInfo.chapterSummaryMarkdown : '',
+    userAskedForChaptersOrSyllabus ? textbookChapterInfo.chapterSummaryMarkdown : '',
   ]
     .filter(Boolean)
     .join('\n\n');
 
-  // Enrich siteResources with extracted PDF text so local fallback also has full reading comprehension
   const enrichedSiteResources: SiteResourceContext | undefined = siteResources
     ? {
         ...siteResources,
@@ -766,23 +771,20 @@ app.post('/api/moha/chat', async (req, res) => {
       }
     : undefined;
 
-  const focusedResourceBlock = focusedRes
-    ? `\n\n=== PINNED / ATTACHED RESOURCE ===
+  const focusedResourceBlock =
+    isFocusedPastPaper && focusedRes
+      ? `\n\n=== PINNED PAST EXAMINATION PAPER ===
 - Document Title: "${focusedRes.title}"
 - Category: ${focusedRes.category} | Class: ${focusedRes.form} | Subject: ${focusedRes.subject} | Year: ${focusedRes.year}
-- Document Link: ${focusedRes.paperUrl || 'Attached in Elimika Catalog'}${
-        mergedCustomContent.trim()
-          ? `\n- Document Content / Context:\n${mergedCustomContent.slice(0, 14000)}`
-          : '\n- Document Content: Attached directly as inline PDF file (read the visual pages of the attached PDF directly).'
-      }
+${
+  mergedCustomContent.trim()
+    ? `- Extracted Paper Content:\n${mergedCustomContent.slice(0, 12000)}`
+    : ''
+}
 === END OF PINNED RESOURCE ===`
-    : `\n\n=== OFFICIAL ${effectiveCls.toUpperCase()} ${effectiveSubject.toUpperCase()} TIE TEXTBOOK REFERENCE ===
-${mergedCustomContent.slice(0, 12000)}
-=== END OF TIE TEXTBOOK REFERENCE ===`;
-
-  const siteResourcesContext = siteResources
-    ? `\n\nUploaded & Attached Elimika Website Resources for ${effectiveCls} ${effectiveSubject}:${focusedResourceBlock}`
-    : focusedResourceBlock;
+      : mergedCustomContent.trim()
+      ? `\n\n=== CURRICULUM CONTEXT (${effectiveCls} ${effectiveSubject}) ===\n${mergedCustomContent.slice(0, 6000)}`
+      : '';
 
   const topicQuizQuestions = isQuizRequest
     ? buildContentIntegratedQuizQuestions(
@@ -813,70 +815,50 @@ ${mergedCustomContent.slice(0, 12000)}
         };
       }
 
-      if (
-        !activeInlineFile &&
-        focusedRes &&
-        focusedRes.id &&
-        focusedRes.id !== 'ALL' &&
-        (focusedRes.paperUrl || focusedRes.answersUrl)
-      ) {
-        const drivePdf = await Promise.race([
-          (focusedRes.paperUrl ? fetchGoogleDriveInlinePdf(focusedRes.paperUrl) : Promise.resolve(null)).then(
-            (resPdf) => resPdf || (focusedRes.answersUrl ? fetchGoogleDriveInlinePdf(focusedRes.answersUrl) : null)
-          ),
-          new Promise<null>((resolve) => setTimeout(() => resolve(null), 3500)),
-        ]);
-        if (drivePdf) {
-          activeInlineFile = drivePdf;
-        }
-      }
-
       const needsWebGrounding = /\b(search the web|google search|latest news|current events)\b/i.test(
         userPrompt
       );
 
       const chatCacheKey =
-        history.length <= 2
-          ? `chat:v11:${effectiveCls}:${effectiveSubject}:${focusedRes?.id || 'ALL'}:${focusedRes?.paperUrl || 'NOURL'}:${userPrompt.toLowerCase().slice(0, 220)}`
+        history.length <= 2 && !activeInlineFile
+          ? `chat:v14:${effectiveCls}:${effectiveSubject}:${isFocusedPastPaper ? focusedRes?.id : 'DIRECT'}:${userPrompt.toLowerCase().slice(0, 220)}`
           : '';
 
       const runChatGeneration = async () => {
         const systemInstruction = isFocusedPastPaper
           ? `You are Moha AI, an expert NECTA Examination Solver & Academic Tutor on Elimika.
-IMPORTANT: Respond strictly in 100% English at all times.
 Active Examination Paper: "${focusedRes?.title}" (${effectiveCls} ${effectiveSubject} · ${focusedRes?.category} ${focusedRes?.year}).
-${siteResourcesContext}${learnedContext}
+${focusedResourceBlock}${learnedContext}
 
-CRITICAL RULES FOR SOLVING THIS PAST PAPER:
-1. 100% ENGLISH: Write all explanations, headings, and steps strictly in English.
-2. READ THE ACTUAL PAPER ONLY: Read the exact questions printed inside the attached PDF document or extracted paper text above.
-3. CLEAR STEP-BY-STEP SOLUTIONS: Organize your response cleanly by Section and Question Number, showing clear step-by-step working/points and the **Final Answer** for each question.
-4. INCLUDE LABELED SVG DIAGRAMS WHEN NEEDED: Whenever a question or its solution requires a diagram, graph, geometric figure, circuit, apparatus, or biological structure, include a neat, well-labeled inline \`<svg viewBox="0 0 600 230" style="width:100%; max-width:580px; height:auto; display:block; margin:10px auto; background:#ffffff; border:1px solid #cbd5e1; border-radius:8px;">...</svg>\` with a pure white (#ffffff) background.
-5. MATHJAX: Format all mathematical and scientific equations inside $...$ (inline) or $$...$$ (display).`
-          : `You are Moha AI, a direct, clear, and intelligent Academic Tutor & Problem Solver on Elimika with full mastery of all subjects and the Tanzanian TIE & NECTA curriculum.
-IMPORTANT: Respond strictly in 100% English at all times.
-Active Context (use ONLY if relevant to the user's question): ${effectiveCls} ${effectiveSubject} — "${focusedRes?.title || textbookChapterInfo.bookTitle}" (${textbookChapterInfo.matchedChapter}).
-${siteResourcesContext}${learnedContext}
+CRITICAL RULES:
+1. ANSWER THE USER'S EXACT REQUEST: Solve the specific question(s) requested by the user step-by-step.
+2. CLEAR STEP-BY-STEP SOLUTIONS: Show clear step-by-step working/points and state the **Final Answer**.
+3. DIAGRAMS ONLY WHEN RELEVANT: Only include an inline \`<svg viewBox="0 0 600 230" ...>\` if a question specifically requires a diagram, graph, circuit, or geometric figure. Never label diagrams "Figure 1.1".
+4. MATHJAX: Format all mathematical and scientific equations inside $...$ (inline) or $$...$$ (display).`
+          : `You are Moha AI, a highly intelligent, direct, and accurate Academic Tutor & Problem Solver on Elimika with full mastery of all subjects (Mathematics, Physics, Chemistry, Biology, Geography, History, Civics, Kiswahili, English, Literature, Book-Keeping, Commerce, Economics, Computer Science) under the Tanzanian TIE & NECTA Competence-Based Curriculum.
+Current Workspace Context: ${effectiveCls} • ${effectiveSubject}.
+${focusedResourceBlock}${learnedContext}
 
-RULES:
-1. 100% ENGLISH & CONVERSATIONAL INTELLIGENCE: Write strictly in clear English. If the user asks a conversational or general question, reply naturally and directly without dumping unrequested textbook chapters or syllabuses.
-2. BE CONCISE & DIRECT: Answer the user's exact question immediately.
-3. CLEAR STEP-BY-STEP WORKING: For academic or problem-solving questions, state the formula/principle briefly, show the step-by-step calculation or points clearly, and state the **Final Answer**.
-4. INCLUDE LABELED SVG DIAGRAMS WHEN NEEDED: Whenever the topic involves a diagram, graph, geometry, trigonometry, vectors, sets/Venn diagrams, physics circuits/forces/rays, chemistry laboratory apparatus, or biological structures, include a clean, labeled inline \`<svg viewBox="0 0 600 230" style="width:100%; max-width:580px; height:auto; display:block; margin:10px auto; background:#ffffff; border:1px solid #cbd5e1; border-radius:8px;">...</svg>\` with a pure white (#ffffff) background.
-5. LESSON NOTES: Format notes with clean headings and bullet points (never inside a table).
-6. MATHJAX: Format all mathematical and scientific equations inside $...$ (inline) or $$...$$ (display).`;
+CRITICAL RULES FOR ANSWERING:
+1. ANSWER THE USER'S EXACT QUESTION DIRECTLY: Read what the user is asking and answer THAT exact question immediately and accurately. NEVER ignore the user's question to output a generic textbook chapter list or unrelated topic summary.
+2. LANGUAGE ADAPTATION: If the user asks in Kiswahili or asks a Kiswahili subject question, answer in fluent Kiswahili Sanifu. Otherwise, answer in clear English.
+3. STEP-BY-STEP CLARITY:
+   - For STEM calculations (Math, Physics, Chemistry): state the formula, substitute values step-by-step, and highlight the **Final Answer** with correct units.
+   - For Arts, Humanities & Languages (History, Civics, Geography, English, Literature, Kiswahili): provide well-explained NECTA competence-based points with concrete Tanzanian/African examples (or clear grammar/literary analysis).
+4. DIAGRAMS ONLY WHEN ASKED OR NECESSARY: Do NOT include an \`<svg>\` diagram on normal text/essay/grammar/history/calculation questions unless the user asks to draw/sketch/illustrate a diagram or the question specifically requires a geometric figure, graph, circuit, or lab apparatus. If you draw an SVG diagram, give it a specific title for that exact question—NEVER title it "Figure 1.1".
+5. MATHJAX: Format mathematical and scientific equations inside $...$ (inline) or $$...$$ (display).`;
 
         const recentHistoryParts = history
           .filter((h) => !h.text.includes('official-tie-doc') && h.id !== 'msg-welcome')
           .slice(-4)
-          .map((h) => `${h.role === 'user' ? 'User' : 'Moha AI'}: ${h.text}`)
+          .map((h) => `${h.role === 'user' ? 'User' : 'Moha AI'}: ${h.text.replace(/<!--DIAGRAM_START-->[\s\S]*?<!--DIAGRAM_END-->/g, '').slice(0, 600)}`)
           .join('\n\n');
 
         const fullPromptText = isFocusedPastPaper
-          ? `Read the attached examination paper "${focusedRes?.title}" (${effectiveCls} ${effectiveSubject} ${focusedRes?.year}) carefully. ${userPrompt}\n\nIMPORTANT: Respond in 100% English. Solve and explain the exact questions printed inside the attached PDF examination paper in order.`
+          ? `Examination Paper: "${focusedRes?.title}" (${effectiveCls} ${effectiveSubject} ${focusedRes?.year}).\nUser Request: ${userPrompt}`
           : recentHistoryParts
-          ? `${recentHistoryParts}\n\nQuestion: ${userPrompt}`
-          : userPrompt;
+          ? `Recent Conversation:\n${recentHistoryParts}\n\nUser's New Question (Answer this exact question directly): ${userPrompt}`
+          : `User's Question (Answer this exact question directly): ${userPrompt}`;
 
         if (activeInlineFile && activeInlineFile.base64Data && activeInlineFile.mimeType) {
           const multimodalRes = await generateContentWithQuotaFallback(ai, {
@@ -893,7 +875,7 @@ RULES:
             },
             config: {
               systemInstruction,
-              temperature: 0.2,
+              temperature: 0.25,
             },
             useGoogleSearch: false,
             enableThinking: false,
@@ -905,7 +887,7 @@ RULES:
           contents: fullPromptText,
           config: {
             systemInstruction,
-            temperature: 0.25,
+            temperature: 0.3,
           },
           useGoogleSearch: needsWebGrounding,
           enableThinking: false,
@@ -922,17 +904,15 @@ RULES:
 
       const replyText = await Promise.race([
         rawGenerationPromise,
-        new Promise<null>((resolve) => setTimeout(() => resolve(null), 8500)),
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 20000)),
       ]);
 
       if (replyText && replyText.length > 0) {
-        // Unwrap any markdown code fences around <svg> blocks
         let cleanedReply = replyText.replace(
           /```(?:xml|svg|html)?\s*(<svg\b[\s\S]*?<\/svg>)\s*```/gi,
           '$1'
         );
 
-        // If Gemini started an <svg> block that got cut off before </svg>, strip the broken fragment so we append a complete diagram below
         if (/<svg\b/i.test(cleanedReply) && !/<\/svg\s*>/i.test(cleanedReply)) {
           cleanedReply = cleanedReply
             .replace(/```(?:xml|svg|html)?\s*<svg\b[\s\S]*$/i, '')
@@ -940,14 +920,14 @@ RULES:
             .trim();
         }
 
-        const combinedCheck = `${userPrompt} ${effectiveTopic} ${effectiveSubject} ${cleanedReply}`.toLowerCase();
-        const needsDiagram =
-          /\b(notes|lesson notes|prepare notes|study notes|diagram|draw|chora|sketch|graph|plot|variation|rate|trig|pythagoras|triangle|circle|chord|tangent|venn|set|vector|coordinate|linear programming|feasible|circuit|ohm|force|pulley|mirror|lens|ray|titration|apparatus|electrolysis|cell|photosynthesis|heart|nephron|digestive|map|contour|relief|explain|solve)\b/i.test(
-            combinedCheck
+        // Only append a fallback diagram if the user EXPLICITLY asked to draw/sketch a diagram and Gemini didn't include an <svg>
+        const explicitlyAskedForDiagram =
+          /\b(draw|chora|sketch|diagram\s+of|show\s+a\s+diagram|illustrate\s+with\s+a\s+diagram|table\s+and\s+an\s+interactive\s+diagram)\b/i.test(
+            userPrompt
           );
 
         const finalReply =
-          needsDiagram && !cleanedReply.includes('<!--DIAGRAM_START-->') && !cleanedReply.includes('<svg')
+          explicitlyAskedForDiagram && !cleanedReply.includes('<!--DIAGRAM_START-->') && !cleanedReply.includes('<svg')
             ? `${cleanedReply}\n\n<!--DIAGRAM_START-->${renderTopicDiagramBlockHtml(
                 effectiveCls,
                 effectiveSubject,
@@ -1192,32 +1172,101 @@ app.post('/api/moha/quiz', async (req, res) => {
       : `covering these official TIE Student's Textbook chapters for ${cls} ${subject}: ${syllabusTopics.join('; ')}`;
 
   const focusedRes = siteResources?.focusedResource;
-  const primaryBook = siteResources?.books?.find((b) => b.paperUrl) || siteResources?.books?.[0];
+  const primaryBook = siteResources?.books?.find((b) => b.paperUrl || b.customContent) || siteResources?.books?.[0];
+
+  // Also check serverAttachedResources for any user-uploaded textbook or PDF for this Class & Subject
+  const clsLower = cls.toLowerCase();
+  const subLower = subject.toLowerCase();
+  const matchingServerBook = Array.from(serverAttachedResources.values()).find(
+    (r) =>
+      r.isBook &&
+      r.form.toLowerCase() === clsLower &&
+      (r.subject.toLowerCase().includes(subLower) || subLower.includes(r.subject.toLowerCase()))
+  );
+
   const effectiveResourceTitle =
     (specificResourceTitle && specificResourceTitle !== 'ALL' ? specificResourceTitle : undefined) ||
     focusedRes?.title ||
     primaryBook?.title ||
+    matchingServerBook?.title ||
     tbInfo.bookTitle;
 
-  const pdfUrlForQuiz = focusedRes?.paperUrl || primaryBook?.paperUrl || null;
+  const pdfUrlForQuiz =
+    focusedRes?.paperUrl ||
+    primaryBook?.paperUrl ||
+    matchingServerBook?.paperUrl ||
+    null;
+
   const extractedQuizPdfText = pdfUrlForQuiz
-    ? await extractGoogleDrivePdfText(pdfUrlForQuiz, `${topic || ''} ${subTopic || ''}`)
+    ? await Promise.race([
+        extractGoogleDrivePdfText(pdfUrlForQuiz, `${topic || ''} ${subTopic || ''}`),
+        new Promise<string>((resolve) => setTimeout(() => resolve(''), 8000)),
+      ])
     : '';
 
-  const mergedQuizText = [focusedRes?.customContent, primaryBook?.customContent, extractedQuizPdfText]
+  const extractedBase64PdfText =
+    !extractedQuizPdfText && matchingServerBook?.attachedFileBase64
+      ? await Promise.race([
+          extractBase64PdfText(matchingServerBook.attachedFileBase64, `${topic || ''} ${subTopic || ''}`),
+          new Promise<string>((resolve) => setTimeout(() => resolve(''), 5000)),
+        ])
+      : '';
+
+  const tieBuiltInChapterReference = [
+    `Official TIE Textbook Chapter: ${tbInfo.matchedChapter} (${tbInfo.bookTitle})`,
+    `Sub-Topics: ${tbInfo.subTopicsList.join(', ')}`,
+    tbInfo.attachedExcerpt ? `Textbook Excerpt: ${tbInfo.attachedExcerpt}` : '',
+    tbInfo.chapterSummaryMarkdown ? `Chapter Summary:\n${tbInfo.chapterSummaryMarkdown}` : '',
+    tbInfo.chapterDeepNotes ? `Chapter Deep Notes:\n${tbInfo.chapterDeepNotes}` : '',
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  const mergedQuizText = [
+    focusedRes?.customContent,
+    primaryBook?.customContent,
+    matchingServerBook?.customContent,
+    extractedQuizPdfText,
+    extractedBase64PdfText,
+    tieBuiltInChapterReference,
+  ]
     .filter(Boolean)
     .join('\n\n');
 
-  const specificResourceLine = `PRIMARY ATTACHED TIE TEXTBOOK / SOURCE: Base the questions directly on "${effectiveResourceTitle}" for ${cls} ${subject} (Chapter: ${tbInfo.matchedChapter}).${
-    mergedQuizText ? `\nExtracted Textbook / Document Content:\n${mergedQuizText.slice(0, 6500)}` : ''
-  }`;
+  const specificResourceLine = `PRIMARY ATTACHED TIE TEXTBOOK / SOURCE: Base the questions directly on "${effectiveResourceTitle}" for ${cls} ${subject} (Chapter: ${tbInfo.matchedChapter}).\nExtracted Textbook / Chapter Content:\n${mergedQuizText.slice(0, 7500)}`;
+
+  const subLowerCheck = subject.toLowerCase();
+  const isArtsOrLanguageSubject =
+    subLowerCheck.includes('history') ||
+    subLowerCheck.includes('historia') ||
+    subLowerCheck.includes('civics') ||
+    subLowerCheck.includes('uraia') ||
+    subLowerCheck.includes('general studies') ||
+    subLowerCheck.includes('english') ||
+    subLowerCheck.includes('literature') ||
+    subLowerCheck.includes('kiswahili') ||
+    subLowerCheck.includes('communication') ||
+    subLowerCheck.includes('maarifa') ||
+    subLowerCheck.includes('sanaa') ||
+    subLowerCheck.includes('kusoma') ||
+    subLowerCheck.includes('kuandika');
 
   const sourceConstraintText =
     sourceFilter === 'BOOK' || sourceFilter === 'textbook'
-      ? `All ${targetCount} questions MUST be solving/workout exercises grounded in the uploaded Official TIE ${cls} ${subject} Textbook (${tbInfo.bookTitle}).`
+      ? `All ${targetCount} questions MUST be competence-based exercises grounded in the Official TIE ${cls} ${subject} Textbook (${tbInfo.bookTitle}).`
       : sourceFilter === 'PAPER' || sourceFilter === 'past_paper'
-      ? `All ${targetCount} questions MUST be examination problem-solving questions grounded in the uploaded ${cls} ${subject} NECTA / Mock Past Papers.`
-      : `Odd-numbered questions MUST be solving exercises from the uploaded Official TIE ${cls} ${subject} Textbook (${tbInfo.bookTitle}), and even-numbered questions MUST be problem-solving questions from the uploaded ${cls} ${subject} Past Examination Papers.`;
+      ? `All ${targetCount} questions MUST be authentic NECTA Competence-Based Assessment (CBA) examination questions grounded in ${cls} ${subject} NECTA / Mock Past Papers.`
+      : `Odd-numbered questions MUST be competence-based exercises from the Official TIE ${cls} ${subject} Textbook (${tbInfo.bookTitle}), and even-numbered questions MUST be authentic NECTA Competence-Based examination questions from ${cls} ${subject} Past Papers.`;
+
+  const subjectAdaptationRules = isArtsOrLanguageSubject
+    ? `ARTS, HUMANITIES & LANGUAGE NECTA COMPETENCE-BASED ADAPTATION RULES:
+- Because "${subject}" is an Arts / Humanities / Language subject, generate authentic NECTA Competence-Based Assessment (CBA) questions that test real subject content, case studies, historical/civic scenarios, source interpretation, grammatical transformation, literary analysis, or real-life Tanzanian applications of "${tbInfo.matchedChapter}".
+- NEVER generate meta-questions about how many marks an essay has, how to write an introduction paragraph, or how marking schemes work. Every question MUST test actual ${cls} ${subject} curriculum knowledge and competence!
+- Frame questions using NECTA CBA stems (e.g., "A local community in Tanzania faces...", "During the ${tbInfo.matchedChapter} period, why did...", "Identify the grammatical/literary function in...", "Which constitutional principle applies when...").
+- If the subject is Kiswahili, write the questions, options, and explanations in standard, formal Kiswahili (Sanifu) aligned with TIE & NECTA Kiswahili examinations. For all other subjects, write in 100% clear English.`
+    : `STEM & QUANTITATIVE NECTA COMPETENCE-BASED ADAPTATION RULES:
+- Generate concrete numerical, analytical, experimental, or real-world competence-based problem-solving questions for ${cls} ${subject} on "${tbInfo.matchedChapter}".
+- STRICT MATHJAX RULE: Format all mathematical expressions, equations, fractions (\\frac{a}{b}), roots (\\sqrt{x}), exponents (x^2), logarithms (\\log_{10}(x)), integrals, derivatives, and scientific formulas inside $...$ inline LaTeX delimiters in "question", "options", and "explanation".`;
 
   const availableContentSummary = siteResources
     ? `Uploaded Website Books & Past Papers for ${cls} ${subject}:
@@ -1231,36 +1280,22 @@ app.post('/api/moha/quiz', async (req, res) => {
 
   if (ai) {
     try {
-      const quizCacheKey = `quiz:${cls}:${subject}:${topic || 'ALL'}:${subTopic || 'ALL'}:${sourceFilter}:${targetCount}:${effectiveResourceTitle || 'ALL'}`;
+      const quizCacheKey = `quiz:v3:${cls}:${subject}:${topic || 'ALL'}:${subTopic || 'ALL'}:${sourceFilter}:${targetCount}:${effectiveResourceTitle || 'ALL'}`;
       const jsonText = await withHighTrafficDedupe(
         quizCacheKey,
         async () => {
-          const promptText = `Generate ${targetCount} distinct, concrete problem-solving / workout questions for Tanzanian ${cls} ${subject} ${selectedTopicText}.
+          const promptText = `Generate ${targetCount} distinct, authentic NECTA Competence-Based Assessment (CBA) questions for Tanzanian ${cls} ${subject} ${selectedTopicText}.
 ${specificResourceLine}
 ${sourceConstraintText}
+${subjectAdaptationRules}
 ${availableContentSummary}
 IMPORTANT RULES:
-1. Every question MUST be strictly for ${cls} ${subject} and specifically on ${topic && topic !== 'ALL' ? `"${tbInfo.matchedChapter}"` : `the ${cls} ${subject} TIE textbook chapters`} — never return generic questions from another topic or class.
+1. Every question MUST be strictly for ${cls} ${subject} and specifically on ${topic && topic !== 'ALL' ? `"${tbInfo.matchedChapter}"` : `the ${cls} ${subject} TIE textbook chapters`} — never return generic meta-questions about exam formatting or mark allocation.
 2. Vary the correct answer position across options 0, 1, 2, and 3 so the correct answer is NOT always index 0.
-3. STRICT MATHJAX RULE: Format all mathematical expressions, equations, fractions (\\frac{a}{b}), roots (\\sqrt{x}), exponents (x^2), logarithms (\\log_{10}(x)), integrals, derivatives, and scientific formulas inside $...$ inline LaTeX delimiters in "question", "options", and "explanation".
-4. Provide 4 clear options, correctIndex (0 to 3), a step-by-step worked solution in "explanation" (Step 1 -> Step 2 -> Final Answer), the "topic", the "subTopic", and the exact uploaded Book or Past Paper title in "sourceRef".`;
-
-          let inlinePdf: { mimeType: string; base64Data: string } | null = null;
-          if (focusedRes?.paperUrl) {
-            inlinePdf = await fetchGoogleDriveInlinePdf(focusedRes.paperUrl);
-          }
-
-          const contentsPayload = inlinePdf
-            ? {
-                parts: [
-                  { inlineData: { mimeType: inlinePdf.mimeType, data: inlinePdf.base64Data } },
-                  { text: promptText },
-                ],
-              }
-            : promptText;
+3. Provide 4 clear options, correctIndex (0 to 3), a clear competence-based explanation in "explanation" (explaining why the answer is correct with real curriculum facts/steps), the "topic", the "subTopic", and the exact Book or Past Paper title in "sourceRef".`;
 
           return generateContentWithQuotaFallback(ai, {
-            contents: contentsPayload,
+            contents: promptText,
             config: {
               responseMimeType: 'application/json',
               responseSchema: {

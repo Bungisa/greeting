@@ -1480,60 +1480,28 @@
       renderStep3();
     }
 
+    function triggerDirectDownload(url) {
+      const dl = getDownloadUrl(url);
+      if (!dl || dl === '#') return;
+      const a = document.createElement('a');
+      a.href = dl;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
     function openSolutionForItem(itemId) {
       const item = allPapers.find(p => p.id === itemId);
       if (!item) return;
-      if (item.answersUrl) {
-        openViewerModal(item.id, 'answers');
-      } else {
-        openMohaAppModal('moha', item.form, item.subject, item.title);
-      }
+      triggerDirectDownload(item.answersUrl || item.paperUrl);
     }
 
     function openDownloadOptionsModal(itemId) {
       const item = allPapers.find(p => p.id === itemId);
       if (!item) return;
-
-      // For textbooks, trigger direct download immediately (only one Download action)
-      if (item.isBook) {
-        if (item.paperUrl) {
-          window.open(getDownloadUrl(item.paperUrl), '_blank', 'noopener,noreferrer');
-        }
-        return;
-      }
-
-      document.getElementById('dlModalMeta').textContent = item.category + ' · ' + item.form + ' · ' + item.year;
-      document.getElementById('dlModalTitle').textContent = item.title;
-
-      const readBtn = document.getElementById('dlModalReadBtn');
-      const downloadLink = document.getElementById('dlModalDownloadLink');
-      const solutionBtn = document.getElementById('dlModalSolutionBtn');
-
-      if (item.paperUrl) {
-        readBtn.onclick = function () {
-          closeDownloadOptionsModal();
-          openViewerModal(item.id, 'paper');
-        };
-        readBtn.classList.remove('opacity-50', 'pointer-events-none');
-        downloadLink.href = getDownloadUrl(item.paperUrl);
-        downloadLink.onclick = function () {
-          closeDownloadOptionsModal();
-        };
-        downloadLink.classList.remove('opacity-50', 'pointer-events-none');
-      } else {
-        readBtn.onclick = null;
-        readBtn.classList.add('opacity-50', 'pointer-events-none');
-        downloadLink.href = '#';
-        downloadLink.onclick = function (e) { e.preventDefault(); };
-        downloadLink.classList.add('opacity-50', 'pointer-events-none');
-      }
-
-      solutionBtn.onclick = function () {
-        closeDownloadOptionsModal();
-        openSolutionForItem(item.id);
-      };
-
-      document.getElementById('downloadOptionsModal').classList.remove('hidden');
+      triggerDirectDownload(item.paperUrl);
     }
 
     function closeDownloadOptionsModal() {
@@ -1562,16 +1530,28 @@
       document.getElementById('viewerIframe').src = getPreviewUrl(targetUrl) || 'about:blank';
 
       document.getElementById('viewerDownloadBtn').onclick = function () {
-        window.open(getDownloadUrl(targetUrl), '_blank', 'noopener,noreferrer');
+        triggerDirectDownload(item.paperUrl);
       };
-      document.getElementById('viewerSolutionBtn').onclick = function () {
+
+      const solBtn = document.getElementById('viewerSolutionBtn');
+      if (item.isBook || item.isSyllabus) {
+        solBtn.classList.add('hidden');
+      } else {
+        solBtn.classList.remove('hidden');
         if (item.answersUrl) {
-          openViewerModal(item.id, 'answers');
+          solBtn.textContent = '✅ Solution';
+          solBtn.disabled = false;
+          solBtn.className = 'px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl cursor-pointer';
+          solBtn.onclick = function () {
+            triggerDirectDownload(item.answersUrl);
+          };
         } else {
-          closeViewerModal();
-          openMohaAppModal('moha', item.form, item.subject, item.title);
+          solBtn.textContent = 'Pending';
+          solBtn.disabled = true;
+          solBtn.className = 'px-4 py-2 bg-slate-100 text-slate-400 border border-slate-200 font-bold rounded-xl cursor-not-allowed';
+          solBtn.onclick = null;
         }
-      };
+      }
 
       document.getElementById('viewerModal').classList.remove('hidden');
     }
@@ -1672,7 +1652,7 @@
           <button onclick="selectSubject('${sub}')" class="group p-4 rounded-2xl bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-600 shadow-2xs flex items-center justify-between gap-3 text-left transition-all cursor-pointer">
             <div>
               <h3 class="font-extrabold text-sm sm:text-base text-slate-900 group-hover:text-blue-700">${sub}</h3>
-              <p class="text-xs text-slate-500 mt-0.5">${count} papers · Annual, Mock, Midterm, NECTA, Pre-NECTA</p>
+              <p class="text-xs text-slate-500 mt-0.5">${count} papers · Read, Download &amp; Solution</p>
             </div>
             <span class="px-2.5 py-1 rounded-xl bg-blue-600 text-white font-bold text-xs shrink-0">Select →</span>
           </button>
@@ -1682,6 +1662,7 @@
 
     function renderResourceCard(item) {
       const hasLink = Boolean(item.paperUrl);
+      const hasAnswers = Boolean(item.answersUrl);
       const badgeColor = item.isBook
         ? 'bg-emerald-100 text-emerald-900 border-emerald-200'
         : item.isSyllabus
@@ -1690,10 +1671,12 @@
         ? 'bg-indigo-100 text-indigo-900 border-indigo-200'
         : 'bg-blue-50 text-blue-800 border-blue-200';
 
-      // For Textbooks (item.isBook), render ONLY a single direct Download button
-      if (item.isBook) {
+      const dlUrl = getDownloadUrl(item.paperUrl);
+      const solUrl = getDownloadUrl(item.answersUrl);
+
+      if (item.isBook || item.isSyllabus) {
         return `
-          <article class="bg-white rounded-2xl border border-slate-200 p-4 shadow-2xs flex flex-col justify-between gap-3 hover:border-emerald-400 transition-all">
+          <article class="bg-white rounded-2xl border border-slate-200 p-4 shadow-2xs flex flex-col justify-between gap-3 hover:border-slate-300 transition-all">
             <div class="space-y-1.5">
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <span class="px-2.5 py-0.5 rounded-md text-[11px] font-bold border ${badgeColor}">
@@ -1705,16 +1688,13 @@
               <div class="text-xs font-semibold text-slate-500">${item.subject}</div>
             </div>
 
-            <div class="pt-2.5 border-t border-slate-100">
-              ${hasLink ? `
-                <a href="${getDownloadUrl(item.paperUrl)}" target="_blank" rel="noopener noreferrer" class="block w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs sm:text-sm text-center shadow-xs transition-colors">
-                  ⬇ Download
-                </a>
-              ` : `
-                <button disabled class="w-full py-2.5 px-4 rounded-xl bg-slate-100 text-slate-400 font-extrabold text-xs sm:text-sm text-center cursor-not-allowed">
-                  ⬇ Download
-                </button>
-              `}
+            <div class="pt-2.5 border-t border-slate-100 flex flex-wrap items-center gap-2">
+              <button onclick="openViewerModal('${item.id}', 'paper')" class="flex-1 py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs text-center cursor-pointer transition-colors">
+                Read
+              </button>
+              <a href="${dlUrl}" target="_blank" rel="noopener noreferrer" class="flex-1 py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs text-center shadow-2xs transition-colors">
+                Download
+              </a>
             </div>
           </article>
         `;
@@ -1733,10 +1713,22 @@
             <div class="text-xs font-semibold text-slate-500">${item.subject}</div>
           </div>
 
-          <div class="pt-2.5 border-t border-slate-100">
-            <button onclick="openDownloadOptionsModal('${item.id}')" class="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs sm:text-sm text-center cursor-pointer shadow-xs transition-colors">
-              ⬇ Download
+          <div class="pt-2.5 border-t border-slate-100 flex flex-wrap items-center gap-2">
+            <button onclick="openViewerModal('${item.id}', 'paper')" class="flex-1 py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs text-center cursor-pointer transition-colors">
+              Read
             </button>
+            <a href="${dlUrl}" target="_blank" rel="noopener noreferrer" class="flex-1 py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs text-center shadow-2xs transition-colors">
+              Download
+            </a>
+            ${hasAnswers ? `
+              <a href="${solUrl}" target="_blank" rel="noopener noreferrer" class="flex-1 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs text-center shadow-2xs transition-colors">
+                Solution
+              </a>
+            ` : `
+              <button disabled class="flex-1 py-2 px-3 rounded-xl bg-slate-100 text-slate-400 border border-slate-200 font-bold text-xs text-center cursor-not-allowed">
+                Pending
+              </button>
+            `}
           </div>
         </article>
       `;
@@ -1803,13 +1795,9 @@
         grid.innerHTML = `
           <div class="col-span-full bg-white rounded-2xl border border-slate-200 p-8 text-center space-y-3">
             <div class="text-base font-bold text-slate-800">No ${state.selectedCategory !== 'ALL' ? state.selectedCategory : ''} papers found for ${state.selectedYear !== 'ALL' ? state.selectedYear : 'this selection'} yet.</div>
-            <p class="text-xs text-slate-500">Select another Year or Type of Paper above, or open the Solution in the Moha AI App.</p>
             <div class="flex flex-wrap justify-center gap-2 pt-1">
               <button onclick="state.selectedYear='ALL'; state.selectedCategory='ALL'; renderStep3();" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs cursor-pointer">
                 Show All Years &amp; Paper Types
-              </button>
-              <button onclick="openMohaAppModal('moha', '${cls}', '${sub}')" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs cursor-pointer">
-                ✅ Solution in Moha AI App ↗
               </button>
             </div>
           </div>

@@ -133,6 +133,30 @@ interface TopicQuizChallenge {
   leaderboard: ChallengeLeaderboardEntry[];
 }
 
+const ELIMIKA_REMOTE_API_BASE = 'https://ais-pre-utxrgt5piro4x4xpbnh75h-142058246407.europe-west2.run.app';
+
+async function fetchElimikaApi(endpointPath: string, options?: RequestInit): Promise<Response> {
+  const isFileProtocol = typeof window !== 'undefined' && window.location.protocol === 'file:';
+  const isStaticCustomDomain =
+    typeof window !== 'undefined' &&
+    (window.location.hostname.includes('elimika.online') ||
+      window.location.hostname.includes('github.io'));
+
+  if (!isFileProtocol && !isStaticCustomDomain) {
+    try {
+      const localRes = await fetch(endpointPath, options);
+      const contentType = localRes.headers.get('content-type') || '';
+      if (localRes.ok && contentType.includes('application/json')) {
+        return localRes;
+      }
+    } catch {
+      // fall through to remote Cloud Run backend
+    }
+  }
+
+  return fetch(`${ELIMIKA_REMOTE_API_BASE}${endpointPath}`, options);
+}
+
 function detectDiagramPreset(promptText: string, subject: string): DiagramPreset | undefined {
   const lowerPrompt = promptText.toLowerCase();
   const q = `${lowerPrompt} ${subject.toLowerCase()}`;
@@ -2243,7 +2267,7 @@ export default function App() {
     setActiveFlashcardIdx(0);
     setFlashcardFlipped(false);
     try {
-      const res = await fetch('/api/moha/flashcards', {
+      const res = await fetchElimikaApi('/api/moha/flashcards', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cls: targetCls, subject: targetSub }),
@@ -2408,7 +2432,7 @@ export default function App() {
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 8000);
-      const response = await fetch('/api/moha/generate-doc', {
+      const response = await fetchElimikaApi('/api/moha/generate-doc', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type, meta }),
@@ -2557,11 +2581,12 @@ export default function App() {
     const pinnedSource =
       explicitFocusedDoc ||
       (activeFocusedDoc &&
+      mohaFocusedResourceId !== 'ALL' &&
       (!parsedTarget.matchedFromPrompt ||
         (matchesFormRange(activeFocusedDoc.form, targetCls) &&
           matchesSubjectQuery(activeFocusedDoc.subject, targetSub)))
         ? activeFocusedDoc
-        : promptSiteResources.focusedResource);
+        : null);
 
     const isPinnedPastPaper = Boolean(
       pinnedSource &&
@@ -2571,6 +2596,11 @@ export default function App() {
           `${pinnedSource.category} ${pinnedSource.title}`
         )
     );
+
+    const askedForChaptersOrSyllabus =
+      /\b(chapters|table of contents|syllabus|topics in|show me the official tie textbook chapters)\b/i.test(
+        displayPrompt
+      );
 
     const tbReadingContext = getTieTextbookChapterContent(
       targetCls,
@@ -2590,25 +2620,21 @@ export default function App() {
               ? `\n- Extracted Paper Text:\n${pinnedSource.customContent}`
               : ''
           }
-- CRITICAL INSTRUCTION: Read the actual questions printed inside this attached PDF examination paper ("${pinnedSource.title}") across Section A, Section B, and Section C, and solve/explain those exact questions step-by-step. Do NOT invent different questions or explain unrelated textbook chapters.`,
+- CRITICAL INSTRUCTION: Solve and explain the exact questions asked by the user from "${pinnedSource.title}" step-by-step.`,
         ].join('\n\n')
       : [
-          `DIRECT PROBLEM-SOLVING & TEXTBOOK DIRECTIVE:
-1. Solve ANY question asked by the user directly and step-by-step.
-2. If the question is unrelated to ${targetCls} ${targetSub}, solve the user's exact question directly without restricting to the textbook below.`,
-          pinnedSource
-            ? `PINNED RESOURCE CONTEXT:
-- Title: "${pinnedSource.title}" (${pinnedSource.form} ${pinnedSource.subject} · ${pinnedSource.year})
-- Document URL: ${pinnedSource.paperUrl || 'Attached in Elimika Catalog'}${
-                pinnedSource.customContent
-                  ? `\n- Attached Content:\n${pinnedSource.customContent}`
-                  : ''
-              }`
-            : `ACTIVE TIE TEXTBOOK: "${tbReadingContext.bookTitle}"`,
-          `OFFICIAL TIE TEXTBOOK CHAPTERS (${targetCls} ${targetSub}):\n${chaptersListForContext
-            .map((c, idx) => `${idx + 1}. ${c}`)
-            .join('\n')}`,
-          `TEXTBOOK CHAPTER REFERENCE (${tbReadingContext.matchedChapter}):\n${tbReadingContext.chapterSummaryMarkdown}`,
+          `DIRECT QUESTION-ANSWERING DIRECTIVE:
+1. Answer the user's EXACT question directly, accurately, and step-by-step.
+2. NEVER ignore the user's prompt to output a generic textbook chapter list or unrelated topic summary.
+3. Do NOT include any "Figure 1.1" diagram unless the user explicitly asks to draw or sketch a diagram.`,
+          pinnedSource && pinnedSource.customContent
+            ? `PINNED RESOURCE CONTENT ("${pinnedSource.title}"):\n${pinnedSource.customContent}`
+            : '',
+          askedForChaptersOrSyllabus
+            ? `OFFICIAL TIE TEXTBOOK CHAPTERS (${targetCls} ${targetSub}):\n${chaptersListForContext
+                .map((c, idx) => `${idx + 1}. ${c}`)
+                .join('\n')}\n\n${tbReadingContext.chapterSummaryMarkdown}`
+            : '',
         ]
           .filter(Boolean)
           .join('\n\n');
@@ -2676,8 +2702,8 @@ export default function App() {
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8500);
-      const response = await fetch('/api/moha/chat', {
+      const timeoutId = setTimeout(() => controller.abort(), 22000);
+      const response = await fetchElimikaApi('/api/moha/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2837,7 +2863,7 @@ export default function App() {
     );
 
     try {
-      const response = await fetch('/api/moha/quiz', {
+      const response = await fetchElimikaApi('/api/moha/quiz', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -3665,7 +3691,7 @@ export default function App() {
                 activePage === 'daily_quiz' ? 'text-violet-700 font-bold underline underline-offset-4' : ''
               }`}
             >
-              <span>🎯 Daily Quiz (20 Qns)</span>
+              <span>🎯 Daily Solving Quiz</span>
             </button>
             <button
               onClick={() => openMasteryPlannerPage()}
@@ -3673,7 +3699,7 @@ export default function App() {
                 activePage === 'mastery_planner' ? 'text-indigo-700 font-bold underline underline-offset-4' : ''
               }`}
             >
-              <span>📊 Mastery &amp; Timetable</span>
+              <span>📊 Mastery Heatmap</span>
             </button>
             <button
               onClick={() => openVirtualLabPage()}
@@ -3681,7 +3707,7 @@ export default function App() {
                 activePage === 'virtual_lab' ? 'text-teal-700 font-bold underline underline-offset-4' : ''
               }`}
             >
-              <span>🧪 Science Practicals</span>
+              <span>🧪 Virtual Practicals</span>
             </button>
             <button
               onClick={() => {
@@ -3697,6 +3723,7 @@ export default function App() {
           </nav>
 
           <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+
             <button
               onClick={() => setDarkMode((prev) => !prev)}
               aria-label={darkMode ? 'Switch to light theme' : 'Switch to dark theme'}
@@ -4142,7 +4169,7 @@ export default function App() {
                         </div>
                         <button
                           onClick={() => openDailyQuizPage()}
-                          className="w-full py-2.5 px-4 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs sm:text-sm cursor-pointer flex items-center justify-center gap-1.5"
+                          className="w-full py-2.5 px-4 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs cursor-pointer flex items-center justify-center gap-1.5"
                         >
                           <span>Open Daily Solving Quiz →</span>
                         </button>
@@ -4297,12 +4324,6 @@ export default function App() {
                       >
                         Syllabus ↗
                       </button>
-                      <button
-                        onClick={() => openMwalimuModal(selectedClass, 'Basic Mathematics')}
-                        className="px-3 py-2 rounded-xl font-bold text-xs bg-violet-600 hover:bg-violet-700 text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer"
-                      >
-                        Moha AI
-                      </button>
                     </div>
                   </div>
 
@@ -4320,7 +4341,7 @@ export default function App() {
                               {name}
                             </span>
                             <span className="text-xs font-medium text-slate-500 tabular-nums">
-                              {count} {count === 1 ? 'paper' : 'papers'} · TIE &amp; Moha AI Ready
+                              {count} {count === 1 ? 'paper' : 'papers'} · Read, Download &amp; Solution
                             </span>
                           </div>
                         </div>
@@ -4360,12 +4381,6 @@ export default function App() {
                           className="px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold text-xs whitespace-nowrap shrink-0 cursor-pointer"
                         >
                           Open TIE Books Page ↗
-                        </button>
-                        <button
-                          onClick={() => openMwalimuModal(selectedClass, selectedSubject)}
-                          className="px-3 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs whitespace-nowrap shrink-0 cursor-pointer"
-                        >
-                          Ask Moha AI
                         </button>
                       </div>
                     </div>
@@ -4438,20 +4453,12 @@ export default function App() {
                         >
                           Show All Years &amp; Paper Types
                         </button>
-                        <button
-                          onClick={() => openMwalimuModal(selectedClass, selectedSubject)}
-                          className="px-4 py-2 bg-emerald-600 text-white font-bold text-xs rounded-xl cursor-pointer"
-                        >
-                          ✅ Solution in Moha AI ({selectedClass || 'Form 4'} {selectedSubject || 'Subject'})
-                        </button>
                       </div>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                       {paginatedPapers.map((p) => {
-                        const hasPaper = Boolean(p.paperUrl);
                         const hasAnswers = Boolean(p.answersUrl);
-
                         return (
                           <article
                             key={p.id}
@@ -4471,46 +4478,38 @@ export default function App() {
                             </div>
 
                             <div className="flex flex-wrap items-center gap-2 pt-2.5 border-t border-slate-100">
-                              {hasPaper ? (
-                                <>
-                                  <button
-                                    onClick={() => openViewer(p.id, 'paper')}
-                                    className="flex-1 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
-                                  >
-                                    <BookOpen className="w-3.5 h-3.5" />
-                                    <span>Read</span>
-                                  </button>
-                                  <button
-                                    onClick={() => triggerDirectDownloadUrl(p.paperUrl, `${p.title}.pdf`)}
-                                    className="flex-1 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm whitespace-nowrap cursor-pointer"
-                                  >
-                                    <Download className="w-3.5 h-3.5" />
-                                    <span>Download</span>
-                                  </button>
-                                </>
-                              ) : (
-                                <span className="flex-1 text-center text-xs font-medium text-amber-700 bg-amber-50 px-3 py-2 rounded-xl border border-amber-200">
-                                  PDF Pending
-                                </span>
-                              )}
-
                               <button
-                                onClick={() => {
-                                  if (hasAnswers) {
-                                    openViewer(p.id, 'answers');
-                                  } else {
-                                    openMwalimuModal(p.form, p.subject, 'chat', p);
-                                    sendMwalimuMessage(
-                                      `Solve and explain the questions in "${p.title}" (${p.form} ${p.subject} · ${p.category} ${p.year}).`,
-                                      p
-                                    );
-                                  }
-                                }}
-                                className="flex-1 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
+                                onClick={() => openViewer(p.id, 'paper')}
+                                className="flex-1 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
                               >
-                                <CheckCircle2 className="w-3.5 h-3.5" />
-                                <span>Solution</span>
+                                <BookOpen className="w-3.5 h-3.5" />
+                                <span>Read</span>
                               </button>
+                              <button
+                                onClick={() => triggerDirectDownloadUrl(p.paperUrl, `${p.title}.pdf`)}
+                                className="flex-1 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm whitespace-nowrap cursor-pointer"
+                              >
+                                <Download className="w-3.5 h-3.5" />
+                                <span>Download</span>
+                              </button>
+                              {hasAnswers ? (
+                                <button
+                                  onClick={() =>
+                                    triggerDirectDownloadUrl(p.answersUrl, `${p.title} - Solution.pdf`)
+                                  }
+                                  className="flex-1 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm whitespace-nowrap cursor-pointer"
+                                >
+                                  <CheckCircle2 className="w-3.5 h-3.5" />
+                                  <span>Solution</span>
+                                </button>
+                              ) : (
+                                <button
+                                  disabled
+                                  className="flex-1 px-3.5 py-2 bg-slate-100 text-slate-400 border border-slate-200 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 whitespace-nowrap cursor-not-allowed"
+                                >
+                                  <span>Pending</span>
+                                </button>
+                              )}
                             </div>
                           </article>
                         );
@@ -4651,17 +4650,6 @@ export default function App() {
                   Showing {dedicatedBooks.length} TIE Books (
                   {dedicatedBooks.filter((b) => Boolean(b.paperUrl)).length} with Google Drive PDF links)
                 </span>
-                <button
-                  onClick={() =>
-                    openMwalimuModal(
-                      booksPageSelectedClass === 'ALL' ? 'Form 1' : booksPageSelectedClass,
-                      'Basic Mathematics'
-                    )
-                  }
-                  className="text-violet-700 hover:underline font-bold cursor-pointer"
-                >
-                  Ask Moha AI about TIE Books &amp; Syllabus
-                </button>
               </div>
             </div>
 
@@ -4689,39 +4677,19 @@ export default function App() {
                       </h3>
                     </div>
                     <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2">
-                      {hasUrl ? (
-                        <>
-                          <button
-                            onClick={() => openViewer(p.id, 'paper')}
-                            className="flex-1 px-3.5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm whitespace-nowrap cursor-pointer"
-                          >
-                            <BookOpen className="w-4 h-4" /> Read Book
-                          </button>
-                          <button
-                            onClick={() => triggerDirectDownloadUrl(p.paperUrl, `${p.title}.pdf`)}
-                            className="flex-1 px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm whitespace-nowrap cursor-pointer"
-                          >
-                            <Download className="w-4 h-4" /> Download PDF
-                          </button>
-                        </>
-                      ) : (
-                        <button
-                          onClick={() => {
-                            openMwalimuModal(p.form, p.subject, 'studio', p);
-                            setTsClass(p.form);
-                            setTsSubject(p.subject);
-                            submitTeacherStudioDoc('lessonnotes');
-                          }}
-                          className="flex-1 px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm whitespace-nowrap cursor-pointer"
-                        >
-                          <BookOpen className="w-4 h-4" /> Open Study Notes &amp; Chapters
-                        </button>
-                      )}
                       <button
-                        onClick={() => openMwalimuModal(p.form, p.subject, 'chat', p)}
-                        className="px-3.5 py-2.5 bg-violet-50 hover:bg-violet-100 text-violet-900 border border-violet-200 text-xs font-bold rounded-xl cursor-pointer whitespace-nowrap"
+                        onClick={() => openViewer(p.id, 'paper')}
+                        className="flex-1 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
                       >
-                        🤖 Ask Moha AI
+                        <BookOpen className="w-3.5 h-3.5" />
+                        <span>Read</span>
+                      </button>
+                      <button
+                        onClick={() => triggerDirectDownloadUrl(p.paperUrl, `${p.title}.pdf`)}
+                        className="flex-1 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm whitespace-nowrap cursor-pointer"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Download</span>
                       </button>
                     </div>
                   </article>
@@ -4811,12 +4779,6 @@ export default function App() {
                   {dedicatedSyllabuses.length} Official {dedicatedSyllabuses.length === 1 ? 'Syllabus' : 'Syllabuses'}{' '}
                   Found
                 </span>
-                <button
-                  onClick={() => openMwalimuModal('Form 4', 'Basic Mathematics')}
-                  className="text-violet-700 hover:underline font-bold cursor-pointer"
-                >
-                  Ask Moha AI for Syllabus Topics
-                </button>
               </div>
             </div>
 
@@ -4827,19 +4789,12 @@ export default function App() {
                 </h3>
                 <p className="text-xs text-slate-500 max-w-md mx-auto">
                   Add rows to your Google Sheet with Category set to <strong>TIE Syllabus</strong> and your Google Drive
-                  link, or ask Moha AI right now for any subject&apos;s official TIE competences.
+                  link.
                 </p>
-                <button
-                  onClick={() => openMwalimuModal('Form 4', 'Basic Mathematics')}
-                  className="px-4 py-2.5 bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs rounded-xl cursor-pointer"
-                >
-                  Ask Moha AI for Subject Syllabus Topics
-                </button>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {dedicatedSyllabuses.map((p) => {
-                  const hasUrl = Boolean(p.paperUrl);
                   return (
                     <article
                       key={p.id}
@@ -4859,48 +4814,19 @@ export default function App() {
                         </p>
                       </div>
                       <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-slate-100">
-                        {hasUrl ? (
-                          <>
-                            <button
-                              onClick={() => triggerDirectDownloadUrl(p.paperUrl, `${p.title}.pdf`)}
-                              className="flex-1 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 cursor-pointer"
-                            >
-                              <Download className="w-4 h-4" /> Direct Download PDF
-                            </button>
-                            <button
-                              onClick={() => openViewer(p.id, 'paper')}
-                              className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl cursor-pointer"
-                            >
-                              Read
-                            </button>
-                          </>
-                        ) : (
-                          <button
-                            onClick={() => {
-                              openMwalimuModal(p.form, p.subject, 'studio', p);
-                              setTsClass(p.form);
-                              setTsSubject(p.subject);
-                              submitTeacherStudioDoc('schemeofwork');
-                            }}
-                            className="flex-1 px-3.5 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 cursor-pointer"
-                          >
-                            <Download className="w-4 h-4" /> Open Syllabus &amp; Scheme PDF
-                          </button>
-                        )}
                         <button
-                          onClick={() => {
-                            openMwalimuModal(p.form, p.subject, 'chat', p);
-                            sendMwalimuMessage(`List all official TIE syllabus topics and competences for ${p.form} ${p.subject}.`, p);
-                          }}
-                          className="px-3 py-2.5 bg-violet-50 hover:bg-violet-100 text-violet-900 border border-violet-200 text-xs font-bold rounded-xl cursor-pointer"
+                          onClick={() => openViewer(p.id, 'paper')}
+                          className="flex-1 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
                         >
-                          📜 View Topics
+                          <BookOpen className="w-3.5 h-3.5" />
+                          <span>Read</span>
                         </button>
                         <button
-                          onClick={() => startAiQuiz(p.form, p.subject, 'ALL')}
-                          className="px-3 py-2.5 bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300 text-xs font-bold rounded-xl cursor-pointer"
+                          onClick={() => triggerDirectDownloadUrl(p.paperUrl, `${p.title}.pdf`)}
+                          className="flex-1 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm whitespace-nowrap cursor-pointer"
                         >
-                          🎯 Quiz
+                          <Download className="w-3.5 h-3.5" />
+                          <span>Download</span>
                         </button>
                       </div>
                     </article>
@@ -5604,63 +5530,46 @@ export default function App() {
             </div>
 
             <div className="px-4 py-3 bg-white border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
-              <div className="flex flex-wrap items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
-                  onClick={() =>
-                    triggerDirectDownloadUrl(
-                      viewerType === 'answers' && viewerPaper.answersUrl ? viewerPaper.answersUrl : viewerPaper.paperUrl,
-                      `${viewerPaper.title}.pdf`
-                    )
-                  }
+                  onClick={() => {
+                    setViewerType('paper');
+                    setViewerLoading(true);
+                  }}
                   className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl flex items-center gap-1.5 cursor-pointer"
                 >
-                  <Download className="w-4 h-4" /> Direct Download PDF
+                  <BookOpen className="w-4 h-4" /> Read
                 </button>
                 <button
-                  onClick={() => {
-                    const doc = viewerPaper;
-                    const activeUrl =
-                      viewerType === 'answers' && doc.answersUrl ? doc.answersUrl : doc.paperUrl;
-                    const docToSolve: PaperRecord = {
-                      ...doc,
-                      paperUrl: activeUrl || doc.paperUrl,
-                    };
-                    setViewerPaper(null);
-                    openMwalimuModal(docToSolve.form, docToSolve.subject, 'chat', docToSolve);
-                    sendMwalimuMessage(
-                      `Solve and explain the questions in "${docToSolve.title}" (${docToSolve.form} ${docToSolve.subject} · ${docToSolve.category} ${docToSolve.year}).`,
-                      docToSolve
-                    );
-                  }}
-                  className="px-3.5 py-2 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-xl cursor-pointer"
+                  onClick={() =>
+                    triggerDirectDownloadUrl(viewerPaper.paperUrl, `${viewerPaper.title}.pdf`)
+                  }
+                  className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl flex items-center gap-1.5 cursor-pointer"
                 >
-                  🤖 Solve &amp; Explain in Moha AI
+                  <Download className="w-4 h-4" /> Download
                 </button>
-                <button
-                  onClick={() => {
-                    const doc = viewerPaper;
-                    const activeUrl =
-                      viewerType === 'answers' && doc.answersUrl ? doc.answersUrl : doc.paperUrl;
-                    const docForQuiz: PaperRecord = {
-                      ...doc,
-                      paperUrl: activeUrl || doc.paperUrl,
-                    };
-                    setViewerPaper(null);
-                    setMohaFocusedResourceId(docForQuiz.id);
-                    startAiQuiz(
-                      docForQuiz.form,
-                      docForQuiz.subject,
-                      docForQuiz.title,
-                      'ALL',
-                      'past_paper',
-                      false,
-                      docForQuiz
-                    );
-                  }}
-                  className="px-3.5 py-2 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold rounded-xl cursor-pointer"
-                >
-                  🎯 20-Qn Quiz from This Document
-                </button>
+                {!viewerPaper.isBook && !viewerPaper.isSyllabus && (
+                  viewerPaper.answersUrl ? (
+                    <button
+                      onClick={() =>
+                        triggerDirectDownloadUrl(
+                          viewerPaper.answersUrl,
+                          `${viewerPaper.title} - Solution.pdf`
+                        )
+                      }
+                      className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <CheckCircle2 className="w-4 h-4" /> Solution
+                    </button>
+                  ) : (
+                    <button
+                      disabled
+                      className="px-3.5 py-2 bg-slate-100 text-slate-400 border border-slate-200 font-bold rounded-xl flex items-center gap-1.5 cursor-not-allowed"
+                    >
+                      <span>Pending</span>
+                    </button>
+                  )
+                )}
               </div>
               <button
                 onClick={() => setViewerPaper(null)}

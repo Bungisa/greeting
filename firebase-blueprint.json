@@ -1,0 +1,93 @@
+{
+  "entities": {
+    "EducationalDocument": {
+      "title": "EducationalDocument",
+      "description": "Official NECTA past paper, TIE textbook, syllabus, or marking scheme solution uploaded by admin or teachers.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique document identifier" },
+        "cls": { "type": "string", "description": "Class level (e.g., Form 1 - Form 6, Standard 1 - 7)" },
+        "subject": { "type": "string", "description": "Subject name" },
+        "title": { "type": "string", "description": "Document title" },
+        "year": { "type": "string", "description": "Publication or exam year" },
+        "paperUrl": { "type": "string", "description": "Direct URL or data URL for the paper or textbook" },
+        "solutionUrl": { "type": "string", "description": "Direct URL or data URL for the marking scheme solution" },
+        "docType": { "type": "string", "enum": ["paper", "textbook", "syllabus", "notes"], "description": "Document category" },
+        "uploadedBy": { "type": "string", "description": "UID or email of uploader" },
+        "createdAt": { "type": "string", "description": "ISO timestamp" }
+      },
+      "required": ["id", "cls", "subject", "title", "year", "paperUrl", "docType", "createdAt"]
+    },
+    "MockExamAttempt": {
+      "title": "MockExamAttempt",
+      "description": "Completed NECTA Timed Mock Exam result slip and section breakdown.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Attempt ID" },
+        "uid": { "type": "string", "description": "Authenticated user UID" },
+        "studentName": { "type": "string", "description": "Student full name" },
+        "school": { "type": "string", "description": "Student school name" },
+        "cls": { "type": "string", "description": "Class level" },
+        "subject": { "type": "string", "description": "Exam subject" },
+        "sectionAScore": { "type": "number", "description": "Section A marks earned" },
+        "sectionBScore": { "type": "number", "description": "Section B marks earned" },
+        "sectionCScore": { "type": "number", "description": "Section C marks earned" },
+        "totalScore": { "type": "number", "description": "Total percentage score (0-100)" },
+        "nectaGrade": { "type": "string", "description": "Official NECTA letter grade (A, B, C, D, E, S, F)" },
+        "nectaDivision": { "type": "string", "description": "Official NECTA Division estimate" },
+        "durationSeconds": { "type": "number", "description": "Time spent in seconds" },
+        "completedAt": { "type": "string", "description": "ISO completion timestamp" }
+      },
+      "required": ["id", "uid", "studentName", "cls", "subject", "totalScore", "nectaGrade", "completedAt"]
+    },
+    "LeaderboardEntry": {
+      "title": "LeaderboardEntry",
+      "description": "Real-time student XP and national NECTA leaderboard standing.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Student UID" },
+        "studentName": { "type": "string", "description": "Student display name" },
+        "school": { "type": "string", "description": "School name" },
+        "cls": { "type": "string", "description": "Class level" },
+        "xp": { "type": "number", "description": "Total XP points" },
+        "mockExamsCount": { "type": "number", "description": "Completed mock exams" },
+        "bestGrade": { "type": "string", "description": "Best NECTA grade achieved" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp" }
+      },
+      "required": ["uid", "studentName", "cls", "xp", "updatedAt"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User account profile and role record.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "displayName": { "type": "string", "description": "Display name" },
+        "email": { "type": "string", "description": "User email" },
+        "role": { "type": "string", "enum": ["student", "teacher", "admin"], "description": "Access role" },
+        "school": { "type": "string", "description": "School name" },
+        "cls": { "type": "string", "description": "Class level" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp" }
+      },
+      "required": ["uid", "displayName", "role", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/documents/{docId}": {
+      "schema": { "$ref": "#/entities/EducationalDocument" },
+      "description": "Publicly readable educational documents (NECTA past papers, TIE textbooks, solutions). Writable by authenticated admins/teachers."
+    },
+    "/mockExams/{attemptId}": {
+      "schema": { "$ref": "#/entities/MockExamAttempt" },
+      "description": "Student mock exam results. Readable by authenticated users for national ranking, writable by the owner student or admin."
+    },
+    "/leaderboard/{userId}": {
+      "schema": { "$ref": "#/entities/LeaderboardEntry" },
+      "description": "National student XP and mock exam leaderboard. Publicly readable by students, writable by the authenticated owner or admin."
+    },
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Private user profile and role document. Readable and writable only by the owner or admin."
+    }
+  }
+}

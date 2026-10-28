@@ -1528,7 +1528,7 @@ export function buildTopicDiagramSvg(
     tLower.includes('varies inversely')
   ) {
     return {
-      title: `Figure 1.1: Direct Variation (y = kx) & Inverse Variation (y = k/x) Graphs — ${safeSubTopic}`,
+      title: `Direct Variation (y = kx) & Inverse Variation (y = k/x) Graphs — ${safeSubTopic}`,
       caption:
         customCaption ||
         `Official TIE Form 2 Basic Mathematics graphical illustration of Direct Variation (straight line through the origin) and Inverse Variation (rectangular hyperbola).`,
@@ -1584,7 +1584,7 @@ export function buildTopicDiagramSvg(
     tLower.includes('triangle')
   ) {
     return {
-      title: `Figure 1.1: Right-Angled Triangle, Pythagoras & Trigonometric Ratios — ${safeSubTopic}`,
+      title: `Right-Angled Triangle, Pythagoras & Trigonometric Ratios — ${safeSubTopic}`,
       caption:
         customCaption ||
         `Standard TIE ${escapeHtml(cls)} ${escapeHtml(subject)} geometric diagram showing Opposite, Adjacent, Hypotenuse, and angle θ.`,
@@ -1622,7 +1622,7 @@ export function buildTopicDiagramSvg(
   // 3. Dedicated Diagram for Sets & Venn Diagrams
   if (tLower.includes('venn') || tLower.includes('subset') || tLower.includes('union') || tLower.includes('intersection') || /\bsets?\b/.test(tLower)) {
     return {
-      title: `Figure 1.1: Venn Diagram of Intersecting Sets A and B in Universal Set μ — ${safeSubTopic}`,
+      title: `Venn Diagram of Intersecting Sets A and B in Universal Set μ — ${safeSubTopic}`,
       caption:
         customCaption ||
         `Official TIE Form 2 Basic Mathematics Venn diagram illustrating regions A only, A ∩ B, B only, and complement (A ∪ B)'.`,
@@ -1657,7 +1657,7 @@ export function buildTopicDiagramSvg(
   // 4. Dedicated Diagram for Circles & Circle Theorems
   if (tLower.includes('circle') || tLower.includes('chord') || tLower.includes('cyclic') || tLower.includes('tangent theorem')) {
     return {
-      title: `Figure 1.1: Circle Theorems — Central Angle, Inscribed Angle & Tangent — ${safeSubTopic}`,
+      title: `Circle Theorems — Central Angle, Inscribed Angle & Tangent — ${safeSubTopic}`,
       caption:
         customCaption ||
         `Official TIE Form 3 Basic Mathematics geometric diagram illustrating angle at the centre (2θ), inscribed angle (θ), and tangent perpendicularity.`,
@@ -1694,7 +1694,7 @@ export function buildTopicDiagramSvg(
 
   if (sLower.includes('physic') || tLower.includes('circuit') || tLower.includes('ohm') || tLower.includes('current') || tLower.includes('force')) {
     return {
-      title: `Figure 1.1: Labeled Physics Experimental & Theoretical Diagram — ${safeSubTopic}`,
+      title: `Labeled Physics Experimental & Theoretical Diagram — ${safeSubTopic}`,
       caption:
         customCaption ||
         `Standard TIE ${escapeHtml(cls)} ${escapeHtml(subject)} schematic illustrating the experimental setup, variables, and governing relationship for ${safeSubTopic} (${safeTopic}).`,
@@ -1731,7 +1731,7 @@ export function buildTopicDiagramSvg(
 
   if (sLower.includes('chemi') || tLower.includes('titration') || tLower.includes('acid') || tLower.includes('mole') || tLower.includes('atom')) {
     return {
-      title: `Figure 1.1: Labeled Chemistry Apparatus & Reaction Setup — ${safeSubTopic}`,
+      title: `Labeled Chemistry Apparatus & Reaction Setup — ${safeSubTopic}`,
       caption:
         customCaption ||
         `Standard TIE ${escapeHtml(cls)} ${escapeHtml(subject)} laboratory apparatus and reaction pathway for ${safeSubTopic} (${safeTopic}).`,
@@ -1759,7 +1759,7 @@ export function buildTopicDiagramSvg(
 
   if (sLower.includes('biolog') || sLower.includes('sayansi') || tLower.includes('cell') || tLower.includes('photo') || tLower.includes('plant') || tLower.includes('human')) {
     return {
-      title: `Figure 1.1: Labeled Biological Structure & Physiological Pathway — ${safeSubTopic}`,
+      title: `Labeled Biological Structure & Physiological Pathway — ${safeSubTopic}`,
       caption:
         customCaption ||
         `Official TIE ${escapeHtml(cls)} ${escapeHtml(subject)} labeled biological structure and functional mechanism for ${safeSubTopic} (${safeTopic}).`,
@@ -1795,7 +1795,7 @@ export function buildTopicDiagramSvg(
     tLower.includes('simultaneous linear inequalit')
   ) {
     return {
-      title: `Figure 3.1: Linear Programming — Feasible Region, Constraint Lines & Corner Points — ${safeSubTopic}`,
+      title: `Linear Programming — Feasible Region, Constraint Lines & Corner Points — ${safeSubTopic}`,
       caption:
         customCaption ||
         `Official TIE Form 3 Basic Mathematics Linear Programming graph showing constraint boundary lines, shaded Feasible Region R, and corner points O, A, B, C.`,
@@ -1841,7 +1841,7 @@ export function buildTopicDiagramSvg(
 
   if (sLower.includes('math') || sLower.includes('hisabati') || tLower.includes('graph') || tLower.includes('equation') || tLower.includes('function') || tLower.includes('linear') || tLower.includes('coordinate')) {
     return {
-      title: `Figure 1.1: Cartesian Coordinate & Graphical Representation — ${safeSubTopic}`,
+      title: `Cartesian Coordinate & Graphical Representation — ${safeSubTopic}`,
       caption:
         customCaption ||
         `TIE ${escapeHtml(cls)} ${escapeHtml(subject)} graphical and geometric illustration of ${safeSubTopic} (${safeTopic}).`,
@@ -1873,7 +1873,7 @@ export function buildTopicDiagramSvg(
 
   // Universal Structured Concept & Process Diagram for Geography, History, Civics, Commerce, English, Kiswahili, etc.
   return {
-    title: `Figure 1.1: TIE Textbook Concept & Structural Diagram — ${safeSubTopic}`,
+    title: `TIE Curriculum Concept & Structural Diagram — ${safeSubTopic}`,
     caption:
       customCaption ||
       `Official TIE ${escapeHtml(cls)} ${escapeHtml(subject)} structural concept diagram showing the relationship between sub-topics in ${safeTopic} (${safeSubTopic}).`,
@@ -2951,15 +2951,21 @@ export function generateLocalSmartTutorReply(
     }
   }
 
+  const explicitlyWantsDiagram = /\b(draw|chora|sketch|diagram|mchoro|plot\s+a\s+graph)\b/i.test(lower);
+  const explicitlyWantsChapters =
+    /\b(chapters|table of contents|syllabus|show me the official tie textbook chapters)\b/i.test(lower);
+
   for (const entry of MOHA_BUILTIN_KNOWLEDGE) {
     if (entry.keywords.some((kw) => new RegExp(`\\b${kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i').test(lower))) {
-      const diagHtml = renderTopicDiagramBlockHtml(
-        effectiveCls,
-        effectiveSub,
-        effectiveTbInfo.matchedChapter || entry.title,
-        parsed.subTopic || effectiveTopic
-      );
-      return `📘 **${effectiveTbInfo.bookTitle} — ${effectiveTbInfo.matchedChapter}**\n\n${entry.content}\n\n<!--DIAGRAM_START-->${diagHtml}<!--DIAGRAM_END-->`;
+      const diagHtml = explicitlyWantsDiagram
+        ? `\n\n<!--DIAGRAM_START-->${renderTopicDiagramBlockHtml(
+            effectiveCls,
+            effectiveSub,
+            effectiveTbInfo.matchedChapter || entry.title,
+            parsed.subTopic || effectiveTopic
+          )}<!--DIAGRAM_END-->`
+        : '';
+      return `📘 **${effectiveCls} ${effectiveSub} — ${entry.title}**\n\n${entry.content}${diagHtml}`;
     }
   }
 
@@ -2967,13 +2973,7 @@ export function generateLocalSmartTutorReply(
   const focusedDoc = siteResources?.focusedResource;
   if (focusedDoc && focusedDoc.customContent && focusedDoc.customContent.trim().length > 80) {
     const cleanExcerpt = focusedDoc.customContent.trim().slice(0, 4500);
-    const diagHtml = renderTopicDiagramBlockHtml(
-      effectiveCls,
-      effectiveSub,
-      focusedDoc.title,
-      effectiveTopic
-    );
-    return `📄 **${focusedDoc.title} (${focusedDoc.form} ${focusedDoc.subject} · ${focusedDoc.year})**\n\n**Extracted Paper Content & Questions:**\n${cleanExcerpt}\n\n<!--DIAGRAM_START-->${diagHtml}<!--DIAGRAM_END-->`;
+    return `📄 **${focusedDoc.title} (${focusedDoc.form} ${focusedDoc.subject} · ${focusedDoc.year})**\n\n**Extracted Paper Content & Questions:**\n${cleanExcerpt}`;
   }
 
   if ((lower === 'marking scheme' || lower === 'prepare marking scheme') && !lower.includes('solve')) {
@@ -2989,6 +2989,37 @@ export function generateLocalSmartTutorReply(
     });
   }
 
+  if (explicitlyWantsChapters) {
+    return effectiveTbInfo.chapterSummaryMarkdown;
+  }
+
+  const topicQuiz = buildContentIntegratedQuizQuestions(
+    effectiveCls,
+    effectiveSub,
+    effectiveTopic,
+    siteResources,
+    parsed.subTopic
+  );
+
+  // Match the questions in topicQuiz that are closest to the user's specific query words
+  const queryWords = lower
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter((w) => w.length >= 4 && !['what', 'explain', 'give', 'from', 'with', 'question', 'questions', 'solve', 'about'].includes(w));
+
+  const scoredQuiz = topicQuiz
+    .map((q, idx) => {
+      const hay = `${q.question} ${q.explanation} ${q.options[q.correctIndex]}`.toLowerCase();
+      let score = 0;
+      for (const w of queryWords) {
+        if (hay.includes(w)) score += 3;
+      }
+      return { q, score, idx };
+    })
+    .sort((a, b) => b.score - a.score || a.idx - b.idx);
+
+  const selectedItems = scoredQuiz.slice(0, 4).map((x) => x.q);
+
   if (
     lower.includes('quiz') ||
     lower.includes('test me') ||
@@ -2998,57 +3029,37 @@ export function generateLocalSmartTutorReply(
     lower.includes('exercise') ||
     lower.includes('solve')
   ) {
-    const topicQuiz = buildContentIntegratedQuizQuestions(
-      effectiveCls,
-      effectiveSub,
-      effectiveTopic,
-      siteResources,
-      parsed.subTopic
-    );
-    const formattedQuestions = topicQuiz
+    const formattedQuestions = scoredQuiz
       .slice(0, 5)
       .map(
-        (q, idx) =>
-          `**${idx + 1}. ${q.question}**\n• **Working:** ${q.explanation}\n• **Answer:** **${
+        ({ q }, idx) =>
+          `**${idx + 1}. ${q.question}**\n• **Working / Explanation:** ${q.explanation}\n• **Verified Answer:** **${
             q.options[q.correctIndex]
           }**`
       )
       .join('\n\n');
 
-    const headerLabel = focusedDoc
-      ? `📄 **${focusedDoc.title} (${focusedDoc.form} ${focusedDoc.subject})**`
-      : `📘 **${effectiveTbInfo.bookTitle} (${effectiveTbInfo.matchedChapter})**`;
-
-    const solveDiagramHtml = renderTopicDiagramBlockHtml(
-      effectiveCls,
-      effectiveSub,
-      effectiveTbInfo.matchedChapter,
-      parsed.subTopic || effectiveTopic
-    );
-
-    return `${headerLabel}\n\n${formattedQuestions}\n\n<!--DIAGRAM_START-->${solveDiagramHtml}<!--DIAGRAM_END-->`;
+    return `📘 **${effectiveCls} • ${effectiveSub} (${effectiveTopic}) — Worked NECTA Competence Questions:**\n\n${formattedQuestions}`;
   }
 
-  const topicWorked = buildContentIntegratedQuizQuestions(
-    effectiveCls,
-    effectiveSub,
-    effectiveTopic,
-    siteResources,
-    parsed.subTopic
-  );
-  const sampleQ1 = topicWorked[0];
-  const diagramBlock = `\n\n<!--DIAGRAM_START-->${renderTopicDiagramBlockHtml(
-    effectiveCls,
-    effectiveSub,
-    effectiveTbInfo.matchedChapter,
-    parsed.subTopic || effectiveTopic
-  )}<!--DIAGRAM_END-->`;
+  const diagramBlock = explicitlyWantsDiagram
+    ? `\n\n<!--DIAGRAM_START-->${renderTopicDiagramBlockHtml(
+        effectiveCls,
+        effectiveSub,
+        effectiveTbInfo.matchedChapter,
+        parsed.subTopic || effectiveTopic
+      )}<!--DIAGRAM_END-->`
+    : '';
 
-  return `${effectiveTbInfo.chapterSummaryMarkdown}${diagramBlock}${
-    sampleQ1
-      ? `\n\n**Worked Example:**\n• **Question:** ${sampleQ1.question}\n• **Solution:** ${sampleQ1.explanation}\n• **Answer:** **${sampleQ1.options[sampleQ1.correctIndex]}**`
-      : ''
-  }`;
+  const workedBreakdown = selectedItems
+    .slice(0, 3)
+    .map(
+      (item, idx) =>
+        `**${idx + 1}. ${item.question}**\n• **Step-by-Step Analysis:** ${item.explanation}\n• **Key Takeaway / Answer:** **${item.options[item.correctIndex]}**`
+    )
+    .join('\n\n');
+
+  return `📘 **${effectiveCls} • ${effectiveSub} — ${effectiveTopic}**\n\nHere is the step-by-step NECTA competence analysis and worked examples for your question on **"${cleanInput}"**:\n\n${workedBreakdown}${diagramBlock}`;
 }
 
 export function parseClassSubjectTopicFromPrompt(
@@ -4243,183 +4254,911 @@ export function buildContentIntegratedQuizQuestions(
       ];
     }
 
-    // Default / History / Civics / English / Kiswahili / General Subjects — 16 rich sub-topic questions
+    // History & Historia ya Tanzania na Maadili — 16 authentic NECTA Competence-Based Assessment (CBA) questions
+    if (subLower.includes('history') || subLower.includes('historia')) {
+      return [
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(0)}] While visiting an archaeological site at Isimila in Iringa Region, Form One students discovered Acheulean hand-axes and cleavers. Which historical age and human technological milestone do these artifacts represent?`,
+          options: [
+            'The Early/Middle Stone Age, when Homo erectus fashioned bifacial stone tools for hunting and skinning animals',
+            'The Late Iron Age, when pastoral communities smelted copper and bronze along the coast',
+            'The Mercantile Period, when Portuguese traders introduced flintlock muskets in East Africa',
+            'The Colonial Period, when German settlers established sisal plantations in Tanga',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Isimila (Iringa) and Olduvai Gorge (Arusha) are premier Stone Age sites in Tanzania. Step 2: Acheulean hand-axes and cleavers are diagnostic bifacial stone tools crafted by Homo erectus during the Early/Middle Stone Age.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(1)}] During a seminar on "${subT(1)}", students examined how the Nyamwezi, Yao, and Kamba organized 19th-century Long-Distance Trade across East Africa. Which factor enabled Chief Mirambo and Nyungu-ya-Mawe to control the central caravan route?`,
+          options: [
+            'Organizing standing Ruga-Ruga military units and levying hongo (tribute/customs tax) on passing ivory and slave caravans',
+            'Signing the Heligoland-Zanzibar Treaty of 1890 with the British East Africa Company',
+            'Abolishing all agricultural production in Unyamwezi to rely exclusively on imported European textiles',
+            'Constructing the Central Railway line from Dar es Salaam to Kigoma in 1840',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Along the central route (Bagamoyo–Tabora–Ujiji), leaders like Mirambo (Urambo) and Nyungu-ya-Mawe (Ukimbu) consolidated power using trained Ruga-Ruga warriors. Step 2: They taxed passing Arab-Swahili and coastal caravans through hongo to build strong centralized states.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(2)}] A historian argues that the Berlin Conference of November 1884 to February 1885 chaired by Otto von Bismarck directly accelerated the loss of African sovereignty. Which principle adopted at Berlin forced European powers to send military expeditions into the East African interior?`,
+          options: [
+            'The Principle of Effective Occupation (Article 35), requiring powers to establish physical administration and treaties to validate territorial claims',
+            'The Principle of Non-Intervention, forbidding European armies from crossing African river basins',
+            'The Pan-African Charter granting immediate self-rule to coastal sultanates',
+            'The Monroe Doctrine restricting European commerce to North America',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Article 35 of the Berlin Act established the Principle of Effective Occupation. Step 2: European claimants could no longer rely on "paper annexation"; they had to deploy troops, police, and administrators to conquer African societies on the ground.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(3)}] Why did Kinjekitile Ngwale's Maji Maji uprising (1905–1907) across southern German East Africa represent a major turning point in anti-colonial struggle compared to earlier coastal or Hehe resistances?`,
+          options: [
+            'It united over twenty diverse ethnic groups across Matumbi, Ngoni, Pogoro, and Zaramo territories using shared spiritual ideology against forced cotton cultivation',
+            'It relied exclusively on mercenary soldiers imported from Europe',
+            'It sought to replace African chiefs with British district commissioners',
+            'It took place only within Zanzibar Island without involving mainland communities',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Earlier primary resistances (e.g., Mkwawa's Hehe or Abushiri's coastal resistance) were largely localized to single societies or regions. Step 2: The Maji Maji War united over 20 southern ethnic groups through the Kolelo/Hongo water medicine ideology, laying the inter-ethnic foundation for later Tanganyikan nationalism.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(0)}] In analysing the colonial economy in Tanganyika (${subT(0)}), a student observes that railway lines ran from Dar es Salaam to Kigoma and from Tanga to Moshi, without connecting interior food-producing regions to each other. What was the primary colonial objective of this transport pattern?`,
+          options: [
+            'To siphon raw materials (sisal, coffee, cotton, minerals) from interior production zones directly to coastal ports for export to metropolitan industries',
+            'To promote balanced inter-regional trade and self-sustaining industrialization among African villages',
+            'To provide free passenger transport for rural African pastoralists across East Africa',
+            'To link pre-colonial iron-smelting centres in Ufipa with gold mines in Mwanza',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Colonial transport infrastructure was dendritic (port-to-hinterland). Step 2: Its main purpose was extractive—moving cash crops and minerals to coastal harbours (Dar es Salaam, Tanga) and distributing imported European manufactured goods back inland.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(1)}] Why did the British colonial administration favour peasant cash-crop agriculture in Uganda and parts of Bukoba/Kilimanjaro while promoting large-scale European settler agriculture in the Kenya Highlands?`,
+          options: [
+            'Dense indigenous populations, established centralized kingdoms/cooperative structures, and tropical climate made peasant production cheaper in Uganda/Bukoba than costly settler alienation',
+            'Kenya lacked any fertile volcanic soil or railway connection to the Indian Ocean',
+            'The British Parliament prohibited cash-crop exports from Kenya between 1900 and 1950',
+            'Settlers in Kenya refused to use African migrant labour from Nyanza and Central Province',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Where African populations were dense and already producing surplus crops (e.g., Buganda cotton/coffee, Bukoba/Kilimanjaro coffee), colonial governors avoided the high administrative and military cost of land alienation and relied on peasant taxation and marketing boards.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(2)}] How did the Second World War (1939–1945) catalyse the transformation of African welfare associations (such as TAA) into mass nationalist political parties (such as TANU in July 1954)?`,
+          options: [
+            'Returning African ex-servicemen (KAR soldiers), wartime inflation, the 1941 Atlantic Charter on self-determination, and UN Trusteeship oversight exposed colonial contradictions',
+            'European colonial powers voluntarily funded nationalist parties to end colonial rule in 1945',
+            'The war strengthened European economies so much that they no longer needed African raw materials',
+            'All African schools and trade unions were permanently closed after 1945',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: WWII shattered the myth of white invincibility for African soldiers who fought in Burma and the horn of Africa. Step 2: Combined with Article 3 of the Atlantic Charter, UN Trusteeship petitions, and post-war economic grievances, movements like TAA evolved into TANU on 7 July 1954 under Mwalimu Julius K. Nyerere.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(3)}] Unlike Kenya (Mau Mau) or Mozambique (FRELIMO), mainland Tanganyika achieved independence on 9 December 1961 primarily through constitutional negotiations. Which combination of factors made this peaceful transition possible?`,
+          options: [
+            'Tanganyika’s status as a UN Trust Territory, widespread use of Kiswahili as a unifying lingua franca, absence of an entrenched settler monopoly, and TANU’s disciplined nationwide mobilization',
+            'The complete absence of any colonial taxation or land alienation in Tanganyika',
+            'Direct military intervention by the Organization of African Unity (OAU) in 1958',
+            'The refusal of Tanganyikan trade unions and cooperative societies to support TANU',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: As a UN Trust Territory (formerly League of Nations Mandate), Britain was accountable to the UN Trusteeship Council. Step 2: Kiswahili united over 120 ethnic groups without tribal politics, allowing TANU and Governor Sir Richard Turnbull to negotiate constitutional milestones peacefully.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(0)}] Why did African majority citizens in Zanzibar led by the Afro-Shirazi Party (ASP) execute the Zanzibar Revolution on 12 January 1964 barely one month after the December 1963 British handover of power?`,
+          options: [
+            'The December 1963 elections handed political power to the minority ZNP/ZPPP coalition despite the ASP winning over 54% of the popular vote, perpetuating land and socio-economic marginalization of the African majority',
+            'The ASP wanted to restore Portuguese colonial rule across the East African coast',
+            'Zanzibar had been excluded from Indian Ocean clove trade prior to 1963',
+            'The British army ordered John Okello and Abeid Amani Karume to dissolve the legislature',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Gerrymandered constituencies in the July 1963 election denied ASP parliamentary majority despite winning 54.3% of votes. Step 2: To end minority oligarchic rule and landlessness, ASP revolutionaries led by Abeid Amani Karume overthrew the Sultanate on 12 January 1964.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(1)}] On 26 April 1964, President Julius K. Nyerere and President Abeid Amani Karume signed the Articles of Union forming the United Republic of Tanzania. What is the enduring historical significance of this union in Africa?`,
+          options: [
+            'It remains the most durable sovereign unification of two independent African states, strengthening national security, Pan-African solidarity, and socio-economic integration',
+            'It abolished the Revolutionary Government of Zanzibar and all Union parliamentary representation',
+            'It was mandated as a condition for joining the European Economic Community',
+            'It restricted movement of citizens between Unguja, Pemba, and Mainland Tanzania',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: The 1964 Union of Tanganyika and Zanzibar created a two-tier structure (Union Government and Revolutionary Government of Zanzibar) that has stood as Africa's most enduring model of Pan-African state unification.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(2)}] In February 1967, Tanzania adopted the Arusha Declaration (Azimio la Arusha). Which core socio-economic pillar of Ujamaa and Self-Reliance (Kujitegemea) aimed to prevent neo-colonial exploitation and class stratification?`,
+          options: [
+            'Public/state ownership of the commanding heights of the economy (banks, major industries, land) and a Leadership Code prohibiting public leaders from holding private capitalist shares or rental properties',
+            'Privatizing all community schools, hospitals, and commercial banks to foreign multinational corporations',
+            'Replacing agriculture with heavy nuclear manufacturing as the sole backbone of development',
+            'Borrowing unlimited foreign loans with IMF structural conditionalities as the primary engine of growth',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: The Arusha Declaration emphasized Socialism (Ujamaa) and Self-Reliance (Kujitegemea), placing major means of production under public ownership and enforcing the Leadership Code to uphold egalitarian national ethics (Maadili ya Taifa).`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(3)}] During the 1970s and 1980s, Tanzania served as the headquarters of the OAU Liberation Committee and led the Frontline States. How did this commitment affect Southern Africa and Tanzania's domestic economy?`,
+          options: [
+            'It provided training camps (e.g., Kongwa, Mazimbu), diplomatic backing, and TAZARA railway access that liberated Mozambique, Angola, Zimbabwe, Namibia, and South Africa, despite heavy financial costs to Tanzania',
+            'It isolated Tanzania from all other African nations and prevented the end of Apartheid',
+            'It generated massive military profits that eliminated Tanzania’s external debt by 1980',
+            'It limited liberation support strictly to West African French-speaking colonies',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Under Mwalimu Nyerere and Brig. Hashim Mbita (Executive Secretary of the OAU Liberation Committee in Dar es Salaam), Tanzania hosted FRELIMO, ANC, PAC, ZANU/ZAPU, SWAPO, and MPLA freedom fighters, sacrificing scarce national resources for total African liberation.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(0)}] In the context of "Historia ya Tanzania na Maadili" (${subT(0)}), how did pre-colonial indigenous education in Tanzanian societies transmit moral values (maadili), patriotism, and practical life skills?`,
+          options: [
+            'Through age-set initiation rites (jando na unyago), oral traditions (ngano, methali), apprenticeship in crafts/farming, and communal accountability guided by elders',
+            'Through written multiple-choice examinations administered by European missionaries',
+            'By separating youths from their communities and forbidding agricultural work',
+            'By teaching only foreign languages without community ethics',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Pre-colonial African education was holistic and functional—integrating character formation (utu, heshima, uadilifu), productive skills, and civic responsibility directly into community life.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(1)}] When evaluating the collapse of the former East African Community (EAC) in 1977, what lesson guided Tanzania, Kenya, and Uganda when re-establishing the new EAC Treaty (signed in November 1999)?`,
+          options: [
+            'Ensuring equitable distribution of integration benefits, people-centred private-sector participation, and shared democratic/legal institutions (EALA and EACJ) rather than ideological rivalry',
+            'Centralizing all common industrial and customs revenue exclusively in Nairobi',
+            'Prohibiting additional regional states such as Rwanda, Burundi, South Sudan, DRC, and Somalia from joining',
+            'Abolishing national parliaments in favour of a military command council',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: The 1977 collapse stemmed from ideological divergence (capitalist Kenya vs. socialist Tanzania), unequal trade benefits, and Amin's coup in Uganda. Step 2: The 1999 Treaty built institutional safeguards, customs union protocols, and people-centred integration.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(2)}] In ${matchedPaperTitle}, a student is asked to assess the impact of Structural Adjustment Programmes (SAPs) introduced by the IMF and World Bank in Tanzania from the mid-1980s. Which socio-economic consequence directly affected ordinary citizens?`,
+          options: [
+            'Introduction of cost-sharing user fees in public healthcare and education, retrenchment of civil servants, and devaluation of the Tanzanian Shilling alongside trade liberalization',
+            'Immediate cancellation of all foreign debt and free universal tertiary education without fees',
+            'Complete nationalization of all private shops and foreign banks in 1986',
+            'Fixing the Tanzanian Shilling at par with the British Pound Sterling',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: SAPs required currency devaluation, removal of agricultural subsidies, privatization of parastatals, and cost-sharing in social services, which improved commodity availability in shops but strained household access to health and education.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(3)}] Why does the United Nations Security Council (UNSC) face persistent criticism from African Union (AU) member states regarding global governance and conflict resolution?`,
+          options: [
+            'Africa has no permanent seat with veto power among the P5 (USA, UK, France, Russia, China), even though a majority of UN peacekeeping mandates concern African security',
+            'African nations are barred from voting in the UN General Assembly',
+            'The UN headquarters is located in Addis Ababa rather than New York',
+            'The Security Council only admits countries from South America',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Through the Ezulwini Consensus, African states advocate for UN Security Council reform because the five permanent veto-wielding members (P5) reflect the 1945 post-WWII order and exclude permanent African representation.`,
+        },
+      ];
+    }
+
+    // Civics, General Studies & Uraia na Maadili — 16 authentic NECTA Competence-Based Assessment (CBA) questions
+    if (subLower.includes('civic') || subLower.includes('general studies') || subLower.includes('uraia')) {
+      return [
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(0)}] A Ward Executive Officer (WEO) detains a citizen for five days without bringing them before a court of law or informing them of any criminal charge. Which constitutional principle in the Constitution of the United Republic of Tanzania (1977) has been violated?`,
+          options: [
+            'The Rule of Law and the Bill of Rights (Articles 13 and 15), which guarantee equality before the law, presumption of innocence, and protection of personal freedom',
+            'The Doctrine of Parliamentary Supremacy over local government by-laws',
+            'The Prerogative of Mercy exercised exclusively by the President under Article 45',
+            'The collective ministerial responsibility of the Cabinet',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Under Articles 13 and 15 of the 1977 Constitution of Tanzania (Bill of Rights, entrenched in 1984), no person may be arbitrarily arrested or detained without due legal process before a competent court.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(1)}] During a parliamentary budget session in Dodoma, Members of Parliament question a Cabinet Minister over irregular procurement in a water project and threaten to pass a vote of no confidence in the Prime Minister under Article 53A. Which democratic mechanism is being exercised?`,
+          options: [
+            'Checks and Balances through Parliamentary Oversight of the Executive branch',
+            'Judicial Review of unconstitutional statutes by the Court of Appeal',
+            'Direct Democracy through a national village referendum',
+            'Executive veto of parliamentary bills by the Attorney General',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Under Article 63(2)–(3) of the Constitution of Tanzania, the National Assembly (Bunge) oversees and advises the Executive, questions Ministers, deliberates national budgets, and holds the government accountable.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(2)}] Suppose a newly enacted parliamentary Act contains a provision that directly contradicts the Bill of Rights in the Constitution of the United Republic of Tanzania. Which state organ has the constitutional mandate to declare that statutory provision null and void?`,
+          options: [
+            'The High Court of Tanzania (and Court of Appeal on appeal), exercising constitutional interpretation and judicial review',
+            'The Independent National Electoral Commission (INEC)',
+            'The Prevention and Combating of Corruption Bureau (TAKUKURU/PCCB)',
+            'The Ward Tribunal in the respective district council',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Under Article 64(5) and Article 30(3) of the Constitution, the High Court has original jurisdiction to hear petitions regarding violations of basic rights and to strike down any law inconsistent with the Constitution.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(3)}] Why does the structure of the Union between Mainland Tanzania and Zanzibar classify "Foreign Affairs", "Defence and Security", and "Currency/Central Banking" as Union Matters, while "Primary Health Care" and "Local Government" in Zanzibar remain Non-Union Matters?`,
+          options: [
+            'To preserve unified international sovereignty and macroeconomic security under the Union Government while guaranteeing Zanzibar internal autonomy over local socio-economic affairs',
+            'Because Zanzibar has no House of Representatives (Baraza la Wawakilishi) to enact domestic legislation',
+            'Because the Union Constitution prohibits Mainland Tanzania from operating hospitals or district councils',
+            'To allow foreign ambassadors to govern non-union ministries directly',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: The First Schedule of the 1977 Constitution lists 22 Union Matters managed across the entire United Republic, while non-union matters in Zanzibar are legislated by the House of Representatives and administered by the Revolutionary Government of Zanzibar (SMZ).`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(0)}] Two Form Four graduates face unemployment in their district. Student A waits passively for a white-collar government job, while Student B conducts a market survey, forms a registered youth cooperative, secures a 4-4-2 municipal council interest-free loan, and starts solar poultry brooding. Which life skill did Student B demonstrate?`,
+          options: [
+            'Creative problem-solving, entrepreneurship, and proactive decision-making',
+            'Peer-pressure conformity and passive dependency',
+            'Aggressive conflict escalation',
+            'Tax evasion and informal speculation',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: TIE Civics and General Studies emphasize 21st-century Life Skills—critical thinking, entrepreneurship, self-awareness, and utilizing local empowerment funds (10% Local Government revenue allocation: 4% Women, 4% Youth, 2% Persons with Disabilities).`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(1)}] In a rural community, a 15-year-old Form Two girl is pressured by relatives to drop out of school for early marriage in exchange for bride price (mahari). Which legal and institutional action best protects her right to education?`,
+          options: [
+            'Reporting the case to the Social Welfare Officer, Police Gender and Children’s Desk, and school administration under the Law of the Child Act (Cap. 13) and Education Act',
+            'Advising the student to abandon her studies quietly to avoid family disagreement',
+            'Allowing village elders to auction her school uniform to pay the bride price',
+            'Waiting until she turns thirty years old before reporting the incident',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Forced and early marriage of schoolgirls violates the Law of the Child Act (2009), the Education Act (which criminalizes marrying or impregnating primary/secondary school students), and the landmark High Court/Court of Appeal ruling in Rebeca Gyumi v. Attorney General.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(2)}] Which of the following accurately distinguishes a "By-law" (Sheria Ndogo) enacted by a District or Municipal Council from a "Principal Act of Parliament"?`,
+          options: [
+            'A By-law is subsidiary legislation passed by a Local Government Authority and approved by the Minister to regulate local council affairs, whereas a Principal Act is enacted by the National Assembly and assented to by the President',
+            'A By-law overrides the National Constitution whenever a conflict arises',
+            'A Principal Act applies only to a single village, whereas a By-law governs foreign treaties',
+            'By-laws are written by the Chief Justice without local council participation',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Under Article 97 of the Constitution, Parliament exercises legislative power through Acts assented to by the President, while Local Government Authorities (District, Town, Municipal, City Councils) enact subsidiary by-laws for local governance.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(3)}] Before a Parliamentary Bill passed by the National Assembly (Bunge) becomes enforceable law in Tanzania, what constitutional step must take place under Article 97?`,
+          options: [
+            'The President of the United Republic of Tanzania must give Presidential Assent by signing the Bill',
+            'The Speaker of the National Assembly must swear in all Regional Commissioners',
+            'The Inspector General of Police must publish the Bill in foreign newspapers',
+            'The Bill must be ratified by the United Nations General Assembly',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: A Bill goes through First Reading, Parliamentary Standing Committee scrutiny, Second Reading, Committee of the Whole House, Third Reading/Passing, and finally Presidential Assent by the President to become an Act of Parliament.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(0)}] Why is the Commission for Human Rights and Good Governance (CHRGG / Tume ya Haki za Binadamu na Utawala Bora) established as an independent constitutional department under Article 129 of the Tanzanian Constitution?`,
+          options: [
+            'To investigate complaints of human rights violations and abuse of public office/maladministration independently without interference from any person or authority',
+            'To prosecute criminal murder cases in place of the Director of Public Prosecutions (DPP)',
+            'To print banknotes and regulate commercial bank interest rates',
+            'To register political parties in place of the Registrar of Political Parties',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Under Articles 129–130, CHRGG promotes civic education on human rights, investigates abuse of power or maladministration, and recommends redress or institutes proceedings to uphold Utawala Bora (Good Governance).`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(1)}] While studying "Globalization and Regional Integration" (${subT(1)}), an Advanced Level General Studies student evaluates the African Continental Free Trade Area (AfCFTA) and SADC. What is a primary domestic challenge Tanzania must address to maximize gains from free trade protocols?`,
+          options: [
+            'Upgrading domestic value-addition (agro-processing industries), energy reliability, and product quality standards (TBS) so Tanzanian goods compete effectively rather than exporting raw unprocessed crops',
+            'Closing all border posts at Tunduma, Namanga, Mutukula, and Rusumo',
+            'Abolishing the Tanzania Bureau of Standards (TBS) and Tanzania Revenue Authority (TRA)',
+            'Prohibiting Tanzanian farmers from using modern irrigation or packaging technology',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Regional integration (EAC, SADC, AfCFTA) expands markets to hundreds of millions of consumers, but requires domestic industrialization, reliable power (e.g., JNHPP), and strict quality standards to prevent trade deficits.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(2)}] In Tanzania's National Symbols, what civic values are symbolized by the Uhuru Torch (Mwenge wa Uhuru) first lit atop Mount Kilimanjaro on 9 December 1961 by Captain Alexander Nyirenda?`,
+          options: [
+            'Freedom, national unity, hope, peace, love, and exposing corruption, hatred, and despair across and beyond Tanzania’s borders',
+            'The exclusive authority of mining corporations over Mount Kilimanjaro',
+            'The replacement of the National Coat of Arms with regional flags',
+            'A ban on international diplomatic relations with neighbouring states',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: As articulated by Mwalimu Julius K. Nyerere ("Sisi tumewasha Mwenge na kuuweka juu ya Mlima Kilimanjaro..."), the Uhuru Torch symbolizes enlightenment, peace, dignity, hope, and national development inspections across all districts.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(3)}] What is the constitutional role of the Controller and Auditor General (CAG) under Article 143 of the Constitution of the United Republic of Tanzania?`,
+          options: [
+            'To audit public revenues and expenditures of the Central Government, Local Governments, and public authorities at least once every year and submit audit reports to the President to be laid before Parliament',
+            'To collect customs duties at Dar es Salaam Port in place of TRA',
+            'To appoint Cabinet Ministers and Regional Administrative Secretaries',
+            'To set fuel prices in place of EWURA',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: The CAG ensures financial accountability and transparency by auditing all public accounts and submitting annual reports scrutinized by parliamentary committees (PAC and LAAC).`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(0)}] A driver approaching a zebra crossing near a primary school ignores the "50 km/h" speed limit sign and overtakes another vehicle while pedestrians are crossing. According to Road Safety Education in Civics, which category of road accident cause does this represent?`,
+          options: [
+            'Reckless human behaviour and violation of traffic laws (human factor), which accounts for the majority of preventable road accidents',
+            'Natural tectonic hazards unrelated to driver conduct',
+            'Proper defensive driving etiquette',
+            'Authorized emergency vehicle clearance',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Road safety analysis classifies causes into human factors (speeding, overtaking at zebra crossings, driving under the influence, fatigue), mechanical defects, and road/weather conditions; human error is the leading preventable cause.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(1)}] How does "Gender Equity" differ from "Gender Equality" in national socio-economic development policies?`,
+          options: [
+            'Gender Equity involves fairness and targeted affirmative measures (such as Special Seats or STEM scholarships) to compensate for historical disadvantages, leading to genuine Gender Equality of rights and opportunities',
+            'Gender Equity means excluding men from all economic activities',
+            'Gender Equality refers solely to biological differences between male and female chromosomes',
+            'Both terms mean maintaining traditional patriarchal property inheritance laws',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Gender refers to socially constructed roles, whereas sex is biological. Step 2: Gender Equity provides fair corrective measures (leveling the playing field) so that both women and men enjoy equal rights, status, and opportunities (Gender Equality).`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(2)}] In International Relations (General Studies / Civics), why did Tanzania adopt the policy of Non-Alignment during the Cold War era while maintaining bilateral ties with both Western and Eastern bloc states as well as China?`,
+          options: [
+            'To safeguard national sovereignty and independent foreign policy decision-making without becoming a military satellite of either NATO or the Warsaw Pact',
+            'To withdraw completely from the United Nations and the Commonwealth',
+            'To ban all foreign trade and diplomatic embassies in Dar es Salaam',
+            'To align exclusively with apartheid South Africa',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Through the Non-Aligned Movement (NAM), Tanzania cooperated economically and diplomatically (e.g., building the TAZARA railway with China and receiving Nordic developmental aid) without surrendering sovereignty to Cold War superpowers.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(3)}] When two neighbouring pastoralist and farming villages experience land-use disputes over water sources, which peaceful conflict-resolution method involves an impartial third party facilitating dialogue so the parties reach their own mutually acceptable agreement?`,
+          options: [
+            'Mediation (Upatanishi)',
+            'Unilateral military coercion',
+            'Litigation with mandatory imprisonment',
+            'Boycott and sabotage of water infrastructure',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: In conflict resolution, negotiation involves only the disputing parties, mediation uses a neutral facilitator to help parties reach a voluntary settlement, and arbitration/litigation involves a binding decision imposed by an arbitrator or court.`,
+        },
+      ];
+    }
+
+    // Kiswahili — 16 maswali halisi ya Umahiri (NECTA Competence-Based Assessment) kwa Kiswahili Sanifu
+    if (subLower.includes('kiswahili')) {
+      return [
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(0)}] Katika sentensi: "Mwanafunzi hodari aliyefaulu mtihani wa taifa amepewa zawadi nzuri," neno "aliyefaulu" linaundwa na mofimu zipi na linatekeleza dhima gani kisarufi?`,
+          options: [
+            'Mofimu: a- (ngeli/nafsi), -li- (njeo ya wakati uliopita), -ye- (kirejeshi cha ngeli ya A-WA), -faul- (mzizi), -u (kiishio); linafanya kazi kama kishazi tegemezi kivumishi kinachofafanua nomino "Mwanafunzi"',
+            'Ni kielezi cha mahali kinachoeleza jinsi zawadi ilivyotolewa',
+            'Ni kiunganishi huru kinachounganisha sentensi mbili ambatano',
+            'Ni kihisishi kinachoonesha mshangao wa mzungumzaji',
+          ],
+          correctIndex: 0,
+          explanation: `Hatua ya 1: Kuchambua mofimu za "a-li-ye-faul-u" (kiambishi awali cha nafsi/ngeli + njeo + kirejeshi + mzizi + kiishio). Hatua ya 2: Kishazi "aliyefaulu mtihani wa taifa" ni kishazi tegemezi kivumishi (KtV) kinachotoa taarifa kuhusu nomino "Mwanafunzi".`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(1)}] Nomino "Chura", "Kifaru", na "Kiboko" zina upekee gani wa kimuundo na kisintaksia katika uainishaji wa ngeli za nomino za Kiswahili?`,
+          options: [
+            'Kimuundo zina viambishi vya ngeli ya KI-VI (ki-/ch-), lakini kisintaksia huchukua upatanisho wa kisarufi wa ngeli ya A-WA kwa sababu ni viumbe hai (watu na wanyama)',
+            'Huchukua upatanisho wa kisarufi wa ngeli ya LI-YA katika umoja na wingi',
+            'Hazina wingi wala upatanisho wowote wa kisarufi katika sentensi',
+            'Ni nomino za dhahania zinazoingia katika ngeli ya U-U pekee',
+          ],
+          correctIndex: 0,
+          explanation: `Hatua ya 1: Kwa kigezo cha kisintaksia (upatanisho wa kisarufi), nomino zote za viumbe hai (wanyama, ndege, samaki, wadudu, watu) huingia katika ngeli ya A-WA (mfano: "Kifaru mkubwa amekimbia / Vifaru wakubwa wamekimbia"), ingawa kimaumbo zina viambishi vya KI-VI.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(2)}] Badilisha kitenzi "Pika" kuwa katika kauli ya kutendewa (applicative), kauli ya kutendwa (passive), na kauli ya kutendana (reciprocal) kwa mpangilio sahihi:`,
+          options: [
+            'Kutendewa: Pikia | Kutendwa: Pikwa | Kutendana: Pikana',
+            'Kutendewa: Pikwa | Kutendwa: Pikisha | Kutendana: Pikika',
+            'Kutendewa: Pikana | Kutendwa: Pikia | Kutendana: Pikiwa',
+            'Kutendewa: Pikika | Kutendwa: Pikana | Kutendana: Pikwa',
+          ],
+          correctIndex: 0,
+          explanation: `Hatua ya 1: Mnyambuliko wa mzizi -pik-: Kauli ya kutendewa huongeza mofimu -i-/-e- (pikia); kauli ya kutendwa huongeza -w- (pikwa); kauli ya kutendana huongeza -an- (pikana).`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(3)}] Katika mchakato wa uundaji wa maneno mapya ya Kiswahili (${subT(3)}), maneno "Chajio" (chakula cha jioni), "Kipimapembe" (kipima + pembe), na "Mwanaisimu" (mwana + isimu) yameundwa kwa njia gani?`,
+          options: [
+            '"Chajio" limeundwa kwa ufupishaji/uhulutishaji (blending), ilhali "Kipimapembe" na "Mwanaisimu" yameundwa kwa mwambatano (compounding)',
+            'Maneno yote matatu ni maneno ya mkopo kutoka lugha ya Kijerumani',
+            'Maneno yote matatu yameundwa kwa njia ya uradidi (reduplication)',
+            'Yameundwa kwa kubadili mpangilio wa silabi bila maana',
+          ],
+          correctIndex: 0,
+          explanation: `Hatua ya 1: "Chajio" linatokana na kuunganisha vipande vya "chakula cha jioni" (uhulutishaji). Hatua ya 2: "Kipimapembe" (kitenzi + nomino) na "Mwanaisimu" (nomino + nomino) yanatokana na mwambatano wa maneno mawili kamili.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(0)}] Mshairi anapoandika mshororo: "Jua lilipochomoza, lilimbusu mlimaji kwa tabasamu la dhahabu," ametumia tamathali ipi ya semi ya fani na ina dhima gani katika kazi ya fasihi?`,
+          options: [
+            'Tashihisi (Uhuishaji/Personification) — kulipa jua sifa za kibinadamu za kubusu na kutabasamu ili kujenga taswira angavu ya faraja na matumaini',
+            'Tashibiha (Simile) — kulinganisha vitu viwili kwa kutumia viunganishi kama "mithili ya" au "kama"',
+            'Kejeli (Sarcasm) — kusema kinyume cha ukweli kwa lengo la kudhalilisha',
+            'Tanakali za sauti (Onomatopoeia) — kuiga mlio wa kuanguka kwa kitu majini',
+          ],
+          correctIndex: 0,
+          explanation: `Hatua ya 1: Jua si kiumbe mwenye uwezo wa kubusu au kutabasamu; kupewa sifa za binadamu huitwa Tashihisi (Uhuishaji). Hatua ya 2: Dhima yake ni kuibua hisia na picha (taswira) kichwani mwa msomaji.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(1)}] Chunguza ubeti ufuatao wa shairi la kimapokeo:\n"Elimu ni taa yetu, gizani inatuongoza,\nHujenga taifa letu, ujinga kuufukuza,\nTushike vitabu vyetu, maarifa kuongeza,\nSoma kwa bidii sana, ufaulu maishani."\nUbeti huu una muundo gani wa kishairi na mizani mingapi katika mshororo wa kwanza?`,
+          options: [
+            'Muundo wa Tarbia (mistari minne kwa ubeti), vina vya kati "-tu" na vya mwisho "-za", na mizani 16 (8+8) katika kila mshororo',
+            'Muundo wa Takhmisa (mistari mitano) wenye mizani 12 kwa mshororo',
+            'Muundo wa Tathlitha (mistari mitatu) usiozingatia urari wa vina wala mizani',
+            'Shairi la Mavue/Zuhumu lisilo na kibwagizo',
+          ],
+          correctIndex: 0,
+          explanation: `Hatua ya 1: Kuhesabu silabi (mizani): "E-li-mu ni ta-a ye-tu" (8) + "gi-za-ni i-na-tu-o-ngo-za" (8; "ngo" ni silabi moja) = mizani 16. Hatua ya 2: Mistari 4 katika ubeti huitwa Tarbia.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(2)}] Unapoandika Barua Rasmi ya Kikazi au ya Kuomba Kazi kwa mujibu wa kanuni za NECTA, ni vipengele vipi viwili vinavyotofautisha muundo wa Barua Rasmi na Barua ya Kirafiki?`,
+          options: [
+            'Kuwapo kwa Anuani Mbili (anuani ya mwandishi na anuani ya mwandikiwa), Kumbukumbu Namba, na Kichwa cha Barua kilichoandikwa kwa herufi kubwa na kupigiwa mstari',
+            'Kuanza na salamu ndefu za kujulia hali ya familia na majirani',
+            'Kutokuwa na sahihi wala jina la mwandishi mwishoni mwa barua',
+            'Kuandika tarehe chini ya jina la mwandikiwa mwishoni mwa barua',
+          ],
+          correctIndex: 0,
+          explanation: `Hatua ya 1: Barua rasmi lazima iwe na anuani ya mwandishi (juu kulia), tarehe, kumbukumbu namba (inapohitajika), anuani ya mwandikiwa (kushoto), mwanzo rasmi ("Ndugu,"), Kichwa cha Barua (KUH:/YAH:), kiini fupi na fasaha, na mwisho rasmi (sahihi, jina kamili na cheo).`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(3)}] Katika uhakiki wa kazi za Fasihi Andishi (Riwaya, Tamthiliya na Ushairi), ni uhusiano gani uliopo kati ya "Fani" na "Maudhui"?`,
+          options: [
+            'Fani (muundo, mtindo, wahusika, mandhari, matumizi ya lugha) ni ufundi wa kisanaa anaoutumia msanii kuwasilisha Maudhui (dhamira, ujumbe, falsafa, msimamo); vyote viwili hutegemeana kama pande mbili za sarafu moja',
+            'Maudhui yanahusu idadi ya kurasa na rangi ya jalada la kitabu pekee',
+            'Fani inaweza kuwapo bila ujumbe wowote kwa jamii na maudhui hayahitaji lugha',
+            'Uhakiki wa fasihi huzingatia maudhui pekee na kupuuza wahusika na mandhari',
+          ],
+          correctIndex: 0,
+          explanation: `Hatua ya 1: Fani ni umbo la nje la kisanaa na Maudhui ni mawazo/ujumbe ulio ndani ya kazi ya fasihi. Msanii hutumia vipengele vya fani kuibua na kupambanua dhamira na ujumbe kwa jamii.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(0)}] Bainisha dhima ya mofimu "-ki-" katika sentensi mbili zifuatazo:\n(i) "Mtoto a-ki-soma kwa bidii atafaulu."\n(ii) "Kitabu ki-meanguka chini."`,
+          options: [
+            'Katika (i) "-ki-" ni mofimu ya hali ya masharti (conditional), ilhali katika (ii) "ki-" ni kiambishi awali cha upatanisho wa ngeli ya KI-VI',
+            'Katika sentensi zote mbili "-ki-" inaonesha udogoshaji wa nomino',
+            'Katika (i) "-ki-" inaonesha wakati uliopita na katika (ii) inaonesha nafsi ya kwanza',
+            'Katika sentensi zote mbili "-ki-" ni mzizi wa kitenzi',
+          ],
+          correctIndex: 0,
+          explanation: `Hatua ya 1: Katika "akisoma", mofimu "-ki-" inaonesha masharti au kitendo kuendelea. Hatua ya 2: Katika "kimeanguka", mofimu "ki-" ni kiambishi cha ngeli ya KI-VI kinachopatanisha nomino "Kitabu".`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(1)}] Ni methali ipi kati ya hizi inawiana moja kwa moja na dhamira ya "Umoja, mshikamano na ushirikiano katika kujenga taifa"?`,
+          options: [
+            '"Kidole kimoja hakivunji chawa" / "Umoja ni nguvu, utengano ni udhaifu"',
+            '"Mpanda ngazi hushuka"',
+            '"Asiyesikia la mkuu huvunjika guu"',
+            '"Sikio la kufa halisikii dawa"',
+          ],
+          correctIndex: 0,
+          explanation: `Hatua ya 1: Methali "Kidole kimoja hakivunji chawa" inasisitiza kuwa kazi kubwa ya kijamii au kitaifa inahitaji ushirikiano na mshikamano wa watu wengi.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(2)}] Sababu zipi za kihistoria na kijamii ziliwezesha Lahaja ya Kiunguja (Zanzibar) kuteuliwa na Kamati ya Lugha ya Afrika Mashariki (1930) kuwa msingi wa Kiswahili Sanifu badala ya Kimvita au Kiamu?`,
+          options: [
+            'Kuenea kwake kwa kasi bara kupitia misafara ya biashara ya masafa marefu, shughuli za wamisionari, utawala wa kikoloni, na matumizi yake katika vyombo vya habari na elimu',
+            'Kiunguja kilikuwa hakina msamiati wowote wa Kibantu',
+            'Wakazi wa Mombasa na Lamu walikataa kuzungumza Kiswahili mnamo mwaka 1930',
+            'Kiunguja kilianzishwa na wakoloni wa Kijerumani mwaka 1918',
+          ],
+          correctIndex: 0,
+          explanation: `Hatua ya 1: Zanzibar ilikuwa kitovu cha misafara ya biashara kwenda Tabora, Ujiji, na Kongo Mashariki, pamoja na makao ya mashirika ya kimisionari (UMCA) yaliyoandika kamusi na sarufi kwa lahaja ya Kiunguja.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(3)}] Katika utungaji wa Risala na Hotuba (${subT(3)}), kuna tofauti gani ya msingi kati ya Risala na Hotuba?`,
+          options: [
+            'Risala ni taarifa fupi rasmi inayosomwa na mwakilishi wa kundi la watu mbele ya mgeni rasmi kueleza mafanikio na changamoto zao, ilhali Hotuba ni maelezo yanayotolewa na kiongozi au mgeni rasmi kuhutubia hadhira',
+            'Risala hutolewa mdomo kwa mdomo bila kuandikwa, ilhali Hotuba huandikwa kwenye ubao pekee',
+            'Hotuba haina utangulizi wala hitimisho, ilhali Risala huanza na anuani mbili kama barua',
+            'Risala na Hotuba hazina tofauti yoyote ya kimuundo wala kimatumizi',
+          ],
+          correctIndex: 0,
+          explanation: `Hatua ya 1: Risala huandaliwa na wanakikundi/wanafunzi/wafanyakazi na kusomwa kwa Mgeni Rasmi; Mgeni Rasmi naye hujibu hoja hizo kupitia Hotuba yake.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(0)}] Katika sentensi: "Yule mzee alikula chumvi nyingi kabla ya kufariki," nahau "kula chumvi nyingi" ina maana gani katika muktadha wa matumizi ya lugha?`,
+          options: [
+            'Kuishi miaka mingi (kuzeeka sana na kupata uzoefu mkubwa wa maisha)',
+            'Kupika chakula chenye munyu mwingi kupita kiasi',
+            'Kufanya biashara ya madini ya chumvi baharini',
+            'Kupatwa na ugonjwa wa shinikizo la damu',
+          ],
+          correctIndex: 0,
+          explanation: `Hatua ya 1: Nahau huwa na maana ya kificho (isiyo ya moja kwa moja). "Kula chumvi nyingi" humaanisha kuishi umri mrefu.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(1)}] Unapofupisha habari (Ufupisho wa Ufahamu) yenye maneno 300 ili ibaki maneno 80 pekee katika mtihani wa Kiswahili, ni kanuni ipi unayopaswa kuzingatia?`,
+          options: [
+            'Kudondoa hoja kuu za msingi za kila aya na kuziunganisha kwa mtiririko fasaha kwa maneno yako mwenyewe bila kubadili maana ya awali ya mwandishi wala kuingiza mifano mipya',
+            'Kunakili aya ya kwanza neno kwa neno na kuacha aya nyingine zote',
+            'Kuandika hoja kwa mtindo wa vidokezo (risasi/bullets) badala ya aya kamili',
+            'Kupinga mawazo ya mwandishi na kuandika kisa kipya kabisa',
+          ],
+          correctIndex: 0,
+          explanation: `Hatua ya 1: Katika ufupisho, mwanafunzi hubaini mawazo makuu, huacha mifano na mapambo ya lugha, na kuandika aya moja (au kulingana na maelekezo) yenye mtiririko mzuri kwa kuzingatia idadi ya maneno iliyopangwa.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(2)}] Kwa nini Fasihi Simulizi inaendelea kuwa na umuhimu mkubwa katika jamii ya leo ya Tanzania licha ya kukua kwa sayansi na teknolojia ya habari?`,
+          options: [
+            'Kwa sababu imejifunga katika mifumo ya kidijitali (redio, runinga, mitandao ya kijamii) huku ikiendelea kurithisha maadili, historia, utambulisho wa utamaduni na kuburudisha jamii papo kwa hapo',
+            'Kwa sababu imefuta kabisa matumizi ya vitabu vya kiada shuleni',
+            'Kwa sababu inawaruhusu wazee pekee kuzungumza bila ushiriki wa vijana',
+            'Kwa sababu haina gharama ya kutunga sheria za nchi',
+          ],
+          correctIndex: 0,
+          explanation: `Hatua ya 1: Fasihi simulizi ina sifa ya kubadilika kulingana na wakati na mazingira; leo hadithi, ngonjera, majigambo na nyimbo huhifadhiwa na kuwasilishwa pia kupitia vyombo vya kielektroniki bila kupoteza dhima yake ya kuelimisha na kuonya.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(3)}] Chagua sentensi yenye makosa ya kisarufi/kimantiki na maelezo sahihi ya kurekebisha kosa hilo:`,
+          options: [
+            'Kosa: "Ng’ombe zangu zimeingia shambani." — Rekebisho: "Ng’ombe wangu wameingia shambani" (kwa sababu ng’ombe ni mnyama anayeingia katika ngeli ya A-WA kisintaksia)',
+            'Kosa: "Watoto wanasoma vitabu." — Rekebisho: "Watoto zinasoma vitabu"',
+            'Kosa: "Mti mkubwa umeanguka." — Rekebisho: "Mti wakubwa wameanguka"',
+            'Kosa: "Maji safi yanachemka." — Rekebisho: "Maji msafi anachemka"',
+          ],
+          correctIndex: 0,
+          explanation: `Hatua ya 1: Nomino za wanyama kama "ng'ombe", "mbuzi", na "kondoo" zenye umbo lisilobadilika (N-N) huchukua upatanisho wa ngeli ya A-WA: "Ng'ombe wangu mmoja amepotea / Ng'ombe wangu wengi wamepotea."`,
+        },
+      ];
+    }
+
+    // English Language, Literature in English & Academic Communication — 16 authentic NECTA CBA questions
+    if (subLower.includes('english') || subLower.includes('literature') || subLower.includes('communication')) {
+      return [
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(0)}] Complete the following Type 3 Conditional sentence accurately according to NECTA grammar standards:\n"If the laboratory technician _______ the chemical containers properly, the accidental spill _______ occurred."`,
+          options: [
+            'had labelled / would not have',
+            'labelled / will not have',
+            'has labelled / would not',
+            'would have labelled / had not',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Type 3 Conditional (unfulfilled past condition) uses the structure: "If + Past Perfect (had + past participle)" in the if-clause, and "would/could/might + have + past participle" in the main clause.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(1)}] Rewrite the following sentence in the Passive Voice while preserving the exact tense and meaning:\n"The Ministry of Education is distributing new science textbooks to all secondary schools."`,
+          options: [
+            'New science textbooks are being distributed to all secondary schools by the Ministry of Education.',
+            'New science textbooks were being distributed to all secondary schools by the Ministry of Education.',
+            'New science textbooks have been distributed to all secondary schools by the Ministry of Education.',
+            'New science textbooks is being distributed to all secondary schools by the Ministry of Education.',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Identify the active verb tense: "is distributing" (Present Continuous). Step 2: Passive Present Continuous uses "am/is/are + being + past participle". Since "New science textbooks" is plural, use "are being distributed".`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(2)}] Convert the following Direct Speech into Reported (Indirect) Speech:\n"We shall submit our environmental research project tomorrow," the Form Four students told the headmistress.`,
+          options: [
+            'The Form Four students told the headmistress that they would submit their environmental research project the following day.',
+            'The Form Four students told the headmistress that we shall submit our environmental research project tomorrow.',
+            'The Form Four students said to the headmistress that they will submit their environmental research project yesterday.',
+            'The Form Four students asked the headmistress if they would submit their project the next day.',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Shift pronouns ("We" → "they", "our" → "their"). Step 2: Backshift modal verb ("shall/will" → "would") because the reporting verb "told" is in the past tense. Step 3: Shift time adverbial ("tomorrow" → "the following day / the next day").`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(3)}] Supply the correct Question Tag for the following statement:\n"Hardly any student missed the morning assembly today, _______?"`,
+          options: [
+            'did they',
+            'didn’t they',
+            'haven’t they',
+            'did he',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Adverbs like "hardly", "scarcely", "barely", "seldom", and "never" make a clause grammatically negative, so it requires a POSITIVE question tag. Step 2: The verb "missed" is Simple Past, and the pronoun for "student/anybody" in tags is "they" → "did they?".`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(0)}] Join the following pair of sentences using "No sooner ... than":\nSentence 1: The referee blew the final whistle.\nSentence 2: The spectators rushed onto the football pitch.`,
+          options: [
+            'No sooner had the referee blown the final whistle than the spectators rushed onto the football pitch.',
+            'No sooner the referee blew the final whistle when the spectators rushed onto the football pitch.',
+            'No sooner did the referee blown the final whistle than the spectators rushed onto the pitch.',
+            'No sooner had the referee blew the final whistle than the spectators had rushed onto the pitch.',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: When a sentence begins with the negative correlative "No sooner", subject-auxiliary inversion is mandatory: "No sooner + had + Subject + Past Participle (blown) ... than + Simple Past clause".`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(1)}] Choose the sentence that demonstrates correct Subject-Verb Agreement (Concord) under the rule of correlative and prepositional modifiers:`,
+          options: [
+            'Neither the class monitor nor his classmates were aware of the sudden timetable change.',
+            'Neither the class monitor nor his classmates was aware of the sudden timetable change.',
+            'The quality of these locally manufactured solar panels are very high.',
+            'Each of the selected debate participants have received a certificate.',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: With "Neither ... nor" and "Either ... or", the verb agrees with the nearer subject (Proximity Rule): "classmates" is plural, so "were" is correct. ("The quality ... is", "Each ... has").`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(2)}] In analysing African novels and plays prescribed by NECTA (such as *Passed Like a Shadow*, *Unanswered Cries*, *The Lion and the Jewel*, or *A Man of the People*), how does an author use **Dramatic Irony** to engage the audience?`,
+          options: [
+            'By allowing the audience or reader to know a crucial truth about a character’s situation of which the character on stage is still unaware',
+            'By stating the exact dictionary definition of every difficult word at the bottom of the page',
+            'By ensuring every character speaks in identical rhyming couplets',
+            'By writing the story without any conflict or climax',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Dramatic irony occurs when there is a contrast between what a character believes to be true and what the audience/reader knows to be true, building tension, sympathy, or satire.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(3)}] Read the poetic lines below and identify the dominant sound device used in the first line:\n"From forth the fatal loins of these two foes,\nA pair of star-cross'd lovers take their life."`,
+          options: [
+            'Alliteration — the repetition of initial consonant sounds (/f/ in "From forth ... fatal ... foes") to create rhythm and emphasis',
+            'Assonance — the repetition of final punctuation marks',
+            'Oxymoron — placing two synonymous adjectives together',
+            'Euphemism — substituting a harsh expression with a mild one',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Alliteration is the repetition of identical initial consonant sounds in closely connected words ("From forth ... fatal ... foes"), enhancing musicality and thematic mood.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(0)}] When writing a formal **Curriculum Vitae (CV)** and **Application Letter** in response to a job advertisement in the *Daily News*, which closing salutation must you use if your letter opens with "Dear Sir/Madam,"?`,
+          options: [
+            'Yours faithfully,',
+            'Yours sincerely,',
+            'Yours affectionately,',
+            'Best regards forever,',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: In formal British/Commonwealth correspondence tested by NECTA, "Dear Sir/Madam," (unnamed recipient) pairs strictly with "Yours faithfully,", whereas a named recipient ("Dear Mr. Mwinyi,") pairs with "Yours sincerely,".`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(1)}] Select the correct prepositions to complete the sentence:\n"The scholarship committee congratulated Asha _______ her outstanding performance in Chemistry, as she had always abided _______ the school regulations."`,
+          options: [
+            'on / by',
+            'for / with',
+            'about / to',
+            'in / under',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Standard English verb-preposition collocations require "congratulate someone ON an achievement" and "abide BY rules/regulations".`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(2)}] In a literary essay comparing two NECTA plays or novels, a question asks: "With reference to two readings you have done, show how cultural traditions and bride-price practices affect the welfare of women." What must each body paragraph contain to score full marks?`,
+          options: [
+            'A clear thematic point, the specific character and episode from the named book as textual evidence, and an explanation of how that episode relates to Tanzanian society',
+            'A general summary of the author’s biography without naming any character from the book',
+            'Quotations from a textbook not listed in the NECTA literature syllabus',
+            'A list of book titles without explaining any plot events',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: NECTA Literature Section C essays require two books (3 points per book = 6 points total), where each point states the theme/issue, cites a concrete character and event from the text, and links it to real society.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(3)}] Identify the grammatical function of the underlined clause in the sentence:\n"The student **whose science innovation won the national exhibition** has been awarded a university scholarship."`,
+          options: [
+            'Defining relative (adjectival) clause modifying the noun phrase "The student"',
+            'Adverbial clause of concession modifying the verb "awarded"',
+            'Noun clause acting as the direct object of the preposition',
+            'Main independent clause of a compound sentence',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Introduced by the possessive relative pronoun "whose", the clause "whose science innovation won the national exhibition" specifies which student is meant (defining relative/adjectival clause).`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(0)}] In phonetics and dictionary usage (${subT(0)}), how does primary stress shift when the word **"present"** changes from a two-syllable Noun/Adjective to a two-syllable Verb?`,
+          options: [
+            'As a Noun/Adjective, stress falls on the first syllable (ˈpre-sent); as a Verb, stress shifts to the second syllable (pre-ˈsent)',
+            'Both the Noun and the Verb carry primary stress on the second syllable',
+            'English words never change meaning when syllable stress shifts',
+            'Stress is placed only on silent letters',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: In English disyllabic noun-verb pairs (e.g., ˈexport/exˈport, ˈrecord/reˈcord, ˈpresent/preˈsent, ˈconduct/conˈduct), nouns and adjectives are stressed on the first syllable, while verbs are stressed on the second syllable.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(1)}] Combine the following sentences using "Despite" without changing the original meaning:\n"It rained heavily throughout the afternoon. The inter-school athletics competition continued as scheduled."`,
+          options: [
+            'Despite the heavy rain throughout the afternoon, the inter-school athletics competition continued as scheduled.',
+            'Despite it rained heavily throughout the afternoon, the inter-school athletics competition continued.',
+            'Despite of the heavy rain throughout the afternoon, the competition continued as scheduled.',
+            'Despite the heavy rain throughout the afternoon, but the competition continued.',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: "Despite" (without "of") and "In spite of" must be followed by a noun phrase, gerund (-ing), or "the fact that + clause", never directly by a finite clause ("Despite it rained") or paired with "but".`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(2)}] In poetry analysis, what is the difference between the **"Poet"** and the **"Persona" (Speaking Voice)**?`,
+          options: [
+            'The Poet is the actual historical writer who composed the poem, whereas the Persona is the fictional voice, character, or mask speaking inside the poem (e.g., an exploited labourer, a child, or a driver)',
+            'The Poet is always a fictional character invented by the Persona',
+            'The Persona is the publisher who prints the anthology of poems',
+            'There is never any distinction between the Poet and the Persona',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: A poet may adopt a persona completely different from their own life (for example, Richard Mabala or Jwani Mwaikusa speaking in the voice of a peasant or a freedom fighter) to dramatize social reality.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic} — ${subT(3)}] Choose the correct word order of adjectives to complete the sentence naturally:\n"The school library recently received _______ tables."`,
+          options: [
+            'ten large rectangular brown Tanzanian wooden',
+            'wooden Tanzanian brown rectangular large ten',
+            'brown ten wooden large rectangular Tanzanian',
+            'Tanzanian rectangular ten brown wooden large',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Follow the standard royal order of English adjectives (Determiner/Number → Opinion → Size → Shape → Age → Colour → Origin → Material → Purpose + Noun): ten (Number) + large (Size) + rectangular (Shape) + brown (Colour) + Tanzanian (Origin) + wooden (Material).`,
+        },
+      ];
+    }
+
+    // Default / Maarifa ya Jamii / Other Arts & Primary Subjects — 16 competence-based scenario questions
     return [
       {
-        question: `[${cls} • ${focusTopic} — ${subT(1)}] According to ${matchedBookTitle}, which core competence objective is developed when studying "${subT(1)}" under "${focusTopic}"?`,
+        question: `[${cls} • ${focusTopic} — ${subT(0)}] While studying "${subT(0)}" under "${focusTopic}" in ${cls} ${subject}, learners investigate a real community challenge in their ward. Which competence-based step should they take first?`,
         options: [
-          `Analyzing the causes, key principles, and practical Tanzanian applications of "${subT(1)}" with verified evidence`,
-          'Listing isolated definitions without connecting them to the topic',
-          'Skipping practical case studies and historical/social context',
-          'Memorizing headings without explaining their meaning',
+          `Identify the root causes of the issue in "${subT(0)}" using verified evidence from ${matchedBookTitle} and field observation`,
+          'Guess a conclusion without collecting any community data',
+          'Ignore the socio-economic context of Tanzania',
+          'Copy unrelated notes without analysing the problem',
         ],
         correctIndex: 0,
-        explanation: `Step 1: Identify the competence focus of "${subT(1)}" in ${cls} ${subject}. Step 2: Connect its core concepts to real-world Tanzanian and East African examples as required by TIE.`,
+        explanation: `Step 1: Competence-Based Assessment (CBA) begins with observing and diagnosing the real-life problem using accurate concepts from "${subT(0)}".`,
       },
       {
-        question: `[${cls} • ${focusTopic} — ${subT(2)}] In ${matchedPaperTitle} (Section A Multiple Choice & Matching Items), how do examiners test your understanding of "${subT(2)}"?`,
+        question: `[${cls} • ${focusTopic} — ${subT(1)}] Which of the following best explains how "${subT(1)}" contributes to sustainable socio-economic and cultural development in Tanzania?`,
         options: [
-          `By requiring you to distinguish accurate concepts, chronology, or rules of "${subT(2)}" from closely related distractors`,
-          'By asking questions unrelated to the official syllabus',
-          'By awarding marks without checking the chosen letter',
-          'By testing only topics from other subjects',
+          `It equips citizens with ethical values, analytical reasoning, and practical skills to solve community challenges related to "${focusTopic}"`,
+          'It restricts learners from participating in community development activities',
+          'It replaces practical problem-solving with passive memorization',
+          'It discourages environmental conservation and national unity',
         ],
         correctIndex: 0,
-        explanation: `Step 1: Read the stem on "${subT(2)}" carefully. Step 2: Eliminate options that contradict official TIE ${cls} ${subject} definitions before selecting the verified letter.`,
+        explanation: `Step 1: In the TIE curriculum, "${subT(1)}" links classroom theory directly to national ethics, civic duty, and practical community development.`,
       },
       {
-        question: `[${cls} • ${focusTopic} — ${subT(3)}] When answering a short-answer NECTA Section B question on "${subT(3)}" (${focusTopic}), why is it important to give a concrete Tanzanian or African example for each point?`,
+        question: `[${cls} • ${focusTopic} — ${subT(2)}] A village assembly is debating how to apply principles from "${subT(2)}" (${focusTopic}) to improve public welfare. Which decision reflects good governance and civic responsibility?`,
         options: [
-          `Because NECTA marking schemes allocate specific marks for linking theoretical points on "${subT(3)}" to authentic real-life examples`,
-          'Examples are optional and never carry any marks',
-          'Examples replace the need to state the main point',
-          'Only foreign examples are accepted in NECTA exams',
+          'Involving all stakeholders transparently, respecting the rule of law, and using community resources sustainably',
+          'Excluding women and youth from decision-making meetings',
+          'Misusing public funds without accountability',
+          'Ignoring environmental protection by-laws',
         ],
         correctIndex: 0,
-        explanation: `Step 1: State the main point clearly (1 Mark). Step 2: Explain the mechanism/reason (1 Mark). Step 3: Provide a relevant Tanzanian/East African example on "${subT(3)}" (1 Mark).`,
+        explanation: `Step 1: Democratic participation, transparency, accountability, and sustainability are foundational pillars across all TIE Social Studies and Arts subjects.`,
       },
       {
-        question: `[${cls} • ${focusTopic} — ${subT(0)}] Which of the following best describes the relationship between the main competence "${focusTopic}" and its specific sub-topic "${subT(0)}" in ${cls} ${subject}?`,
+        question: `[${cls} • ${focusTopic} — ${subT(3)}] When comparing pre-colonial, colonial, and post-independence perspectives on "${subT(3)}" (${focusTopic}), what analytical conclusion is supported by historical evidence in Tanzania?`,
         options: [
-          `"${subT(0)}" provides the specific analytical skills, rules, and evidence needed to master the broader competence of "${focusTopic}"`,
-          `"${subT(0)}" is completely independent of "${focusTopic}"`,
-          `"${subT(0)}" is only studied outside the classroom`,
-          `"${focusTopic}" excludes "${subT(0)}" in national examinations`,
+          'Post-independence policies sought to restore human dignity, national unity, and self-reliance after colonial exploitation',
+          'Colonial rule prioritized African industrial self-sufficiency over metropolitan raw-material extraction',
+          'Pre-colonial Tanzanian societies had no political organization or trade networks',
+          'Independence eliminated the need for education and civic ethics',
         ],
         correctIndex: 0,
-        explanation: `Step 1: In the TIE competence-based curriculum, each main topic ("${focusTopic}") is broken down into specific teachable sub-topics such as "${subT(0)}" that build cumulative mastery.`,
+        explanation: `Step 1: Historical and civic analysis demonstrates how post-1961 Tanzania rebuilt national unity, Kiswahili identity, and equitable social services.`,
       },
       {
-        question: `[${cls} • ${focusTopic} — ${subT(1)}] While revising "${subT(1)}" from ${matchedBookTitle}, a student compares two contrasting perspectives or cases. Which higher-order cognitive skill (Bloom's Taxonomy) is being practiced?`,
+        question: `[${cls} • ${focusTopic} — ${subT(0)}] In a NECTA Competence-Based examination scenario on "${subT(0)}", a candidate is asked to propose six practical measures to address a national challenge. What makes each proposed measure earn full credit?`,
         options: [
-          `Analysis and Evaluation of "${subT(1)}"`,
-          'Rote recall without comprehension',
-          'Passive copying of notes',
-          'Guessing without evidence',
+          'Stating a clear actionable policy or community measure, explaining how it works, and illustrating it with a concrete Tanzanian example',
+          'Writing a single vague word without any explanation',
+          'Repeating the same point six times in different words',
+          'Leaving out the introduction and conclusion',
         ],
         correctIndex: 0,
-        explanation: `Step 1: Comparing, contrasting, and evaluating evidence on "${subT(1)}" develops higher-order Analysis and Evaluation skills tested in Section B and Section C of NECTA papers.`,
+        explanation: `Step 1: Competence-based marking rewards actionable solutions backed by clear cause-and-effect explanation and authentic Tanzanian context.`,
       },
       {
-        question: `[${cls} • ${focusTopic} — ${subT(2)}] In ${matchedPaperTitle}, a question asks: "Examine six (6) factors/impacts related to ${subT(2)}." What is the mandatory structure of the introduction paragraph?`,
+        question: `[${cls} • ${focusTopic} — ${subT(1)}] How does preserving Tanzanian cultural heritage sites (such as Kilwa Kisiwani, Stone Town Zanzibar, Bagamoyo, Kondoa Irangi Rock Paintings, and Olduvai Gorge) support "${subT(1)}"?`,
         options: [
-          `Define the key term(s) in "${subT(2)}", specify the relevant time period/context, and outline the direction of the essay (02 Marks)`,
-          'Start numbering Point 1 immediately without any definition',
-          'Repeat the question word-for-word as the introduction',
-          'Write the conclusion at the beginning of the essay',
+          'It safeguards historical identity and national values while generating foreign exchange and employment through cultural tourism',
+          'It prevents historians and students from conducting archaeological research',
+          'It reduces national income and destroys local crafts',
+          'It replaces domestic agriculture completely',
         ],
         correctIndex: 0,
-        explanation: `Step 1: A complete NECTA essay introduction defines the core concept of "${subT(2)}", situates it in context, and earns the full 02 Introduction Marks.`,
+        explanation: `Step 1: Heritage conservation links historical identity and national ethics with sustainable tourism revenue and youth employment.`,
       },
       {
-        question: `[${cls} • ${focusTopic} — ${subT(3)}] Which study strategy using ${matchedBookTitle} and ${matchedPaperTitle} is most effective for mastering "${subT(3)}" before the national examination?`,
+        question: `[${cls} • ${focusTopic} — ${subT(2)}] Which communication and critical-thinking skill is essential when presenting findings on "${subT(2)}" (${focusTopic}) during a school debate or seminar?`,
         options: [
-          `Study the conceptual notes and worked examples on "${subT(3)}" in ${matchedBookTitle}, then solve corresponding Section A, B, and C questions in ${matchedPaperTitle}`,
-          'Read only the table of contents without solving past paper questions',
-          'Memorize past paper answers without understanding why they are correct',
-          'Skip "${subT(3)}" and focus only on one sub-topic',
+          'Structuring arguments logically with verified evidence, coherent transitions, and respectful rebuttal of counter-arguments',
+          'Using personal attacks instead of factual evidence',
+          'Reading unrelated notes without addressing the motion',
+          'Refusing to listen to questions from the audience',
         ],
         correctIndex: 0,
-        explanation: `Step 1: Combine textbook conceptual mastery (${matchedBookTitle}) with timed past-paper application (${matchedPaperTitle}) on "${subT(3)}".`,
+        explanation: `Step 1: Effective academic communication requires evidence-based reasoning, clear organization, and respectful engagement.`,
       },
       {
-        question: `[${cls} • ${focusTopic} — ${subT(0)}] When evaluating cause-and-effect relationships in "${subT(0)}" (${cls} ${subject}), how should you distinguish between immediate causes and long-term underlying factors?`,
+        question: `[${cls} • ${focusTopic} — ${subT(3)}] Why did the Tanzania Institute of Education (TIE) emphasize Competence-Based Assessment (CBA) for "${focusTopic}" (${subT(3)})?`,
         options: [
-          `Explain how long-term structural conditions in "${focusTopic}" created the foundation, while immediate triggers directly initiated the outcome in "${subT(0)}"`,
-          'Treat all factors as identical without explanation',
-          'Mention only dates or names without explaining causation',
-          'Ignore the sequence of events',
+          'To evaluate whether learners can apply knowledge and skills from "${subT(3)}" to analyse and solve real-world scenarios rather than merely recalling definitions',
+          'To eliminate practical examples from national examinations',
+          'To test only topics outside the syllabus',
+          'To discourage analytical essay writing',
         ],
         correctIndex: 0,
-        explanation: `Step 1: Differentiate underlying structural factors from immediate triggers in "${subT(0)}" to demonstrate deep analytical mastery in ${cls} ${subject}.`,
+        explanation: `Step 1: CBA shifts assessment from rote memorization to higher-order application, analysis, and evaluation in authentic scenarios.`,
       },
       {
-        question: `[${cls} • ${focusTopic} — ${subT(1)}] In a collaborative classroom discussion on "${subT(1)}" (${focusTopic}), how should students verify whether a proposed statement is accurate?`,
+        question: `[${cls} • ${focusTopic} — ${subT(0)}] A cooperative society in Morogoro applies concepts from "${subT(0)}" to improve record-keeping, ethical leadership, and environmental conservation. What long-term outcome will the community achieve?`,
         options: [
-          `Cross-check the statement against the official TIE ${cls} ${subject} Textbook (${matchedBookTitle}) and NECTA Marking Scheme standards`,
-          'Accept any unverified opinion without checking the syllabus',
-          'Ignore textbook definitions and formulas',
-          'Skip verification altogether',
+          'Higher productivity, financial transparency, and sustainable protection of land and water resources',
+          'Increased soil erosion and loss of member trust',
+          'Collapse of local market networks',
+          'Exclusion of smallholder farmers',
         ],
         correctIndex: 0,
-        explanation: `Step 1: Always ground academic arguments on "${subT(1)}" in the authoritative TIE curriculum and official NECTA marking rubrics.`,
+        explanation: `Step 1: Ethical governance and environmental stewardship reinforce long-term community prosperity.`,
       },
       {
-        question: `[${cls} • ${focusTopic} — ${subT(2)}] If a Section B question on "${subT(2)}" carries $10\\text{ marks}$ and asks for five (5) brief explanations, how are the marks distributed in the official marking scheme?`,
+        question: `[${cls} • ${focusTopic} — ${subT(1)}] When interpreting a statistical table or historical map related to "${subT(1)}" in ${matchedPaperTitle}, what should a student do first?`,
         options: [
-          '$02\\text{ marks}$ for each well-explained point ($5 \\times 2 = 10\\text{ marks}$)',
-          '$10\\text{ marks}$ for the first point and $0\\text{ marks}$ for the rest',
-          '$05\\text{ marks}$ for the title and $05\\text{ marks}$ for the margin',
-          '$01\\text{ mark}$ total for all five points',
+          'Read the title, key/legend, scale, and units carefully to identify trends and patterns before answering the questions',
+          'Ignore the map key and guess the locations',
+          'Alter the figures printed in the question paper',
+          'Skip all data-interpretation questions',
         ],
         correctIndex: 0,
-        explanation: `Step 1: Divide total marks ($10$) by the required number of points ($5$) $\\Rightarrow 02\\text{ marks}$ per point (1 mark for the key point + 1 mark for clear explanation/example).`,
+        explanation: `Step 1: Accurate interpretation of maps, timelines, and statistical tables starts with examining the title, scale, key, and variables.`,
       },
       {
-        question: `[${cls} • ${focusTopic} — ${subT(3)}] What is the purpose of the concluding paragraph in a $15\\text{-mark}$ NECTA essay on "${focusTopic}" (${subT(3)})?`,
+        question: `[${cls} • ${focusTopic} — ${subT(2)}] Which core Tanzanian national value (Tunu ya Taifa) is strengthened when citizens collaborate across religious and ethnic lines to solve problems in "${subT(2)}"?`,
         options: [
-          `To synthesize the main arguments presented on "${subT(3)}" and provide a concise, relevant judgment or recommendation ($01\\text{–}02\\text{ marks}$)`,
-          'To introduce completely new unrelated topics not discussed in the body',
-          'To copy the introduction word-for-word',
-          'To leave the essay unfinished',
+          'National Unity, Peace, Patriotism, and Human Dignity (Utu na Mshikamano)',
+          'Regionalism and ethnic nepotism',
+          'Political intolerance',
+          'Tax evasion',
         ],
         correctIndex: 0,
-        explanation: `Step 1: A strong conclusion summarizes the weight of the arguments on "${subT(3)}" and provides a sound analytical judgment to secure the final conclusion marks.`,
+        explanation: `Step 1: Tanzania's national ethos is built on Umoja (Unity), Amani (Peace), Uzalendo (Patriotism), and Utu (Human Dignity).`,
       },
       {
-        question: `[${cls} • ${focusTopic} — ${subT(0)}] In ${matchedPaperTitle}, how should a candidate handle a Matching Items question (List A and List B) on "${subT(0)}" to avoid losing marks?`,
+        question: `[${cls} • ${focusTopic} — ${subT(3)}] In analysing cause-and-effect relationships within "${subT(3)}" (${focusTopic}), how should a candidate distinguish between root causes and visible effects?`,
         options: [
-          `First match the items in List A whose definitions in "${subT(0)}" are certain, then carefully compare remaining options in List B to avoid duplicate letters`,
-          'Assign the same letter from List B to every item in List A',
-          'Leave half of the matching items blank',
-          'Write sentences instead of the required letter',
+          'Root causes are the underlying conditions or actions that initiate a process, whereas effects are the resulting socio-economic, political, or environmental outcomes',
+          'Causes and effects are always identical and interchangeable',
+          'Effects always occur decades before their causes',
+          'Only dates matter without explaining why events happened',
         ],
         correctIndex: 0,
-        explanation: `Step 1: Secure certain matches first. Step 2: Eliminate used letters in List B and verify each remaining concept against "${subT(0)}" in ${matchedBookTitle}.`,
+        explanation: `Step 1: Clear separation of causes (why an event happened) from impacts/effects (what resulted from it) is essential in NECTA Section B and C questions.`,
       },
       {
-        question: `[${cls} • ${focusTopic} — ${subT(1)}] When a NECTA question on "${subT(1)}" (${focusTopic}) uses the command verb "Contrast" or "Differentiate", what format is expected in your answer?`,
+        question: `[${cls} • ${focusTopic} — ${subT(0)}] How does information and communication technology (ICT) ethically support learning and civic engagement in "${subT(0)}"?`,
         options: [
-          `Present clear comparative points joined by contrasting conjunctions ("whereas", "while", "on the other hand") addressing both sides of "${subT(1)}"`,
-          'Describe only one side and ignore the second concept',
-          'List single words without explanation',
-          'Write only definitions without comparing them',
+          'By enabling students and citizens to access verified digital textbooks, public data, and educational platforms while avoiding cyberbullying and misinformation',
+          'By spreading unverified rumours and plagiarism',
+          'By replacing critical thinking with copy-pasting',
+          'By violating digital privacy laws',
         ],
         correctIndex: 0,
-        explanation: `Step 1: "Differentiate" or "Contrast" requires side-by-side comparison of both concepts in "${subT(1)}" within each point to earn full marks.`,
+        explanation: `Step 1: Responsible ICT use combines digital research literacy with cyber ethics and compliance with Tanzania's Cybercrimes Act.`,
       },
       {
-        question: `[${cls} • ${focusTopic} — ${subT(2)}] How does mastering "${subT(2)}" in ${cls} ${subject} prepare students for real-life civic, socio-economic, or communication challenges in Tanzania?`,
+        question: `[${cls} • ${focusTopic} — ${subT(1)}] When a NECTA essay prompt on "${subT(1)}" asks you to "Assess" or "Evaluate" a statement, what analytical approach is required?`,
         options: [
-          `It equips learners with practical problem-solving, critical thinking, and communication skills applicable to Tanzanian society`,
-          'It is only useful for passing a single classroom test',
-          'It discourages practical application outside school',
-          'It has no connection to national development',
+          'Weigh the strengths/achievements against the limitations/challenges using concrete evidence, and provide a balanced concluding judgment',
+          'List only one-sided phrases without evidence',
+          'Write a single paragraph without an introduction',
+          'Copy the question prompt repeatedly',
         ],
         correctIndex: 0,
-        explanation: `Step 1: The TIE curriculum is competence-based, meaning "${subT(2)}" directly builds practical skills for national development and daily problem-solving.`,
+        explanation: `Step 1: Higher-order command verbs like "Assess", "Evaluate", and "Critically examine" require weighing evidence and reaching a reasoned judgment.`,
       },
       {
-        question: `[${cls} • ${focusTopic} — ${subT(3)}] If a question on "${subT(3)}" in ${matchedPaperTitle} asks you to "Outline four (4) lessons or solutions", what should each numbered point contain?`,
+        question: `[${cls} • ${focusTopic} — ${subT(2)}] Which action by secondary school students best demonstrates practical patriotism and environmental ethics learned in "${subT(2)}"?`,
         options: [
-          `A concise heading/key point followed by a clear one-to-two sentence explanation grounded in "${subT(3)}"`,
-          'A single vague word with no explanation',
-          'A ten-page unnumbered paragraph',
-          'Unrelated points from another subject',
+          'Planting and caring for trees around the school catchment area, protecting public school property, and upholding academic integrity',
+          'Vandalizing laboratory equipment and littering plastic waste',
+          'Boycotting community cleanliness campaigns',
+          'Cheating in national examinations',
         ],
         correctIndex: 0,
-        explanation: `Step 1: State the point clearly and follow it with a brief explanation showing how it applies to "${subT(3)}".`,
+        explanation: `Step 1: True competence is demonstrated by translating classroom ethics into daily stewardship of public property and the environment.`,
       },
       {
-        question: `[${cls} • ${focusTopic} — ${subT(0)}] Before submitting your examination answer booklet for ${cls} ${subject}, what final verification should you perform on your answers for "${focusTopic}"?`,
+        question: `[${cls} • ${focusTopic} — ${subT(3)}] Synthesizing "${focusTopic}" (${subT(3)}) from ${matchedBookTitle}: Why is multidisciplinary integration across History, Civics, Geography, and Languages vital for Tanzanian learners?`,
         options: [
-          `Check that all question numbers match the paper, all required points are complete, and key terms in "${focusTopic}" are accurately spelled and explained`,
-          'Cross out correct workings without replacement',
-          'Leave multiple-choice boxes empty',
-          'Remove introductions and conclusions from essays',
+          'Real-world national challenges require combining historical context, civic law, environmental awareness, and articulate communication in Kiswahili and English',
+          'Each subject exists in total isolation from real life',
+          'Language skills are never used when writing History or Civics essays',
+          'Geography has no influence on historical trade or economic planning',
         ],
         correctIndex: 0,
-        explanation: `Step 1: Reviewing question numbering, completeness of points, and clarity of explanations on "${focusTopic}" prevents avoidable mark loss.`,
+        explanation: `Step 1: Competence-based education integrates historical understanding, civic responsibility, spatial awareness, and strong communication skills.`,
       },
     ];
   };
@@ -5592,52 +6331,248 @@ export function buildContentIntegratedQuizQuestions(
   }
 
   // ============================================================================
-  // 7. DEFAULT / ARTS / LANGUAGES / HISTORY / CIVICS — TOPIC-INTEGRATED SOLVING
+  // 7. ARTS, HUMANITIES & LANGUAGES — AUTHENTIC NECTA COMPETENCE-BASED QUESTIONS
   // ============================================================================
+  if (subLower.includes('history') || subLower.includes('historia')) {
+    return attachMetadata([
+      {
+        question: `[${cls} • ${focusTopic}] A group of archaeology students excavating at Olduvai Gorge and Laetoli in northern Tanzania uncovered hominid footprints preserved in volcanic ash (3.6 million years ago) alongside Oldowan pebble tools. Which conclusion about human evolution is directly supported by this evidence?`,
+        options: [
+          'East Africa (particularly Tanzania) is the Cradle of Humankind, where early hominids such as Australopithecus afarensis achieved bipedalism before Homo habilis developed stone-tool technology',
+          'Early hominids migrated to Olduvai Gorge from Europe after the Industrial Revolution',
+          'Iron-smelting furnaces were invented by Australopithecus during the Early Stone Age',
+          'Bipedalism developed only after the introduction of plantation agriculture in the 19th century',
+        ],
+        correctIndex: 0,
+        explanation: `Step 1: Mary Leakey's 1978 discovery of hominid footprints at Laetoli proved upright bipedal walking by Australopithecus ~3.6 million years ago. Step 2: Oldowan stone tools found with Homo habilis fossils at Olduvai Gorge confirm Tanzania's central role as the Cradle of Humankind.`,
+      },
+      {
+        question: `[${cls} • ${focusTopic}] During the 19th-century Ngoni Migration (Mfecane) from Natal into Southern and Central Tanzania under Zwangendaba, why were the Ngoni able to defeat and absorb many local communities along their route?`,
+        options: [
+          'They deployed Shaka Zulu’s military innovations, including the cow-horn formation, short stabbing spear (assegai), large cowhide shields, and age-regiment discipline',
+          'They possessed European Maxim machine guns and artillery supplied by the Portuguese at Sofala',
+          'They travelled by railway from South Africa directly to Songea and Kahama',
+          'Local East African communities had abandoned agriculture and lived in uninhabited deserts',
+        ],
+        correctIndex: 0,
+        explanation: `Step 1: Fleeing the Mfecane wars in Zululand, Zwangendaba's Ngoni crossed the Zambezi (1835) and reached Ufipa (~1840), later splitting into the Mpezeni and Mombera/Tuta/Gwangwara groups. Step 2: Their superior assegai close-combat tactics, cow-horn encirclement, and assimilation of conquered youths transformed political organization in southern and western Tanzania.`,
+      },
+      {
+        question: `[${cls} • ${focusTopic}] When British colonial Governor Sir Donald Cameron formally introduced **Indirect Rule** in Tanganyika in 1925 (via the Native Authority Ordinance), why did the colonial state prefer governing through traditional chiefs rather than using direct British officers at every village level?`,
+        options: [
+          'It reduced administrative costs, overcame the acute shortage of British personnel, and buffered African resentment by making local chiefs collect hut/poll taxes and enforce colonial by-laws',
+          'It aimed to grant immediate democratic independence to Tanganyika by 1930',
+          'It empowered African chiefs to command the British Royal Air Force and control foreign trade',
+          'It abolished all colonial taxation and forced labour across Tanganyika',
+        ],
+        correctIndex: 0,
+        explanation: `Step 1: Indirect Rule (pioneered by Lord Lugard in Northern Nigeria and applied in Tanganyika by Sir Donald Cameron in 1925) co-opted indigenous rulers into Native Authorities, Native Courts, and Native Treasuries to cut administrative expenses and practice divide-and-rule.`,
+      },
+      {
+        question: `[${cls} • ${focusTopic}] Examine the role of Cooperative Unions (such as the Kilimanjaro Native Cooperative Union - KNCU, Bukoba Buhaya Union, and Victoria Federation of Cooperative Unions - VFCU led by Paul Bomani) during the 1950s struggle for Tanganyika's independence:`,
+        options: [
+          'They united African peasant farmers against colonial marketing exploitation, provided organisational networks and leadership skills, and mobilized rural mass support for TANU',
+          'They campaigned for the permanent continuation of British colonial rule in Tanganyika',
+          'They restricted their membership exclusively to European sisal estate owners',
+          'They prohibited Mwalimu Julius K. Nyerere from addressing rural farmers in Lake Province',
+        ],
+        correctIndex: 0,
+        explanation: `Step 1: Peasant cooperative unions (KNCU in Moshi, VFCU in Mwanza/Sukumaland, Bukoba cooperatives) initially fought unfair crop grading and price exploitation by middlemen, and in the 1950s became the rural backbone of TANU mobilization.`,
+      },
+    ]);
+  }
+
+  if (subLower.includes('civic') || subLower.includes('general studies') || subLower.includes('uraia')) {
+    return attachMetadata([
+      {
+        question: `[${cls} • ${focusTopic}] During a General Election in the United Republic of Tanzania, a citizen registers in the Permanent National Voters’ Register (PNVR) and votes for the President, Member of Parliament (Mbunge), and Ward Councillor (Diwani). Which constitutional right and civic duty is this citizen exercising?`,
+        options: [
+          'The constitutional right to participate in public governance and elect representative leaders under Article 5 and Article 21 of the 1977 Constitution',
+          'The judicial power to sentence offenders in the High Court of Tanzania',
+          'The executive prerogative to appoint Regional Commissioners',
+          'The diplomatic immunity granted exclusively to foreign ambassadors',
+        ],
+        correctIndex: 0,
+        explanation: `Step 1: Article 5 grants every citizen of Tanzania who has attained the age of 18 years the right to vote in public elections, and Article 21 guarantees the right to participate in the governance of the country either directly or through freely chosen representatives.`,
+      },
+      {
+        question: `[${cls} • ${focusTopic}] A District Council publishes its quarterly revenue and expenditure report on public noticeboards and holds open village/mtaa assemblies where citizens question how health-centre construction funds were utilized. Which two pillars of Good Governance (Utawala Bora) are demonstrated in this scenario?`,
+        options: [
+          'Transparency (Uwazi) and Accountability (Uwajibikaji) coupled with Citizen Participation',
+          'Authoritarianism and Nepotism',
+          'Censorship and Executive Secrecy',
+          'Gerrymandering and Martial Law',
+        ],
+        correctIndex: 0,
+        explanation: `Step 1: Publishing public financial records demonstrates Transparency (Uwazi), while answering citizens' questions on public resource use demonstrates Accountability (Uwajibikaji) and Participatory Democracy.`,
+      },
+      {
+        question: `[${cls} • ${focusTopic}] In analysing Tanzania’s socio-economic development strategies, how does the construction of strategic infrastructure projects—such as the Julius Nyerere Hydropower Project (JNHPP - 2,115 MW) and the Standard Gauge Railway (SGR)—support the national industrialization vision?`,
+        options: [
+          'By providing reliable, affordable electricity for manufacturing/agro-processing factories and lowering freight transport costs between the port of Dar es Salaam, the interior, and landlocked neighbours',
+          'By replacing all agricultural production in Tanzania with imported food',
+          'By increasing the cost of industrial power and isolating rural regions from markets',
+          'By restricting trade within the East African Community and SADC',
+        ],
+        correctIndex: 0,
+        explanation: `Step 1: Reliable energy (JNHPP) and high-capacity electric rail transport (SGR) resolve the two biggest structural bottlenecks to industrialization—power shortages and high logistics costs.`,
+      },
+      {
+        question: `[${cls} • ${focusTopic}] A Form Three student is pressured by peers to abuse illicit drugs and skip classes, but she firmly refuses, explains the health and legal consequences, and advises her peers to join the school science and sports clubs instead. Which life skill is she demonstrating?`,
+        options: [
+          'Assertiveness, peer-pressure resistance, and responsible decision-making',
+          'Passive submission to negative peer influence',
+          'Aggressive hostility without communication',
+          'Social isolation and truancy',
+        ],
+        correctIndex: 0,
+        explanation: `Step 1: Assertiveness is the ability to stand up for one's values and rights firmly and respectfully while resisting negative peer pressure.`,
+      },
+    ]);
+  }
+
+  if (subLower.includes('kiswahili')) {
+    return attachMetadata([
+      {
+        question: `[${cls} • ${focusTopic}] Changanua sentensi ifuatayo kwa njia ya jedwali/visanduku ili kubaini aina ya sentensi na vishazi vyake:\n"Kitabu kilichonunuliwa jana kimeleta manufaa makubwa shuleni."`,
+        options: [
+          'Ni Sentensi Changamano yenye Kishazi Tegemezi Kivumishi ("kilichonunuliwa jana") na Kishazi Huru ("Kitabu ... kimeleta manufaa makubwa shuleni")',
+          'Ni Sentensi Sahili yenye kitenzi kikuu kimoja pekee bila kishazi tegemezi',
+          'Ni Sentensi Ambatano iliyounganishwa kwa kiunganishi "lakini"',
+          'Ni Kirai Nomino kisicho na kiarifu chochote',
+        ],
+        correctIndex: 0,
+        explanation: `Hatua ya 1: Sentensi ina kishazi tegemezi chenye kirejeshi "-cho-" ("kilichonunuliwa jana") kinachovumisha nomino "Kitabu", na kishazi huru ("Kitabu kimeleta manufaa makubwa shuleni"). Hivyo ni Sentensi Changamano.`,
+      },
+      {
+        question: `[${cls} • ${focusTopic}] Katika kazi za Fasihi Simulizi na Andishi, mwandishi anapotumia mhusika "Bwana Tumbo" au "Mzee Kufakuzikana" kuwakilisha tabia ya ulafi wa mali za umma au ukatili, ametumia mbinu gani ya kisanaa katika ujenzi wa wahusika?`,
+        options: [
+          'Mbinu ya Majazi — kumpa mhusika au mahali jina linalosadifu tabia, matendo, au hali yake halisi katika jamii',
+          'Mbinu ya Takriri — kurudiarudia silabi za mwisho katika shairi',
+          'Mbinu ya Mdokezo — kuacha sentensi bila kuikamilisha',
+          'Mbinu ya Tanakali za sauti — kuiga milio ya wanyama',
+        ],
+        correctIndex: 0,
+        explanation: `Hatua ya 1: Majazi ni mbinu ya kifani ambapo msanii huwapa wahusika au mandhari majina yanayoakisi tabia au dhima zao ili kusisitiza ujumbe (k.m. ufisadi, uadilifu, au unyonyaji).`,
+      },
+      {
+        question: `[${cls} • ${focusTopic}] Tofautisha maana na matumizi ya "Rejesta" (Sajili za Lugha) na "Misimu" (Simu) katika muktadha wa isimujamii ya Kiswahili:`,
+        options: [
+          'Rejesta ni mtindo wa lugha unaotokana na muktadha wa shughuli maalumu (kama vile mahakamani, hospitalini, au bungeni), ilhali Misimu ni maneno yasiyo sanifu yanayozuka katika kundi fulani la jamii kwa kipindi fulani na yanaweza kutoweka au kusanifishwa',
+          'Rejesta ni makosa ya kisarufi na Misimu ni lugha rasmi ya kuandikia sheria za Bunge',
+          'Misimu na Rejesta ni majina ya lahaja za kale za Pwani ya Kaskazini pekee',
+          'Rejesta hutumiwa na vijana wa mitaani pekee na Misimu hutumiwa na majaji mahakamani',
+        ],
+        correctIndex: 0,
+        explanation: `Hatua ya 1: Sajili/Rejesta hubadilika kulingana na muktadha wa taaluma au shughuli (sheria, dini, biashara), wakati Misimu (slang) huzuka kutokana na mabadiliko ya kijamii na baadhi yake (kama "boda-boda", "daladala", "chakachua") huota mizizi na kuingizwa kwenye kamusi.`,
+      },
+      {
+        question: `[${cls} • ${focusTopic}] Unapoandika Kumbukumbu za Mkutano (Minutes) rasmi wa Baraza la Wanafunzi au Bodi ya Shule, ni vipengele vipi vya msingi vinavyopaswa kufuatana kwa mpangilio sahihi?`,
+        options: [
+          'Kichwa cha Kumbukumbu (jina la kikao, mahali, tarehe, na saa), Mahudhurio (waliohudhuria, waliotoa udhuru, wasiohudhuria), Ajenda (Kufungua kikao, Kuthibitisha kumbukumbu zilizopita, Yatokanayo, Ajenda mpya, Mengineyo, Kufunga kikao), na Sahihi za Mwenyekiti na Katibu',
+          'Anuani mbili za mwandishi na mwandikiwa pamoja na salamu za kirafiki pekee',
+          'Orodha ya majina ya wajumbe pekee bila kuandika maazimio wala ajenda',
+          'Shairi la beti nne lisilo na tarehe wala sahihi',
+        ],
+        correctIndex: 0,
+        explanation: `Hatua ya 1: Muundo rasmi wa Kumbukumbu za Mkutano unahitaji Kichwa kinachotaja kikao, mahali na tarehe, Orodha ya Mahudhurio, Mpangilio wa Ajenda na Maazimio, na uthibitisho wa Sahihi za Mwenyekiti na Katibu.`,
+      },
+    ]);
+  }
+
+  if (subLower.includes('english') || subLower.includes('literature') || subLower.includes('communication')) {
+    return attachMetadata([
+      {
+        question: `[${cls} • ${focusTopic}] Rewrite the following sentence using the structure "Scarcely ... when":\n"As soon as the guest of honour arrived at the graduation ground, the school brass band started playing the national anthem."`,
+        options: [
+          'Scarcely had the guest of honour arrived at the graduation ground when the school brass band started playing the national anthem.',
+          'Scarcely the guest of honour arrived at the graduation ground than the school brass band started playing the national anthem.',
+          'Scarcely did the guest of honour arrived at the graduation ground when the band started playing.',
+          'Scarcely had the guest of honour arrive at the graduation ground than the band started playing.',
+        ],
+        correctIndex: 0,
+        explanation: `Step 1: "Scarcely" and "Hardly" at the beginning of a sentence require inversion with Past Perfect ("Scarcely had + Subject + Past Participle") paired with the correlative conjunction "when" (unlike "No sooner ... than").`,
+      },
+      {
+        question: `[${cls} • ${focusTopic}] Choose the option that correctly explains the meaning of the idiomatic expression underlined in the sentence:\n"When the auditor questioned the missing receipts, the storekeeper **beat about the bush** for twenty minutes."`,
+        options: [
+          'Spoke evasively around the topic without giving a direct, honest answer to the main question',
+          'Cleared the thorny bushes surrounding the school storehouse',
+          'Presented all financial ledgers immediately and accurately',
+          'Apologized sincerely and refunded the missing money',
+        ],
+        correctIndex: 0,
+        explanation: `Step 1: The idiom "to beat about the bush" means to avoid coming to the main point of a discussion or question.`,
+      },
+      {
+        question: `[${cls} • ${focusTopic}] In analysing African literary texts prescribed by NECTA, a student examines how post-independence leaders betray the masses who elected them. Which central literary term describes this recurring social issue across the text?`,
+        options: [
+          'A Theme (specifically Political Disillusionment, Betrayal, and Corruption)',
+          'Stage Directions (italics describing actors’ movements)',
+          'Rhyme Scheme (pattern of end sounds in a sonnet)',
+          'Aside (a brief remark unheard by other characters)',
+        ],
+        correctIndex: 0,
+        explanation: `Step 1: A central idea or social issue explored throughout a literary work (such as betrayal, corruption, conflict between tradition and modernity, or gender oppression) is a Theme.`,
+      },
+      {
+        question: `[${cls} • ${focusTopic}] Identify the correct Indirect (Reported) Speech form of the following interrogative sentence:\n"Where have you kept the laboratory volumetric flasks?" the Chemistry teacher asked Juma.`,
+        options: [
+          'The Chemistry teacher asked Juma where he had kept the laboratory volumetric flasks.',
+          'The Chemistry teacher asked Juma where had he kept the laboratory volumetric flasks?',
+          'The Chemistry teacher asked Juma that where have you kept the volumetric flasks.',
+          'The Chemistry teacher told Juma if he had kept the laboratory volumetric flasks.',
+        ],
+        correctIndex: 0,
+        explanation: `Step 1: In reported WH-questions, retain the WH-word ("where"), change word order from interrogative ("have you kept") to declarative statement order ("he had kept"), backshift Present Perfect to Past Perfect, and end with a full stop.`,
+      },
+    ]);
+  }
+
   return attachMetadata([
     {
-      question: `[${cls} • ${focusTopic}] Solve this structured TIE Textbook question on "${focusSubTopic}": Which analytical step is required first when answering a Section B question on "${focusSubTopic}" in ${cls} ${subject}?`,
+      question: `[${cls} • ${focusTopic}] In a NECTA Competence-Based Assessment scenario on "${focusSubTopic}", students are asked to diagnose a socio-economic challenge in their community and propose sustainable solutions. Which step demonstrates higher-order application?`,
       options: [
-        `Identify the key concept of "${focusSubTopic}", state its official TIE definition, and apply relevant Tanzanian examples`,
-        'List unrelated points without defining the key terms',
-        'Provide a one-word answer without explanation',
-        'Omit examples and conclusions',
+        `Analysing empirical causes of the problem in "${focusSubTopic}" and designing actionable interventions grounded in Tanzanian policy and community resources`,
+        'Listing isolated words without explaining their relevance to the scenario',
+        'Ignoring local community conditions and national ethics',
+        'Copying the question prompt without providing solutions',
       ],
       correctIndex: 0,
-      explanation: `Step 1: Define the key term in "${focusSubTopic}" (02 Marks). Step 2: Explain the core points with clear Tanzanian examples (05 Marks). Step 3: Summarize the conclusion clearly (02 Marks).`,
+      explanation: `Step 1: Identify the problem and its root causes in "${focusSubTopic}". Step 2: Propose practical, evidence-based interventions tailored to the Tanzanian context.`,
     },
     {
-      question: `[${cls} • ${focusTopic}] From ${matchedPaperTitle}: When solving a 9-mark structured question on "${focusSubTopic}" requiring three explained points, how should you structure your work to earn full marks?`,
+      question: `[${cls} • ${focusTopic}] How does mastering "${focusSubTopic}" in ${cls} ${subject} empower learners to contribute to Tanzania's national development and ethical citizenship?`,
       options: [
-        `Present 3 distinct, numbered points on "${focusSubTopic}", each with a clear statement, explanation, and vivid example (3 × 3 = 09 Marks)`,
-        'Write a single unformatted paragraph without headings',
-        'Write only bullet titles without explanations',
-        'Skip the question introduction',
+        `By equipping learners with critical analysis, communication, and ethical decision-making skills applicable to real-life challenges in "${focusTopic}"`,
+        'By restricting learning to rote memorization without practical use',
+        'By discouraging collaboration and civic participation',
+        'By separating academic study from community development',
       ],
       correctIndex: 0,
-      explanation: `Step 1: State Point 1 + explanation + example (03 Marks). Step 2: State Point 2 + explanation + example (03 Marks). Step 3: State Point 3 + explanation + example (03 Marks) = 09 Marks total.`,
+      explanation: `Step 1: The TIE Competence-Based Curriculum connects "${focusSubTopic}" directly to practical problem-solving, national ethics (Maadili), and socio-economic progress.`,
     },
     {
-      question: `[${cls} • ${focusTopic}] From ${matchedBookTitle} (Chapter Exercise on "${focusTopic}"): Which of the following best demonstrates practical problem-solving mastery of "${focusSubTopic}"?`,
+      question: `[${cls} • ${focusTopic}] When evaluating two contrasting historical or social perspectives on "${focusSubTopic}" from ${matchedBookTitle}, what makes an analytical argument convincing in a national examination?`,
       options: [
-        `Connecting the principles of "${focusSubTopic}" to real-life socio-economic, historical, or communication applications in Tanzania`,
-        'Memorizing isolated words without context',
-        'Ignoring the syllabus competence objectives',
-        'Copying questions without solving them',
+        `Supporting each point with verified facts, concrete Tanzanian or African case studies, and logical cause-and-effect explanation`,
+        'Making unsupported generalizations without examples',
+        'Omitting definitions and conclusions from the essay',
+        'Addressing only one perspective while ignoring the prompt',
       ],
       correctIndex: 0,
-      explanation: `Step 1: Understand the theoretical principle of "${focusSubTopic}" in ${matchedBookTitle}. Step 2: Apply it to solve real-life Tanzanian case studies as tested in NECTA examinations.`,
+      explanation: `Step 1: State the analytical point clearly. Step 2: Substantiate it with authentic historical, civic, or literary evidence from ${matchedBookTitle}.`,
     },
     {
-      question: `[${cls} • ${focusTopic}] From ${matchedPaperTitle} (Section C Essay Problem — 15 Marks on "${focusTopic}"): Solve the mark distribution for a 6-point analytical essay on "${focusSubTopic}":`,
+      question: `[${cls} • ${focusTopic}] A community development committee applies principles from "${focusSubTopic}" (${focusTopic}) to promote environmental stewardship and inclusive participation. Which outcome reflects successful competence mastery?`,
       options: [
-        'Introduction: 2 Marks | 6 Explained Points (6 × 2 = 12 Marks) | Conclusion: 1 Mark = 15 Marks',
-        'Introduction: 5 Marks | Main Body: 5 Marks | Conclusion: 5 Marks',
-        'Introduction: 0 Marks | Main Body: 15 Marks | Conclusion: 0 Marks',
-        'Introduction: 10 Marks | Main Body: 5 Marks',
+        'Measurable improvement in community welfare, transparent resource management, and active participation of youth and women',
+        'Exclusion of local citizens from project planning',
+        'Depletion of natural resources without conservation',
+        'Abandonment of accountability mechanisms',
       ],
       correctIndex: 0,
-      explanation: `Step 1: Define key terms in the Introduction (02 Marks). Step 2: Present 6 well-argued points on "${focusSubTopic}" at 02 Marks each (12 Marks). Step 3: Write a relevant Conclusion (01 Mark) = 15 Marks.`,
+      explanation: `Step 1: Competence mastery in "${focusSubTopic}" is verified when theoretical principles produce sustainable, inclusive improvements in society.`,
     },
   ]);
 }

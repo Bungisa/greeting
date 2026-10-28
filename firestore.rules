@@ -1,0 +1,97 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (
+          (request.auth.token.email == "mohamedshabani751@gmail.com" && request.auth.token.email_verified == true) ||
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+        );
+    }
+
+    function isValidDocument(data) {
+      return data.keys().hasAll(['id', 'cls', 'subject', 'title', 'year', 'paperUrl', 'docType', 'createdAt']) &&
+        data.id is string && data.id.size() > 0 && data.id.size() < 200 &&
+        data.cls is string && data.cls.size() > 0 && data.cls.size() < 60 &&
+        data.subject is string && data.subject.size() > 0 && data.subject.size() < 120 &&
+        data.title is string && data.title.size() > 0 && data.title.size() < 300 &&
+        data.year is string && data.year.size() > 0 && data.year.size() < 20 &&
+        data.paperUrl is string && data.paperUrl.size() > 0 && data.paperUrl.size() < 900000 &&
+        data.docType in ['paper', 'textbook', 'syllabus', 'notes'] &&
+        data.createdAt is string && data.createdAt.size() < 60;
+    }
+
+    function isValidMockExam(data) {
+      return data.keys().hasAll(['id', 'uid', 'studentName', 'cls', 'subject', 'totalScore', 'nectaGrade', 'completedAt']) &&
+        data.id is string && data.id.size() > 0 && data.id.size() < 150 &&
+        data.uid is string && data.uid == request.auth.uid &&
+        data.studentName is string && data.studentName.size() > 0 && data.studentName.size() < 120 &&
+        data.cls is string && data.cls.size() > 0 && data.cls.size() < 60 &&
+        data.subject is string && data.subject.size() > 0 && data.subject.size() < 120 &&
+        data.totalScore is number && data.totalScore >= 0 && data.totalScore <= 100 &&
+        data.nectaGrade in ['A', 'B', 'C', 'D', 'E', 'S', 'F'] &&
+        data.completedAt is string && data.completedAt.size() < 60;
+    }
+
+    function isValidLeaderboard(data, userId) {
+      return data.keys().hasAll(['uid', 'studentName', 'cls', 'xp', 'updatedAt']) &&
+        data.uid is string && data.uid == userId &&
+        data.studentName is string && data.studentName.size() > 0 && data.studentName.size() < 120 &&
+        data.cls is string && data.cls.size() > 0 && data.cls.size() < 60 &&
+        data.xp is number && data.xp >= 0 && data.xp <= 10000000 &&
+        data.updatedAt is string && data.updatedAt.size() < 60;
+    }
+
+    function isValidUserProfile(data, userId) {
+      return data.keys().hasAll(['uid', 'displayName', 'role', 'updatedAt']) &&
+        data.uid is string && data.uid == userId &&
+        data.displayName is string && data.displayName.size() > 0 && data.displayName.size() < 120 &&
+        data.role in ['student', 'teacher', 'admin'] &&
+        data.updatedAt is string && data.updatedAt.size() < 60;
+    }
+
+    // ===============================================================
+    // Collection Rules
+    // ===============================================================
+    match /documents/{docId} {
+      allow get, list: if isAuthenticated();
+      allow create, update: if isAuthenticated() && isValidDocument(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /mockExams/{attemptId} {
+      allow get, list: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidMockExam(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.uid == request.auth.uid && isValidMockExam(request.resource.data);
+      allow delete: if isAdmin() || (isAuthenticated() && resource.data.uid == request.auth.uid);
+    }
+
+    match /leaderboard/{userId} {
+      allow get, list: if isAuthenticated();
+      allow create, update: if (isOwner(userId) || isAdmin()) && isValidLeaderboard(request.resource.data, userId);
+      allow delete: if isAdmin();
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isAuthenticated() && isOwner(userId) && isValidUserProfile(request.resource.data, userId) &&
+        (request.resource.data.role in ['student', 'teacher'] || isAdmin());
+      allow update: if isAuthenticated() && isValidUserProfile(request.resource.data, userId) &&
+        ((isOwner(userId) && request.resource.data.role == resource.data.role) || isAdmin());
+      allow delete: if isAdmin();
+    }
+  }
+}

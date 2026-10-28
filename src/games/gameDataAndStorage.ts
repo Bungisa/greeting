@@ -10,6 +10,7 @@ import {
   SiteResourceContext,
   TIE_CURRICULUM_SUBJECTS,
 } from '../data/curriculumData';
+import { buildLevelAccurateTextbookQuestions } from './tieTextbookQuestionEngine';
 
 export type GameDifficulty = 'Easy' | 'Medium' | 'Hard';
 export type GameSourceFilter = 'ALL' | 'BOOK' | 'PAPER';
@@ -1113,20 +1114,29 @@ export function getUploadedResourcesForClassSubject(
       (p.form.toLowerCase() === clsNorm || p.paperUrl !== null)
   );
 
+  const primaryBook =
+    matchingBooks.find((b) => Boolean(b.paperUrl || b.customContent)) ||
+    matchingBooks[0] ||
+    null;
+
   return {
     syllabuses: matchingSyllabuses.slice(0, 6).map((s) => ({
       title: s.title,
       form: s.form,
       subject: s.subject,
       year: s.year,
-      hasUrl: Boolean(s.paperUrl),
+      hasUrl: Boolean(s.paperUrl || s.customContent),
+      paperUrl: s.paperUrl,
+      customContent: s.customContent,
     })),
     books: matchingBooks.slice(0, 6).map((b) => ({
       title: b.title,
       form: b.form,
       subject: b.subject,
       year: b.year,
-      hasUrl: Boolean(b.paperUrl),
+      hasUrl: Boolean(b.paperUrl || b.customContent),
+      paperUrl: b.paperUrl,
+      customContent: b.customContent,
     })),
     papers: matchingPapers.slice(0, 8).map((p) => ({
       title: p.title,
@@ -1134,9 +1144,26 @@ export function getUploadedResourcesForClassSubject(
       subject: p.subject,
       year: p.year,
       category: p.category,
-      hasUrl: Boolean(p.paperUrl),
+      hasUrl: Boolean(p.paperUrl || p.customContent),
       hasAnswers: Boolean(p.answersUrl),
+      paperUrl: p.paperUrl,
+      customContent: p.customContent,
     })),
+    focusedResource: primaryBook
+      ? {
+          id: primaryBook.id,
+          title: primaryBook.title,
+          form: primaryBook.form,
+          subject: primaryBook.subject,
+          category: primaryBook.category,
+          year: primaryBook.year,
+          paperUrl: primaryBook.paperUrl,
+          answersUrl: primaryBook.answersUrl,
+          customContent: primaryBook.customContent,
+          isBook: primaryBook.isBook,
+          isSyllabus: primaryBook.isSyllabus,
+        }
+      : null,
   };
 }
 
@@ -1255,9 +1282,18 @@ export function getQuestionsForTreasureHunt(
   }
 
   const subNorm = subject.toLowerCase();
-  const matchingBank = QUESTION_BANK.filter(
-    (q) => q.subject.toLowerCase().includes(subNorm) || subNorm.includes(q.subject.toLowerCase())
+  const clsNorm = (cls || 'Form 3').toLowerCase();
+  const exactClassBank = QUESTION_BANK.filter(
+    (q) =>
+      q.cls.toLowerCase() === clsNorm &&
+      (q.subject.toLowerCase().includes(subNorm) || subNorm.includes(q.subject.toLowerCase()))
   );
+  const otherClassBank = QUESTION_BANK.filter(
+    (q) =>
+      q.cls.toLowerCase() !== clsNorm &&
+      (q.subject.toLowerCase().includes(subNorm) || subNorm.includes(q.subject.toLowerCase()))
+  );
+  const matchingBank = [...exactClassBank, ...otherClassBank];
 
   const matchedBookName =
     specificResourceTitle !== 'ALL'
@@ -1268,42 +1304,9 @@ export function getQuestionsForTreasureHunt(
       ? specificResourceTitle
       : siteResources.papers[0]
       ? `${siteResources.papers[0].title} (${siteResources.papers[0].year})`
-      : `Uploaded ${cls} ${subject} Past Examination Paper`;
+      : `Official TIE ${cls} ${subject} Examination & Textbook`;
 
   const result: GameQuestion[] = [];
-
-  generatedQuizItems.forEach((item, idx) => {
-    if (result.length >= 20) return;
-    const rotated = rotateOptionsWithCorrectIndex(item.options, item.correctIndex, idx + 1);
-    const isBookRef =
-      sourceFilter === 'BOOK' || (sourceFilter === 'ALL' && idx % 2 === 0);
-    const sourceCitation =
-      specificResourceTitle !== 'ALL'
-        ? `📚 Uploaded Source: ${specificResourceTitle} (${cls} ${subject})`
-        : item.sourceRef ||
-          (isBookRef ? `📘 Uploaded Book: ${matchedBookName}` : `📄 Uploaded Past Paper: ${matchedPaperName}`);
-
-    result.push({
-      id: `autogen-${cls}-${subject}-${idx}`,
-      subject,
-      cls,
-      topic:
-        item.topic ||
-        (cleanSelectedTopic !== 'ALL'
-          ? cleanSelectedTopic
-          : syllabusTopics[idx % syllabusTopics.length] || subject),
-      subTopic: item.subTopic,
-      difficulty,
-      question: item.question,
-      options: rotated.options,
-      correctIndex: rotated.correctIndex,
-      explanation: item.explanation,
-      hint: extractSmartHintFromExplanation(item.explanation, item.topic || subject),
-      xpReward: baseXp + (idx >= 12 ? 20 : 0),
-      sourceLabel: sourceCitation,
-      isBossOrSpecial: idx >= 12,
-    });
-  });
 
   matchingBank.forEach((bankItem, bIdx) => {
     if (result.length >= 20) return;
@@ -1311,7 +1314,7 @@ export function getQuestionsForTreasureHunt(
       const rotated = rotateOptionsWithCorrectIndex(
         bankItem.options,
         bankItem.correctIndex,
-        result.length + bIdx
+        result.length + bIdx + 1
       );
       result.push({
         ...bankItem,
@@ -1324,31 +1327,55 @@ export function getQuestionsForTreasureHunt(
         xpReward: baseXp + (result.length >= 12 ? 25 : 0),
         sourceLabel:
           sourceFilter === 'PAPER'
-            ? `📄 Uploaded Past Paper: ${matchedPaperName}`
-            : `📘 Uploaded Book: ${matchedBookName}`,
+            ? `📄 ${matchedPaperName} — ${bankItem.topic}`
+            : `📘 ${matchedBookName} — ${bankItem.topic}`,
       });
     }
   });
 
-  let padIdx = 0;
-  while (result.length < 20 && result.length > 0) {
-    const template = result[padIdx % result.length];
-    const rotated = rotateOptionsWithCorrectIndex(
-      template.options,
-      template.correctIndex,
-      result.length + 2
-    );
-    result.push({
-      ...template,
-      id: `${template.id}-extra-${result.length}`,
-      options: rotated.options,
-      correctIndex: rotated.correctIndex,
-      isBossOrSpecial: result.length >= 12,
-    });
-    padIdx++;
-  }
+  generatedQuizItems.forEach((item, idx) => {
+    if (result.length >= 20) return;
+    const rotated = rotateOptionsWithCorrectIndex(item.options, item.correctIndex, idx + 1);
+    const isBookRef =
+      sourceFilter === 'BOOK' || (sourceFilter === 'ALL' && idx % 2 === 0);
+    const sourceCitation =
+      specificResourceTitle !== 'ALL'
+        ? `📚 ${specificResourceTitle} (${cls} ${subject})`
+        : item.sourceRef ||
+          (isBookRef ? `📘 ${matchedBookName} (${item.topic || subject})` : `📄 ${matchedPaperName}`);
 
-  return result.slice(0, 20);
+    if (!result.some((r) => r.question === item.question)) {
+      result.push({
+        id: `autogen-${cls}-${subject}-${idx}`,
+        subject,
+        cls,
+        topic:
+          item.topic ||
+          (cleanSelectedTopic !== 'ALL'
+            ? cleanSelectedTopic
+            : syllabusTopics[idx % syllabusTopics.length] || subject),
+        subTopic: item.subTopic,
+        difficulty,
+        question: item.question,
+        options: rotated.options,
+        correctIndex: rotated.correctIndex,
+        explanation: item.explanation,
+        hint: extractSmartHintFromExplanation(item.explanation, item.topic || subject),
+        xpReward: baseXp + (idx >= 12 ? 20 : 0),
+        sourceLabel: sourceCitation,
+        isBossOrSpecial: idx >= 12,
+      });
+    }
+  });
+
+  // Prioritize challenging, level-accurate questions from the Official TIE Student's Textbook for this exact Class & Subject
+  return buildLevelAccurateTextbookQuestions(
+    cls,
+    subject,
+    cleanSelectedTopic,
+    difficulty,
+    result
+  );
 }
 
 /**
@@ -1422,20 +1449,22 @@ export async function fetchAiAutogeneratedGameQuestions(
         xpReward: baseXp + (idx >= 12 ? 25 : 0),
         sourceLabel:
           specificResourceTitle !== 'ALL'
-            ? `📚 Uploaded Source: ${specificResourceTitle} (${cls} ${subject})`
-            : q.sourceRef || `📘 Uploaded ${cls} ${subject} Book & Past Paper`,
+            ? `📚 ${specificResourceTitle} (${cls} ${subject})`
+            : q.sourceRef || `📘 Official TIE ${cls} ${subject} Student's Book — ${qTopic}`,
         isBossOrSpecial: idx >= 12,
       };
     });
 
-    const combined = [...aiQuestions];
-    for (const fb of fallback) {
-      if (combined.length >= 20) break;
-      if (!combined.some((c) => c.question === fb.question)) {
-        combined.push(fb);
+    // Place curated level-specific textbook seeds first, then AI-generated questions so level accuracy is always guaranteed
+    const combined = [...fallback.slice(0, 8), ...aiQuestions];
+    const unique: GameQuestion[] = [];
+    for (const item of combined) {
+      if (unique.length >= 20) break;
+      if (!unique.some((u) => u.question === item.question)) {
+        unique.push(item);
       }
     }
-    return combined.slice(0, 20);
+    return unique.slice(0, 20);
   } catch {
     return fallback;
   }
@@ -1446,14 +1475,32 @@ export interface EscapeRoomPuzzleSet {
     title: string;
     prompt: string;
     equationDisplay: string;
-    correctCode: string; // 3-digit code e.g. "248"
+    correctCode: string; // 3-digit code e.g. "241"
+    sourceLabel: string;
+    subProblems: Array<{
+      digitLabel: string;
+      topic: string;
+      question: string;
+      options: string[];
+      correctDigit: string;
+      hint: string;
+    }>;
     hint: string;
     explanation: string;
   };
   puzzle2Matching: {
     title: string;
     prompt: string;
-    pairs: Array<{ id: string; structure: string; functionDesc: string }>;
+    sourceLabel: string;
+    pairs: Array<{
+      id: string;
+      structure: string;
+      functionDesc: string;
+      options: string[];
+      correctIndex: number;
+      sourceLabel: string;
+      hint: string;
+    }>;
     correctOrderIds: string[];
     unlockedClueDigit: string;
     hint: string;
@@ -1462,6 +1509,7 @@ export interface EscapeRoomPuzzleSet {
   puzzle3CircuitOrLab: {
     title: string;
     prompt: string;
+    sourceLabel: string;
     question: string;
     options: string[];
     correctIndex: number;
@@ -1472,6 +1520,7 @@ export interface EscapeRoomPuzzleSet {
   puzzle4Logic: {
     title: string;
     prompt: string;
+    sourceLabel: string;
     question: string;
     options: string[];
     correctIndex: number;
@@ -1482,8 +1531,8 @@ export interface EscapeRoomPuzzleSet {
 }
 
 /**
- * Dynamically builds the 4 Escape the Classroom puzzles directly from a set of autogenerated
- * Class + Subject + Topic + Uploaded Book/Past Paper questions!
+ * Dynamically builds the 4 Escape the Classroom puzzles directly from 8 distinct, challenging,
+ * level-accurate TIE Textbook questions for the selected Class, Subject, and Topic!
  */
 export function buildEscapePuzzlesFromQuestions(
   questions: GameQuestion[],
@@ -1498,80 +1547,125 @@ export function buildEscapePuzzlesFromQuestions(
   const q3 = questions[2] || questions[0];
   const q4 = questions[3] || questions[1] || questions[0];
   const q5 = questions[4] || questions[2] || questions[0];
+  const q6 = questions[5] || questions[3] || questions[0];
+  const q7 = questions[6] || questions[4] || questions[0];
+  const q8 = questions[7] || questions[5] || questions[0];
 
   const topicDisplay =
     topic && topic !== 'ALL'
       ? topic.replace(/^\d+\.\d+\s*/, '')
-      : q1?.topic || `${cls} ${subject} Core Syllabus`;
-  const srcTag = sourceLabelOverride || q1?.sourceLabel || `Uploaded ${cls} ${subject} Books & Past Papers`;
+      : q1?.topic || `${cls} ${subject} Textbook`;
+  const srcTag =
+    sourceLabelOverride ||
+    q1?.sourceLabel ||
+    `📘 Official TIE ${cls} ${subject} Student's Book`;
 
+  // Each of the 3 sub-problems on the Chalkboard yields a digit (1, 2, 3, or 4) corresponding to the 1-based option number of the correct answer!
   const d1 = ((q1.correctIndex % 4) + 1).toString();
-  const d2 = ((q2.correctIndex % 4) + 2).toString();
-  const d3 = ((q3.correctIndex % 4) + 3).toString();
+  const d2 = ((q2.correctIndex % 4) + 1).toString();
+  const d3 = ((q3.correctIndex % 4) + 1).toString();
   const code3 = `${d1}${d2}${d3}`;
 
-  const unlockedDigit = (((q4.correctIndex + 2) % 8) + 2).toString();
-  const cabinetDigit = (q4.correctIndex + 1).toString();
-  const logicSuffix = ((q5.correctIndex + 2) * 12).toString();
+  const unlockedDigit = (((q6.correctIndex + 2) % 8) + 2).toString();
+  const cabinetDigit = (q7.correctIndex + 1).toString();
+  const logicSuffix = ((q8.correctIndex + 2) * 12).toString();
   const masterCode = `${code3}-${unlockedDigit}${cabinetDigit}-${logicSuffix}`;
-
-  const correctAns1 = q1.options[q1.correctIndex] || q1.options[0];
-  const correctAns2 = q2.options[q2.correctIndex] || q2.options[0];
-  const correctAns3 = q3.options[q3.correctIndex] || q3.options[0];
 
   return {
     puzzle1Math: {
-      title: `Puzzle 1 — Smartboard Cipher (${cls} • ${subject})`,
-      prompt: `From ${srcTag} on "${topicDisplay}": Verify the three checkpoint values on the chalkboard to unlock the 3-digit Smartboard PIN (${code3}):`,
-      equationDisplay: `Digit 1 = ${d1} (${q1.topic}: ${correctAns1})  |  Digit 2 = ${d2} (${q2.topic}: ${correctAns2})  |  Digit 3 = ${d3} (${correctAns3})`,
+      title: `Lock #1 — Chalkboard 3-Digit Cipher (${cls} • ${subject})`,
+      prompt: `Solve these 3 ${cls} ${subject} textbook problems. Each correct option number [1–4] gives one digit of the 3-Digit PIN (ABC):`,
+      equationDisplay: `${cls} ${subject} Cipher: Solve Problems A, B, C on the Chalkboard to deduce the 3-Digit PIN [A][B][C]`,
       correctCode: code3,
-      hint: `Combine the three verified digits shown on the Smartboard analysis: Digit 1 = ${d1}, Digit 2 = ${d2}, Digit 3 = ${d3}.`,
-      explanation: `${q1.explanation} Therefore the 3-digit Smartboard PIN for ${cls} ${subject} (${topicDisplay}) is ${code3}.`,
+      sourceLabel: q1.sourceLabel || srcTag,
+      subProblems: [
+        {
+          digitLabel: 'Digit A (1st PIN Digit)',
+          topic: q1.topic,
+          question: q1.question,
+          options: q1.options,
+          correctDigit: d1,
+          hint: q1.hint,
+        },
+        {
+          digitLabel: 'Digit B (2nd PIN Digit)',
+          topic: q2.topic,
+          question: q2.question,
+          options: q2.options,
+          correctDigit: d2,
+          hint: q2.hint,
+        },
+        {
+          digitLabel: 'Digit C (3rd PIN Digit)',
+          topic: q3.topic,
+          question: q3.question,
+          options: q3.options,
+          correctDigit: d3,
+          hint: q3.hint,
+        },
+      ],
+      hint: `Hint A: ${q1.hint} | Hint B: ${q2.hint} | Hint C: ${q3.hint}`,
+      explanation: `1) ${q1.explanation} (Option #${d1}) | 2) ${q2.explanation} (Option #${d2}) | 3) ${q3.explanation} (Option #${d3}). PIN = ${code3}.`,
     },
     puzzle2Matching: {
-      title: `Puzzle 2 — ${subject} Concept & Principle Match (${topicDisplay})`,
-      prompt: `Verify the three curriculum principles from your uploaded ${cls} ${subject} Books & Past Papers to unlock Latch Digit ${unlockedDigit}:`,
+      title: `Lock #2 — Lab Bench Textbook Verification (${cls} • ${subject})`,
+      prompt: `Solve all 3 ${cls} ${subject} textbook problems on the Lab Bench to release Latch Digit ${unlockedDigit}:`,
+      sourceLabel: q4.sourceLabel || srcTag,
       pairs: [
         {
           id: 'p1',
-          structure: `1. ${q1.topic || topicDisplay} (Core Problem)`,
-          functionDesc: `${q1.question} → Correct Solution: ${correctAns1}`,
+          structure: `Specimen 1 · ${q4.topic || topicDisplay}`,
+          functionDesc: q4.question,
+          options: q4.options,
+          correctIndex: q4.correctIndex,
+          sourceLabel: q4.sourceLabel || srcTag,
+          hint: q4.hint,
         },
         {
           id: 'p2',
-          structure: `2. ${q2.topic || topicDisplay} (Application)`,
-          functionDesc: `${q2.question} → Correct Solution: ${correctAns2}`,
+          structure: `Specimen 2 · ${q5.topic || topicDisplay}`,
+          functionDesc: q5.question,
+          options: q5.options,
+          correctIndex: q5.correctIndex,
+          sourceLabel: q5.sourceLabel || srcTag,
+          hint: q5.hint,
         },
         {
           id: 'p3',
-          structure: `3. ${q3.topic || topicDisplay} (Past Paper Verification)`,
-          functionDesc: `${q3.question} → Correct Solution: ${correctAns3}`,
+          structure: `Specimen 3 · ${q6.topic || topicDisplay}`,
+          functionDesc: q6.question,
+          options: q6.options,
+          correctIndex: q6.correctIndex,
+          sourceLabel: q6.sourceLabel || srcTag,
+          hint: q6.hint,
         },
       ],
       correctOrderIds: ['p1', 'p2', 'p3'],
       unlockedClueDigit: unlockedDigit,
-      hint: `Review each ${cls} ${subject} question and its verified solution on the workbench.`,
-      explanation: `1) ${q1.explanation} 2) ${q2.explanation}`,
+      hint: `1) ${q4.hint} | 2) ${q5.hint} | 3) ${q6.hint}`,
+      explanation: `1) ${q4.explanation} 2) ${q5.explanation} 3) ${q6.explanation}`,
     },
     puzzle3CircuitOrLab: {
-      title: `Puzzle 3 — Locked Supply Cabinet (${cls} • ${topicDisplay})`,
-      prompt: `Solve this problem autogenerated from ${q4.sourceLabel || srcTag} to release the Brass Master Key:`,
-      question: q4.question,
-      options: q4.options,
-      correctIndex: q4.correctIndex,
+      title: `Lock #3 — Supply Cabinet Challenge (${cls} • ${subject})`,
+      prompt: `Solve this ${cls} ${subject} textbook problem to unlock the Supply Cabinet and claim the Brass Master Key:`,
+      sourceLabel: q7.sourceLabel || srcTag,
+      question: q7.question,
+      options: q7.options,
+      correctIndex: q7.correctIndex,
       unlockedItemName: 'Brass Master Key',
-      hint: q4.hint,
-      explanation: q4.explanation,
+      hint: q7.hint,
+      explanation: q7.explanation,
     },
     puzzle4Logic: {
-      title: `Puzzle 4 — Master Exit Synthesis (${cls} • ${subject})`,
-      prompt: `Final Examination Lock from ${q5.sourceLabel || srcTag} on "${topicDisplay}". Solve this question to synthesize the Master Exit Code (${masterCode}):`,
-      question: q5.question,
-      options: q5.options,
-      correctIndex: q5.correctIndex,
+      title: `Lock #4 — Logic Board Final Synthesis (${cls} • ${subject})`,
+      prompt: `Solve this final ${cls} ${subject} textbook problem to synthesize the Master Exit Code (${masterCode}):`,
+      sourceLabel: q8.sourceLabel || srcTag,
+      question: q8.question,
+      options: q8.options,
+      correctIndex: q8.correctIndex,
       masterSequenceCode: masterCode,
-      hint: q5.hint,
-      explanation: `${q5.explanation} Master Exit Sequence Unlocked: ${masterCode}.`,
+      hint: q8.hint,
+      explanation: `${q8.explanation} Master Exit Sequence Unlocked: ${masterCode}.`,
     },
   };
 }
