@@ -6715,9 +6715,6 @@ export default function App() {
                       { id: 'lessonplan' as const, label: '📋 4-Stage Lesson Plan', activeBg: 'bg-blue-600 text-white' },
                       { id: 'schemeofwork' as const, label: '📅 12-Col Scheme of Work', activeBg: 'bg-emerald-700 text-white' },
                       { id: 'lessonnotes' as const, label: '📘 Notes', activeBg: 'bg-indigo-600 text-white' },
-                      { id: 'exampaper' as const, label: '📝 Exam', activeBg: 'bg-amber-500 text-slate-950' },
-                      { id: 'markingscheme' as const, label: '✅ Marking', activeBg: 'bg-rose-600 text-white' },
-                      { id: 'blueprint' as const, label: '📐 Blueprint', activeBg: 'bg-teal-700 text-white' },
                       { id: 'logbook' as const, label: '📓 Log Book', activeBg: 'bg-slate-800 text-white' },
                     ].map((docBtn) => (
                       <button
@@ -6763,23 +6760,25 @@ export default function App() {
                     </button>
                   </div>
 
-                  {/* Right: Direct PDF Export Actions */}
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button
-                      onClick={() => downloadMwalimuDocPdf('studio-preview', 'portrait')}
-                      className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] flex items-center gap-1 cursor-pointer whitespace-nowrap"
-                      title="Download Direct HTML-to-PDF (Portrait)"
-                    >
-                      <Download className="w-3 h-3" /> Portrait PDF
-                    </button>
-                    <button
-                      onClick={() => downloadMwalimuDocPdf('studio-preview', 'landscape')}
-                      className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] flex items-center gap-1 cursor-pointer whitespace-nowrap"
-                      title="Download Direct HTML-to-PDF (Landscape for 12-Col Scheme of Work)"
-                    >
-                      <Download className="w-3 h-3" /> Landscape PDF
-                    </button>
-                  </div>
+                  {/* Right: Direct PDF Export Actions (Shown only after a document is generated) */}
+                  {studioPreviewHtml && (
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        onClick={() => downloadMwalimuDocPdf('studio-preview', 'portrait')}
+                        className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                        title="Download Direct HTML-to-PDF (Portrait)"
+                      >
+                        <Download className="w-3 h-3" /> Portrait PDF
+                      </button>
+                      <button
+                        onClick={() => downloadMwalimuDocPdf('studio-preview', 'landscape')}
+                        className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                        title="Download Direct HTML-to-PDF (Landscape for 12-Col Scheme of Work)"
+                      >
+                        <Download className="w-3 h-3" /> Landscape PDF
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Collapsible Teacher Metadata Collection Panel for 4-Stage TIE Lesson Plan & 12-Column PO-RALG Scheme of Work */}
@@ -6901,35 +6900,69 @@ export default function App() {
                 )}
               </div>
 
-              {/* Maximized Full-Viewport Editable Document Canvas */}
+              {/* Maximized Full-Viewport Editable Document Canvas (Shown ONLY after generating a document) */}
               <div className="flex-1 min-h-0 overflow-y-auto px-2 sm:px-6 py-3">
-                <div className="max-w-6xl mx-auto bg-white rounded-xl border border-slate-200 shadow-xs p-4 sm:p-6 min-h-full">
-                  <div
-                    id="msg-body-studio-preview"
-                    contentEditable
-                    suppressContentEditableWarning
-                    className="overflow-x-auto focus:outline-none min-h-[calc(100vh-8rem)]"
-                    dangerouslySetInnerHTML={{
-                      __html:
-                        studioPreviewHtml ||
-                        buildInstantOfficialDocument('lessonnotes', {
-                          school: tsSchool || userProfile.school || 'ELIMIKA SECONDARY SCHOOL',
-                          teacher: tsTeacher || userProfile.name || 'SUBJECT TEACHER',
-                          cls: tsClass || mohaActiveClass,
-                          subject: tsSubject || mohaActiveSubject,
-                          topic: tsTopic || activeSyllabusTopics[0] || 'Core Competence',
-                          subTopic: tsSubTopic || tsTopic || 'Specific Activity',
-                          date: tsDate,
-                          duration: tsDuration,
-                          regG: tsRegG,
-                          regB: tsRegB,
-                          presG: tsPresG,
-                          presB: tsPresB,
-                          siteResources: activeSiteResources,
-                        }),
-                    }}
-                  />
-                </div>
+                {studioPreviewHtml ? (
+                  <div className="max-w-6xl mx-auto bg-white rounded-xl border border-slate-200 shadow-xs p-4 sm:p-6 min-h-full">
+                    <div
+                      id="msg-body-studio-preview"
+                      contentEditable
+                      suppressContentEditableWarning
+                      className="overflow-x-auto focus:outline-none min-h-[calc(100vh-8rem)]"
+                      dangerouslySetInnerHTML={{
+                        __html: studioPreviewHtml,
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div className="max-w-2xl mx-auto my-8 bg-white rounded-2xl border border-slate-200 shadow-xs p-6 sm:p-8 text-center space-y-4">
+                    <div className="w-12 h-12 rounded-2xl bg-violet-100 text-violet-700 flex items-center justify-center mx-auto font-black text-xl">
+                      📘
+                    </div>
+                    <div className="space-y-1.5">
+                      <h3 className="text-base sm:text-lg font-black text-slate-900">
+                        Teacher Document Studio ({mohaActiveClass} · {mohaActiveSubject})
+                      </h3>
+                      <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto">
+                        Enter your School Name, Teacher Name, and Topic above, then click a document type below to generate your printable PDF document.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+                      <button
+                        type="button"
+                        disabled={generatingDocType !== null}
+                        onClick={() => submitTeacherStudioDoc('lessonplan')}
+                        className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs cursor-pointer disabled:opacity-50"
+                      >
+                        📋 Generate 4-Stage Lesson Plan
+                      </button>
+                      <button
+                        type="button"
+                        disabled={generatingDocType !== null}
+                        onClick={() => submitTeacherStudioDoc('schemeofwork')}
+                        className="px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs cursor-pointer disabled:opacity-50"
+                      >
+                        📅 Generate 12-Col Scheme of Work
+                      </button>
+                      <button
+                        type="button"
+                        disabled={generatingDocType !== null}
+                        onClick={() => submitTeacherStudioDoc('lessonnotes')}
+                        className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs cursor-pointer disabled:opacity-50"
+                      >
+                        📘 Generate Lesson Notes
+                      </button>
+                      <button
+                        type="button"
+                        disabled={generatingDocType !== null}
+                        onClick={() => submitTeacherStudioDoc('logbook')}
+                        className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs cursor-pointer disabled:opacity-50"
+                      >
+                        📓 Generate Subject Log Book
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
