@@ -1090,6 +1090,31 @@ export const OFFICIAL_ATTACHED_TIE_BOOKS: PaperRecord[] = [
 
 export const MOHA_BUILTIN_KNOWLEDGE = [
   {
+    keywords: [
+      'relationship between mathematics and other subjects',
+      'relationships between mathematics and other subjects',
+      'mathematics and other subjects',
+      'concept of mathematics',
+      'branches of mathematics',
+      'importance of mathematics',
+      'meaning of mathematics',
+    ],
+    title: 'Concept of Mathematics & Relationship with Other Subjects (Basic Mathematics — Form 1 TIE Textbook Chapter 1)',
+    content: `**1. Meaning & Branches of Mathematics (TIE Form 1 Student's Textbook — Chapter 1):**\n• **Meaning:** Mathematics is the science of numbers, quantities, shapes, patterns, space, and logical relationships.\n• **Core Branches of Mathematics:**\n  1. **Arithmetic:** Study of numbers and fundamental operations ($+, -, \\times, \\div$), fractions, decimals, percentages, ratios, and financial calculations.\n  2. **Algebra:** Representation of numbers and quantities using letters/symbols to formulate and solve equations, inequalities, and functions.\n  3. **Geometry & Trigonometry:** Study of properties, measurements, angles, congruence, similarity, and relationships of points, lines, 2D plane figures, and 3D solids.\n  4. **Statistics & Probability:** Collection, organization, presentation, analysis, and interpretation of numerical data and prediction of likelihood of events.\n\n**2. Relationship Between Mathematics and Other Subjects:**\nMathematics is the universal language and quantitative foundation for almost every subject in the Tanzanian curriculum:\n• **Physics:** Physics laws and formulas are expressed mathematically—e.g., Newton's Second Law ($F = ma$), Ohm's Law ($V = IR$), kinematics equations ($s = ut + \\frac{1}{2}at^2$), density ($\\rho = \\frac{m}{V}$), and wave speed ($v = f\\lambda$).\n• **Chemistry:** Used in balancing chemical equations, the **Mole Concept & Stoichiometry** ($n = \\frac{m}{M_r}$), **Volumetric Analysis / Titration** ($\\frac{M_A V_A}{M_B V_B} = \\frac{n_A}{n_B}$), pH calculations ($\\text{pH} = -\\log_{10}[\\text{H}^+]$), and percentage composition.\n• **Biology:** Applied in **Genetics** (Mendelian phenotypic/genotypic ratios $3:1$ and $9:3:3:1$, probability in Punnett squares), microscope magnification ($\\text{Magnification} = \\frac{\\text{Image Size}}{\\text{Actual Size}}$), population sampling (quadrats, capture-recapture), and plotting growth curves.\n• **Geography:** Essential in **Map Reading & Scale Conversion** (e.g., $1:50,000$), calculating ground distances and areas, gradient/slope, local time and longitude ($1^\\circ = 4\\text{ minutes}$), and **Geographical Statistics** (climographs, pie charts, histograms).\n• **Book-Keeping, Accountancy, Commerce & Business Studies:** Used in the **Accounting Equation** ($\\text{Assets} = \\text{Capital} + \\text{Liabilities}$), balancing ledgers and Trial Balances, calculating Profit & Loss, Simple and Compound Interest ($I = \\frac{PRT}{100}$), depreciation, and taxation (VAT).\n• **Economics:** Used in Demand and Supply equations, Price Elasticity of Demand ($E_d = \\frac{\\%\\Delta Q_d}{\\%\\Delta P}$), National Income (GDP/GNP) accounting, and cost/revenue optimization.\n• **Computer Science / ICT:** Built on binary number systems (base $2$), Boolean logic gates (AND, OR, NOT), algorithms, and spreadsheet formulas.\n• **Agriculture:** Applied in calculating seed rates, fertilizer application ratios per hectare, plant spacing, livestock feed rations, and farm records.\n• **History, Languages & Fine Arts:** Used in chronological timelines, centuries/dates (BCE/CE), geometric symmetry and proportions in visual arts, and rhythm/time signatures in music.`,
+  },
+  {
+    keywords: [
+      'meaning of a relation',
+      'types of relations',
+      'domain and range of a relation',
+      'inverse of a relation',
+      'graphs of relations',
+      'pictorial representation of a relation',
+    ],
+    title: 'Relations (Basic Mathematics — Form 3 TIE Textbook Chapter 1)',
+    content: `**1. Meaning of a Relation (TIE Basic Mathematics Form 3 Textbook — Chapter 1):**\nA **relation** $R$ between two sets $A$ and $B$ is a rule or correspondence that associates elements of set $A$ with elements of set $B$. Formally, a relation $R$ from set $A$ to set $B$ is a subset of the Cartesian product $A \\times B$:\n$$R = \\{(x, y) : x \\in A,\\; y \\in B\\}$$\n\n**2. Domain and Range of a Relation:**\n• **Domain ($\\text{Dom}(R)$):** The set of all first coordinates ($x$-values / inputs) in the ordered pairs of $R$.\n• **Range ($\\text{Range}(R)$):** The set of all second coordinates ($y$-values / outputs) in the ordered pairs of $R$.\n\n**3. Four Types of Relations:**\n1. **One-to-One Relation:** Each element in the domain is mapped to a unique element in the range.\n2. **Many-to-One Relation:** Two or more elements in the domain map to the same element in the range (e.g., $R = \\{(x, y) : y = x^2\\}$).\n3. **One-to-Many Relation:** A single element in the domain maps to more than one element in the range (e.g., $R = \\{(x, y) : y^2 = x\\}$).\n4. **Many-to-Many Relation:** Multiple elements in the domain map to multiple elements in the range.\n\n**4. Inverse of a Relation ($R^{-1}$):**\nThe inverse of a relation $R$, denoted $R^{-1}$, is obtained by interchanging the coordinates of each ordered pair $(x, y) \\rightarrow (y, x)$:\n$$R^{-1} = \\{(y, x) : (x, y) \\in R\\}$$\n• Note: $\\text{Domain of } R^{-1} = \\text{Range of } R$, and $\\text{Range of } R^{-1} = \\text{Domain of } R$.\n• **Worked Example:** Find the inverse of $R = \\{(x, y) : y = 2x - 4\\}$:\n  - **Step 1:** Interchange $x$ and $y$: $x = 2y - 4$\n  - **Step 2:** Make $y$ the subject: $2y = x + 4 \\implies y = \\frac{x + 4}{2}$\n  - **Answer:** $$R^{-1} = \\left\\{(x, y) : y = \\frac{x + 4}{2}\\right\\}$$`,
+  },
+  {
     keywords: ['photosynthesis', 'nutrition in plants', 'chlorophyll', 'photolysis', 'calvin cycle'],
     title: 'Photosynthesis (Biology — Form 2 TIE Textbook Chapter 2: Nutrition)',
     content: `**Definition (TIE Biology Form 2 Textbook):** Photosynthesis is the biochemical process by which green plants manufacture organic food (glucose) from carbon dioxide and water in the presence of sunlight energy trapped by chlorophyll.\n\n**Balanced Chemical Equation:**\n$$6\\text{CO}_2 + 6\\text{H}_2\\text{O} \\xrightarrow{\\text{Sunlight / Chlorophyll}} \\text{C}_6\\text{H}_{12}\\text{O}_6 + 6\\text{O}_2$$\n\n**Stages of Photosynthesis:**\n1. **Light Reaction (Photolysis - Grana):** Splits water molecules ($2\\text{H}_2\\text{O} \\rightarrow 4\\text{H}^+ + \\text{O}_2 + 4e^-$) and forms ATP.\n2. **Dark Reaction (Calvin Cycle - Stroma):** Reduces $\\text{CO}_2$ using hydrogen ions and ATP to form glucose ($\\text{C}_6\\text{H}_{12}\\text{O}_6$).\n\n**Leaf Adaptations (NECTA Points - 02 Marks @):**\n• Broad, flat lamina for large surface area to trap maximum sunlight.\n• Numerous stomata for efficient gaseous exchange ($\\text{CO}_2$ and $\\text{O}_2$).\n• Palisade mesophyll cells densely packed with chloroplasts.\n• Network of xylem (supplies water) and phloem (translocates manufactured food).`,
@@ -2777,7 +2802,8 @@ export function generateLocalSmartTutorReply(
   cls: string,
   subject: string,
   learnedMemory: LearnedMemoryItem[] = [],
-  siteResources?: SiteResourceContext
+  siteResources?: SiteResourceContext,
+  history: Array<{ id?: string; role: 'user' | 'ai'; text: string }> = []
 ): string {
   const cleanInput = (userText || '').trim();
   const lower = cleanInput.toLowerCase();
@@ -2810,8 +2836,55 @@ export function generateLocalSmartTutorReply(
     }
   }
 
-  // 2. Smart Conversational Routing (greetings, identity, general chat — never dump syllabuses)
+  // 2. Smart Conversational, Empathy & Follow-Up Routing (never dump unrelated math chapters)
   const strippedPunct = lower.replace(/[^a-z0-9\s]/g, '').trim();
+
+  // 2A. Personal wellbeing / feeling unwell / tired / stressed
+  if (
+    /\b(not\s+feeling\s+well|dont\s+feeling\s+well|don\s*t\s+feel\s+well|dont\s+feel\s+well|feeling\s+sick|i\s+am\s+sick|im\s+sick|have\s+a\s+headache|feeling\s+tired|i\s+am\s+tired|im\s+tired|feeling\s+sad|stressed|exhausted|najisikia\s+vibaya|sijisikii\s+vizuri|naumwa|nimechoka)\b/i.test(
+      strippedPunct
+    )
+  ) {
+    const isSw = /\b(najisikia|sijisikii|naumwa|nimechoka)\b/i.test(strippedPunct);
+    if (isSw) {
+      return `Pole sana! 💙 Afya yako ni muhimu kuliko kitu chochote. Tafadhali pumzika vizuri, kunywa maji ya kutosha, na upate matibabu ikibidi.\n\nUtakapojisikia vizuri kuendelea na masomo ya **${effectiveCls} • ${effectiveSub}**, nitakuwa hapa kukusaidia hatua kwa hatua. Nakutakia afya njema na kupona haraka!`;
+    }
+    return `I am so sorry to hear that you are not feeling well today! 💙 Your health always comes first.\n\nPlease take some time to rest, drink plenty of water, and take care of yourself. You don't have to force yourself to study heavy topics right now—whenever you feel better and want a light 5-minute review of **${effectiveCls} • ${effectiveSub}**, I will be right here ready to help you. Get well soon!`;
+  }
+
+  // 2B. Follow-up / "I don't understand" / "Explain simpler" / "How did you get that?"
+  if (
+    /^(i\s+dont\s+understand|i\s+do\s+not\s+understand|dont\s+understand|i\s+dont\s+get\s+it|i\s+am\s+confused|im\s+confused|confused|explain\s+again|explain\s+more|explain\s+simpler|make\s+it\s+simple|make\s+it\s+easier|in\s+simple\s+words|can\s+you\s+explain|how\s+did\s+you\s+get\s+that|why|how|sijaelewa|bado\s+sijaelewa|nieleweshe|fafanua|rudia|eleza\s+tena)$/i.test(
+      strippedPunct
+    ) ||
+    /\b(i\s+don'?t\s+understand|bado\s+sijaelewa|explain\s+in\s+simple|break\s+it\s+down\s+simply)\b/i.test(lower)
+  ) {
+    const lastAiMsg = [...history]
+      .reverse()
+      .find((m) => m.role === 'ai' && m.id !== 'msg-welcome' && !m.text.includes('official-tie-doc'));
+
+    if (lastAiMsg && lastAiMsg.text) {
+      const cleanLast = lastAiMsg.text
+        .replace(/<!--DIAGRAM_START-->[\s\S]*?<!--DIAGRAM_END-->/g, '')
+        .replace(/<[^>]+>/g, ' ')
+        .trim();
+
+      if (cleanLast.includes('48.5') || cleanLast.toLowerCase().includes('assumed mean')) {
+        return `No problem at all! Let me break down that **Assumed Mean** calculation into **3 very simple steps**:\n\n1. **What we are given:**\n   • Guessing starting point (**Assumed Mean**, $A$) $= 45.5$\n   • Total number of students/items ($\\sum f$) $= 50$\n   • Total difference from our guess ($\\sum fd$) $= 150$\n\n2. **Find the average adjustment:**\n   Divide the total difference by the total frequency:\n   $$\\frac{\\sum fd}{\\sum f} = \\frac{150}{50} = 3$$\n\n3. **Add the adjustment to the Assumed Mean:**\n   $$\\text{Actual Mean } (\\bar{x}) = 45.5 + 3 = \\mathbf{48.5}$$\n\n💡 *Think of it like this:* You guessed the average was $45.5$, and on average the scores were $3$ points higher than your guess—so $45.5 + 3 = 48.5$! Which step would you like me to explain further?`;
+      }
+
+      const lines = cleanLast
+        .split('\n')
+        .map((l) => l.trim())
+        .filter((l) => l.length > 0)
+        .slice(0, 6);
+
+      return `No problem! Let me explain **${effectiveCls} • ${effectiveSub} (${effectiveTopic})** in a much simpler, step-by-step way:\n\n1. **Core Idea in Plain Words:**\n   Instead of memorizing long formulas first, focus on what the question gives you (**Given data**) and what it wants you to find (**Target**).\n\n2. **Simplified Breakdown of the Previous Point:**\n${lines.map((l) => `   • ${l}`).join('\n')}\n\n3. **Let's Take One Small Step at a Time:**\n   Tell me which specific part or number felt confusing (for example: *"How did we get step 2?"* or *"Give me an easier example on ${effectiveTopic}"*), and I will walk through that single step slowly!`;
+    }
+
+    return `No problem at all! 😊 Let's slow down and make it super simple.\n\nWe are currently in **${effectiveCls} • ${effectiveSub}** (${effectiveTopic}). Tell me:\n• Which specific **topic, formula, or question** are you looking at right now?\n• Or type any question here and I will break it down into **easy, beginner-friendly steps**!`;
+  }
+
   const greetingPatterns = [
     'hi',
     'hello',
@@ -2829,31 +2902,54 @@ export function generateLocalSmartTutorReply(
     'hi moha',
     'hello moha',
     'hey moha',
+    'mambo',
+    'habari',
+    'shikamoo',
+    'niaje',
+    'sasa',
+    'hujambo',
+    'hamjambo',
   ];
-  if (greetingPatterns.includes(strippedPunct) || /^(hi|hello|hey|greetings|good\s+(morning|afternoon|evening))(\s+moha(\s+ai)?)?$/i.test(strippedPunct)) {
+  if (
+    greetingPatterns.includes(strippedPunct) ||
+    /^(hi|hello|hey|greetings|mambo|habari|shikamoo|good\s+(morning|afternoon|evening))(\s+moha(\s+ai)?)?$/i.test(
+      strippedPunct
+    )
+  ) {
+    if (/^(mambo|habari|shikamoo|niaje|sasa|hujambo|hamjambo)/i.test(strippedPunct)) {
+      return `Habari! 👋 Karibu kwenye **Moha AI** ndani ya **Elimika Tanzania**.\n\nKwa sasa tupo kwenye **${effectiveCls} — ${effectiveSub}**. Unaweza kuniuliza swali lolote la masomo, kuomba maelezo rahisi ya mada, au kufanya maswali ya mazoezi. Nikusaidie nini leo?`;
+    }
     return `Hello! 👋 Welcome to **Moha AI**, your intelligent academic assistant on **Elimika**.\n\nI noticed your current workspace is set to **${effectiveCls} — ${effectiveSub}**. How can I help you today?\n\n• **Ask a Question:** Type any topic, concept, or math/science problem for a clear step-by-step explanation.\n• **Past Paper & Book Solver:** Select a resource above or click **Solve** for worked solutions.\n• **Teacher Studio:** Switch to **4-Stage TIE Lesson Plan** or **12-Col PO-RALG Scheme of Work** to generate and download official PDF documents.\n• **🧠 Teach AI:** Click **Teach AI** in the top bar to save your own custom notes or topics into my permanent memory.`;
   }
 
   if (
-    /^(how are you|how are you doing|how is it going|how do you do|are you there|are you online)$/i.test(strippedPunct)
+    /^(how are you|how are you doing|how is it going|how do you do|are you there|are you online|habari yako|unaendeleaje|uko poa|kwa hali)$/i.test(
+      strippedPunct
+    )
   ) {
     return `I am doing great and ready to help! 😊\n\nWe are currently focusing on **${effectiveCls} — ${effectiveSub}**, or you can ask me about any Primary (Std 1–7), Secondary (Form 1–4), or Advanced (Form 5–6) subject. What would you like to work on?`;
   }
 
   if (
-    /^(who are you|what are you|what is your name|introduce yourself|tell me about yourself|what is moha|what is moha ai|what is elimika)$/i.test(strippedPunct)
+    /^(who are you|what are you|what is your name|introduce yourself|tell me about yourself|what is moha|what is moha ai|what is elimika|wewe ni nani)$/i.test(
+      strippedPunct
+    )
   ) {
-    return `I am **Moha AI**, the built-in educational tutor and teacher studio engine for **Elimika**.\n\n**What I can do for you:**\n1. **Step-by-Step Tutoring:** Explain any Primary, O-Level, or A-Level topic in clear English with worked examples and diagrams.\n2. **Teacher Document Studio:** Instantly generate official **4-Stage TIE Lesson Plans**, **12-Column PO-RALG Schemes of Work**, **Lesson Notes**, **Exams**, and **Marking Schemes** with 1-click PDF export.\n3. **Self-Learning Memory (🧠 Teach AI):** Permanently remember custom notes, definitions, and school-specific topics that you teach me.`;
+    return `I am **Moha AI**, the built-in educational tutor and teacher studio engine for **Elimika**.\n\n**What I can do for you:**\n1. **Step-by-Step Tutoring:** Explain any Primary, O-Level, or A-Level topic in clear English or Kiswahili with worked examples and diagrams.\n2. **Teacher Document Studio:** Instantly generate official **4-Stage TIE Lesson Plans**, **12-Column PO-RALG Schemes of Work**, **Lesson Notes**, **Exams**, and **Marking Schemes** with 1-click PDF export.\n3. **Self-Learning Memory (🧠 Teach AI):** Permanently remember custom notes, definitions, and school-specific topics that you teach me.`;
   }
 
   if (
-    /^(help|what can you do|how to use|how does this work|commands|options|features)$/i.test(strippedPunct)
+    /^(help|what can you do|how to use|how does this work|commands|options|features|nisaidie|msaada)$/i.test(
+      strippedPunct
+    )
   ) {
     return `Here is how to get the most out of **Moha AI**:\n\n• **Ask Anything:** e.g., *"Explain Newton's Second Law"*, *"Solve 2x + 5 = 15"*, or *"What is photosynthesis?"*\n• **Generate Practice Questions:** Click **5 Qns** or type *"Give me a quiz on ${syllabusTopics[0] || effectiveSub}"*.\n• **Official Teacher Documents:** Use the top tabs (**Lesson Plan**, **Scheme of Work**, **Lesson Notes**, **Exam Paper**, **Marking Scheme**) to generate printable A4 PDFs.\n• **🧠 Teach AI:** Click **Teach AI** in the toolbar to add custom notes to your permanent browser memory.`;
   }
 
   if (
-    /^(thank you|thanks|thank u|thx|ty|thanks a lot|thank you so much|ok|okay|got it|understood|nice|great|awesome|cool|perfect)$/i.test(strippedPunct)
+    /^(thank you|thanks|thank u|thx|ty|thanks a lot|thank you so much|ok|okay|got it|understood|nice|great|awesome|cool|perfect|asante|asante sana|sawa|poa|vizuri|bye|good night|see you)$/i.test(
+      strippedPunct
+    )
   ) {
     return `You're very welcome! 😊 Let me know whenever you have another question, need practice problems, or want to generate a Lesson Plan or Scheme of Work.`;
   }
@@ -3051,6 +3147,13 @@ export function generateLocalSmartTutorReply(
       )}<!--DIAGRAM_END-->`
     : '';
 
+  const subTopicsSummary =
+    effectiveTbInfo.subTopicsList.length > 0
+      ? `**Core Sub-Topics & Key Concepts (${effectiveTbInfo.matchedChapter}):**\n${effectiveTbInfo.subTopicsList
+          .map((st, idx) => `${idx + 1}. **${st}**`)
+          .join('\n')}\n\n`
+      : '';
+
   const workedBreakdown = selectedItems
     .slice(0, 3)
     .map(
@@ -3059,7 +3162,7 @@ export function generateLocalSmartTutorReply(
     )
     .join('\n\n');
 
-  return `📘 **${effectiveCls} • ${effectiveSub} — ${effectiveTopic}**\n\nHere is the step-by-step NECTA competence analysis and worked examples for your question on **"${cleanInput}"**:\n\n${workedBreakdown}${diagramBlock}`;
+  return `📘 **${effectiveCls} • ${effectiveSub} — ${effectiveTopic}**\n\n${subTopicsSummary}**Worked Competence Examples & Analysis:**\n\n${workedBreakdown}${diagramBlock}`;
 }
 
 export function parseClassSubjectTopicFromPrompt(
@@ -3201,18 +3304,26 @@ export function parseClassSubjectTopicFromPrompt(
     'step', 'worked', 'examples', 'necta', 'examination', 'questions', 'syllabus',
     'competences', 'integrated', 'website', 'resources', 'what', 'are', 'give', 'show',
     'summary', 'summarize', 'notes', 'form', 'standard', 'chapter', 'chapters', 'sura',
+    'meaning', 'concept', 'introduction', 'want', 'learn', 'between', 'other', 'subjects',
   ]);
 
   const scoreTopicMatch = (topicStr: string, queryLower: string): number => {
     const cleanT = topicStr.replace(/^(?:Chapter\s+\d+|Sura\s+ya\s+\w+|\d+\.\d+):\s*/i, '').toLowerCase();
-    const words = cleanT
-      .replace(/[(),&/-]/g, ' ')
-      .split(/\s+/)
-      .filter((w) => w.length >= 3 && !promptStopWords.has(w));
+    const words = Array.from(
+      new Set(
+        cleanT
+          .replace(/[(),&/-]/g, ' ')
+          .split(/\s+/)
+          .filter((w) => w.length >= 3 && !promptStopWords.has(w))
+      )
+    );
     let score = 0;
     for (const w of words) {
-      if (hasWordPhrase(queryLower, w)) score += 4;
-      else if (w.length >= 5 && queryLower.includes(w.slice(0, w.length - 1))) score += 2;
+      if (hasWordPhrase(queryLower, w)) {
+        score += 4;
+      } else if (w.endsWith('s') && w.length >= 5 && hasWordPhrase(queryLower, w.slice(0, -1))) {
+        score += 3;
+      }
     }
     return score;
   };
@@ -3228,8 +3339,8 @@ export function parseClassSubjectTopicFromPrompt(
     }
   }
 
-  // If no topic matched in current class, check Form 1 -> Form 2 -> Form 3 -> Form 4 -> others within the SAME subject
-  if (!matchedTopic && bestScore === 0) {
+  // If no strong topic matched in current class, check Form 1 -> Form 2 -> Form 3 -> Form 4 -> others within the SAME subject
+  if (!explicitClassFound && bestScore < 8) {
     const orderedClasses = [
       'Form 1',
       'Form 2',
@@ -3249,10 +3360,8 @@ export function parseClassSubjectTopicFromPrompt(
         if (sc >= 4 && sc > bestScore) {
           bestScore = sc;
           matchedTopic = t.replace(/^\d+\.\d+\s*/, '');
-          if (!explicitClassFound) {
-            cls = candidateCls;
-            matchedFromPrompt = true;
-          }
+          cls = candidateCls;
+          matchedFromPrompt = true;
         }
       }
     }
@@ -3265,6 +3374,7 @@ export function parseClassSubjectTopicFromPrompt(
     defaultForm?: string;
     subjects: string[];
   }> = [
+    { keywords: ['relationship between mathematics and other subjects', 'relationships between mathematics and other subjects', 'mathematics and other subjects', 'concept of mathematics', 'branches of mathematics', 'importance of mathematics'], topic: 'Chapter 1: Concept of Mathematics (Meaning of Mathematics, Branches of Mathematics, Relationship Between Mathematics and Other Subjects & Importance of Mathematics)', defaultForm: 'Form 1', subjects: ['Basic Mathematics'] },
     { keywords: ['rate and variation', 'rates and variations', 'direct variation', 'inverse variation', 'joint variation', 'partial variation', 'varies directly', 'varies inversely'], topic: 'Chapter 1: Rates and Variations (Rates of Quantities, Direct Variation, Inverse Variation, Joint Variation & Partial Variation)', defaultForm: 'Form 2', subjects: ['Basic Mathematics'] },
     { keywords: ['congruence', 'congruent triangles', 'postulates of congruence'], topic: 'Chapter 2: Congruence and Similarity (Congruence of Triangles, Postulates SAS/ASA/SSS/RHS & Similarity of Polygons)', defaultForm: 'Form 2', subjects: ['Basic Mathematics'] },
     { keywords: ['pythagoras', 'hypotenuse'], topic: 'Chapter 3: Pythagoras Theorem (Proof of Pythagoras Theorem & Real-Life Right-Angled Triangle Applications)', defaultForm: 'Form 2', subjects: ['Basic Mathematics'] },
@@ -3273,34 +3383,34 @@ export function parseClassSubjectTopicFromPrompt(
     { keywords: ['logarithm', 'standard form', 'antilog'], topic: 'Chapter 6: Logarithms (Standard Form A × 10^n, Laws of Logarithms & Mathematical Tables)', defaultForm: 'Form 2', subjects: ['Basic Mathematics', 'Additional Mathematics', 'Basic Applied Mathematics (BAM)'] },
     { keywords: ['venn diagram', 'subset', 'union of sets', 'intersection of sets'], topic: 'Chapter 7: Sets (Description of Sets, Types of Sets, Subsets, Power Sets, Venn Diagrams, Union, Intersection & Complement)', defaultForm: 'Form 2', subjects: ['Basic Mathematics', 'Additional Mathematics'] },
     { keywords: ['trigonometry', 'sine rule', 'cosine rule', 'angle of elevation', 'angle of depression', 'trigonometric ratios'], topic: 'Chapter 8: Trigonometry (Trigonometric Ratios Sine, Cosine & Tangent, Special Angles 30°, 45°, 60° & Angles of Elevation and Depression)', defaultForm: 'Form 2', subjects: ['Basic Mathematics', 'Additional Mathematics'] },
-    { keywords: ['domain and range', 'inverse relation'], topic: 'Chapter 1: Relations (Relations, Domain & Range, Graphs of Linear/Quadratic Relations & Inverse of a Relation)', defaultForm: 'Form 3', subjects: ['Basic Mathematics'] },
+    { keywords: ['domain and range', 'inverse relation', 'types of relations', 'meaning of a relation'], topic: 'Chapter 1: Relations (Meaning of a Relation, Types of Relations, Domain and Range of a Relation, Graphs of Relations & Inverse of a Relation)', defaultForm: 'Form 3', subjects: ['Basic Mathematics'] },
     { keywords: ['composite function', 'inverse function', 'polynomial function'], topic: 'Chapter 2: Functions (Concept of Function, Linear, Quadratic, Polynomial, Step & Absolute Value Functions, Inverse Functions)', defaultForm: 'Form 3', subjects: ['Basic Mathematics', 'Additional Mathematics'] },
     { keywords: ['linear programming', 'feasible region', 'objective function'], topic: 'Chapter 3: Linear Programming (Formulating Simultaneous Linear Inequalities, Objective Function, Feasible Region & Optimal Value)', defaultForm: 'Form 3', subjects: ['Basic Mathematics', 'Basic Applied Mathematics (BAM)'] },
-    { keywords: ['mean', 'median', 'mode', 'histogram', 'ogive', 'cumulative frequency'], topic: 'Chapter 4: Statistics (Mean, Median, Mode for Grouped & Ungrouped Data, Assumed Mean, Histograms & Ogive/Cumulative Frequency)', defaultForm: 'Form 3', subjects: ['Basic Mathematics', 'Geography', 'Basic Applied Mathematics (BAM)'] },
-    { keywords: ['arithmetic progression', 'geometric progression', 'compound interest', 'sequences and series'], topic: 'Chapter 5: Sequences and Series (Arithmetic Progression AP, Geometric Progression GP, Arithmetic/Geometric Mean & Compound Interest)', defaultForm: 'Form 3', subjects: ['Basic Mathematics', 'Additional Mathematics'] },
-    { keywords: ['chord properties', 'cyclic quadrilateral', 'tangent theorem'], topic: 'Chapter 6: Circles (Parts of a Circle, Central & Inscribed Angles, Chord Properties, Cyclic Quadrilaterals & Tangent Theorems)', defaultForm: 'Form 3', subjects: ['Basic Mathematics'] },
-    { keywords: ['earth as a sphere', 'nautical mile', 'great circle', 'small circle'], topic: 'Chapter 7: Earth as a Sphere (Great & Small Circles, Latitudes & Longitudes, Distance Along Great & Small Circles in km and Nautical Miles)', defaultForm: 'Form 3', subjects: ['Basic Mathematics'] },
+    { keywords: ['arithmetic mean', 'assumed mean', 'median', 'mode', 'histogram', 'ogive', 'cumulative frequency', 'statistics'], topic: 'Chapter 6: Statistics (Mean, Median, Mode for Grouped & Ungrouped Data, Assumed Mean, Histograms, Frequency Polygons & Cumulative Frequency Curve/Ogive)', defaultForm: 'Form 3', subjects: ['Basic Mathematics', 'Geography', 'Basic Applied Mathematics (BAM)'] },
+    { keywords: ['arithmetic progression', 'geometric progression', 'compound interest', 'sequences and series'], topic: 'Chapter 4: Sequences and Series (Sequences, Series, Arithmetic Progression AP, Arithmetic Mean, Geometric Progression GP, Geometric Mean & Compound Interest)', defaultForm: 'Form 3', subjects: ['Basic Mathematics', 'Additional Mathematics'] },
+    { keywords: ['chord properties', 'cyclic quadrilateral', 'tangent theorem'], topic: 'Chapter 5: Circles (Concept of a Circle, Central Angles, Arc Length of a Circle, Radian Measure, Angle Properties of Circles, Cyclic Quadrilaterals, Chord Properties & Tangent Properties of Circles)', defaultForm: 'Form 3', subjects: ['Basic Mathematics'] },
+    { keywords: ['earth as a sphere', 'nautical mile', 'great circle', 'small circle'], topic: 'Chapter 7: The Earth as a Sphere & Accounts (Great & Small Circles, Latitudes & Longitudes, Distance in Kilometres & Nautical Miles; Double Entry Principle, Cash Book, Ledger, Trial Balance & Financial Statements)', defaultForm: 'Form 3', subjects: ['Basic Mathematics'] },
     { keywords: ['determinant', 'cramer', 'singular matrix', 'inverse matrix', 'matrices'], topic: 'Chapter 7: Matrices and Transformations (2×2 Matrix Operations, Determinant, Inverse Matrix, Simultaneous Equations & Linear Transformations)', defaultForm: 'Form 4', subjects: ['Basic Mathematics', 'Additional Mathematics', 'Basic Applied Mathematics (BAM)'] },
     { keywords: ['position vector', 'unit vector', 'dot product'], topic: 'Chapter 6: Vectors (Displacement & Position Vectors, Magnitude & Direction, Vector Addition, Scalar Multiplication & Bearings)', defaultForm: 'Form 4', subjects: ['Basic Mathematics', 'Physics', 'Additional Mathematics'] },
     { keywords: ['mutually exclusive', 'independent events', 'tree diagram', 'probability'], topic: 'Chapter 4: Probability (Sample Space, Event Probability, Mutually Exclusive Events, Independent Events & Tree Diagrams)', defaultForm: 'Form 4', subjects: ['Basic Mathematics', 'Additional Mathematics'] },
-    { keywords: ['simultaneous equation', 'linear equation', 'linear inequality'], topic: 'Chapter 3: Algebra (Algebraic Expressions, Linear Equations in One Unknown, Simultaneous Equations & Inequalities)', defaultForm: 'Form 1', subjects: ['Basic Mathematics', 'Additional Mathematics'] },
-    { keywords: ['simple interest', 'profit and loss'], topic: 'Chapter 4: Ratios, Profit and Loss (Ratios, Proportions, Profit/Loss Percentage & Simple Interest)', defaultForm: 'Form 1', subjects: ['Basic Mathematics'] },
-    { keywords: ['coordinate geometry', 'gradient of a line', 'equation of a line', 'parallel and perpendicular lines'], topic: 'Chapter 5: Coordinate Geometry (Coordinates of a Point, Gradient/Slope of a Line, Equation of a Line, Parallel & Perpendicular Lines)', defaultForm: 'Form 1', subjects: ['Basic Mathematics', 'Additional Mathematics'] },
-    { keywords: ['differentiation', 'integration', 'derivative', 'stationary point', 'calculus'], topic: 'Chapter 5: Differentiation (Limits, Derivative from First Principles, Polynomial Differentiation, Tangents, Normals & Rates of Change)', defaultForm: 'Form 2', subjects: ['Additional Mathematics', 'Advanced Mathematics', 'Basic Applied Mathematics (BAM)'] },
-    { keywords: ['double entry', 'trial balance', 'ledger', 'balance sheet'], topic: 'Chapter 8: Accounting (Principle of Double Entry, Trial Balance, Trading Profit & Loss Account and Balance Sheet)', defaultForm: 'Form 3', subjects: ['Basic Mathematics', 'Book-Keeping', 'Business Studies', 'Accountancy'] },
-    { keywords: ['ohm law', "ohm's law", 'resistor', 'current electricity'], topic: 'Chapter 1: Current Electricity (Concept of Current Electricity, Electric Current I = Q/t, Voltage, Ohm Law V = IR & Series/Parallel Resistors)', defaultForm: 'Form 2', subjects: ['Physics'] },
-    { keywords: ['archimedes', 'law of flotation', 'upthrust', 'relative density'], topic: 'Chapter 3: Archimedes Principle and the Law of Flotation (Upthrust, Apparent Weight, Relative Density, Sinking, Floating & Hydrometer)', defaultForm: 'Form 1', subjects: ['Physics'] },
-    { keywords: ['newton law', "newton's law", 'uniformly accelerated', 'linear momentum'], topic: 'Chapter 5: Motion in a Straight Line and Newton Laws of Motion (Distance, Displacement, Velocity, Equations of Uniformly Accelerated Motion, Inertia & Conservation of Linear Momentum)', defaultForm: 'Form 2', subjects: ['Physics'] },
-    { keywords: ['mechanical advantage', 'velocity ratio', 'simple machine', 'pulley'], topic: 'Chapter 4: Simple Machines (Mechanical Advantage, Velocity Ratio, Efficiency, Levers, Pulleys, Inclined Plane, Screw Jack, Wheel & Axle, Hydraulic Press)', defaultForm: 'Form 2', subjects: ['Physics'] },
-    { keywords: ['snell law', 'refractive index', 'total internal reflection', 'curved mirror'], topic: 'Chapter 3: Light (Reflection at Curved Mirrors, Mirror Formula 1/f = 1/u + 1/v, Refraction of Light, Snell Law, Total Internal Reflection, Lenses & Optical Instruments)', defaultForm: 'Form 3', subjects: ['Physics'] },
-    { keywords: ['specific heat capacity', 'latent heat', 'thermal expansion'], topic: 'Chapter 5: Thermal Expansion and Measurement of Thermal Energy (Thermal Expansion of Solids, Liquids & Gases, Specific Heat Capacity Q = mcΔθ & Specific Latent Heat Q = mL)', defaultForm: 'Form 3', subjects: ['Physics'] },
+    { keywords: ['simultaneous equation', 'linear equation', 'linear inequality'], topic: 'Chapter 8: Algebra (Algebraic Expressions, Linear Equations in One Unknown, Simultaneous Linear Equations & Linear Inequalities)', defaultForm: 'Form 1', subjects: ['Basic Mathematics', 'Additional Mathematics'] },
+    { keywords: ['simple interest', 'profit and loss'], topic: 'Chapter 10: Ratios, Profit and Loss (Ratios, Proportions, Profit and Loss & Simple Interest)', defaultForm: 'Form 1', subjects: ['Basic Mathematics'] },
+    { keywords: ['coordinate geometry', 'gradient of a line', 'equation of a line', 'parallel and perpendicular lines'], topic: 'Chapter 11: Coordinate Geometry (Coordinates of a Point, Gradient/Slope of a Line, Equation of a Straight Line y = mx + c & Graphing Linear Equations)', defaultForm: 'Form 1', subjects: ['Basic Mathematics', 'Additional Mathematics'] },
+    { keywords: ['differentiation', 'integration', 'derivative', 'stationary point', 'calculus'], topic: 'Chapter 6: Differentiation (Derivative of a Function, First Principles, Power Rule, Chain Rule, Product Rule, Quotient Rule, Derivatives of Trigonometric Functions, Rates of Change, Turning Points, Curve Sketching, Tangents & Normals)', defaultForm: 'Form 3', subjects: ['Additional Mathematics', 'Advanced Mathematics', 'Basic Applied Mathematics (BAM)'] },
+    { keywords: ['double entry', 'trial balance', 'ledger', 'balance sheet'], topic: 'Chapter 7: The Earth as a Sphere & Accounts (Great & Small Circles, Latitudes & Longitudes, Distance in Kilometres & Nautical Miles; Double Entry Principle, Cash Book, Ledger, Trial Balance & Financial Statements)', defaultForm: 'Form 3', subjects: ['Basic Mathematics', 'Book-Keeping', 'Business Studies', 'Accountancy'] },
+    { keywords: ['ohm law', "ohm's law", 'resistor', 'current electricity'], topic: 'Chapter 2: Current Electricity (Concept of Current Electricity, Ohm Law V = IR, Resistance to an Electric Current, Series/Parallel Resistors, Heating Effect of an Electric Current, Electrical Installations & Cells)', defaultForm: 'Form 2', subjects: ['Physics'] },
+    { keywords: ['archimedes', 'law of flotation', 'upthrust', 'relative density'], topic: 'Chapter 6: Archimedes Principle and the Law of Floatation (Concept of Upthrust, Archimedes Principle, Apparent Weight, Law of Floatation & Hydrometer)', defaultForm: 'Form 1', subjects: ['Physics'] },
+    { keywords: ['newton law', "newton's law", 'uniformly accelerated', 'linear momentum'], topic: 'Chapter 7: Forces in Equilibrium, Simple Machines & Linear Motion (Moment of a Force, Principle of Moments, Centre of Gravity, Levers, Pulleys, Equations of Uniformly Accelerated Motion, Newton Laws of Motion, Temperature & Sustainable Energy)', defaultForm: 'Form 2', subjects: ['Physics'] },
+    { keywords: ['mechanical advantage', 'velocity ratio', 'simple machine', 'pulley'], topic: 'Chapter 7: Forces in Equilibrium, Simple Machines & Linear Motion (Moment of a Force, Principle of Moments, Centre of Gravity, Levers, Pulleys, Equations of Uniformly Accelerated Motion, Newton Laws of Motion, Temperature & Sustainable Energy)', defaultForm: 'Form 2', subjects: ['Physics'] },
+    { keywords: ['snell law', 'refractive index', 'total internal reflection', 'curved mirror'], topic: 'Chapter 3: Light (Reflection at Curved Mirrors, Mirror Formula 1/f = 1/u + 1/v, Refraction of Light, Snell Law, Total Internal Reflection, Lenses & Dispersion)', defaultForm: 'Form 3', subjects: ['Physics'] },
+    { keywords: ['specific heat capacity', 'latent heat', 'thermal expansion'], topic: 'Chapter 7: Measurement of Thermal Energy (Heat Capacity C = mc, Specific Heat Capacity Q = mcΔθ, Change of State & Specific Latent Heat Q = mL)', defaultForm: 'Form 3', subjects: ['Physics'] },
     { keywords: ['radioactivity', 'half-life', 'half life', 'alpha particle', 'beta particle'], topic: 'Chapter 3: Radioactivity (Structure of the Nucleus, Isotopes, Alpha, Beta & Gamma Radiation, Nuclear Equations, Half-Life Calculations, Nuclear Fission & Fusion)', defaultForm: 'Form 4', subjects: ['Physics', 'Chemistry'] },
-    { keywords: ['mole concept', 'molar mass', 'stoichiometry', 'avogadro', 'empirical formula'], topic: 'Chapter 3: The Mole Concept and Related Calculations (Avogadro Constant, Molar Mass, Molar Gas Volume at STP 22.4 dm³ & Stoichiometric Reacting Masses)', defaultForm: 'Form 3', subjects: ['Chemistry'] },
-    { keywords: ['titration', 'molarity', 'volumetric analysis'], topic: 'Chapter 4: Volumetric Analysis (Standard Solutions, Acid-Base Titration Apparatus, Choice of Indicators, Molarity M = conc/Mr & Percentage Purity/Water of Crystallisation)', defaultForm: 'Form 3', subjects: ['Chemistry'] },
-    { keywords: ['electrolysis', 'faraday', 'cathode', 'anode'], topic: 'Chapter 5: Ionic Theory and Electrolysis (Electrolytes vs Non-Electrolytes, Preferential Discharge of Ions, Faraday First & Second Laws of Electrolysis & Industrial Applications)', defaultForm: 'Form 3', subjects: ['Chemistry'] },
+    { keywords: ['mole concept', 'molar mass', 'stoichiometry', 'avogadro', 'empirical formula'], topic: 'Chapter 4: The Mole Concept and Related Calculations (Avogadro Constant, Molar Mass, Molar Gas Volume at STP 22.4 dm³ & Stoichiometric Reacting Masses)', defaultForm: 'Form 3', subjects: ['Chemistry'] },
+    { keywords: ['titration', 'molarity', 'volumetric analysis'], topic: 'Chapter 5: Volumetric Analysis (Standard Solutions, Acid-Base Titration Apparatus, Choice of Indicators, Molarity M = conc/Mr & Percentage Purity/Water of Crystallisation)', defaultForm: 'Form 3', subjects: ['Chemistry'] },
+    { keywords: ['electrolysis', 'faraday', 'cathode', 'anode'], topic: 'Chapter 6: Ionic Theory and Electrolysis (Electrolytes vs Non-Electrolytes, Preferential Discharge of Ions, Faraday First & Second Laws of Electrolysis & Industrial Applications)', defaultForm: 'Form 3', subjects: ['Chemistry'] },
     { keywords: ['homologous series', 'alkane', 'alkene', 'alkyne', 'carboxylic acid'], topic: 'Chapter 2: Introduction to Organic Chemistry (Homologous Series, Isomerism, Alkanes, Alkenes, Alkynes, Alcohols/Alkanols, Carboxylic Acids/Alkanoic Acids, Esterification & Soap/Polymers)', defaultForm: 'Form 4', subjects: ['Chemistry'] },
-    { keywords: ['photosynthesis', 'digestive system', 'food test', 'balanced diet'], topic: 'Chapter 1: Nutrition (Concept of Nutrition, Food Nutrients, Biochemical Food Tests, Balanced Diet, Digestive System in Humans & Photosynthesis in Plants)', defaultForm: 'Form 2', subjects: ['Biology'] },
-    { keywords: ['osmosis', 'transpiration', 'xylem', 'phloem', 'mammalian heart'], topic: 'Chapter 2: Transport of Materials in Living Things (Diffusion, Osmosis & Mass Flow; Mammalian Heart, Blood Vessels, Blood Groups; Xylem, Phloem & Transpiration)', defaultForm: 'Form 2', subjects: ['Biology'] },
+    { keywords: ['photosynthesis', 'digestive system', 'food test', 'balanced diet'], topic: 'Chapter 1: Nutrition in Animals and Plants (Concept of Nutrition, Nutrients, Balanced Diet, Nutritional Requirements, Nutritional Deficiencies, Biochemical Food Tests & Photosynthesis)', defaultForm: 'Form 2', subjects: ['Biology'] },
+    { keywords: ['osmosis', 'transpiration', 'xylem', 'phloem', 'mammalian heart'], topic: 'Chapter 4: Transport of Materials in Flowering Plants (The Vascular System: Xylem and Phloem, Absorption and Movement of Water and Mineral Salts, Transpiration & Guttation)', defaultForm: 'Form 2', subjects: ['Biology'] },
     { keywords: ['mendel', 'monohybrid', 'punnett', 'sex-linked', 'genetics'], topic: 'Chapter 2: Genetics (Hereditary Material DNA & RNA, Concept of Genetics, Mendel First Law, Monohybrid Inheritance, Incomplete/Co-dominance, Sex Determination, Sex-Linked Traits & Variation/Mutation)', defaultForm: 'Form 4', subjects: ['Biology'] },
     { keywords: ['topographical map', 'grid reference', 'contour', 'intervisibility'], topic: 'Chapter 6: Map Reading and Map Interpretation (Topographical Maps, Contours, Cross-Section/Relief Profile, Intervisibility, Gradient, Drainage Patterns & Human Settlements)', defaultForm: 'Form 3', subjects: ['Geography'] },
   ];
@@ -3326,7 +3436,26 @@ export function parseClassSubjectTopicFromPrompt(
     matchedTopic ||
     (finalTopics[0] ? finalTopics[0].replace(/^\d+\.\d+\s*/, '') : `Core Principles of ${subject}`);
   const subTopics = getSubTopicsForMainTopic(cls, subject, topic);
-  const subTopic = subTopics[0] || `${topic} — Problem Solving`;
+  let subTopic = subTopics[0] || `${topic} — Problem Solving`;
+  let bestSubScore = 0;
+  for (const st of subTopics) {
+    const stWords = st
+      .replace(/—.*$/, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .split(/\s+/)
+      .filter((w) => w.length >= 4 && !['with', 'from', 'between', 'other', 'problem', 'solving'].includes(w));
+    let sScore = 0;
+    for (const sw of stWords) {
+      if (hasWordPhrase(lower, sw) || (sw.endsWith('s') && hasWordPhrase(lower, sw.slice(0, -1))) || hasWordPhrase(lower, `${sw}s`)) {
+        sScore += 3;
+      }
+    }
+    if (sScore > bestSubScore) {
+      bestSubScore = sScore;
+      subTopic = st;
+    }
+  }
 
   return { cls, subject, topic, subTopic, matchedFromPrompt };
 }
@@ -5163,22 +5292,126 @@ export function buildContentIntegratedQuizQuestions(
     ];
   };
 
-  const attachMetadata = (items: Array<Omit<QuizItem, 'topic' | 'subTopic' | 'sourceRef'>>): QuizItem[] => {
+  const shortFocusTopic = focusTopic.replace(/\s*\([^)]*\)/g, '').trim() || focusTopic;
+
+  const buildTopicPureMathPad = (): Array<Omit<QuizItem, 'topic' | 'subTopic' | 'sourceRef'>> => {
+    if (/\b(logarithm|standard\s+form)\b/i.test(topicCombinedLower)) {
+      return [
+        {
+          question: `[${cls} • ${shortFocusTopic}] Evaluate without mathematical tables: $\\log_{10} 80 - \\log_{10} 8$`,
+          options: ['$1$', '$10$', '$0$', '$2$'],
+          correctIndex: 0,
+          explanation: `Step 1: Quotient law of logarithms: $\\log_{10} 80 - \\log_{10} 8 = \\log_{10}(80 / 8) = \\log_{10} 10 = 1$.`,
+        },
+        {
+          question: `[${cls} • ${shortFocusTopic}] Express $725,000$ in standard form (scientific notation) $A \\times 10^n$`,
+          options: ['$7.25 \\times 10^5$', '$72.5 \\times 10^4$', '$0.725 \\times 10^6$', '$7.25 \\times 10^{-5}$'],
+          correctIndex: 0,
+          explanation: `Step 1: Move the decimal point $5$ places to the left so $1 \\le A < 10 \\Rightarrow 7.25 \\times 10^5$.`,
+        },
+        {
+          question: `[${cls} • ${shortFocusTopic}] Solve for $x$: $\\log_3 x = 4$`,
+          options: ['$x = 81$', '$x = 12$', '$x = 64$', '$x = 27$'],
+          correctIndex: 0,
+          explanation: `Step 1: Convert $\\log_3 x = 4$ to exponential form: $x = 3^4 = 81$.`,
+        },
+        {
+          question: `[${cls} • ${shortFocusTopic}] Simplify $\\frac{\\log_{10} 27}{\\log_{10} 3}$`,
+          options: ['$3$', '$9$', '$\\log_{10} 9$', '$24$'],
+          correctIndex: 0,
+          explanation: `Step 1: Write $27 = 3^3 \\Rightarrow \\frac{\\log_{10}(3^3)}{\\log_{10} 3} = \\frac{3 \\log_{10} 3}{\\log_{10} 3} = 3$.`,
+        },
+      ];
+    }
+    if (/\b(relations|functions|domain|inverse\s+of\s+a\s+relation|inverse\s+function|composite\s+function)\b/i.test(topicCombinedLower) && !/\b(relationship|relationships|concept\s+of\s+mathematics)\b/i.test(topicCombinedLower)) {
+      return [
+        {
+          question: `[${cls} • ${shortFocusTopic}] Given the relation $R = \\{(1, 4), (2, 7), (3, 10), (4, 13)\\}$, state its Domain and Range`,
+          options: [
+            'Domain $= \\{1, 2, 3, 4\\}$ ; Range $= \\{4, 7, 10, 13\\}$',
+            'Domain $= \\{4, 7, 10, 13\\}$ ; Range $= \\{1, 2, 3, 4\\}$',
+            'Domain $= \\{1, 4\\}$ ; Range $= \\{4, 13\\}$',
+            'Domain $= \\mathbb{R}$ ; Range $= \\mathbb{R}$',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: The Domain is the set of all first coordinates ($x$-values) $= \\{1, 2, 3, 4\\}$. Step 2: The Range is the set of all second coordinates ($y$-values) $= \\{4, 7, 10, 13\\}$.`,
+        },
+        {
+          question: `[${cls} • ${shortFocusTopic}] Find the inverse relation $R^{-1}$ of $R = \\{(x, y) : y = 2x + 6\\}$`,
+          options: [
+            '$R^{-1} = \\{(x, y) : y = \\frac{x - 6}{2}\\}$',
+            '$R^{-1} = \\{(x, y) : y = \\frac{x + 6}{2}\\}$',
+            '$R^{-1} = \\{(x, y) : y = 2x - 6\\}$',
+            '$R^{-1} = \\{(x, y) : y = 6 - 2x\\}$',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Interchange $x$ and $y$: $x = 2y + 6$. Step 2: Make $y$ the subject: $2y = x - 6 \\Rightarrow y = \\frac{x - 6}{2}$.`,
+        },
+        {
+          question: `[${cls} • ${shortFocusTopic}] Which graphical test determines whether a relation $R$ is a function?`,
+          options: [
+            'The Vertical Line Test — any vertical line intersects the graph at most once',
+            'The Horizontal Line Test — any horizontal line intersects the origin',
+            'Checking if the graph passes through $(0, 0)$',
+            'Checking if the gradient is positive',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: A relation is a function if every element in the domain has a unique image. On a Cartesian graph, any vertical line $x = k$ must cut the curve at most once.`,
+        },
+        {
+          question: `[${cls} • ${shortFocusTopic}] If $f(x) = x^2 + 4$ for all real numbers $x \\in \\mathbb{R}$, what is the Range of $f(x)$?`,
+          options: [
+            '$\\{y \\in \\mathbb{R} : y \\ge 4\\}$',
+            '$\\{y \\in \\mathbb{R} : y \\ge 0\\}$',
+            '$\\{y \\in \\mathbb{R} : y \\le 4\\}$',
+            'All real numbers $\\mathbb{R}$',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Since $x^2 \\ge 0$ for all $x \\in \\mathbb{R}$, adding $4$ gives $x^2 + 4 \\ge 4$. Thus the Range is $y \\ge 4$.`,
+        },
+      ];
+    }
+    return [];
+  };
+
+  type RawQuizDraft = Omit<QuizItem, 'topic' | 'subTopic' | 'sourceRef'> & { subTopic?: string };
+
+  const attachMetadata = (items: RawQuizDraft[]): QuizItem[] => {
     const sources = [src1, src2, src3, src4];
-    const extraItems = buildAdditionalSubjectQuestions();
-    const combined = [...items, ...extraItems].slice(0, 20);
+    const topicPad: RawQuizDraft[] =
+      subLower.includes('math') || subLower.includes('hisabati') ? buildTopicPureMathPad() : [];
+    const extraItems: RawQuizDraft[] =
+      items.length >= 20 ? [] : [...topicPad, ...buildAdditionalSubjectQuestions()];
+    let combined: RawQuizDraft[] = [...items, ...extraItems].slice(0, 20);
+
+    // If a specific subTopic was requested and items carry subTopic tags, sort matching subTopic items first
+    if (subTopic && subTopic !== 'ALL' && items.some((it) => it.subTopic)) {
+      const subTargetLower = subTopic.replace(/—.*$/, '').trim().toLowerCase();
+      combined = [...combined].sort((a, b) => {
+        const aMatch = (a.subTopic || '').toLowerCase().includes(subTargetLower) ? 1 : 0;
+        const bMatch = (b.subTopic || '').toLowerCase().includes(subTargetLower) ? 1 : 0;
+        return bMatch - aMatch;
+      });
+    }
+
     return combined.map((item, idx) => {
       const rotated = rotateQuizOptions(item.options, item.correctIndex, idx + 1);
       const itemSubTopic =
-        availableSubTopics.length > 0
+        item.subTopic ||
+        (availableSubTopics.length > 0
           ? availableSubTopics[idx % availableSubTopics.length]
-          : focusSubTopic;
+          : focusSubTopic);
+      const cleanQuestion = item.question.replace(
+        `[${cls} • ${focusTopic}]`,
+        `[${cls} • ${shortFocusTopic}]`
+      );
       return {
         ...item,
+        question: cleanQuestion,
         options: rotated.options,
         correctIndex: rotated.correctIndex,
         topic: focusTopic,
-        subTopic: idx < items.length ? focusSubTopic : itemSubTopic,
+        subTopic: item.subTopic ? item.subTopic : idx < items.length ? focusSubTopic : itemSubTopic,
         sourceRef: sources[idx % sources.length],
       };
     });
@@ -5188,8 +5421,258 @@ export function buildContentIntegratedQuizQuestions(
   // 1. MATHEMATICS / HISABATI / BAM / ADVANCED MATH — TOPIC- & CLASS-SPECIFIC BANK
   // ============================================================================
   if (subLower.includes('math') || subLower.includes('hisabati') || subLower.includes('kuhesabu')) {
+    // 1A-0. CONCEPT OF MATHEMATICS (Form 1 Chapter 1: Meaning, Branches, Relationship Between Mathematics and Other Subjects & Importance)
+    if (
+      /\b(concept\s+of\s+mathematics|meaning\s+of\s+mathematics|branches\s+of\s+mathematics|relationship\s+between\s+mathematics|relationships\s+between\s+mathematics|mathematics\s+and\s+other\s+subjects|importance\s+of\s+mathematics)\b/i.test(
+        topicCombinedLower
+      )
+    ) {
+      return attachMetadata([
+        {
+          subTopic: 'Relationship Between Mathematics and Other Subjects — Problem Solving',
+          question: `[${cls} • ${shortFocusTopic}] In Physics, a student measures that a bus travels a distance $d = 180\\text{ km}$ in time $t = 3\\text{ hours}$ and applies the mathematical formula $\\text{Speed} = \\frac{\\text{Distance}}{\\text{Time}}$. How does this demonstrate the relationship between Mathematics and Physics?`,
+          options: [
+            'Mathematics provides algebraic formulas, units, and arithmetic operations to calculate physical quantities; here $\\text{Speed} = \\frac{180\\text{ km}}{3\\text{ h}} = 60\\text{ km/h}$',
+            'Physics studies only historical events without any numbers or measurements',
+            'Mathematics replaces laboratory experiments in Physics completely',
+            'Speed is found by adding distance and time to get $183\\text{ km/h}$',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Physics relies on Mathematics as its language of measurement and formulas. Step 2: Substituting $d = 180\\text{ km}$ and $t = 3\\text{ hours}$ into $v = \\frac{d}{t}$ gives $v = \\frac{180}{3} = 60\\text{ km/h}$.`,
+        },
+        {
+          subTopic: 'Relationship Between Mathematics and Other Subjects — Problem Solving',
+          question: `[${cls} • ${shortFocusTopic}] In Geography, a student reads a map with a Representative Fraction scale of $1 : 50,000$ (meaning $1\\text{ cm}$ on the map represents $0.5\\text{ km}$ on the ground). If two villages are $12\\text{ cm}$ apart on the map, what mathematical concept is used to find the real ground distance?`,
+          options: [
+            'Ratios and Proportions: Ground distance $= 12 \\times 0.5\\text{ km} = 6.0\\text{ km}$',
+            'Quadratic equations: Ground distance $= 12^2 = 144\\text{ km}$',
+            'Probability of coin tossing: Ground distance $= 50\\text{ km}$',
+            'Geography does not use any mathematical calculations in map reading',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Geography uses mathematical ratios, scales, coordinates (latitudes/longitudes), and statistics. Step 2: Using ratio $1\\text{ cm} : 0.5\\text{ km}$, a map distance of $12\\text{ cm}$ equals $12 \\times 0.5 = 6.0\\text{ km}$.`,
+        },
+        {
+          subTopic: 'Relationship Between Mathematics and Other Subjects — Problem Solving',
+          question: `[${cls} • ${shortFocusTopic}] In Chemistry, water ($\\text{H}_2\\text{O}$) is formed when Hydrogen and Oxygen combine in a fixed mole ratio of $2 : 1$ ($2\\text{H}_2 + \\text{O}_2 \\to 2\\text{H}_2\\text{O}$). If a chemist uses $6\\text{ moles}$ of Hydrogen gas, how many moles of Oxygen gas are required?`,
+          options: [
+            '$3\\text{ moles}$ of Oxygen (applying mathematical ratios to chemical equations)',
+            '$12\\text{ moles}$ of Oxygen',
+            '$6\\text{ moles}$ of Oxygen',
+            '$1\\text{ mole}$ of Oxygen',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Chemistry applies mathematical proportions to balance chemical equations and calculate reacting quantities. Step 2: Since $\\text{H}_2 : \\text{O}_2 = 2 : 1$, for $6\\text{ moles}$ of $\\text{H}_2$, required $\\text{O}_2 = \\frac{6}{2} = 3\\text{ moles}$.`,
+        },
+        {
+          subTopic: 'Relationship Between Mathematics and Other Subjects — Problem Solving',
+          question: `[${cls} • ${shortFocusTopic}] In Biology, a student uses a light microscope with an eyepiece lens of $\\times 10$ and an objective lens of $\\times 40$. How is Mathematics applied to determine the total magnification of the specimen?`,
+          options: [
+            'By multiplying the lens powers: $\\text{Total Magnification} = 10 \\times 40 = \\times 400$',
+            'By subtracting the lens powers: $40 - 10 = \\times 30$',
+            'By dividing the lens powers: $40 \\div 10 = \\times 4$',
+            'Biology never uses numbers when studying cells and organisms',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Biology uses Mathematics to calculate microscope magnification, cell dimensions, genetic ratios (such as $3:1$ in Mendel’s crosses), and population growth. Step 2: $\\text{Magnification} = 10 \\times 40 = \\times 400$.`,
+        },
+        {
+          subTopic: 'Relationship Between Mathematics and Other Subjects — Problem Solving',
+          question: `[${cls} • ${shortFocusTopic}] In Book-Keeping and Commerce, a shopkeeper buys goods for $\\text{TZS } 80,000$ and sells them for $\\text{TZS } 100,000$. How does Mathematics help the shopkeeper evaluate business performance?`,
+          options: [
+            'Through commercial arithmetic: Profit $= \\text{TZS } 20,000$ and Percentage Profit $= \\frac{20,000}{80,000} \\times 100\\% = 25\\%$',
+            'By guessing whether the business made a profit without counting cash',
+            'By ignoring buying and selling prices in the ledger',
+            'Commerce and Book-Keeping have no relationship with Arithmetic',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Book-Keeping, Commerce, and Economics depend on arithmetic and percentages for accounting equations, profit/loss, interest, and taxation. Step 2: $\\text{Profit} = 100,000 - 80,000 = \\text{TZS } 20,000$ ($25\\%$).`,
+        },
+        {
+          subTopic: 'Relationship Between Mathematics and Other Subjects — Problem Solving',
+          question: `[${cls} • ${shortFocusTopic}] In Agriculture, a farmer wants to plant maize on a rectangular shamba measuring $50\\text{ m}$ by $40\\text{ m}$, and the extension officer recommends $25\\text{ kg}$ of fertilizer per $1,000\\text{ m}^2$. How does Mathematics help the farmer?`,
+          options: [
+            'By calculating the farm area ($50 \\times 40 = 2,000\\text{ m}^2$) and required fertilizer ($2 \\times 25\\text{ kg} = 50\\text{ kg}$)',
+            'By applying fertilizer randomly without measuring the land area',
+            'By using only Literature poems to measure soil area',
+            'Agriculture does not require geometry or measurement',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Agriculture uses Geometry (area of plots, plant spacing) and Arithmetic (seed rates, fertilizer ratios, crop yields). Step 2: Area $= 50\\text{ m} \\times 40\\text{ m} = 2,000\\text{ m}^2 \\Rightarrow$ Fertilizer $= \\frac{2,000}{1,000} \\times 25 = 50\\text{ kg}$.`,
+        },
+        {
+          subTopic: 'Relationship Between Mathematics and Other Subjects — Problem Solving',
+          question: `[${cls} • ${shortFocusTopic}] In Information and Computer Studies (ICT / Computer Science), all digital data is processed using the Binary Number System (base $2$: digits $0$ and $1$). Convert the binary number $101_2$ into a base-$10$ (denary) number:`,
+          options: [
+            '$5_{10}$ (since $1 \\times 2^2 + 0 \\times 2^1 + 1 \\times 2^0 = 4 + 0 + 1 = 5$)',
+            '$3_{10}$',
+            '$101_{10}$',
+            '$7_{10}$',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Computer Science is built directly on mathematical logic, algorithms, and binary number systems. Step 2: $101_2 = (1 \\times 4) + (0 \\times 2) + (1 \\times 1) = 5_{10}$.`,
+        },
+        {
+          subTopic: 'Relationship Between Mathematics and Other Subjects — Problem Solving',
+          question: `[${cls} • ${shortFocusTopic}] In History, Tanganyika gained independence in $1961$ and united with Zanzibar in $1964$. How is Mathematics used by historians when studying historical events?`,
+          options: [
+            'To construct chronological timelines, count centuries/decades, and calculate years elapsed (e.g., $2026 - 1961 = 65\\text{ years}$ since independence)',
+            'To change historical names into algebraic variables',
+            'History never uses dates, centuries, or chronological order',
+            'To replace archaeological excavations with trigonometry',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Historians use Mathematics to date fossils (carbon-14 half-life), organise BCE/CE timelines, convert years into decades/centuries, and analyse population/trade statistics.`,
+        },
+        {
+          subTopic: 'Relationship Between Mathematics and Other Subjects — Problem Solving',
+          question: `[${cls} • ${shortFocusTopic}] In Civics, during a school leadership election with $400$ voters, candidate A receives $260$ votes and candidate B receives $140$ votes. How does Mathematics support democratic governance and Civics?`,
+          options: [
+            'By tallying votes accurately, calculating majority percentages ($\\frac{260}{400} \\times 100\\% = 65\\%$), and analysing national budgets and census data',
+            'By declaring a winner without counting ballots',
+            'Civics and national budgeting do not use statistics or percentages',
+            'By abolishing voter registration numbers',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Civics uses Statistics and Arithmetic to count election votes, determine constitutional majorities, analyse national census demographics, and allocate public budgets.`,
+        },
+        {
+          subTopic: 'Relationship Between Mathematics and Other Subjects — Problem Solving',
+          question: `[${cls} • ${shortFocusTopic}] How is Mathematics connected to Languages, Fine Art, Music, and Sports in secondary education?`,
+          options: [
+            'Music uses fractional beat rhythms ($\\frac{4}{4}, \\frac{3}{4}$ time), Fine Art uses geometric symmetry and perspective ratios, and Sports uses time, distance, angles, and league points',
+            'Music, Art, and Sports have zero connection to numbers, patterns, or measurements',
+            'Languages prohibit logical sentence structure or syllable counting in poetry',
+            'Athletes never measure track distances or race times in seconds',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Every subject connects with Mathematics: Music relies on rhythm fractions and sound frequencies; Art uses symmetry and scale; Sports uses timing, league tables, and field geometry; Poetry uses meter and stanza counts.`,
+        },
+        {
+          subTopic: 'Meaning of Mathematics — Problem Solving',
+          question: `[${cls} • ${shortFocusTopic}] Which of the following best defines **Mathematics** according to the Form 1 TIE Basic Mathematics curriculum?`,
+          options: [
+            'The science of numbers, quantities, shapes, patterns, and logical reasoning used to model and solve real-world problems',
+            'The study of only ancient kings and colonial treaties without numbers',
+            'A collection of random guesses that do not follow logical rules',
+            'The memorization of multiplication tables without understanding their meaning',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: The word Mathematics comes from the Greek word "mathema" (knowledge/learning). Step 2: It is the systematic science of numbers, quantities, space/shapes, patterns, and logical deduction.`,
+        },
+        {
+          subTopic: 'Meaning of Mathematics — Problem Solving',
+          question: `[${cls} • ${shortFocusTopic}] Observe the numerical pattern $2, 5, 8, 11, 14, \\dots$. Using mathematical reasoning (pattern recognition), find the next two terms in the sequence:`,
+          options: [
+            '$17$ and $20$ (adding a constant difference of $+3$ each step)',
+            '$15$ and $16$',
+            '$18$ and $22$',
+            '$16$ and $19$',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Mathematics studies patterns and relationships. Step 2: Each term increases by $+3$: $14 + 3 = 17$ and $17 + 3 = 20$.`,
+        },
+        {
+          subTopic: 'Branches of Mathematics — Problem Solving',
+          question: `[${cls} • ${shortFocusTopic}] Which branch of Mathematics deals specifically with the properties, measurements, angles, perimeters, areas, and volumes of points, lines, surfaces, and solids?`,
+          options: [
+            'Geometry',
+            'Arithmetic',
+            'Statistics',
+            'Algebra',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Geometry ("geo" = earth, "metron" = measurement) is the branch of Mathematics concerned with shapes, sizes, angles, positions, and spatial dimensions.`,
+        },
+        {
+          subTopic: 'Branches of Mathematics — Problem Solving',
+          question: `[${cls} • ${shortFocusTopic}] When a student uses letters and symbols (such as $x$ and $y$ in $3x + 5 = 20$) to represent unknown quantities in equations and formulas, which branch of Mathematics is being used?`,
+          options: [
+            'Algebra',
+            'Geometry',
+            'Arithmetic',
+            'Statistics',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Algebra generalizes Arithmetic by using letters (variables) and symbols to represent numbers and relationships in equations and formulas. Here $3x = 15 \\Rightarrow x = 5$.`,
+        },
+        {
+          subTopic: 'Branches of Mathematics — Problem Solving',
+          question: `[${cls} • ${shortFocusTopic}] Which branch of Mathematics focuses on the fundamental operations of addition ($+$), subtraction ($-$), multiplication ($\\times$), and division ($\\div$) on whole numbers, fractions, and decimals?`,
+          options: [
+            'Arithmetic',
+            'Topology',
+            'Trigonometry',
+            'Calculus',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Arithmetic is the foundational branch of Mathematics that deals with numbers and the four basic numerical operations ($+, -, \\times, \\div$).`,
+        },
+        {
+          subTopic: 'Branches of Mathematics — Problem Solving',
+          question: `[${cls} • ${shortFocusTopic}] The National Bureau of Standards and Sensa (Census) team collects, organizes, analyses, and presents data on Tanzania's population using tables, bar charts, and averages. Which branch of Mathematics is this?`,
+          options: [
+            'Statistics',
+            'Geometry',
+            'Algebra',
+            'Number Theory',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Statistics is the branch of Mathematics dealing with the collection, organization, analysis, interpretation, and presentation of numerical data.`,
+        },
+        {
+          subTopic: 'Importance of Mathematics — Problem Solving',
+          question: `[${cls} • ${shortFocusTopic}] A Form 1 student receives $\\text{TZS } 20,000$ for school supplies and buys $4$ exercise books at $\\text{TZS } 2,500$ each and a mathematical set for $\\text{TZS } 4,500$. How much change should the student receive?`,
+          options: [
+            '$\\text{TZS } 5,500$ (demonstrating the importance of Mathematics in daily budgeting and financial transactions)',
+            '$\\text{TZS } 14,500$',
+            '$\\text{TZS } 6,500$',
+            '$\\text{TZS } 10,000$',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Cost of $4$ books $= 4 \\times 2,500 = \\text{TZS } 10,000$. Step 2: Total spent $= 10,000 + 4,500 = \\text{TZS } 14,500$. Step 3: Change $= 20,000 - 14,500 = \\text{TZS } 5,500$.`,
+        },
+        {
+          subTopic: 'Importance of Mathematics — Problem Solving',
+          question: `[${cls} • ${shortFocusTopic}] In Hospital Medicine and Pharmacy, a doctor prescribes $5\\text{ ml}$ of syrup to be taken $3$ times a day for $7$ days. Why is Mathematics vital in healthcare?`,
+          options: [
+            'Accurate mathematical calculation prevents overdosing and ensures the patient receives the exact total dose ($5 \\times 3 \\times 7 = 105\\text{ ml}$)',
+            'Doctors give medicine without measuring body weight or dosage volume',
+            'Mathematics is only useful for engineers and never for nurses or doctors',
+            'Total dose is calculated by $5 + 3 + 7 = 15\\text{ ml}$',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Medicine and Pharmacy rely on Mathematics to calculate drug dosages per kilogram of body weight, IV drip rates, and treatment durations: $5\\text{ ml} \\times 3 \\times 7 = 105\\text{ ml}$.`,
+        },
+        {
+          subTopic: 'Importance of Mathematics — Problem Solving',
+          question: `[${cls} • ${shortFocusTopic}] Why is Mathematics considered a compulsory core subject for every primary and secondary school student in Tanzania?`,
+          options: [
+            'It develops logical thinking, problem-solving competence, financial literacy, and the quantitative foundation required for science, technology, commerce, and daily life',
+            'It is only meant for students who want to become university mathematics professors',
+            'It has no practical use outside the classroom examination hall',
+            'It replaces the need to learn communication skills',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Studying Mathematics trains the mind in systematic, logical problem-solving and equips citizens for everyday trade, budgeting, time management, and STEM careers.`,
+        },
+        {
+          subTopic: 'Relationship Between Mathematics and Other Subjects — Problem Solving',
+          question: `[${cls} • ${shortFocusTopic}] In Home Economics and Food & Human Nutrition, a recipe for $4$ people requires $300\\text{ g}$ of wheat flour. How much wheat flour is needed to prepare the same meal for $10$ people?`,
+          options: [
+            '$750\\text{ g}$ (applying mathematical proportion: $\\frac{300}{4} \\times 10 = 750\\text{ g}$)',
+            '$3,000\\text{ g}$',
+            '$600\\text{ g}$',
+            '$450\\text{ g}$',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Home Economics uses Mathematics to scale recipes, measure cooking temperatures, and calculate nutritional calories. Step 2: Flour per person $= \\frac{300}{4} = 75\\text{ g} \\Rightarrow$ For $10$ people $= 75 \\times 10 = 750\\text{ g}$.`,
+        },
+      ]);
+    }
+
     // 1A. LOGARITHMS & STANDARD FORM (Form 2)
-    if (topicCombinedLower.includes('logarithm') || topicCombinedLower.includes('standard form')) {
+    if (/\b(logarithms?|standard\s+form|antilogarithms?)\b/i.test(topicCombinedLower)) {
       return attachMetadata([
         {
           question: `[${cls} • ${focusTopic}] Evaluate without using mathematical tables: log₁₀ 25 + log₁₀ 4`,
@@ -5224,12 +5707,7 @@ export function buildContentIntegratedQuizQuestions(
     }
 
     // 1B. EXPONENTS (INDICES) AND RADICALS / SURDS (Form 2)
-    if (
-      topicCombinedLower.includes('exponent') ||
-      topicCombinedLower.includes('radical') ||
-      topicCombinedLower.includes('indice') ||
-      topicCombinedLower.includes('surd')
-    ) {
+    if (/\b(exponents?|radicals?|indices|surds?)\b/i.test(topicCombinedLower)) {
       return attachMetadata([
         {
           question: `[${cls} • ${focusTopic}] Solve for x in the exponential equation: 2^(2x + 1) = 32`,
@@ -5259,11 +5737,7 @@ export function buildContentIntegratedQuizQuestions(
     }
 
     // 1C. QUADRATIC EQUATIONS (Form 2)
-    if (
-      topicCombinedLower.includes('quadratic') ||
-      topicCombinedLower.includes('completing the square') ||
-      topicCombinedLower.includes('factoris')
-    ) {
+    if (/\b(quadratic|completing\s+the\s+square|factorisation|factorization)\b/i.test(topicCombinedLower)) {
       return attachMetadata([
         {
           question: `[${cls} • ${focusTopic}] Solve the quadratic equation x² - 7x + 12 = 0 by factorisation`,
@@ -5298,12 +5772,7 @@ export function buildContentIntegratedQuizQuestions(
     }
 
     // 1D. TRIGONOMETRY & PYTHAGORAS THEOREM (Form 2 & Form 4)
-    if (
-      topicCombinedLower.includes('trigonometr') ||
-      topicCombinedLower.includes('pythagoras') ||
-      topicCombinedLower.includes('sine') ||
-      topicCombinedLower.includes('cosine')
-    ) {
+    if (/\b(trigonometry|trigonometric|pythagoras|sine|cosine)\b/i.test(topicCombinedLower)) {
       return attachMetadata([
         {
           question: `[${cls} • ${focusTopic}] In a right-angled triangle ABC (right-angled at B), given that sin A = 3/5 for acute angle A, find cos A and tan A`,
@@ -5338,7 +5807,7 @@ export function buildContentIntegratedQuizQuestions(
     }
 
     // 1E. SETS & VENN DIAGRAMS (Form 2)
-    if (topicCombinedLower.includes('set') || topicCombinedLower.includes('venn')) {
+    if (/\b(sets|venn\s+diagrams?|subsets?|power\s+sets?)\b/i.test(topicCombinedLower)) {
       return attachMetadata([
         {
           question: `[${cls} • ${focusTopic}] In a class of 45 students, 28 study Biology, 22 study Chemistry, and 10 study both subjects. How many students study neither Biology nor Chemistry?`,
@@ -5367,12 +5836,11 @@ export function buildContentIntegratedQuizQuestions(
       ]);
     }
 
-    // 1F. STATISTICS (Form 2, Form 3 & Form 5)
+    // 1F. STATISTICS (Form 2, Form 3 & Form 5) — Use strict word boundaries so "Meaning" NEVER matches "mean"
     if (
-      topicCombinedLower.includes('statistic') ||
-      topicCombinedLower.includes('mean') ||
-      topicCombinedLower.includes('median') ||
-      topicCombinedLower.includes('mode')
+      /\b(statistics|statistical|arithmetic\s+mean|assumed\s+mean|median|mode|histogram|ogive)\b/i.test(
+        topicCombinedLower
+      )
     ) {
       return attachMetadata([
         {
@@ -5412,12 +5880,12 @@ export function buildContentIntegratedQuizQuestions(
       ]);
     }
 
-    // 1G. RELATIONS & FUNCTIONS (Form 3)
+    // 1G. RELATIONS & FUNCTIONS (Form 3) — Use strict word boundaries so "Relationship" NEVER matches "Relation"
     if (
-      topicCombinedLower.includes('relation') ||
-      topicCombinedLower.includes('function') ||
-      topicCombinedLower.includes('domain') ||
-      topicCombinedLower.includes('inverse')
+      /\b(relations|meaning\s+of\s+a\s+relation|types\s+of\s+relations|domain\s+and\s+range|inverse\s+of\s+a\s+relation|functions|inverse\s+functions?|composite\s+functions?|polynomial\s+functions?)\b/i.test(
+        topicCombinedLower
+      ) &&
+      !/\b(relationship|relationships|concept\s+of\s+mathematics)\b/i.test(topicCombinedLower)
     ) {
       return attachMetadata([
         {
@@ -5462,8 +5930,8 @@ export function buildContentIntegratedQuizQuestions(
       ]);
     }
 
-    // 1H. RATES & VARIATIONS (Form 3)
-    if (topicCombinedLower.includes('variation') || topicCombinedLower.includes('rate')) {
+    // 1H. RATES & VARIATIONS (Form 2 & Form 3)
+    if (/\b(variations?|rates\s+and\s+variations|direct\s+variation|inverse\s+variation|joint\s+variation)\b/i.test(topicCombinedLower)) {
       return attachMetadata([
         {
           question: `[${cls} • ${focusTopic}] Given that y varies directly as x (y ∝ x), and y = 24 when x = 6, find the value of y when x = 10`,

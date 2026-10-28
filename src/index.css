@@ -83,6 +83,14 @@ html.dark,
   }
 }
 
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* High-Contrast Dark Theme Overrides Using CSS Variables */
 html.dark .bg-slate-50,
 html.dark .bg-slate-50\/80 {

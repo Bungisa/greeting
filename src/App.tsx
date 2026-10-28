@@ -2678,13 +2678,18 @@ export default function App() {
         strippedLower
       );
 
+    const recentHistory = mohaMessages
+      .slice(-6)
+      .map((m) => ({ id: m.id, role: m.role, text: m.text }));
+
     if (isQuickConversational) {
       const quickReply = generateLocalSmartTutorReply(
         displayPrompt,
         targetCls,
         targetSub,
         learnedMemory,
-        promptSiteResources
+        promptSiteResources,
+        recentHistory
       );
       setMohaMessages((prev) =>
         prev.map((m) =>
@@ -2711,7 +2716,7 @@ export default function App() {
           cls: targetCls,
           subject: targetSub,
           image: attachedImg ? { mimeType: attachedImg.mimeType, base64Data: attachedImg.base64Data } : null,
-          history: mohaMessages.slice(-6).map((m) => ({ id: m.id, role: m.role, text: m.text })),
+          history: recentHistory,
           learnedMemory,
           siteResources: promptSiteResources,
           systemPromptContext,
@@ -2762,7 +2767,8 @@ export default function App() {
       targetCls,
       targetSub,
       learnedMemory,
-      promptSiteResources
+      promptSiteResources,
+      recentHistory
     );
     setMohaMessages((prev) =>
       prev.map((m) =>
@@ -5591,70 +5597,72 @@ export default function App() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -6 }}
           transition={{ duration: 0.22, ease: 'easeOut' }}
-          className="h-screen bg-slate-50 flex flex-col overflow-hidden"
+          className="h-[100dvh] bg-slate-50 flex flex-col overflow-hidden"
         >
-          {/* Single-Row Unified Navigation & Context Bar (No Redundant Headers) */}
+          {/* Unified Navigation & Context Bar (Responsive Mobile-First Layout) */}
           <div className="shrink-0 bg-white border-b border-slate-200 px-2.5 sm:px-4 py-1.5 shadow-2xs">
-            <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
-              {/* Left: Back + Brand + Compact Class/Subject/Book/Chapter Selectors */}
-              <div className="flex items-center gap-1.5 shrink-0">
-                <button
-                  onClick={handleGoBack}
-                  className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center gap-1 cursor-pointer shrink-0"
-                  title="Back to Elimika"
-                >
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                  <span className="hidden md:inline">Back</span>
-                </button>
-
-                <div className="flex items-center gap-1 font-black text-slate-900 text-xs sm:text-sm shrink-0 pr-1">
-                  <span className="w-5 h-5 rounded-md bg-violet-600 text-white flex items-center justify-center text-[11px]">
-                    🤖
-                  </span>
-                  <span className="hidden sm:inline">Moha AI</span>
-                </div>
-
-                {/* Class & Subject Selector Pill */}
-                <div className="flex items-center gap-1 bg-slate-100 rounded-lg px-2 py-1 text-xs border border-slate-200 shrink-0">
-                  <select
-                    value={mohaActiveClass}
-                    onChange={(e) => {
-                      const newCls = e.target.value;
-                      setMohaActiveClass(newCls);
-                      setTsClass(newCls);
-                      const subs = TIE_CURRICULUM_SUBJECTS[newCls] || ['Basic Mathematics'];
-                      const nextSub = subs.includes(mohaActiveSubject) ? mohaActiveSubject : subs[0];
-                      setMohaActiveSubject(nextSub);
-                      setTsSubject(nextSub);
-                      setSelectedQuizTopic('ALL');
-                      setFlashcards(getDefaultFlashcardsForSubject(newCls, nextSub));
-                    }}
-                    className="bg-transparent text-slate-900 font-bold focus:outline-none cursor-pointer"
+            <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-1.5">
+              {/* Row 1 on Mobile / Left on Desktop: Back + Brand + Class/Subject + Book/Chapter Selectors */}
+              <div className="flex items-center justify-between md:justify-start gap-1.5 overflow-x-auto no-scrollbar">
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    onClick={handleGoBack}
+                    className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center gap-1 cursor-pointer shrink-0"
+                    title="Back to Elimika"
                   >
-                    {Object.keys(TIE_CURRICULUM_SUBJECTS).map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="text-slate-400">·</span>
-                  <select
-                    value={mohaActiveSubject}
-                    onChange={(e) => {
-                      const nextSub = e.target.value;
-                      setMohaActiveSubject(nextSub);
-                      setTsSubject(nextSub);
-                      setSelectedQuizTopic('ALL');
-                      setFlashcards(getDefaultFlashcardsForSubject(mohaActiveClass, nextSub));
-                    }}
-                    className="bg-transparent text-violet-700 font-bold focus:outline-none cursor-pointer max-w-[115px] sm:max-w-[150px] truncate"
-                  >
-                    {(TIE_CURRICULUM_SUBJECTS[mohaActiveClass] || ['Basic Mathematics']).map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                  </select>
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Back</span>
+                  </button>
+
+                  <div className="flex items-center gap-1 font-black text-slate-900 text-xs sm:text-sm shrink-0">
+                    <span className="w-5 h-5 rounded-md bg-violet-600 text-white flex items-center justify-center text-[11px]">
+                      🤖
+                    </span>
+                    <span className="hidden sm:inline">Moha AI</span>
+                  </div>
+
+                  {/* Class & Subject Selector Pill */}
+                  <div className="flex items-center gap-1 bg-slate-100 rounded-lg px-2 py-1 text-xs border border-slate-200 shrink-0">
+                    <select
+                      value={mohaActiveClass}
+                      onChange={(e) => {
+                        const newCls = e.target.value;
+                        setMohaActiveClass(newCls);
+                        setTsClass(newCls);
+                        const subs = TIE_CURRICULUM_SUBJECTS[newCls] || ['Basic Mathematics'];
+                        const nextSub = subs.includes(mohaActiveSubject) ? mohaActiveSubject : subs[0];
+                        setMohaActiveSubject(nextSub);
+                        setTsSubject(nextSub);
+                        setSelectedQuizTopic('ALL');
+                        setFlashcards(getDefaultFlashcardsForSubject(newCls, nextSub));
+                      }}
+                      className="bg-transparent text-slate-900 font-bold focus:outline-none cursor-pointer"
+                    >
+                      {Object.keys(TIE_CURRICULUM_SUBJECTS).map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="text-slate-400">·</span>
+                    <select
+                      value={mohaActiveSubject}
+                      onChange={(e) => {
+                        const nextSub = e.target.value;
+                        setMohaActiveSubject(nextSub);
+                        setTsSubject(nextSub);
+                        setSelectedQuizTopic('ALL');
+                        setFlashcards(getDefaultFlashcardsForSubject(mohaActiveClass, nextSub));
+                      }}
+                      className="bg-transparent text-violet-700 font-bold focus:outline-none cursor-pointer max-w-[115px] sm:max-w-[150px] truncate"
+                    >
+                      {(TIE_CURRICULUM_SUBJECTS[mohaActiveClass] || ['Basic Mathematics']).map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 {/* Compact Book & Chapter Selectors */}
@@ -5677,7 +5685,7 @@ export default function App() {
                       }
                     }}
                     title="Select TIE Textbook or Past Paper"
-                    className="max-w-[125px] lg:max-w-[175px] bg-transparent text-slate-800 font-semibold text-[11px] truncate focus:outline-none cursor-pointer"
+                    className="max-w-[95px] sm:max-w-[125px] lg:max-w-[175px] bg-transparent text-slate-800 font-semibold text-[11px] truncate focus:outline-none cursor-pointer"
                   >
                     <option value="ALL">
                       📘 TIE {mohaActiveClass} ({classSubjectResourcesList.length})
@@ -5705,7 +5713,7 @@ export default function App() {
                       setAttachModalOpen(true);
                     }}
                     title="Attach Resource"
-                    className="px-1.5 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-white font-bold text-[10px] cursor-pointer shrink-0"
+                    className="hidden sm:inline-block px-1.5 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-white font-bold text-[10px] cursor-pointer shrink-0"
                   >
                     +Book
                   </button>
@@ -5723,7 +5731,7 @@ export default function App() {
                       setTsSubTopic(chosenChap);
                     }}
                     title="Select Syllabus Chapter / Topic"
-                    className="max-w-[125px] lg:max-w-[175px] bg-transparent text-slate-800 font-semibold text-[11px] truncate focus:outline-none cursor-pointer"
+                    className="max-w-[95px] sm:max-w-[125px] lg:max-w-[175px] bg-transparent text-slate-800 font-semibold text-[11px] truncate focus:outline-none cursor-pointer"
                   >
                     {activeSyllabusTopics.map((rawChap, cIdx) => {
                       const cleanChap = rawChap.replace(/^\d+\.\d+\s*/, '').trim();
@@ -5739,8 +5747,8 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Right: Single-Row Workspace Tab Switcher + Teach AI */}
-              <div className="flex items-center gap-1 shrink-0">
+              {/* Row 2 on Mobile / Right on Desktop: Workspace Tab Switcher + Teach AI */}
+              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar shrink-0">
                 {[
                   { id: 'chat' as const, label: '💬 Chat' },
                   { id: 'studio' as const, label: '📘 Studio & Docs' },
@@ -5759,7 +5767,7 @@ export default function App() {
                         }
                         setMohaViewMode(tab.id);
                       }}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                      className={`px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                         active
                           ? 'bg-violet-600 text-white shadow-2xs'
                           : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
@@ -5772,7 +5780,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setMohaLearnPanelOpen(true)}
-                  className="px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-2xs cursor-pointer flex items-center gap-1"
+                  className="px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-bold whitespace-nowrap bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-2xs cursor-pointer flex items-center gap-1 shrink-0"
                   title="Teach Moha AI custom notes or topics (Saved permanently in localStorage)"
                 >
                   <span>🧠 Teach AI</span>
@@ -5790,7 +5798,7 @@ export default function App() {
           {mohaViewMode === 'chat' && (
             <div className="flex-1 min-h-0 flex flex-col max-w-5xl w-full mx-auto overflow-hidden">
               {/* Minimal Single-Row Quick Actions */}
-              <div className="shrink-0 px-3 sm:px-5 py-1.5 bg-slate-100/80 border-b border-slate-200 flex items-center justify-between gap-2 overflow-x-auto text-xs">
+              <div className="shrink-0 px-3 sm:px-5 py-1.5 bg-slate-100/80 border-b border-slate-200 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar text-xs">
                 <div className="flex items-center gap-1.5 whitespace-nowrap">
                   <button
                     type="button"

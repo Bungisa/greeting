@@ -55,11 +55,9 @@ function getGenAIClient(): GoogleGenAI | null {
 }
 
 const GEMINI_FALLBACK_MODELS = [
-  'gemini-flash-latest',
-  'gemini-3.8-flash',
-  'gemini-3.1-flash-lite',
-  'gemini-2.5-flash',
   'gemini-3-flash-preview',
+  'gemini-2.5-flash',
+  'gemini-flash-latest',
   'gemini-flash-lite-latest',
 ] as const;
 const modelCooldownUntil = new Map<string, number>();
@@ -162,7 +160,11 @@ async function generateContentWithQuotaFallback(
     }
     try {
       const baseConfig: Record<string, unknown> = { ...(params.config || {}) };
-      delete baseConfig.thinkingConfig;
+      if (!params.enableThinking) {
+        baseConfig.thinkingConfig = modelName.startsWith('gemini-3')
+          ? { thinkingLevel: ThinkingLevel.LOW }
+          : { thinkingBudget: 0 };
+      }
 
       const configWithTools =
         params.useGoogleSearch && !baseConfig.responseMimeType
@@ -177,11 +179,12 @@ async function generateContentWithQuotaFallback(
             contents: params.contents as never,
             config: configWithTools as never,
           }),
-          14000
+          10000
         );
       } catch (innerErr) {
         const innerMsg = innerErr instanceof Error ? innerErr.message : String(innerErr);
         if (
+          innerMsg.includes('Timeout') ||
           innerMsg.includes('429') ||
           innerMsg.includes('RESOURCE_EXHAUSTED') ||
           innerMsg.includes('quota') ||
@@ -201,7 +204,7 @@ async function generateContentWithQuotaFallback(
             contents: params.contents as never,
             config: cleanConfig as never,
           }),
-          12000
+          9000
         );
       }
 
@@ -667,7 +670,14 @@ app.post('/api/moha/chat', async (req, res) => {
     );
 
   if (isConversationalGreeting && !image) {
-    const instantReply = generateLocalSmartTutorReply(userPrompt, cls, subject, learnedMemory, siteResources);
+    const instantReply = generateLocalSmartTutorReply(
+      userPrompt,
+      cls,
+      subject,
+      learnedMemory,
+      siteResources,
+      history
+    );
     return res.json({
       reply: instantReply,
       source: 'local-conversational',
@@ -959,7 +969,8 @@ CRITICAL RULES FOR ANSWERING:
     effectiveCls,
     effectiveSubject,
     learnedMemory,
-    enrichedSiteResources
+    enrichedSiteResources,
+    history
   );
   return res.json({
     reply: fallbackReply,
@@ -1278,9 +1289,29 @@ app.post('/api/moha/quiz', async (req, res) => {
 
   const ai = getGenAIClient();
 
+  const isConceptOfMathTopic =
+    /\b(concept\s+of\s+mathematics|meaning\s+of\s+mathematics|branches\s+of\s+mathematics|relationship\s+between\s+mathematics|relationships\s+between\s+mathematics|mathematics\s+and\s+other\s+subjects|importance\s+of\s+mathematics)\b/i.test(
+      `${topic || ''} ${subTopic || ''}`
+    );
+
+  if (isConceptOfMathTopic) {
+    const conceptQuestions = buildFallbackTopicQuizQuestions(
+      cls,
+      subject,
+      topic,
+      siteResources,
+      subTopic,
+      sourceFilter
+    );
+    return res.json({
+      questions: conceptQuestions.slice(0, targetCount),
+      source: 'local',
+    });
+  }
+
   if (ai) {
     try {
-      const quizCacheKey = `quiz:v3:${cls}:${subject}:${topic || 'ALL'}:${subTopic || 'ALL'}:${sourceFilter}:${targetCount}:${effectiveResourceTitle || 'ALL'}`;
+      const quizCacheKey = `quiz:v4:${cls}:${subject}:${topic || 'ALL'}:${subTopic || 'ALL'}:${sourceFilter}:${targetCount}:${effectiveResourceTitle || 'ALL'}`;
       const jsonText = await withHighTrafficDedupe(
         quizCacheKey,
         async () => {
@@ -1290,7 +1321,7 @@ ${sourceConstraintText}
 ${subjectAdaptationRules}
 ${availableContentSummary}
 IMPORTANT RULES:
-1. Every question MUST be strictly for ${cls} ${subject} and specifically on ${topic && topic !== 'ALL' ? `"${tbInfo.matchedChapter}"` : `the ${cls} ${subject} TIE textbook chapters`} — never return generic meta-questions about exam formatting or mark allocation.
+1. Every question MUST be strictly for ${cls} ${subject} and specifically on ${topic && topic !== 'ALL' ? `"${tbInfo.matchedChapter}"${subTopic && subTopic !== 'ALL' ? ` (Sub-Topic: "${subTopic}")` : ''}` : `the ${cls} ${subject} TIE textbook chapters`} — never include questions from other chapters or higher classes, and never return generic meta-questions about exam formatting.
 2. Vary the correct answer position across options 0, 1, 2, and 3 so the correct answer is NOT always index 0.
 3. Provide 4 clear options, correctIndex (0 to 3), a clear competence-based explanation in "explanation" (explaining why the answer is correct with real curriculum facts/steps), the "topic", the "subTopic", and the exact Book or Past Paper title in "sourceRef".`;
 
@@ -1318,6 +1349,7 @@ IMPORTANT RULES:
                 },
               },
             },
+            enableThinking: false,
           });
         },
         (val) => Boolean(val && val.length > 10)
