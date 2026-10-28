@@ -138,8 +138,7 @@ const ELIMIKA_REMOTE_API_BASE = 'https://ais-pre-utxrgt5piro4x4xpbnh75h-14205824
 async function fetchElimikaApi(endpointPath: string, options?: RequestInit): Promise<Response> {
   const isFileProtocol = typeof window !== 'undefined' && window.location.protocol === 'file:';
   const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
-  const isStaticCustomDomain =
-    hostname.includes('elimika.online') || hostname.includes('github.io');
+  const isStaticCustomDomain = hostname.includes('github.io');
   const isAlreadyOnRemoteBase = hostname.includes('run.app');
 
   if (!isFileProtocol && !isStaticCustomDomain) {
@@ -154,7 +153,11 @@ async function fetchElimikaApi(endpointPath: string, options?: RequestInit): Pro
             if (peekData && peekData.source === 'local') {
               const remoteRes = await fetch(`${ELIMIKA_REMOTE_API_BASE}${endpointPath}`, options);
               if (remoteRes.ok) {
-                return remoteRes;
+                const remoteCloned = remoteRes.clone();
+                const remoteData = await remoteCloned.json();
+                if (remoteData && remoteData.source === 'gemini') {
+                  return remoteRes;
+                }
               }
             }
           } catch {
@@ -2752,13 +2755,24 @@ export default function App() {
           }));
         }
         if (data.reply) {
+          const finalReplyText =
+            data.source === 'local'
+              ? generateLocalSmartTutorReply(
+                  displayPrompt,
+                  targetCls,
+                  targetSub,
+                  learnedMemory,
+                  promptSiteResources,
+                  recentHistory
+                )
+              : data.reply;
           setMohaMessages((prev) =>
             prev.map((m) =>
               m.id === loadingId
                 ? {
                     id: `ai-${Date.now()}`,
                     role: 'ai',
-                    text: data.reply,
+                    text: finalReplyText,
                     quizTarget: {
                       cls: targetCls,
                       subject: targetSub,
