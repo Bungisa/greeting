@@ -55,9 +55,11 @@ function getGenAIClient(): GoogleGenAI | null {
 }
 
 const GEMINI_FALLBACK_MODELS = [
+  'gemini-3.8-flash',
   'gemini-3-flash-preview',
   'gemini-2.5-flash',
   'gemini-flash-latest',
+  'gemini-3.1-flash-lite',
   'gemini-flash-lite-latest',
 ] as const;
 const modelCooldownUntil = new Map<string, number>();

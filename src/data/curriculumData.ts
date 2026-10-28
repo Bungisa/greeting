@@ -1150,6 +1150,16 @@ export const MOHA_BUILTIN_KNOWLEDGE = [
     content: `**1. Arithmetic Progression (AP) — TIE Basic Mathematics Form 3 Textbook:**\n• $n^{\\text{th}}$ Term: $A_n = A_1 + (n - 1)d$\n• Sum of $n$ terms: $S_n = \\frac{n}{2}[2A_1 + (n - 1)d] = \\frac{n}{2}(A_1 + A_n)$\n\n**2. Geometric Progression (GP):**\n• $n^{\\text{th}}$ Term: $G_n = G_1 r^{n - 1}$\n• Sum of $n$ terms: $S_n = \\frac{G_1(r^n - 1)}{r - 1}$ (for $r > 1$) or $S_n = \\frac{G_1(1 - r^n)}{1 - r}$ (for $r < 1$)\n\n**3. Compound Interest:**\n$$A_n = P\\left(1 + \\frac{R}{100}\\right)^n$$`,
   },
   {
+    keywords: ['integration', 'indefinite integral', 'definite integral', 'area under a curve', 'volume of revolution', 'antiderivative'],
+    title: 'Chapter 1: Integration (Indefinite & Definite Integrals, Area Under a Curve, Volume of Revolution & Kinematics)',
+    content: `**1. Meaning of Integration (TIE Form 4 Additional Mathematics & Form 5–6 BAM / Advanced Mathematics):**\nIntegration is the **reverse process of differentiation** (also called finding the **antiderivative**). If $\\frac{d}{dx}[F(x)] = f(x)$, then:\n$$\\int f(x)\\,dx = F(x) + C$$\nwhere $C$ is the **constant of integration**.\n\n**2. Fundamental Rules of Integration:**\n• **Power Rule:**\n$$\\int x^n\\,dx = \\frac{x^{n+1}}{n+1} + C \\quad (n \\neq -1)$$\n• **Constant Rule:** $\\int k\\,dx = kx + C$\n• **Standard Trigonometric & Reciprocal Integrals:**\n$$\\int \\cos x\\,dx = \\sin x + C, \\quad \\int \\sin x\\,dx = -\\cos x + C, \\quad \\int \\frac{1}{x}\\,dx = \\ln|x| + C$$\n\n**3. Definite Integrals & Applications:**\n• **Definite Integral (Fundamental Theorem of Calculus):**\n$$\\int_a^b f(x)\\,dx = \\Big[F(x)\\Big]_a^b = F(b) - F(a)$$\n• **Area Under a Curve $y = f(x)$ from $x = a$ to $x = b$:**\n$$\\text{Area } (A) = \\int_a^b y\\,dx$$\n• **Volume of Solid of Revolution (rotated $360^\\circ$ about the $x$-axis):**\n$$\\text{Volume } (V) = \\pi \\int_a^b y^2\\,dx$$\n• **Kinematics Application:** Velocity $v = \\int a\\,dt$ and Displacement $s = \\int v\\,dt$.\n\n**4. Step-by-Step Worked Examples:**\n• **Example 1 (Indefinite Integral):** Find $\\int (6x^2 - 4x + 5)\\,dx$.\n  - **Step 1:** Apply the power rule term by term:\n    $$\\int 6x^2\\,dx - \\int 4x^1\\,dx + \\int 5\\,dx = \\frac{6x^{2+1}}{3} - \\frac{4x^{1+1}}{2} + 5x + C$$\n  - **Step 2 (Simplify):**\n    $$\\mathbf{2x^3 - 2x^2 + 5x + C}$$\n\n• **Example 2 (Definite Integral):** Evaluate $\\int_1^3 (3x^2 + 2x)\\,dx$.\n  - **Step 1 (Integrate):** $\\Big[x^3 + x^2\\Big]_1^3$\n  - **Step 2 (Substitute Upper & Lower Limits):**\n    $$(3^3 + 3^2) - (1^3 + 1^2) = (27 + 9) - (1 + 1) = 36 - 2 = \\mathbf{34}$$\n\n• **Example 3 (Area Under a Curve):** Find the area enclosed by the curve $y = x^2$, the $x$-axis, and the lines $x = 0$ and $x = 3$.\n  - **Step 1:** $A = \\int_0^3 x^2\\,dx = \\left[\\frac{x^3}{3}\\right]_0^3 = \\frac{27}{3} - 0 = \\mathbf{9\\text{ square units}}$.`,
+  },
+  {
+    keywords: ['differentiation', 'first principles', 'power rule', 'chain rule', 'product rule', 'quotient rule', 'stationary point', 'turning point', 'tangent and normal'],
+    title: 'Chapter 6: Differentiation (First Principles, Power/Chain/Product/Quotient Rules, Turning Points, Tangents & Normals)',
+    content: `**1. Meaning of Differentiation (TIE Form 3 Additional Mathematics & Form 5–6 BAM / Advanced Mathematics):**\nDifferentiation measures the **instantaneous rate of change** of a function $y = f(x)$ with respect to $x$, which geometrically represents the **gradient of the tangent** to the curve at any point.\n\n**2. Differentiation from First Principles:**\n$$\\frac{dy}{dx} = f'(x) = \\lim_{h \\to 0} \\frac{f(x + h) - f(x)}{h}$$\n\n**3. Core Rules of Differentiation:**\n• **Power Rule:** If $y = ax^n$, then $\\frac{dy}{dx} = anx^{n-1}$\n• **Chain Rule:** $\\frac{dy}{dx} = \\frac{dy}{du} \\times \\frac{du}{dx}$\n• **Product Rule:** $\\frac{d}{dx}(uv) = u\\frac{dv}{dx} + v\\frac{du}{dx}$\n• **Quotient Rule:** $\\frac{d}{dx}\\left(\\frac{u}{v}\\right) = \\frac{v\\frac{du}{dx} - u\\frac{dv}{dx}}{v^2}$\n• **Trigonometric Derivatives:** $\\frac{d}{dx}(\\sin x) = \\cos x, \\quad \\frac{d}{dx}(\\cos x) = -\\sin x$\n\n**4. Step-by-Step Worked Examples:**\n• **Example 1 (Gradient of a Curve):** Differentiate $y = 4x^3 - 6x^2 + 5x - 9$ and find $\\frac{dy}{dx}$ at $x = 2$.\n  - **Step 1:** $\\frac{dy}{dx} = 12x^2 - 12x + 5$\n  - **Step 2:** At $x = 2$: $\\frac{dy}{dx} = 12(2)^2 - 12(2) + 5 = 48 - 24 + 5 = \\mathbf{29}$.\n\n• **Example 2 (Stationary / Turning Points):** Find the stationary points of $y = x^3 - 3x^2 - 9x + 5$.\n  - **Step 1:** At stationary points, $\\frac{dy}{dx} = 0 \\implies 3x^2 - 6x - 9 = 0$\n  - **Step 2:** Divide by $3$: $x^2 - 2x - 3 = (x - 3)(x + 1) = 0 \\implies \\mathbf{x = 3 \\text{ or } x = -1}$.`,
+  },
+  {
     keywords: ['newton', 'motion', 'acceleration', 'velocity', 'momentum', 'impulse'],
     title: "Newton's Laws of Motion & Linear Motion (Physics — Form 2 TIE Textbook Chapters 6 & 7)",
     content: `**Equations of Uniformly Accelerated Motion (TIE Physics Form 2 Textbook):**\n1. $v = u + at$\n2. $s = ut + \\frac{1}{2}at^2$\n3. $v^2 = u^2 + 2as$\n\n**Newton's Three Laws of Motion:**\n• **1st Law (Inertia):** A body remains at rest or uniform motion in a straight line unless acted upon by an external resultant force.\n• **2nd Law:** Rate of change of momentum is directly proportional to applied force ($F = ma = \\frac{mv - mu}{t}$).\n• **3rd Law:** To every action there is an equal and opposite reaction.`,
@@ -1393,17 +1403,27 @@ export function getTieTextbookChapterContent(
       matchedChapter = allChapters[idx];
     }
   } else if (qLower.trim().length > 2) {
+    const hasWord = (text: string, word: string) =>
+      new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(text);
     let bestScore = 0;
     for (const ch of allChapters) {
-      const chWords = ch
-        .toLowerCase()
-        .replace(/[(),:&/-]/g, ' ')
-        .split(/\s+/)
-        .filter((w) => w.length >= 3 && !stopWords.has(w));
+      const mainTitlePart = ch.split('(')[0].toLowerCase();
+      const chWords = Array.from(
+        new Set(
+          ch
+            .toLowerCase()
+            .replace(/[(),:&/-]/g, ' ')
+            .split(/\s+/)
+            .filter((w) => w.length >= 3 && !stopWords.has(w))
+        )
+      );
       let sc = 0;
       for (const w of chWords) {
-        if (qLower.includes(w)) sc += 4;
-        else if (w.length >= 5 && qLower.includes(w.slice(0, 4))) sc += 2;
+        if (hasWord(qLower, w)) {
+          sc += mainTitlePart.includes(w) ? 10 : 4;
+        } else if (w.endsWith('s') && w.length >= 5 && hasWord(qLower, w.slice(0, -1))) {
+          sc += mainTitlePart.includes(w) ? 8 : 3;
+        }
       }
       if (sc > bestScore) {
         bestScore = sc;
@@ -2816,7 +2836,16 @@ export function generateLocalSmartTutorReply(
     ? parsed.subject
     : siteResources?.focusedResource?.subject || parsed.subject;
   const syllabusTopics = getSyllabusTopicsForClassSubject(effectiveCls, effectiveSub);
-  const effectiveTbInfo = getTieTextbookChapterContent(effectiveCls, effectiveSub, cleanInput, siteResources);
+  const tbLookupQuery =
+    parsed.matchedFromPrompt && parsed.topic && parsed.topic !== 'ALL'
+      ? parsed.topic
+      : cleanInput;
+  const effectiveTbInfo = getTieTextbookChapterContent(
+    effectiveCls,
+    effectiveSub,
+    tbLookupQuery,
+    siteResources
+  );
   const effectiveTopic =
     parsed.topic && parsed.topic !== 'ALL'
       ? parsed.topic
@@ -3396,7 +3425,8 @@ export function parseClassSubjectTopicFromPrompt(
     { keywords: ['simultaneous equation', 'linear equation', 'linear inequality'], topic: 'Chapter 8: Algebra (Algebraic Expressions, Linear Equations in One Unknown, Simultaneous Linear Equations & Linear Inequalities)', defaultForm: 'Form 1', subjects: ['Basic Mathematics', 'Additional Mathematics'] },
     { keywords: ['simple interest', 'profit and loss'], topic: 'Chapter 10: Ratios, Profit and Loss (Ratios, Proportions, Profit and Loss & Simple Interest)', defaultForm: 'Form 1', subjects: ['Basic Mathematics'] },
     { keywords: ['coordinate geometry', 'gradient of a line', 'equation of a line', 'parallel and perpendicular lines'], topic: 'Chapter 11: Coordinate Geometry (Coordinates of a Point, Gradient/Slope of a Line, Equation of a Straight Line y = mx + c & Graphing Linear Equations)', defaultForm: 'Form 1', subjects: ['Basic Mathematics', 'Additional Mathematics'] },
-    { keywords: ['differentiation', 'integration', 'derivative', 'stationary point', 'calculus'], topic: 'Chapter 6: Differentiation (Derivative of a Function, First Principles, Power Rule, Chain Rule, Product Rule, Quotient Rule, Derivatives of Trigonometric Functions, Rates of Change, Turning Points, Curve Sketching, Tangents & Normals)', defaultForm: 'Form 3', subjects: ['Additional Mathematics', 'Advanced Mathematics', 'Basic Applied Mathematics (BAM)'] },
+    { keywords: ['integration', 'integral', 'integrals', 'indefinite integral', 'definite integral', 'area under a curve', 'volume of revolution', 'antiderivative'], topic: 'Chapter 1: Integration (Indefinite & Definite Integrals, Area Under a Curve, Volume of Revolution & Kinematics)', defaultForm: 'Form 4', subjects: ['Additional Mathematics', 'Advanced Mathematics', 'Basic Applied Mathematics (BAM)', 'Basic Mathematics'] },
+    { keywords: ['differentiation', 'differentiate', 'derivative', 'derivatives', 'first principles', 'chain rule', 'product rule', 'quotient rule', 'stationary point', 'turning point', 'tangent and normal', 'calculus'], topic: 'Chapter 6: Differentiation (Derivative of a Function, First Principles, Power Rule, Chain Rule, Product Rule, Quotient Rule, Derivatives of Trigonometric Functions, Rates of Change, Turning Points, Curve Sketching, Tangents & Normals)', defaultForm: 'Form 3', subjects: ['Additional Mathematics', 'Advanced Mathematics', 'Basic Applied Mathematics (BAM)', 'Basic Mathematics'] },
     { keywords: ['double entry', 'trial balance', 'ledger', 'balance sheet'], topic: 'Chapter 7: The Earth as a Sphere & Accounts (Great & Small Circles, Latitudes & Longitudes, Distance in Kilometres & Nautical Miles; Double Entry Principle, Cash Book, Ledger, Trial Balance & Financial Statements)', defaultForm: 'Form 3', subjects: ['Basic Mathematics', 'Book-Keeping', 'Business Studies', 'Accountancy'] },
     { keywords: ['ohm law', "ohm's law", 'resistor', 'current electricity'], topic: 'Chapter 2: Current Electricity (Concept of Current Electricity, Ohm Law V = IR, Resistance to an Electric Current, Series/Parallel Resistors, Heating Effect of an Electric Current, Electrical Installations & Cells)', defaultForm: 'Form 2', subjects: ['Physics'] },
     { keywords: ['archimedes', 'law of flotation', 'upthrust', 'relative density'], topic: 'Chapter 6: Archimedes Principle and the Law of Floatation (Concept of Upthrust, Archimedes Principle, Apparent Weight, Law of Floatation & Hydrometer)', defaultForm: 'Form 1', subjects: ['Physics'] },
@@ -5667,6 +5697,104 @@ export function buildContentIntegratedQuizQuestions(
           ],
           correctIndex: 0,
           explanation: `Step 1: Home Economics uses Mathematics to scale recipes, measure cooking temperatures, and calculate nutritional calories. Step 2: Flour per person $= \\frac{300}{4} = 75\\text{ g} \\Rightarrow$ For $10$ people $= 75 \\times 10 = 750\\text{ g}$.`,
+        },
+      ]);
+    }
+
+    // 1.0B INTEGRATION (Form 4 Additional Math & Form 5-6 BAM / Advanced Math) — Checked first so "Area Under a Curve" & "Volume of Revolution" are never hijacked by 3D Geometry
+    if (
+      /\b(integration|integrals?|integrate|antiderivatives?|area\s+under\s+a?\s*curve|volume\s+of\s+revolution)\b/i.test(
+        topicCombinedLower
+      )
+    ) {
+      return attachMetadata([
+        {
+          question: `[${cls} • ${shortFocusTopic}] Find the indefinite integral: ∫ (6x² - 4x + 5) dx`,
+          options: [
+            '2x³ - 2x² + 5x + C',
+            '6x³ - 4x² + 5x + C',
+            '12x - 4 + C',
+            '3x³ - 2x² + 5 + C',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Apply the integration power rule ∫ xⁿ dx = xⁿ⁺¹/(n + 1) + C term by term. Step 2: ∫ 6x² dx = 6(x³/3) = 2x³; ∫ (-4x) dx = -4(x²/2) = -2x²; ∫ 5 dx = 5x. Step 3: Combine with constant of integration C → 2x³ - 2x² + 5x + C.`,
+        },
+        {
+          question: `[${cls} • ${shortFocusTopic}] Evaluate the definite integral: ∫₁³ (3x² + 2x) dx`,
+          options: ['34', '26', '36', '28'],
+          correctIndex: 0,
+          explanation: `Step 1: Integrate term by term: ∫(3x² + 2x)dx = [x³ + x²]₁³. Step 2: Substitute upper limit x = 3 and lower limit x = 1 → (3³ + 3²) - (1³ + 1²) = (27 + 9) - (1 + 1) = 36 - 2 = 34.`,
+        },
+        {
+          question: `[${cls} • ${shortFocusTopic}] Calculate the area enclosed between the curve y = x², the x-axis, and the vertical lines x = 0 and x = 3`,
+          options: [
+            '9 square units',
+            '27 square units',
+            '6 square units',
+            '3 square units',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Area under the curve A = ∫₀³ y dx = ∫₀³ x² dx. Step 2: [x³ / 3]₀³ = (3³ / 3) - (0³ / 3) = 27 / 3 = 9 square units.`,
+        },
+        {
+          question: `[${cls} • ${shortFocusTopic}] A particle moves along a straight line such that its velocity after t seconds is v = (4t + 3) m/s. Find the displacement s covered between t = 0 s and t = 4 s`,
+          options: ['44 m', '19 m', '32 m', '28 m'],
+          correctIndex: 0,
+          explanation: `Step 1: Displacement s = ∫₀⁴ v dt = ∫₀⁴ (4t + 3) dt. Step 2: Evaluate [2t² + 3t]₀⁴ = [2(4)² + 3(4)] - 0 = 32 + 12 = 44 m.`,
+        },
+      ]);
+    }
+
+    // 1.0C DIFFERENTIATION & CALCULUS (Form 3 Additional Math & Form 5-6 BAM / Advanced Math) — Checked before Trigonometry so "Derivatives of Trigonometric Functions" is never hijacked
+    if (
+      /\b(differentiation|differentiate|derivatives?|first\s+principles|chain\s+rule|product\s+rule|quotient\s+rule|stationary\s+points?|turning\s+points?|tangents?\s+and\s+normals?|calculus)\b/i.test(
+        topicCombinedLower
+      )
+    ) {
+      return attachMetadata([
+        {
+          question: `[${cls} • ${shortFocusTopic}] Differentiate y = 4x³ - 6x² + 5x - 9 with respect to x, and find the gradient dy/dx at x = 2`,
+          options: [
+            'dy/dx = 12x² - 12x + 5 ; at x = 2, dy/dx = 29',
+            'dy/dx = 12x² - 6x + 5 ; at x = 2, dy/dx = 41',
+            'dy/dx = 4x² - 12x + 5 ; at x = 2, dy/dx = -3',
+            'dy/dx = 12x² - 12x ; at x = 2, dy/dx = 24',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Apply power rule d/dx(xⁿ) = nxⁿ⁻¹ → dy/dx = 12x² - 12x + 5. Step 2: Substitute x = 2 → 12(2)² - 12(2) + 5 = 48 - 24 + 5 = 29.`,
+        },
+        {
+          question: `[${cls} • ${shortFocusTopic}] Find the x-coordinates of the stationary (turning) points of the curve y = x³ - 3x² - 9x + 5`,
+          options: [
+            'x = 3 and x = -1',
+            'x = -3 and x = 1',
+            'x = 3 and x = 1',
+            'x = 0 and x = 3',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Stationary points occur where dy/dx = 0. Step 2: dy/dx = 3x² - 6x - 9 = 0 → divide by 3: x² - 2x - 3 = 0. Step 3: Factorise (x - 3)(x + 1) = 0 → x = 3 or x = -1.`,
+        },
+        {
+          question: `[${cls} • ${shortFocusTopic}] Find the equation of the tangent to the curve y = x² + 3x - 1 at the point (1, 3)`,
+          options: [
+            'y = 5x - 2',
+            'y = 3x',
+            'y = 5x + 2',
+            'y = 2x + 1',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: dy/dx = 2x + 3. At x = 1, gradient of tangent m = 2(1) + 3 = 5. Step 2: Equation of tangent through (1, 3): y - 3 = 5(x - 1) → y = 5x - 2.`,
+        },
+        {
+          question: `[${cls} • ${shortFocusTopic}] Given y = (2x + 1)⁴, use the Chain Rule to find dy/dx`,
+          options: [
+            '8(2x + 1)³',
+            '4(2x + 1)³',
+            '8(2x + 1)⁴',
+            '2(2x + 1)³',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Let u = 2x + 1 so y = u⁴. Step 2: dy/du = 4u³ and du/dx = 2. Step 3: By Chain Rule, dy/dx = (dy/du)(du/dx) = 4(2x + 1)³ × 2 = 8(2x + 1)³.`,
         },
       ]);
     }

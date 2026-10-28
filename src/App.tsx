@@ -137,16 +137,30 @@ const ELIMIKA_REMOTE_API_BASE = 'https://ais-pre-utxrgt5piro4x4xpbnh75h-14205824
 
 async function fetchElimikaApi(endpointPath: string, options?: RequestInit): Promise<Response> {
   const isFileProtocol = typeof window !== 'undefined' && window.location.protocol === 'file:';
+  const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
   const isStaticCustomDomain =
-    typeof window !== 'undefined' &&
-    (window.location.hostname.includes('elimika.online') ||
-      window.location.hostname.includes('github.io'));
+    hostname.includes('elimika.online') || hostname.includes('github.io');
+  const isAlreadyOnRemoteBase = hostname.includes('run.app');
 
   if (!isFileProtocol && !isStaticCustomDomain) {
     try {
       const localRes = await fetch(endpointPath, options);
       const contentType = localRes.headers.get('content-type') || '';
       if (localRes.ok && contentType.includes('application/json')) {
+        if (!isAlreadyOnRemoteBase && endpointPath.startsWith('/api/moha/')) {
+          try {
+            const cloned = localRes.clone();
+            const peekData = await cloned.json();
+            if (peekData && peekData.source === 'local') {
+              const remoteRes = await fetch(`${ELIMIKA_REMOTE_API_BASE}${endpointPath}`, options);
+              if (remoteRes.ok) {
+                return remoteRes;
+              }
+            }
+          } catch {
+            // If remote fetch or JSON peek fails, return the working localRes below
+          }
+        }
         return localRes;
       }
     } catch {
