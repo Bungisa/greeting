@@ -57,9 +57,9 @@ function getGenAIClient(): GoogleGenAI | null {
 }
 
 const GEMINI_FALLBACK_MODELS = [
+  'gemini-3.1-flash-lite',
   'gemini-3.8-flash',
   'gemini-flash-latest',
-  'gemini-3.1-flash-lite',
 ] as const;
 const modelCooldownUntil = new Map<string, number>();
 
@@ -151,108 +151,120 @@ async function generateContentWithQuotaFallback(
     timeoutMs?: number;
   }
 ): Promise<string | null> {
-  const now = Date.now();
   const totalModels = GEMINI_FALLBACK_MODELS.length;
-  const primaryTimeoutMs = params.timeoutMs || 18000;
+  const primaryTimeoutMs = params.timeoutMs || 20000;
 
-  for (let idx = 0; idx < totalModels; idx++) {
-    const modelName = GEMINI_FALLBACK_MODELS[idx];
-    const cooldown = modelCooldownUntil.get(modelName) || 0;
-    if (now < cooldown && idx < totalModels - 1) {
-      continue;
-    }
-    try {
-      const baseConfig: Record<string, unknown> = { ...(params.config || {}) };
-      delete baseConfig.temperature;
-      if (!params.enableThinking && modelName.startsWith('gemini-3')) {
-        baseConfig.thinkingConfig = { thinkingLevel: ThinkingLevel.LOW };
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const now = Date.now();
+    for (let idx = 0; idx < totalModels; idx++) {
+      const modelName = GEMINI_FALLBACK_MODELS[idx];
+      const cooldown = modelCooldownUntil.get(modelName) || 0;
+      if (now < cooldown && !(attempt === 1 && idx === 0)) {
+        continue;
       }
-
-      const configWithTools =
-        params.useGoogleSearch && !baseConfig.responseMimeType
-          ? { ...baseConfig, tools: [{ googleSearch: {} }] }
-          : baseConfig;
-
-      let response;
       try {
-        response = await withPromiseTimeout(
-          ai.models.generateContent({
-            model: modelName,
-            contents: params.contents as never,
-            config: configWithTools as never,
-          }),
-          primaryTimeoutMs
-        );
-      } catch (innerErr) {
-        const innerMsg = innerErr instanceof Error ? innerErr.message : String(innerErr);
+        const baseConfig: Record<string, unknown> = { ...(params.config || {}) };
+        delete baseConfig.temperature;
+        if (modelName.startsWith('gemini-3')) {
+          baseConfig.thinkingConfig = {
+            thinkingLevel: params.enableThinking ? ThinkingLevel.MEDIUM : ThinkingLevel.LOW,
+          };
+        }
+
+        const configWithTools =
+          params.useGoogleSearch && !baseConfig.responseMimeType
+            ? { ...baseConfig, tools: [{ googleSearch: {} }] }
+            : baseConfig;
+
+        let response;
+        try {
+          response = await withPromiseTimeout(
+            ai.models.generateContent({
+              model: modelName,
+              contents: params.contents as never,
+              config: configWithTools as never,
+            }),
+            primaryTimeoutMs
+          );
+        } catch (innerErr) {
+          const innerMsg = innerErr instanceof Error ? innerErr.message : String(innerErr);
+          if (
+            innerMsg.includes('Timeout') ||
+            innerMsg.includes('429') ||
+            innerMsg.includes('RESOURCE_EXHAUSTED') ||
+            innerMsg.includes('quota') ||
+            innerMsg.includes('503') ||
+            innerMsg.includes('high demand') ||
+            innerMsg.includes('404') ||
+            innerMsg.includes('not found')
+          ) {
+            throw innerErr;
+          }
+          const cleanConfig: Record<string, unknown> = { ...(params.config || {}) };
+          delete cleanConfig.temperature;
+          delete cleanConfig.thinkingConfig;
+          delete cleanConfig.tools;
+          response = await withPromiseTimeout(
+            ai.models.generateContent({
+              model: modelName,
+              contents: params.contents as never,
+              config: cleanConfig as never,
+            }),
+            primaryTimeoutMs
+          );
+        }
+
+        let text = response.text?.trim();
+        if (text) {
+          const chunks = (
+            response.candidates?.[0] as {
+              groundingMetadata?: {
+                groundingChunks?: Array<{ web?: { uri?: string; title?: string } }>;
+              };
+            }
+          )?.groundingMetadata?.groundingChunks;
+
+          if (Array.isArray(chunks) && chunks.length > 0) {
+            const webSources = chunks
+              .map((c) => c.web)
+              .filter((w): w is { uri: string; title?: string } => Boolean(w && w.uri))
+              .slice(0, 3);
+            if (webSources.length > 0) {
+              const sourceLines = webSources
+                .map((w) => `• ${w.title || 'Google Curriculum Source'} (${w.uri})`)
+                .join('\n');
+              text += `\n\n**🌐 Google Search Grounding Sources:**\n${sourceLines}`;
+            }
+          }
+          return text;
+        }
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
         if (
-          innerMsg.includes('Timeout') ||
-          innerMsg.includes('429') ||
-          innerMsg.includes('RESOURCE_EXHAUSTED') ||
-          innerMsg.includes('quota') ||
-          innerMsg.includes('503') ||
-          innerMsg.includes('high demand') ||
-          innerMsg.includes('404') ||
-          innerMsg.includes('not found')
+          msg.includes('429') ||
+          msg.includes('RESOURCE_EXHAUSTED') ||
+          msg.includes('quota')
         ) {
-          throw innerErr;
+          const isDailyQuota =
+            msg.includes('PerDay') || msg.includes('free_tier_requests') || msg.includes('limit: 20');
+          modelCooldownUntil.set(
+            modelName,
+            Date.now() + (isDailyQuota ? 2 * 60 * 60 * 1000 : 8 * 1000)
+          );
+          continue;
         }
-        const cleanConfig: Record<string, unknown> = { ...(params.config || {}) };
-        delete cleanConfig.temperature;
-        delete cleanConfig.thinkingConfig;
-        delete cleanConfig.tools;
-        response = await withPromiseTimeout(
-          ai.models.generateContent({
-            model: modelName,
-            contents: params.contents as never,
-            config: cleanConfig as never,
-          }),
-          primaryTimeoutMs
-        );
-      }
-
-      let text = response.text?.trim();
-      if (text) {
-        const chunks = (
-          response.candidates?.[0] as {
-            groundingMetadata?: {
-              groundingChunks?: Array<{ web?: { uri?: string; title?: string } }>;
-            };
-          }
-        )?.groundingMetadata?.groundingChunks;
-
-        if (Array.isArray(chunks) && chunks.length > 0) {
-          const webSources = chunks
-            .map((c) => c.web)
-            .filter((w): w is { uri: string; title?: string } => Boolean(w && w.uri))
-            .slice(0, 3);
-          if (webSources.length > 0) {
-            const sourceLines = webSources
-              .map((w) => `• ${w.title || 'Google Curriculum Source'} (${w.uri})`)
-              .join('\n');
-            text += `\n\n**🌐 Google Search Grounding Sources:**\n${sourceLines}`;
-          }
+        if (msg.includes('503') || msg.includes('high demand')) {
+          modelCooldownUntil.set(modelName, Date.now() + 5 * 1000);
+          continue;
         }
-        return text;
+        if (msg.includes('404') || msg.includes('not found')) {
+          modelCooldownUntil.set(modelName, Date.now() + 30 * 60 * 1000);
+          continue;
+        }
       }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      if (
-        msg.includes('429') ||
-        msg.includes('RESOURCE_EXHAUSTED') ||
-        msg.includes('quota')
-      ) {
-        modelCooldownUntil.set(modelName, Date.now() + 15 * 60 * 1000);
-        continue;
-      }
-      if (msg.includes('503') || msg.includes('high demand')) {
-        modelCooldownUntil.set(modelName, Date.now() + 15 * 1000);
-        continue;
-      }
-      if (msg.includes('404') || msg.includes('not found')) {
-        modelCooldownUntil.set(modelName, Date.now() + 30 * 60 * 1000);
-        continue;
-      }
+    }
+    if (attempt === 0) {
+      await new Promise((r) => setTimeout(r, 1000));
     }
   }
   return null;
@@ -386,18 +398,22 @@ function stripScannerWatermarks(rawText: string): string {
     .trim();
 }
 
+const HEAVY_SCANNED_TEXTBOOK_DRIVE_IDS = new Set<string>(
+  Object.values(LEGACY_AISTUDIO_PDF_DRIVE_MAP)
+);
+
 async function fetchGoogleDriveInlinePdf(
   rawUrl?: string | null
 ): Promise<{ mimeType: string; base64Data: string } | null> {
   const driveId = extractDriveFileIdFromUrl(rawUrl);
-  if (!driveId) return null;
+  if (!driveId || HEAVY_SCANNED_TEXTBOOK_DRIVE_IDS.has(driveId)) return null;
 
   const cached = drivePdfCache.get(driveId);
   if (cached && Date.now() - cached.fetchedAt < 60 * 60 * 1000) {
     return { mimeType: cached.mimeType, base64Data: cached.base64Data };
   }
 
-  const MAX_PDF_BYTES = 30 * 1024 * 1024;
+  const MAX_PDF_BYTES = 8 * 1024 * 1024;
   const candidateUrls = [
     `https://drive.usercontent.google.com/download?id=${encodeURIComponent(driveId)}&export=download&confirm=t`,
     `https://drive.google.com/uc?export=download&id=${encodeURIComponent(driveId)}&confirm=t`,
@@ -1549,18 +1565,9 @@ app.post('/api/moha/extract-book-chapters', async (req, res) => {
     };
 
     const baseTopics = getSyllabusTopicsForClassSubject(cls, subject);
-    let rawText = customContent || '';
-    if (paperUrl) {
-      const pdfTocText = await extractGoogleDrivePdfText(
-        paperUrl,
-        'table of contents chapter sura topic unit'
-      );
-      if (pdfTocText) {
-        rawText = `${rawText}\n${pdfTocText}`;
-      }
-    }
+    const rawText = customContent || '';
 
-    const extracted = extractTextbookChaptersFromText(rawText);
+    const extracted = rawText ? extractTextbookChaptersFromText(rawText) : [];
     const merged =
       extracted.length > 0
         ? [
@@ -1617,28 +1624,6 @@ app.post('/api/moha/chat', async (req, res) => {
         source: 'memory',
       });
     }
-  }
-
-  // Fast conversational routing for greetings, help, and pleasantries (never dump syllabuses or hang)
-  const strippedPunct = lower.replace(/[^a-z0-9\s]/g, '').trim();
-  const isConversationalGreeting =
-    /^(hi|hello|hey|hii|helo|greetings|good\s+(morning|afternoon|evening|day)|hi\s+moha|hello\s+moha|hey\s+moha|how\s+are\s+you|how\s+are\s+you\s+doing|how\s+is\s+it\s+going|who\s+are\s+you|what\s+is\s+your\s+name|what\s+can\s+you\s+do|help|how\s+to\s+use|thank\s+you|thanks|thx|ok|okay|got\s+it|nice|great|awesome|cool)$/i.test(
-      strippedPunct
-    );
-
-  if (isConversationalGreeting && !image) {
-    const instantReply = generateLocalSmartTutorReply(
-      userPrompt,
-      cls,
-      subject,
-      learnedMemory,
-      siteResources,
-      history
-    );
-    return res.json({
-      reply: instantReply,
-      source: 'local-conversational',
-    });
   }
 
   // Parse any specific Class, Subject, or Topic mentioned in the user's prompt
@@ -1850,7 +1835,7 @@ The user has attached an image or document containing examination or textbook qu
               systemInstruction,
             },
             useGoogleSearch: false,
-            enableThinking: false,
+            enableThinking: true,
             timeoutMs: 35000,
           });
           if (multimodalRes) return multimodalRes;
@@ -1862,8 +1847,8 @@ The user has attached an image or document containing examination or textbook qu
             systemInstruction,
           },
           useGoogleSearch: needsWebGrounding,
-          enableThinking: false,
-          timeoutMs: 20000,
+          enableThinking: true,
+          timeoutMs: 22000,
         });
       };
 

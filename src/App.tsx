@@ -156,32 +156,38 @@ async function fetchElimikaApi(endpointPath: string, options?: RequestInit): Pro
   const isAlreadyOnRemoteBase = hostname.includes('run.app');
 
   if (!isFileProtocol && !isStaticCustomDomain) {
-    try {
-      const localRes = await fetch(endpointPath, options);
-      const contentType = localRes.headers.get('content-type') || '';
-      if (localRes.ok && contentType.includes('application/json')) {
-        if (!isAlreadyOnRemoteBase && endpointPath.startsWith('/api/moha/')) {
-          try {
-            const cloned = localRes.clone();
-            const peekData = await cloned.json();
-            if (peekData && peekData.source === 'local') {
-              const remoteRes = await fetch(`${ELIMIKA_REMOTE_API_BASE}${endpointPath}`, options);
-              if (remoteRes.ok) {
-                const remoteCloned = remoteRes.clone();
-                const remoteData = await remoteCloned.json();
-                if (remoteData && remoteData.source === 'gemini') {
-                  return remoteRes;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const localRes = await fetch(endpointPath, options);
+        const contentType = localRes.headers.get('content-type') || '';
+        if (localRes.ok && contentType.includes('application/json')) {
+          if (!isAlreadyOnRemoteBase && endpointPath.startsWith('/api/moha/')) {
+            try {
+              const cloned = localRes.clone();
+              const peekData = await cloned.json();
+              if (peekData && peekData.source === 'local') {
+                const remoteRes = await fetch(`${ELIMIKA_REMOTE_API_BASE}${endpointPath}`, options);
+                const remoteType = remoteRes.headers.get('content-type') || '';
+                if (remoteRes.ok && remoteType.includes('application/json')) {
+                  const remoteCloned = remoteRes.clone();
+                  const remoteData = await remoteCloned.json();
+                  if (remoteData && remoteData.source === 'gemini') {
+                    return remoteRes;
+                  }
                 }
               }
+            } catch {
+              // If remote fetch or JSON peek fails, return the working localRes below
             }
-          } catch {
-            // If remote fetch or JSON peek fails, return the working localRes below
           }
+          return localRes;
         }
-        return localRes;
+      } catch {
+        // retry once after brief delay before falling back
       }
-    } catch {
-      // fall through to remote Cloud Run backend
+      if (attempt === 0) {
+        await new Promise((r) => setTimeout(r, 700));
+      }
     }
   }
 
@@ -2933,40 +2939,9 @@ export default function App() {
       },
     ]);
 
-    // Check if conversational greeting or custom learned memory can be answered immediately without delay
-    const strippedLower = displayPrompt.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
-    const isQuickConversational =
-      !attachedImg &&
-      /^(hi|hello|hey|hii|helo|greetings|good\s+(morning|afternoon|evening|day)|hi\s+moha|hello\s+moha|hey\s+moha|how\s+are\s+you|how\s+are\s+you\s+doing|how\s+is\s+it\s+going|who\s+are\s+you|what\s+is\s+your\s+name|what\s+can\s+you\s+do|help|how\s+to\s+use|thank\s+you|thanks|thx|ok|okay|got\s+it|nice|great|awesome|cool)$/i.test(
-        strippedLower
-      );
-
     const recentHistory = mohaMessages
       .slice(-6)
       .map((m) => ({ id: m.id, role: m.role, text: m.text }));
-
-    if (isQuickConversational) {
-      const quickReply = generateLocalSmartTutorReply(
-        displayPrompt,
-        targetCls,
-        targetSub,
-        learnedMemory,
-        promptSiteResources,
-        recentHistory
-      );
-      setMohaMessages((prev) =>
-        prev.map((m) =>
-          m.id === loadingId
-            ? {
-                id: `ai-${Date.now()}`,
-                role: 'ai',
-                text: quickReply,
-              }
-            : m
-        )
-      );
-      return;
-    }
 
     try {
       const controller = new AbortController();
@@ -3974,22 +3949,22 @@ export default function App() {
     if (extractedBookChaptersMap[mapKey]?.length) return;
 
     const focused = activeSiteResources.focusedResource;
-    const bookWithPdf =
-      (focused && focused.isBook && focused.paperUrl ? focused : null) ||
-      activeSiteResources.books.find((b) => b.paperUrl) ||
+    const bookWithCustomContent =
+      (focused && focused.isBook && focused.customContent ? focused : null) ||
+      activeSiteResources.books.find((b) => b.customContent) ||
       null;
 
-    if (!bookWithPdf?.paperUrl) return;
+    if (!bookWithCustomContent?.customContent) return;
 
     let cancelled = false;
     fetch('/api/moha/extract-book-chapters', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        paperUrl: bookWithPdf.paperUrl,
+        paperUrl: bookWithCustomContent.paperUrl || '',
         cls: targetCls,
         subject: targetSub,
-        customContent: bookWithPdf.customContent || '',
+        customContent: bookWithCustomContent.customContent || '',
       }),
     })
       .then((r) => (r.ok ? r.json() : null))

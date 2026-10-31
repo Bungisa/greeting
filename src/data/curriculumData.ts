@@ -3149,7 +3149,7 @@ export function generateLocalSmartTutorReply(
   }
 
   if (
-    /^(how are you|how are you doing|how is it going|how do you do|are you there|are you online|habari yako|unaendeleaje|uko poa|kwa hali)$/i.test(
+    /^(how are you|how are you doing|how are you holding up|how is it going|how is your day|how do you do|whats up|what is up|are you there|are you online|habari yako|unaendeleaje|uko poa|kwa hali)\b/i.test(
       strippedPunct
     )
   ) {
