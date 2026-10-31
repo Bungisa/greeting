@@ -69,11 +69,25 @@ html.dark,
 }
 
 @layer base {
+  html,
   body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    overscroll-behavior-x: none;
+    margin: 0;
+    padding: 0;
+    -webkit-text-size-adjust: 100%;
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     background-color: var(--bg-canvas);
     color: var(--text-primary);
     transition: background-color 0.2s ease, color 0.2s ease;
+  }
+  #root {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    position: relative;
   }
   h1, h2, h3, .font-display {
     font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
@@ -81,6 +95,25 @@ html.dark,
   code, pre, .font-mono {
     font-family: 'JetBrains Mono', monospace;
   }
+}
+
+.katex-display {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 2px 0;
+}
+
+.katex {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+mjx-container {
+  max-width: 100% !important;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .no-scrollbar::-webkit-scrollbar {
@@ -107,7 +140,10 @@ html.dark .bg-white\/80 {
   background-color: var(--bg-surface-glass) !important;
 }
 
-html.dark .bg-slate-100 {
+html.dark .bg-slate-100,
+html.dark .bg-slate-100\/80,
+html.dark .bg-slate-100\/90,
+html.dark .bg-slate-50\/90 {
   background-color: var(--bg-elevated) !important;
 }
 
@@ -209,6 +245,7 @@ html.dark .border-violet-300 {
 }
 
 html.dark .bg-amber-50,
+html.dark .bg-amber-50\/70,
 html.dark .bg-amber-50\/80,
 html.dark .bg-amber-50\/90,
 html.dark .bg-amber-100 {
@@ -321,16 +358,10 @@ html.dark textarea::placeholder {
   font-size: 10px;
 }
 
-/* Interactive SVG Diagrams in Dark Mode */
-html.dark svg rect[fill="#f8fafc"],
-html.dark svg rect[fill="#ffffff"],
-html.dark svg rect[fill="#f1f5f9"] {
-  fill: #1e293b;
+/* Interactive SVG Diagrams in Dark Mode - keep textbook diagrams crisp & legible */
+html.dark .moha-svg-diagram {
+  background-color: var(--bg-elevated) !important;
+  border-color: var(--border-strong) !important;
+  color: var(--text-primary) !important;
 }
 
-html.dark svg text[fill="#0f172a"],
-html.dark svg text[fill="#1e293b"],
-html.dark svg text[fill="#334155"],
-html.dark svg text[fill="#475569"] {
-  fill: #f8fafc;
-}

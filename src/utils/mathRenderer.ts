@@ -236,8 +236,28 @@ export function renderLatexSnippet(latex: string, displayMode: boolean): string 
 }
 
 /**
+ * Formats multi-part question markers like a), b), c), (a), (b), (c), (i), (ii), (iii)
+ * and solution step markers (Step 1:, Step 2:) so each part appears on its own line.
+ * Called after math blocks have been replaced with placeholders so math expressions
+ * like (a+b) or f(a) are never affected.
+ */
+function formatMultiPartLineBreaks(textWithMathPlaceholders: string): string {
+  return textWithMathPlaceholders
+    // Break before Step 1:, Step 2:, etc. when not already at start of line
+    .replace(/([^\n])\s+(Step\s+\d+\s*:)/gi, '$1\n**$2**')
+    // Break before parenthesized letter parts: (a), (b), (c), (d), (e)
+    .replace(/([^\n])\s+(\([a-e]\)\s+)/gi, '$1\n**$2**')
+    // Break before parenthesized roman numerals: (i), (ii), (iii), (iv), (v)
+    .replace(/([^\n])\s+(\((?:i|ii|iii|iv|v)\)\s+)/gi, '$1\n**$2**')
+    // Break before letter+closing-paren parts: a), b), c), d), e) when preceded by space/punctuation
+    .replace(/([^\nA-Za-z0-9])\s+([a-e]\)\s+)/g, '$1\n**$2**')
+    // Bold part markers that are already at the start of a line
+    .replace(/(^|\n)\s*(\([a-e]\)|[a-e]\)|\((?:i|ii|iii|iv|v)\))\s+/gi, '$1**$2** ');
+}
+
+/**
  * Converts a plain or markdown string containing mathematical expressions into safe HTML
- * with synchronously rendered KaTeX/MathJax formulas.
+ * with synchronously rendered KaTeX/MathJax formulas and multi-line sub-part formatting.
  */
 export function renderMathTextToHtml(raw: string): string {
   if (!raw) return '';
@@ -255,10 +275,11 @@ export function renderMathTextToHtml(raw: string): string {
     }
   );
 
-  const escaped = escapeHtmlBasic(withPlaceholders).replace(
-    /\*\*(.*?)\*\*/g,
-    '<strong>$1</strong>'
-  );
+  const structuredText = formatMultiPartLineBreaks(withPlaceholders);
+
+  const escaped = escapeHtmlBasic(structuredText)
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n+/g, '<br />');
 
   return escaped.replace(/@@RENDERED_MATH_(\d+)@@/g, (_m, idxStr) => {
     const idx = Number(idxStr);

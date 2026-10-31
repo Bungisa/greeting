@@ -1,5 +1,6 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
+import fs from 'fs';
 import path from 'path';
 import {defineConfig} from 'vite';
 import {VitePWA} from 'vite-plugin-pwa';
@@ -9,6 +10,15 @@ export default defineConfig(() => {
     plugins: [
       react(),
       tailwindcss(),
+      {
+        name: 'exclude-duplicate-aistudio-assets-from-dist',
+        closeBundle() {
+          const dupDir = path.resolve(__dirname, 'dist', 'assets', 'aistudio');
+          if (fs.existsSync(dupDir)) {
+            fs.rmSync(dupDir, { recursive: true, force: true });
+          }
+        },
+      },
       VitePWA({
         registerType: 'autoUpdate',
         includeAssets: ['icon.svg', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png', 'pwa-maskable-512x512.png'],
@@ -49,7 +59,7 @@ export default defineConfig(() => {
           skipWaiting: true,
           clientsClaim: true,
           cleanupOutdatedCaches: true,
-          maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+          maximumFileSizeToCacheInBytes: 12 * 1024 * 1024,
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
           navigateFallbackDenylist: [/^\/api\//],
           runtimeCaching: [

@@ -1,4 +1,12 @@
 import { GameDifficulty, GameQuestion } from './gameDataAndStorage';
+import {
+  computeQuestionSignature,
+  doesQuestionTopicMatchSelectedTopic,
+  getSeenSignaturesForClassSubject,
+  getStoredBankQuestionsForClassSubject,
+  getVariantOffsetForClassSubject,
+  resetSeenQuestionsForClassSubject,
+} from '../utils/questionBankManager';
 
 export interface LevelSpecificSeed {
   cls: string;
@@ -22,8 +30,32 @@ export interface LevelSpecificSeed {
  */
 export const TIE_LEVEL_TEXTBOOK_BANK: LevelSpecificSeed[] = [
   // ============================================================================
-  // FORM 1 — BASIC MATHEMATICS (TIE Form 1 Student's Book)
+  // FORM 1 — BASIC MATHEMATICS (TIE Form 1 Student's Book — All 12 Chapters)
   // ============================================================================
+  {
+    cls: 'Form 1',
+    subject: 'Basic Mathematics',
+    chapter: 'Chapter 2: Numbers I (HCF, LCM & BODMAS)',
+    question:
+      'Three school bells ring at intervals of $15\\text{ minutes}$, $20\\text{ minutes}$, and $30\\text{ minutes}$ respectively. If they all ring together at $8:00\\text{ a.m.}$, at what time will they next ring together?',
+    options: ['$9:00\\text{ a.m.}$', '$8:45\\text{ a.m.}$', '$9:30\\text{ a.m.}$', '$10:00\\text{ a.m.}$'],
+    correctIndex: 0,
+    explanation:
+      'Step 1: Find the Lowest Common Multiple (LCM) of $15, 20,$ and $30$: $15 = 3 \\times 5$, $20 = 2^2 \\times 5$, $30 = 2 \\times 3 \\times 5$. Step 2: $\\text{LCM} = 2^2 \\times 3 \\times 5 = 60\\text{ minutes} = 1\\text{ hour}$. Step 3: $8:00\\text{ a.m.} + 1\\text{ hour} = 9:00\\text{ a.m.}$',
+    hint: 'Find the LCM of $15, 20,$ and $30$ in minutes, then convert to hours.',
+  },
+  {
+    cls: 'Form 1',
+    subject: 'Basic Mathematics',
+    chapter: 'Chapter 2: Numbers I (Prime Factorisation & Integers)',
+    question:
+      'Given that the Highest Common Factor (HCF) of two numbers is $12$ and their Lowest Common Multiple (LCM) is $180$, if one of the numbers is $36$, find the other number:',
+    options: ['$60$', '$48$', '$72$', '$45$'],
+    correctIndex: 0,
+    explanation:
+      'Step 1: For any two positive integers $A$ and $B$, $A \\times B = \\text{HCF} \\times \\text{LCM}$. Step 2: $36 \\times B = 12 \\times 180 = 2,160 \\Rightarrow B = \\frac{2,160}{36} = 60$.',
+    hint: 'Use the identity $\\text{First Number} \\times \\text{Second Number} = \\text{HCF} \\times \\text{LCM}$.',
+  },
   {
     cls: 'Form 1',
     subject: 'Basic Mathematics',
@@ -44,7 +76,53 @@ export const TIE_LEVEL_TEXTBOOK_BANK: LevelSpecificSeed[] = [
   {
     cls: 'Form 1',
     subject: 'Basic Mathematics',
-    chapter: 'Chapter 6: Algebra (Simultaneous Linear Equations)',
+    chapter: 'Chapter 4 & 9: Recurring Decimals & Rational Numbers',
+    question:
+      'Convert the recurring decimal $0.\\dot{2}\\dot{7}$ ($0.272727\\dots$) into a fraction $\\frac{a}{b}$ in its lowest terms:',
+    options: ['$\\frac{3}{11}$', '$\\frac{27}{100}$', '$\\frac{9}{37}$', '$\\frac{3}{10}$'],
+    correctIndex: 0,
+    explanation:
+      'Step 1: Let $x = 0.272727\\dots$. Since two digits repeat, multiply by $100$: $100x = 27.2727\\dots$. Step 2: Subtract: $100x - x = 27 \\Rightarrow 99x = 27 \\Rightarrow x = \\frac{27}{99} = \\frac{3}{11}$.',
+    hint: 'Let $x = 0.2727\\dots$, multiply by $100$, subtract $x$, and simplify $\\frac{27}{99}$.',
+  },
+  {
+    cls: 'Form 1',
+    subject: 'Basic Mathematics',
+    chapter: 'Chapter 5 & 6: Metric Units and Approximations',
+    question:
+      'Express the number $0.004876$ correct to **two significant figures** and state its value in standard notation:',
+    options: [
+      '$0.0049$ (or $4.9 \\times 10^{-3}$)',
+      '$0.0048$ (or $4.8 \\times 10^{-3}$)',
+      '$0.0050$ (or $5.0 \\times 10^{-3}$)',
+      '$0.00488$ (or $4.88 \\times 10^{-3}$)',
+    ],
+    correctIndex: 0,
+    explanation:
+      'Step 1: Leading zeros are not significant. The first two significant digits are $4$ and $8$. Step 2: The third significant digit is $7 \\ge 5$, so round $8$ up to $9$, giving $0.0049 = 4.9 \\times 10^{-3}$.',
+    hint: 'Start counting significant figures from the first non-zero digit ($4$).',
+  },
+  {
+    cls: 'Form 1',
+    subject: 'Basic Mathematics',
+    chapter: 'Chapter 7: Introduction to Geometry (Angles & Polygons)',
+    question:
+      'Two supplementary angles are in the ratio $4 : 5$. Find the measure of the smaller angle and the exterior angle of a regular polygon with $9$ sides:',
+    options: [
+      'Smaller angle $= 80^\\circ$ ; Exterior angle $= 40^\\circ$',
+      'Smaller angle $= 40^\\circ$ ; Exterior angle $= 40^\\circ$',
+      'Smaller angle $= 80^\\circ$ ; Exterior angle $= 45^\\circ$',
+      'Smaller angle $= 100^\\circ$ ; Exterior angle $= 40^\\circ$',
+    ],
+    correctIndex: 0,
+    explanation:
+      'Step 1: Supplementary angles add up to $180^\\circ$. Total parts $= 4 + 5 = 9$. Smaller angle $= \\frac{4}{9} \\times 180^\\circ = 80^\\circ$. Step 2: Exterior angle of a regular $9$-sided polygon $= \\frac{360^\\circ}{9} = 40^\\circ$.',
+    hint: 'Supplementary angles sum to $180^\\circ$, and exterior angles of any polygon sum to $360^\\circ$.',
+  },
+  {
+    cls: 'Form 1',
+    subject: 'Basic Mathematics',
+    chapter: 'Chapter 8: Algebra (Simultaneous Linear Equations)',
     question:
       'Solve the simultaneous equations $3x + 2y = 19$ and $2x - y = 8$ to find the value of $(x + y)$:',
     options: ['$7$', '$5$', '$2$', '$9$'],
@@ -61,7 +139,7 @@ export const TIE_LEVEL_TEXTBOOK_BANK: LevelSpecificSeed[] = [
   {
     cls: 'Form 1',
     subject: 'Basic Mathematics',
-    chapter: 'Chapter 8: Ratios, Profit, Loss and Simple Interest',
+    chapter: 'Chapter 10: Ratios, Profit, Loss and Simple Interest',
     question:
       'A shopkeeper marks a radio at $25\\%$ above its cost price of $\\text{TZS } 80,000$, then allows a cash discount of $10\\%$ on the marked price. Calculate the actual percentage profit made:',
     options: ['$12.5\\%$', '$15.0\\%$', '$10.0\\%$', '$20.0\\%$'],
@@ -78,7 +156,7 @@ export const TIE_LEVEL_TEXTBOOK_BANK: LevelSpecificSeed[] = [
   {
     cls: 'Form 1',
     subject: 'Basic Mathematics',
-    chapter: 'Chapter 10: Coordinate Geometry',
+    chapter: 'Chapter 11: Coordinate Geometry',
     question:
       'Find the equation of the straight line passing through the point $(2, -3)$ which is perpendicular to the line $2x + 4y = 9$:',
     options: [
@@ -95,7 +173,7 @@ export const TIE_LEVEL_TEXTBOOK_BANK: LevelSpecificSeed[] = [
   {
     cls: 'Form 1',
     subject: 'Basic Mathematics',
-    chapter: 'Chapter 11: Perimeters and Areas',
+    chapter: 'Chapter 12: Perimeters and Areas',
     question:
       'A circular track has an inner radius of $14\\text{ m}$ and an outer radius of $21\\text{ m}$. Using $\\pi = \\frac{22}{7}$, calculate the area of the running track between the two circles:',
     options: ['$770\\text{ m}^2$', '$1,386\\text{ m}^2$', '$616\\text{ m}^2$', '$385\\text{ m}^2$'],
@@ -103,6 +181,271 @@ export const TIE_LEVEL_TEXTBOOK_BANK: LevelSpecificSeed[] = [
     explanation:
       'Step 1: Area of annulus $A = \\pi(R^2 - r^2) = \\frac{22}{7}(21^2 - 14^2)$. Step 2: Factor as difference of two squares: $\\frac{22}{7}(21 - 14)(21 + 14) = \\frac{22}{7} \\times 7 \\times 35 = 22 \\times 35 = 770\\text{ m}^2$.',
     hint: 'Use $A = \\pi(R^2 - r^2) = \\pi(R - r)(R + r)$ with $R = 21$ and $r = 14$.',
+  },
+
+  // ============================================================================
+  // FORM 1 — ADDITIONAL MATHEMATICS (TIE Form 1 Additional Mathematics Book)
+  // ============================================================================
+  {
+    cls: 'Form 1',
+    subject: 'Additional Mathematics',
+    chapter: 'Chapter 1: Numbers (Base Numerals & Number Systems)',
+    question:
+      'Convert the base-five numeral $342_{\\text{five}}$ to base ten, and then express the result in binary (base two):',
+    options: [
+      '$97_{\\text{ten}} = 1100001_{\\text{two}}$',
+      '$97_{\\text{ten}} = 1010001_{\\text{two}}$',
+      '$87_{\\text{ten}} = 1010111_{\\text{two}}$',
+      '$92_{\\text{ten}} = 1011100_{\\text{two}}$',
+    ],
+    correctIndex: 0,
+    explanation:
+      'Step 1: Expand $342_{\\text{five}} = 3(5^2) + 4(5^1) + 2(5^0) = 75 + 20 + 2 = 97_{\\text{ten}}$. Step 2: Express $97$ as powers of $2$: $97 = 64 + 32 + 1 = 1\\cdot 2^6 + 1\\cdot 2^5 + 0\\cdot 2^4 + 0\\cdot 2^3 + 0\\cdot 2^2 + 0\\cdot 2^1 + 1\\cdot 2^0 = 1100001_{\\text{two}}$.',
+    hint: 'First compute $3 \\times 25 + 4 \\times 5 + 2$, then decompose into powers of $2$ ($64 + 32 + 1$).',
+  },
+  {
+    cls: 'Form 1',
+    subject: 'Additional Mathematics',
+    chapter: 'Chapter 1: Numbers (Modular Arithmetic & Divisibility)',
+    question:
+      'Find the smallest positive integer $x$ satisfying the linear congruence $4x + 5 \\equiv 2 \\pmod{7}$, and evaluate $(23 \\times 19) \\pmod{6}$:',
+    options: [
+      '$x = 1$ ; $(23 \\times 19) \\equiv 5 \\pmod{6}$',
+      '$x = 3$ ; $(23 \\times 19) \\equiv 1 \\pmod{6}$',
+      '$x = 1$ ; $(23 \\times 19) \\equiv 1 \\pmod{6}$',
+      '$x = 5$ ; $(23 \\times 19) \\equiv 5 \\pmod{6}$',
+    ],
+    correctIndex: 0,
+    explanation:
+      'Step 1: $4x + 5 \\equiv 2 \\pmod{7} \\Rightarrow 4x \\equiv -3 \\equiv 4 \\pmod{7} \\Rightarrow x = 1$. Step 2: Modulo $6$: $23 \\equiv 5 \\pmod{6}$ and $19 \\equiv 1 \\pmod{6}$, so $23 \\times 19 \\equiv 5 \\times 1 = 5 \\pmod{6}$.',
+    hint: 'Subtract $5$ from both sides modulo $7$ so $4x \\equiv -3 \\equiv 4 \\pmod{7}$.',
+  },
+  {
+    cls: 'Form 1',
+    subject: 'Additional Mathematics',
+    chapter: 'Chapter 2: Symmetry (Lines of Symmetry & Rotational Symmetry)',
+    question:
+      'A regular hexagon and a rectangle (non-square) are drawn on a plane. State the number of lines of symmetry $L$ and the angle of rotational symmetry $\\theta$ of the regular hexagon:',
+    options: [
+      '$L = 6$ lines of symmetry ; $\\theta = 60^\\circ$ (Order $6$)',
+      '$L = 6$ lines of symmetry ; $\\theta = 120^\\circ$ (Order $3$)',
+      '$L = 3$ lines of symmetry ; $\\theta = 60^\\circ$ (Order $6$)',
+      '$L = 12$ lines of symmetry ; $\\theta = 30^\\circ$ (Order $12$)',
+    ],
+    correctIndex: 0,
+    explanation:
+      'Step 1: A regular $n$-gon has $n$ lines of symmetry and rotational symmetry of order $n$. For a regular hexagon ($n = 6$), $L = 6$. Step 2: Angle of rotation $\\theta = \\frac{360^\\circ}{6} = 60^\\circ$.',
+    hint: 'For any regular polygon with $n$ sides, the order of rotational symmetry is $n$ and the smallest angle of rotation is $360^\\circ / n$.',
+  },
+  {
+    cls: 'Form 1',
+    subject: 'Additional Mathematics',
+    chapter: 'Chapter 3: Algebra (Transposition of Formulae & Inequalities)',
+    question:
+      'Make $u$ the subject of the lens/mirror formula $\\frac{1}{f} = \\frac{1}{u} + \\frac{1}{v}$, and find the value of $u$ when $f = 12\\text{ cm}$ and $v = 36\\text{ cm}$:',
+    options: [
+      '$u = \\frac{fv}{v - f} = 18\\text{ cm}$',
+      '$u = \\frac{fv}{f + v} = 9\\text{ cm}$',
+      '$u = \\frac{v - f}{fv} = 18\\text{ cm}$',
+      '$u = \\frac{fv}{f - v} = -18\\text{ cm}$',
+    ],
+    correctIndex: 0,
+    explanation:
+      'Step 1: $\\frac{1}{u} = \\frac{1}{f} - \\frac{1}{v} = \\frac{v - f}{fv}$. Taking reciprocals gives $u = \\frac{fv}{v - f}$. Step 2: Substitute $f = 12, v = 36$: $u = \\frac{12 \\times 36}{36 - 12} = \\frac{432}{24} = 18\\text{ cm}$.',
+    hint: 'Isolate $\\frac{1}{u} = \\frac{1}{f} - \\frac{1}{v}$, combine over common denominator $fv$, then invert.',
+  },
+  {
+    cls: 'Form 1',
+    subject: 'Additional Mathematics',
+    chapter: 'Chapter 4: Geometrical Constructions (Inscribed & Circumscribed Polygons)',
+    question:
+      'In a geometrical construction of an angle of $75^\\circ$ using only a ruler and a pair of compasses, which combination of standard constructed angles is bisected?',
+    options: [
+      'Construct $60^\\circ$ and $90^\\circ$, then bisect the $30^\\circ$ angle between them ($60^\\circ + 15^\\circ = 75^\\circ$)',
+      'Construct $45^\\circ$ and $60^\\circ$, then bisect the angle between them',
+      'Bisect an angle of $120^\\circ$ twice',
+      'Construct $90^\\circ$ and $120^\\circ$, then bisect the angle between them',
+    ],
+    correctIndex: 0,
+    explanation:
+      'Step 1: Construct a $60^\\circ$ angle and a perpendicular $90^\\circ$ ray from the same vertex. Step 2: The angle between $60^\\circ$ and $90^\\circ$ is $30^\\circ$. Bisecting this $30^\\circ$ interval adds $15^\\circ$ to $60^\\circ$, yielding $60^\\circ + 15^\\circ = 75^\\circ$.',
+    hint: 'Notice that $75^\\circ = 60^\\circ + \\frac{1}{2}(90^\\circ - 60^\\circ)$.',
+  },
+  {
+    cls: 'Form 1',
+    subject: 'Additional Mathematics',
+    chapter: 'Chapter 5: Coordinate Geometry (Internal & External Division of a Line Segment)',
+    question:
+      'Find the coordinates of point $P(x, y)$ which divides the line segment joining $A(-2, 5)$ and $B(8, -5)$ internally in the ratio $2 : 3$:',
+    options: ['$(2, 1)$', '$(4, -1)$', '$(3, 0)$', '$(1, 2)$'],
+    correctIndex: 0,
+    explanation:
+      'Step 1: Using the internal section formula $P(x, y) = \\left(\\frac{m x_2 + n x_1}{m + n}, \\frac{m y_2 + n y_1}{m + n}\\right)$ with $m = 2, n = 3$: Step 2: $x = \\frac{2(8) + 3(-2)}{2 + 3} = \\frac{16 - 6}{5} = 2$, and $y = \\frac{2(-5) + 3(5)}{5} = \\frac{-10 + 15}{5} = 1$. Thus $P = (2, 1)$.',
+    hint: 'Apply $x = \\frac{mx_2 + nx_1}{m+n}$ and $y = \\frac{my_2 + ny_1}{m+n}$ with $m=2, n=3$.',
+  },
+  {
+    cls: 'Form 1',
+    subject: 'Additional Mathematics',
+    chapter: 'Chapter 5: Coordinate Geometry (Collinear Points & Perpendicular Bisector)',
+    question:
+      'If the points $A(1, 2)$, $B(3, 6)$, and $C(k, 12)$ are collinear, find the value of $k$:',
+    options: ['$k = 6$', '$k = 5$', '$k = 7$', '$k = 4$'],
+    correctIndex: 0,
+    explanation:
+      'Step 1: Since $A, B,$ and $C$ are collinear, gradient $m_{AB} = m_{BC}$. Step 2: $m_{AB} = \\frac{6 - 2}{3 - 1} = \\frac{4}{2} = 2$. Step 3: $\\frac{12 - 6}{k - 3} = 2 \\Rightarrow \\frac{6}{k - 3} = 2 \\Rightarrow k - 3 = 3 \\Rightarrow k = 6$.',
+    hint: 'Equate the slope between $A(1,2)$ and $B(3,6)$ to the slope between $B(3,6)$ and $C(k,12)$.',
+  },
+
+  // ============================================================================
+  // FORM 2 — ADDITIONAL MATHEMATICS (TIE Form 2 Additional Mathematics Book)
+  // ============================================================================
+  {
+    cls: 'Form 2',
+    subject: 'Additional Mathematics',
+    chapter: 'Chapter 1: Algebra (Simultaneous Linear & Quadratic Systems)',
+    question:
+      'Find the positive coordinates $(x, y)$ where the straight line $y = x + 1$ intersects the circle $x^2 + y^2 = 25$:',
+    options: ['$(3, 4)$', '$(4, 3)$', '$(3, 5)$', '$(2, 3)$'],
+    correctIndex: 0,
+    explanation:
+      'Step 1: Substitute $y = x + 1$ into $x^2 + y^2 = 25$: $x^2 + (x + 1)^2 = 25 \\Rightarrow 2x^2 + 2x - 24 = 0 \\Rightarrow x^2 + x - 12 = 0$. Step 2: Factorise $(x + 4)(x - 3) = 0$. For $x > 0$, $x = 3$ and $y = 3 + 1 = 4$.',
+    hint: 'Substitute $y = x + 1$ into $x^2 + y^2 = 25$ and solve the resulting quadratic equation.',
+  },
+  {
+    cls: 'Form 2',
+    subject: 'Additional Mathematics',
+    chapter: 'Chapter 3: Logic (Propositions, Converse, Contrapositive & Truth Tables)',
+    question:
+      'Given the conditional statement $p \\rightarrow q$: "If a quadrilateral is a rhombus, then its diagonals are perpendicular", which expression is logically equivalent (having the exact same truth table) to $p \\rightarrow q$?',
+    options: [
+      'The contrapositive $(\\sim q \\rightarrow \\sim p)$ and $(\\sim p \\vee q)$',
+      'The converse $(q \\rightarrow p)$',
+      'The inverse $(\\sim p \\rightarrow \\sim q)$',
+      'The negation $\\sim(p \\rightarrow q) \\equiv (p \\wedge \\sim q)$',
+    ],
+    correctIndex: 0,
+    explanation:
+      'Step 1: By the laws of mathematical logic, an implication $p \\rightarrow q$ is logically equivalent to its contrapositive $\\sim q \\rightarrow \\sim p$ and to the disjunction $\\sim p \\vee q$.',
+    hint: 'Recall that an implication and its contrapositive always have identical truth tables.',
+  },
+  {
+    cls: 'Form 2',
+    subject: 'Additional Mathematics',
+    chapter: 'Chapter 4: Locus (Cartesian Equation of a Locus)',
+    question:
+      'Find the Cartesian equation of the locus of a moving point $P(x, y)$ such that its distance from $A(2, 0)$ is twice its distance from $B(-1, 0)$:',
+    options: [
+      '$x^2 + y^2 + 4x = 0$',
+      '$x^2 + y^2 - 4x = 0$',
+      '$3x^2 + 3y^2 + 4x = 0$',
+      '$x^2 + y^2 + 2x - 3 = 0$',
+    ],
+    correctIndex: 0,
+    explanation:
+      'Step 1: Given $PA = 2PB \\Rightarrow PA^2 = 4PB^2$. Step 2: $(x - 2)^2 + y^2 = 4[(x + 1)^2 + y^2] \\Rightarrow x^2 - 4x + 4 + y^2 = 4x^2 + 8x + 4 + 4y^2$. Step 3: Collect terms: $3x^2 + 3y^2 + 12x = 0 \\Rightarrow x^2 + y^2 + 4x = 0$.',
+    hint: 'Square both sides of $PA = 2PB$ so $(x - 2)^2 + y^2 = 4[(x + 1)^2 + y^2]$.',
+  },
+
+  // ============================================================================
+  // FORM 3 — ADDITIONAL MATHEMATICS (TIE Form 3 Additional Mathematics Book)
+  // ============================================================================
+  {
+    cls: 'Form 3',
+    subject: 'Additional Mathematics',
+    chapter: 'Chapter 2: Equation and Remainder Theorem (Roots α, β & Polynomials)',
+    question:
+      'If $\\alpha$ and $\\beta$ are the roots of the quadratic equation $2x^2 - 6x + 5 = 0$, find the exact value of $\\alpha^2 + \\beta^2$:',
+    options: ['$4$', '$9$', '$\\frac{13}{2}$', '$14$'],
+    correctIndex: 0,
+    explanation:
+      'Step 1: Sum of roots $\\alpha + \\beta = -\\frac{b}{a} = \\frac{6}{2} = 3$, and product of roots $\\alpha\\beta = \\frac{c}{a} = \\frac{5}{2}$. Step 2: $\\alpha^2 + \\beta^2 = (\\alpha + \\beta)^2 - 2\\alpha\\beta = 3^2 - 2\\left(\\frac{5}{2}\\right) = 9 - 5 = 4$.',
+    hint: 'Use $\\alpha + \\beta = 3$, $\\alpha\\beta = \\frac{5}{2}$, and the identity $\\alpha^2 + \\beta^2 = (\\alpha + \\beta)^2 - 2\\alpha\\beta$.',
+  },
+  {
+    cls: 'Form 3',
+    subject: 'Additional Mathematics',
+    chapter: 'Chapter 2: Equation and Remainder Theorem',
+    question:
+      'When the polynomial $P(x) = 2x^3 + kx^2 - 5x + 6$ is divided by $(x - 2)$, the remainder is $12$. Find the value of the constant $k$:',
+    options: ['$k = 0$', '$k = 2$', '$k = -1$', '$k = 3$'],
+    correctIndex: 0,
+    explanation:
+      'Step 1: By the Remainder Theorem, $P(2) = 12$. Step 2: $2(2)^3 + k(2)^2 - 5(2) + 6 = 12 \\Rightarrow 16 + 4k - 10 + 6 = 12 \\Rightarrow 12 + 4k = 12 \\Rightarrow k = 0$.',
+    hint: 'Substitute $x = 2$ into $P(x)$ and set $P(2) = 12$.',
+  },
+  {
+    cls: 'Form 3',
+    subject: 'Additional Mathematics',
+    chapter: 'Chapter 3: Functions (Rational Functions & Asymptotes)',
+    question:
+      'Determine the vertical asymptote and horizontal asymptote of the rational function $f(x) = \\frac{3x - 5}{x - 2}$:',
+    options: [
+      'Vertical asymptote: $x = 2$ ; Horizontal asymptote: $y = 3$',
+      'Vertical asymptote: $x = -2$ ; Horizontal asymptote: $y = 3$',
+      'Vertical asymptote: $x = 2$ ; Horizontal asymptote: $y = -5$',
+      'Vertical asymptote: $x = 3$ ; Horizontal asymptote: $y = 2$',
+    ],
+    correctIndex: 0,
+    explanation:
+      'Step 1: Set denominator $x - 2 = 0 \\Rightarrow x = 2$ is the vertical asymptote. Step 2: Divide leading terms $\\lim_{x \\to \\infty} \\frac{3x - 5}{x - 2} = \\frac{3}{1} = 3$, so $y = 3$ is the horizontal asymptote.',
+    hint: 'Set denominator to zero for the vertical asymptote, and take the ratio of leading coefficients of $x$ for the horizontal asymptote.',
+  },
+  {
+    cls: 'Form 3',
+    subject: 'Additional Mathematics',
+    chapter: 'Chapter 6: Differentiation (Calculus — Power Rule & Stationary Points)',
+    question:
+      'Find the derivative $\\frac{dy}{dx}$ of $y = x^3 - 6x^2 + 9x + 2$ and determine the $x$-coordinates of its stationary (turning) points:',
+    options: [
+      '$\\frac{dy}{dx} = 3x^2 - 12x + 9$ ; stationary at $x = 1$ and $x = 3$',
+      '$\\frac{dy}{dx} = 3x^2 - 6x + 9$ ; stationary at $x = 1$ and $x = 3$',
+      '$\\frac{dy}{dx} = 3x^2 - 12x + 9$ ; stationary at $x = -1$ and $x = -3$',
+      '$\\frac{dy}{dx} = x^2 - 4x + 3$ ; stationary at $x = 2$ and $x = 3$',
+    ],
+    correctIndex: 0,
+    explanation:
+      'Step 1: Differentiate term-by-term: $\\frac{dy}{dx} = 3x^2 - 12x + 9$. Step 2: At stationary points, $\\frac{dy}{dx} = 0 \\Rightarrow 3(x^2 - 4x + 3) = 0 \\Rightarrow 3(x - 1)(x - 3) = 0 \\Rightarrow x = 1$ or $x = 3$.',
+    hint: 'Differentiate $y$ with respect to $x$ and solve $\\frac{dy}{dx} = 0$.',
+  },
+
+  // ============================================================================
+  // FORM 4 — ADDITIONAL MATHEMATICS (TIE Form 4 Additional Mathematics Book)
+  // ============================================================================
+  {
+    cls: 'Form 4',
+    subject: 'Additional Mathematics',
+    chapter: 'Chapter 1: Integration (Definite Integrals & Area Under a Curve)',
+    question:
+      'Evaluate the definite integral $\\int_1^3 (3x^2 - 2x + 1)\\,dx$:',
+    options: ['$20$', '$18$', '$22$', '$16$'],
+    correctIndex: 0,
+    explanation:
+      'Step 1: Antiderivative $F(x) = [x^3 - x^2 + x]_1^3$. Step 2: Evaluate at limits: $F(3) = 27 - 9 + 3 = 21$, and $F(1) = 1 - 1 + 1 = 1$. Step 3: $F(3) - F(1) = 21 - 1 = 20$.',
+    hint: 'Integrate to get $[x^3 - x^2 + x]_1^3$, then compute $F(3) - F(1)$.',
+  },
+  {
+    cls: 'Form 4',
+    subject: 'Additional Mathematics',
+    chapter: 'Chapter 2: Vectors in 2D and 3D (Dot Product & Orthogonal Vectors)',
+    question:
+      'Find the scalar (dot) product of the 3D vectors $\\vec{a} = 2\\mathbf{i} - 3\\mathbf{j} + 4\\mathbf{k}$ and $\\vec{b} = 3\\mathbf{i} + 2\\mathbf{j} + \\mathbf{k}$:',
+    options: ['$4$', '$16$', '$-4$', '$8$'],
+    correctIndex: 0,
+    explanation:
+      'Step 1: $\\vec{a} \\cdot \\vec{b} = a_x b_x + a_y b_y + a_z b_z$. Step 2: $(2)(3) + (-3)(2) + (4)(1) = 6 - 6 + 4 = 4$.',
+    hint: 'Multiply corresponding $\\mathbf{i}, \\mathbf{j}, \\mathbf{k}$ components and add them together.',
+  },
+  {
+    cls: 'Form 4',
+    subject: 'Additional Mathematics',
+    chapter: 'Chapter 4: Permutations, Combinations and Probability',
+    question:
+      'A school academic committee of $4$ students is to be chosen from $5$ Form Four students and $4$ Form Three students. In how many ways can the committee be formed if it must contain **exactly $2$ Form Four** and **$2$ Form Three** students?',
+    options: ['$60$ ways', '$126$ ways', '$30$ ways', '$120$ ways'],
+    correctIndex: 0,
+    explanation:
+      'Step 1: Choose $2$ from $5$ Form Four students: $^5C_2 = \\frac{5 \\times 4}{2 \\times 1} = 10$. Step 2: Choose $2$ from $4$ Form Three students: $^4C_2 = \\frac{4 \\times 3}{2 \\times 1} = 6$. Step 3: Total committees $= 10 \\times 6 = 60$ ways.',
+    hint: 'Compute $^5C_2 \\times ^4C_2$.',
   },
 
   // ============================================================================
@@ -651,9 +994,27 @@ export const TIE_LEVEL_TEXTBOOK_BANK: LevelSpecificSeed[] = [
   },
 ];
 
+function doesSubjectMatchStrict(seedSubject: string, targetSubject: string): boolean {
+  const s = seedSubject.trim().toLowerCase();
+  const t = targetSubject.trim().toLowerCase();
+  if (s === t) return true;
+  // Never conflate Basic Mathematics, Additional Mathematics, and Advanced Mathematics
+  if (t.includes('additional math') || s.includes('additional math')) {
+    return t.includes('additional math') && s.includes('additional math');
+  }
+  if (t.includes('advanced math') || s.includes('advanced math')) {
+    return t.includes('advanced math') && s.includes('advanced math');
+  }
+  if (t.includes('applied math') || s.includes('applied math')) {
+    return t.includes('applied math') && s.includes('applied math');
+  }
+  return s.includes(t) || t.includes(s);
+}
+
 /**
- * Generates 20 distinct, challenging, level-accurate questions from the TIE Textbook chapters
- * for the exact Class, Subject, and Topic—never duplicating or padding identical questions.
+ * Generates 20 distinct, challenging, level-accurate questions from the Stored Textbook Question Bank
+ * and Official TIE Textbook chapters for the exact Class, Subject, and Topic—never repeating questions
+ * that the student has already answered until a full bank cycle is completed.
  */
 export function buildLevelAccurateTextbookQuestions(
   cls: string,
@@ -662,29 +1023,9 @@ export function buildLevelAccurateTextbookQuestions(
   difficulty: GameDifficulty,
   existingQuestions: GameQuestion[]
 ): GameQuestion[] {
-  const normCls = (cls || 'Form 3').trim();
+  const normCls = (cls || 'Form 1').trim();
   const normSub = (subject || 'Basic Mathematics').trim();
-  const subLower = normSub.toLowerCase();
   const baseXp = difficulty === 'Hard' ? 100 : difficulty === 'Medium' ? 80 : 65;
-
-  // 1. Filter curated TIE Textbook seeds matching exact Class & Subject first, then same Subject
-  const topicLower = topic && topic !== 'ALL' ? topic.toLowerCase() : '';
-  const exactClassMatches = TIE_LEVEL_TEXTBOOK_BANK.filter(
-    (s) =>
-      s.cls.toLowerCase() === normCls.toLowerCase() &&
-      (s.subject.toLowerCase().includes(subLower) || subLower.includes(s.subject.toLowerCase()))
-  ).sort((a, b) => {
-    if (!topicLower) return 0;
-    const aMatch = a.chapter.toLowerCase().includes(topicLower) || topicLower.includes(a.chapter.toLowerCase()) ? -1 : 0;
-    const bMatch = b.chapter.toLowerCase().includes(topicLower) || topicLower.includes(b.chapter.toLowerCase()) ? -1 : 0;
-    return aMatch - bMatch;
-  });
-
-  const subjectMatches = TIE_LEVEL_TEXTBOOK_BANK.filter(
-    (s) =>
-      s.cls.toLowerCase() !== normCls.toLowerCase() &&
-      (s.subject.toLowerCase().includes(subLower) || subLower.includes(s.subject.toLowerCase()))
-  );
 
   const rotateOpts = (
     opts: string[],
@@ -706,30 +1047,68 @@ export function buildLevelAccurateTextbookQuestions(
     };
   };
 
-  const combinedSeeds = [...exactClassMatches, ...subjectMatches];
-  const results: GameQuestion[] = [];
-  const seenPrompts = new Set<string>();
+  // 0. Pull Stored Textbook Questions extracted from uploaded books first!
+  const storedTextbookQuestions = getStoredBankQuestionsForClassSubject(normCls, normSub, topic);
+  let studentSeenSigs = getSeenSignaturesForClassSubject(normCls, normSub);
+  const variantOffset = getVariantOffsetForClassSubject(normCls, normSub);
 
-  const pushUnique = (q: GameQuestion) => {
-    const key = q.question.trim().toLowerCase();
-    if (!seenPrompts.has(key) && results.length < 20) {
-      seenPrompts.add(key);
-      results.push(q);
+  // 1. Filter curated TIE Textbook seeds matching exact Class & Subject AND selected Topic (never mix other Form levels or other chapters!)
+  const exactClassMatches = TIE_LEVEL_TEXTBOOK_BANK.filter(
+    (s) =>
+      s.cls.toLowerCase() === normCls.toLowerCase() &&
+      doesSubjectMatchStrict(s.subject, normSub) &&
+      (!topic || topic === 'ALL' || doesQuestionTopicMatchSelectedTopic(s.chapter, '', topic))
+  );
+
+  const unseenPool: GameQuestion[] = [];
+  const seenFallbackPool: GameQuestion[] = [];
+  const addedSignatures = new Set<string>();
+
+  const pushCandidate = (q: GameQuestion) => {
+    const sig = computeQuestionSignature(q.question);
+    if (!sig || addedSignatures.has(sig)) return;
+    addedSignatures.add(sig);
+    if (studentSeenSigs.has(sig)) {
+      seenFallbackPool.push(q);
+    } else {
+      unseenPool.push(q);
     }
   };
 
-  // Add curated level-specific textbook questions first
-  combinedSeeds.forEach((seed, idx) => {
-    const isExactLevel = seed.cls.toLowerCase() === normCls.toLowerCase();
-    const bookCitation = `📘 Official TIE ${isExactLevel ? normCls : seed.cls} ${normSub} Student's Book — ${seed.chapter}`;
+  // Priority A: Extracted questions stored from Uploaded Textbooks
+  storedTextbookQuestions.forEach((sq, idx) => {
+    const rotated = rotateOpts([...sq.options], sq.correctIndex, idx + 1);
+    pushCandidate({
+      id: sq.id || `stored-tb-${normCls}-${normSub}-${idx}`,
+      cls: normCls,
+      subject: normSub,
+      topic: sq.topic || (topic !== 'ALL' ? topic : normSub),
+      subTopic: sq.subTopic,
+      difficulty,
+      question: sq.question,
+      options: rotated.options,
+      correctIndex: rotated.correctIndex,
+      explanation: sq.explanation,
+      hint:
+        sq.hint ||
+        `Apply the ${normCls} ${normSub} textbook formula and step-by-step method for ${sq.topic || normSub}.`,
+      xpReward: baseXp + 15,
+      sourceLabel: sq.sourceRef || `📘 ${sq.textbookTitle}`,
+      isBossOrSpecial: idx >= 12,
+    });
+  });
+
+  // Priority B: Curated level-specific TIE textbook questions (strictly same Form & Topic)
+  exactClassMatches.forEach((seed, idx) => {
+    const bookCitation = `📘 Official TIE ${normCls} ${normSub} Student's Book — ${seed.chapter}`;
     const rotated = rotateOpts([...seed.options], seed.correctIndex, idx + 1);
-    pushUnique({
+    pushCandidate({
       id: `tie-tb-${normCls}-${normSub}-${idx}`,
       cls: normCls,
       subject: normSub,
       topic: topic !== 'ALL' ? topic : seed.chapter,
       difficulty,
-      question: `[${isExactLevel ? normCls : seed.cls} • ${seed.chapter}] ${seed.question}`,
+      question: `[${normCls} • ${seed.chapter}] ${seed.question}`,
       options: rotated.options,
       correctIndex: rotated.correctIndex,
       explanation: seed.explanation,
@@ -740,9 +1119,12 @@ export function buildLevelAccurateTextbookQuestions(
     });
   });
 
-  // Add existing curriculum questions if unique
+  // Priority C: Existing curriculum questions if unique and matching exact topic
   existingQuestions.forEach((eq) => {
-    pushUnique({
+    if (topic && topic !== 'ALL' && !doesQuestionTopicMatchSelectedTopic(eq.topic || '', eq.subTopic || '', topic)) {
+      return;
+    }
+    pushCandidate({
       ...eq,
       sourceLabel: eq.sourceLabel.includes('Student')
         ? eq.sourceLabel
@@ -750,20 +1132,32 @@ export function buildLevelAccurateTextbookQuestions(
     });
   });
 
-  // Dynamically generate distinct, level-calibrated parameterized textbook problems so all 20 questions are 100% unique and challenging!
+  // Priority D: Multi-chapter parameterized textbook problems using variantOffset so student NEVER sees repeated numbers!
   let variantIdx = 1;
-  while (results.length < 20 && variantIdx <= 25) {
-    const v = variantIdx++;
+  while (unseenPool.length < 20 && variantIdx <= 40) {
+    const v = variantOffset + variantIdx++;
     const rawQ = buildParameterizedLevelProblem(normCls, normSub, topic, difficulty, v, baseXp);
     const rotated = rotateOpts(rawQ.options, rawQ.correctIndex, v + 2);
-    pushUnique({
+    pushCandidate({
       ...rawQ,
       options: rotated.options,
       correctIndex: rotated.correctIndex,
     });
   }
 
-  return results.slice(0, 20);
+  // If the student has still seen almost everything, rotate the cycle and use unseen + fresh variants
+  if (unseenPool.length < 20 && seenFallbackPool.length > 0) {
+    if (unseenPool.length < 6) {
+      resetSeenQuestionsForClassSubject(normCls, normSub, true);
+      studentSeenSigs = new Set<string>();
+    }
+    for (const sItem of seenFallbackPool) {
+      if (unseenPool.length >= 20) break;
+      unseenPool.push(sItem);
+    }
+  }
+
+  return unseenPool.slice(0, 20);
 }
 
 function buildParameterizedLevelProblem(
@@ -777,40 +1171,337 @@ function buildParameterizedLevelProblem(
   const sLower = subject.toLowerCase();
   const cLower = cls.toLowerCase();
   const bookLabel = `📘 Official TIE ${cls} ${subject} Student's Book`;
+  const archetype = v % 5;
 
-  // MATHEMATICS PARAMETERIZED LEVEL-SPECIFIC TEXTBOOK PROBLEMS
-  if (sLower.includes('math') || sLower.includes('hisabati')) {
-    if (cLower.includes('form 1') || cLower.includes('standard')) {
-      const a = v + 2;
-      const xVal = v + 3;
-      const yVal = 2;
-      const c1 = a * xVal + yVal;
-      const c2 = xVal - yVal;
-      const sumXY = xVal + yVal;
+  // ============================================================================
+  // ADDITIONAL MATHEMATICS PARAMETERIZED MULTI-CHAPTER TEXTBOOK PROBLEMS
+  // ============================================================================
+  if (sLower.includes('additional math')) {
+    if (cLower.includes('form 1')) {
+      if (archetype === 0) {
+        // Chapter 1: Base Numerals Conversion
+        const d2 = (v % 4) + 1;
+        const d1 = ((v + 2) % 4) + 1;
+        const d0 = (v + 1) % 5;
+        const base10 = d2 * 25 + d1 * 5 + d0;
+        return {
+          id: `dyn-f1-addmath-base-${v}`,
+          cls,
+          subject,
+          topic: topic !== 'ALL' ? topic : 'Chapter 1: Numbers (Base Numerals)',
+          difficulty,
+          question: `[${cls} Additional Math • Chapter 1: Numbers] Convert the base-five numeral $${d2}${d1}${d0}_{\\text{five}}$ into a base-ten (denary) integer:`,
+          options: [
+            `$${base10}_{\\text{ten}}$`,
+            `$${base10 + 5}_{\\text{ten}}$`,
+            `$${Math.max(10, base10 - 10)}_{\\text{ten}}$`,
+            `$${(d2 + d1 + d0) * 5}_{\\text{ten}}$`,
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Expand in powers of $5$: $${d2}${d1}${d0}_{\\text{five}} = ${d2}(5^2) + ${d1}(5^1) + ${d0}(5^0)$. Step 2: $= ${d2 * 25} + ${d1 * 5} + ${d0} = ${base10}_{\\text{ten}}$.`,
+          hint: `Multiply the digits by $5^2 = 25$, $5^1 = 5$, and $5^0 = 1$ respectively and sum.`,
+          xpReward: baseXp,
+          sourceLabel: `${bookLabel} — Chapter 1: Numbers`,
+        };
+      }
+      if (archetype === 1) {
+        // Chapter 2: Regular Polygon Symmetry
+        const nSides = (v % 7) + 5; // 5 to 11 sides
+        const rotAngle = Number((360 / nSides).toFixed(1));
+        return {
+          id: `dyn-f1-addmath-sym-${v}`,
+          cls,
+          subject,
+          topic: topic !== 'ALL' ? topic : 'Chapter 2: Symmetry',
+          difficulty,
+          question: `[${cls} Additional Math • Chapter 2: Symmetry] A regular polygon has $${nSides}$ equal sides. Determine its number of lines of symmetry $L$, order of rotational symmetry $R$, and smallest angle of rotation $\\theta$:`,
+          options: [
+            `$L = ${nSides},\\; R = ${nSides},\\; \\theta = ${rotAngle}^\\circ$`,
+            `$L = ${nSides * 2},\\; R = ${nSides},\\; \\theta = ${rotAngle}^\\circ$`,
+            `$L = ${nSides},\\; R = ${Math.max(2, nSides - 2)},\\; \\theta = ${(180 / nSides).toFixed(1)}^\\circ$`,
+            `$L = ${nSides - 1},\\; R = ${nSides - 1},\\; \\theta = ${rotAngle}^\\circ$`,
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Every regular $n$-sided polygon has $L = n = ${nSides}$ lines of symmetry and rotational symmetry of order $R = ${nSides}$. Step 2: Smallest angle of rotational symmetry $\\theta = \\frac{360^\\circ}{${nSides}} = ${rotAngle}^\\circ$.`,
+          hint: `For a regular $n$-gon, $L = R = n$ and $\\theta = 360^\\circ / n$.`,
+          xpReward: baseXp,
+          sourceLabel: `${bookLabel} — Chapter 2: Symmetry`,
+        };
+      }
+      if (archetype === 2) {
+        // Chapter 3: Algebra — Transposition of Formulae
+        const aVal = (v % 5) + 2;
+        const bVal = (v % 4) + 3;
+        const xSol = (v % 6) + 2;
+        const yVal = aVal * xSol + bVal;
+        return {
+          id: `dyn-f1-addmath-alg-${v}`,
+          cls,
+          subject,
+          topic: topic !== 'ALL' ? topic : 'Chapter 3: Algebra (Transposition & Equations)',
+          difficulty,
+          question: `[${cls} Additional Math • Chapter 3: Algebra] Given the formula $T = 2\\pi\\sqrt{\\frac{L + ${bVal}}{g}}$, if $\\left(\\frac{T}{2\\pi}\\right)^2 g = ${yVal}$, find the value of $L$ when divided by $${aVal}$:`,
+          options: [
+            `$${xSol}$ (since $L = ${aVal * xSol}$)`,
+            `$${xSol + 2}$`,
+            `$${Math.max(1, xSol - 1)}$`,
+            `$${yVal}$`,
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Square both sides: $\\left(\\frac{T}{2\\pi}\\right)^2 g = L + ${bVal} = ${yVal}$. Step 2: $L = ${yVal} - ${bVal} = ${aVal * xSol}$. Step 3: Dividing $L$ by $${aVal}$ gives $\\frac{${aVal * xSol}}{${aVal}} = ${xSol}$.`,
+          hint: `Use $L + ${bVal} = ${yVal}$ to find $L$, then divide by $${aVal}$.`,
+          xpReward: baseXp,
+          sourceLabel: `${bookLabel} — Chapter 3: Algebra`,
+        };
+      }
+      if (archetype === 3) {
+        // Chapter 5: Coordinate Geometry — Internal Division of a Line Segment
+        const m = 1;
+        const n = 2;
+        const x1 = v % 5;
+        const y1 = 2;
+        const x2 = x1 + 6;
+        const y2 = 8;
+        const px = (m * x2 + n * x1) / (m + n);
+        const py = (m * y2 + n * y1) / (m + n);
+        return {
+          id: `dyn-f1-addmath-coord-${v}`,
+          cls,
+          subject,
+          topic: topic !== 'ALL' ? topic : 'Chapter 5: Coordinate Geometry',
+          difficulty,
+          question: `[${cls} Additional Math • Chapter 5: Coordinate Geometry] Find the coordinates of the point $P(x, y)$ that divides the line segment joining $A(${x1}, ${y1})$ and $B(${x2}, ${y2})$ internally in the ratio $1 : 2$:`,
+          options: [
+            `$(${px}, ${py})$`,
+            `$(${px + 2}, ${py + 2})$`,
+            `$(${(x1 + x2) / 2}, ${(y1 + y2) / 2})$`,
+            `$(${px - 1}, ${py + 1})$`,
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Using $P = \\left(\\frac{m x_2 + n x_1}{m+n}, \\frac{m y_2 + n y_1}{m+n}\\right)$ with $m=1, n=2$: Step 2: $x = \\frac{1(${x2}) + 2(${x1})}{3} = ${px}$, and $y = \\frac{1(${y2}) + 2(${y1})}{3} = ${py}$.`,
+          hint: `Apply the internal division formula with $m = 1$ and $n = 2$.`,
+          xpReward: baseXp,
+          sourceLabel: `${bookLabel} — Chapter 5: Coordinate Geometry`,
+        };
+      }
+      // Archetype 4: Chapter 1 Modular Arithmetic
+      const modN = 7;
+      const aNum = 10 + v * 3;
+      const bNum = 8 + v * 2;
+      const rem = (aNum + bNum) % modN;
       return {
-        id: `dyn-f1-math-${v}`,
+        id: `dyn-f1-addmath-mod-${v}`,
         cls,
         subject,
-        topic: topic !== 'ALL' ? topic : 'Chapter 6: Algebra & Simultaneous Equations',
+        topic: topic !== 'ALL' ? topic : 'Chapter 1: Numbers (Modular Operations)',
         difficulty,
-        question: `[${cls} Textbook • Algebra] Solve the simultaneous linear equations $${a}x + y = ${c1}$ and $x - y = ${c2}$ to find the value of $(x + y)$:`,
+        question: `[${cls} Additional Math • Chapter 1: Modular Arithmetic] Evaluate the least non-negative residue of $(${aNum} + ${bNum}) \\pmod{${modN}}$:`,
         options: [
-          `$${sumXY}$ (where $x = ${xVal},\\; y = ${yVal}$)`,
-          `$${sumXY + 2}$ (where $x = ${xVal + 1},\\; y = ${yVal + 1}$)`,
-          `$${Math.max(1, sumXY - 2)}$`,
-          `$${xVal * yVal}$`,
+          `$${rem} \\pmod{${modN}}$`,
+          `$${(rem + 2) % modN} \\pmod{${modN}}$`,
+          `$${(rem + 4) % modN} \\pmod{${modN}}$`,
+          `$${(rem + 1) % modN} \\pmod{${modN}}$`,
         ],
         correctIndex: 0,
-        explanation: `Step 1: Add the two equations to eliminate $y$: $(${a} + 1)x = ${c1 + c2} \\Rightarrow ${a + 1}x = ${c1 + c2} \\Rightarrow x = ${xVal}$. Step 2: $y = x - ${c2} = ${yVal}$. Therefore $x + y = ${sumXY}$.`,
-        hint: `Add both equations together to eliminate $+y$ and $-y$, then divide by $${a + 1}$.`,
+        explanation: `Step 1: Sum $= ${aNum} + ${bNum} = ${aNum + bNum}$. Step 2: Divide $${aNum + bNum}$ by $${modN}$: $${aNum + bNum} = ${Math.floor((aNum + bNum) / modN)} \\times ${modN} + ${rem}$, so the remainder is $${rem}$.`,
+        hint: `Add $${aNum} + ${bNum}$ and find the remainder upon division by $${modN}$.`,
         xpReward: baseXp,
-        sourceLabel: `${bookLabel} — Chapter 6: Algebra`,
+        sourceLabel: `${bookLabel} — Chapter 1: Numbers`,
+      };
+    }
+
+    // Form 2–4 Additional Mathematics Parameterized Problems
+    if (cLower.includes('form 2')) {
+      const kConst = (v % 6) + 2;
+      const xVal = (v % 4) + 2;
+      const yVal = kConst * xVal * xVal;
+      return {
+        id: `dyn-f2-addmath-${v}`,
+        cls,
+        subject,
+        topic: topic !== 'ALL' ? topic : 'Chapter 2: Variations & Locus',
+        difficulty,
+        question: `[${cls} Additional Math • Variations & Locus] Given that $y$ varies directly as $x^2$ with constant of variation $k = ${kConst}$, calculate $y$ when $x = ${xVal}$ and state the locus radius $r$ of $x^2 + y^2 = ${xVal * xVal}$:`,
+        options: [
+          `$y = ${yVal}, \\quad r = ${xVal}$`,
+          `$y = ${kConst * xVal}, \\quad r = ${xVal * xVal}$`,
+          `$y = ${yVal + kConst}, \\quad r = ${xVal}$`,
+          `$y = ${yVal / 2}, \\quad r = ${xVal * 2}$`,
+        ],
+        correctIndex: 0,
+        explanation: `Step 1: $y = kx^2 = ${kConst}(${xVal}^2) = ${yVal}$. Step 2: The circle $x^2 + y^2 = ${xVal * xVal}$ has radius $r = \\sqrt{${xVal * xVal}} = ${xVal}$.`,
+        hint: `Compute $y = ${kConst} \\times ${xVal}^2$ and $r = \\sqrt{${xVal * xVal}}$.`,
+        xpReward: baseXp + 10,
+        sourceLabel: `${bookLabel} — Chapter 2 & 4: Variations & Locus`,
+      };
+    }
+
+    // Form 3 & 4 Additional Mathematics (Polynomials, Differentiation, Integration)
+    const cCoeff = (v % 5) + 2;
+    const xPt = (v % 4) + 1;
+    const derivVal = 3 * xPt * xPt + 2 * cCoeff * xPt;
+    return {
+      id: `dyn-f34-addmath-${v}`,
+      cls,
+      subject,
+      topic: topic !== 'ALL' ? topic : 'Differentiation, Integration & Polynomials',
+      difficulty,
+      question: `[${cls} Additional Math • Calculus] Find the gradient of the tangent $\\frac{dy}{dx}$ to the curve $y = x^3 + ${cCoeff}x^2 - 4$ at the point where $x = ${xPt}$:`,
+      options: [
+        `$\\frac{dy}{dx} = ${derivVal}$`,
+        `$\\frac{dy}{dx} = ${derivVal + 6}$`,
+        `$\\frac{dy}{dx} = ${xPt * xPt * xPt + cCoeff * xPt * xPt - 4}$`,
+        `$\\frac{dy}{dx} = ${Math.max(1, derivVal - 4)}$`,
+      ],
+      correctIndex: 0,
+      explanation: `Step 1: Differentiate $y = x^3 + ${cCoeff}x^2 - 4$: $\\frac{dy}{dx} = 3x^2 + ${2 * cCoeff}x$. Step 2: At $x = ${xPt}$, gradient $= 3(${xPt}^2) + ${2 * cCoeff}(${xPt}) = ${derivVal}$.`,
+      hint: `Differentiate using $\\frac{d}{dx}(x^n) = nx^{n-1}$ and substitute $x = ${xPt}$.`,
+      xpReward: baseXp + 15,
+      sourceLabel: `${bookLabel} — Calculus & Algebra`,
+    };
+  }
+
+  // ============================================================================
+  // BASIC MATHEMATICS PARAMETERIZED LEVEL-SPECIFIC TEXTBOOK PROBLEMS
+  // ============================================================================
+  if (sLower.includes('math') || sLower.includes('hisabati')) {
+    if (cLower.includes('form 1') || cLower.includes('standard')) {
+      if (archetype === 0) {
+        // Chapter 8: Simultaneous Linear Equations
+        const a = (v % 5) + 2;
+        const xVal = (v % 6) + 2;
+        const yVal = (v % 4) + 1;
+        const c1 = a * xVal + yVal;
+        const c2 = xVal - yVal;
+        const sumXY = xVal + yVal;
+        return {
+          id: `dyn-f1-math-alg-${v}`,
+          cls,
+          subject,
+          topic: topic !== 'ALL' ? topic : 'Chapter 8: Algebra (Simultaneous Linear Equations)',
+          difficulty,
+          question: `[${cls} Textbook • Chapter 8: Algebra] Solve the simultaneous linear equations $${a}x + y = ${c1}$ and $x - y = ${c2}$ to find the value of $(x + y)$:`,
+          options: [
+            `$${sumXY}$ (where $x = ${xVal},\\; y = ${yVal}$)`,
+            `$${sumXY + 2}$ (where $x = ${xVal + 1},\\; y = ${yVal + 1}$)`,
+            `$${Math.max(1, sumXY - 2)}$`,
+            `$${xVal * yVal}$`,
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Add the two equations to eliminate $y$: $(${a} + 1)x = ${c1 + c2} \\Rightarrow ${a + 1}x = ${c1 + c2} \\Rightarrow x = ${xVal}$. Step 2: $y = x - ${c2} = ${yVal}$. Therefore $x + y = ${sumXY}$.`,
+          hint: `Add both equations together to eliminate $+y$ and $-y$, then divide by $${a + 1}$.`,
+          xpReward: baseXp,
+          sourceLabel: `${bookLabel} — Chapter 8: Algebra`,
+        };
+      }
+      if (archetype === 1) {
+        // Chapter 10: Simple Interest, Profit & Loss
+        const principal = ((v % 8) + 2) * 10000;
+        const rate = (v % 5) + 6;
+        const years = (v % 3) + 2;
+        const interest = (principal * rate * years) / 100;
+        return {
+          id: `dyn-f1-math-si-${v}`,
+          cls,
+          subject,
+          topic: topic !== 'ALL' ? topic : 'Chapter 10: Ratios, Profit, Loss and Simple Interest',
+          difficulty,
+          question: `[${cls} Textbook • Chapter 10] Calculate the Simple Interest ($I$) earned when a principal of $\\text{TZS } ${principal.toLocaleString()}$ is invested at $${rate}\\%$ per annum for $${years}\\text{ years}$:`,
+          options: [
+            `$\\text{TZS } ${interest.toLocaleString()}$`,
+            `$\\text{TZS } ${(interest + principal / 10).toLocaleString()}$`,
+            `$\\text{TZS } ${(interest / 2).toLocaleString()}$`,
+            `$\\text{TZS } ${(principal + interest).toLocaleString()}$`,
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Using $I = \\frac{PRT}{100} = \\frac{${principal} \\times ${rate} \\times ${years}}{100} = \\text{TZS } ${interest.toLocaleString()}$.`,
+          hint: `Use the Simple Interest formula $I = \\frac{P \\times R \\times T}{100}$.`,
+          xpReward: baseXp,
+          sourceLabel: `${bookLabel} — Chapter 10: Ratios, Profit and Loss`,
+        };
+      }
+      if (archetype === 2) {
+        // Chapter 11: Coordinate Geometry (Gradient & Line Equation)
+        const mSlope = (v % 5) + 2;
+        const x1 = (v % 4) + 1;
+        const cInt = (v % 6) - 2;
+        const y1 = mSlope * x1 + cInt;
+        const x2 = x1 + 3;
+        const y2 = mSlope * x2 + cInt;
+        return {
+          id: `dyn-f1-math-coord-${v}`,
+          cls,
+          subject,
+          topic: topic !== 'ALL' ? topic : 'Chapter 11: Coordinate Geometry',
+          difficulty,
+          question: `[${cls} Textbook • Chapter 11: Coordinate Geometry] Find the gradient $m$ and $y$-intercept $c$ of the straight line passing through $A(${x1}, ${y1})$ and $B(${x2}, ${y2})$:`,
+          options: [
+            `$m = ${mSlope}, \\quad c = ${cInt}$`,
+            `$m = ${mSlope + 1}, \\quad c = ${cInt - 2}$`,
+            `$m = \\frac{1}{${mSlope}}, \\quad c = ${y1}$`,
+            `$m = -${mSlope}, \\quad c = ${cInt + 4}$`,
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Gradient $m = \\frac{y_2 - y_1}{x_2 - x_1} = \\frac{${y2} - (${y1})}{${x2} - ${x1}} = \\frac{${y2 - y1}}{3} = ${mSlope}$. Step 2: From $y = mx + c$, $${y1} = ${mSlope}(${x1}) + c \\Rightarrow c = ${cInt}$.`,
+          hint: `Compute $m = \\frac{y_2 - y_1}{x_2 - x_1}$ first, then substitute point $A(${x1}, ${y1})$ into $y = mx + c$.`,
+          xpReward: baseXp,
+          sourceLabel: `${bookLabel} — Chapter 11: Coordinate Geometry`,
+        };
+      }
+      if (archetype === 3) {
+        // Chapter 12: Perimeters and Areas
+        const length = (v % 8) + 8;
+        const width = (v % 5) + 4;
+        const perim = 2 * (length + width);
+        const area = length * width;
+        return {
+          id: `dyn-f1-math-area-${v}`,
+          cls,
+          subject,
+          topic: topic !== 'ALL' ? topic : 'Chapter 12: Perimeters and Areas',
+          difficulty,
+          question: `[${cls} Textbook • Chapter 12: Perimeters & Areas] A rectangular school garden has a length of $${length}\\text{ m}$ and a width of $${width}\\text{ m}$. Calculate its perimeter $P$ and area $A$:`,
+          options: [
+            `$P = ${perim}\\text{ m}, \\quad A = ${area}\\text{ m}^2$`,
+            `$P = ${length + width}\\text{ m}, \\quad A = ${area}\\text{ m}^2$`,
+            `$P = ${perim}\\text{ m}, \\quad A = ${area + length}\\text{ m}^2$`,
+            `$P = ${perim + 4}\\text{ m}, \\quad A = ${perim * 2}\\text{ m}^2$`,
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Perimeter $P = 2(l + w) = 2(${length} + ${width}) = ${perim}\\text{ m}$. Step 2: Area $A = l \\times w = ${length} \\times ${width} = ${area}\\text{ m}^2$.`,
+          hint: `Use $P = 2(l + w)$ and $A = l \\times w$.`,
+          xpReward: baseXp,
+          sourceLabel: `${bookLabel} — Chapter 12: Perimeters and Areas`,
+        };
+      }
+      // Archetype 4: Chapter 2 & 3 Fractions, Percentages & HCF/LCM
+      const numBase = ((v % 7) + 2) * 20;
+      const pct = ((v % 4) + 1) * 15;
+      const resVal = (numBase * pct) / 100;
+      return {
+        id: `dyn-f1-math-pct-${v}`,
+        cls,
+        subject,
+        topic: topic !== 'ALL' ? topic : 'Chapter 3 & 4: Fractions, Decimals and Percentages',
+        difficulty,
+        question: `[${cls} Textbook • Chapter 4: Percentages] In a school library shelf of $${numBase}$ textbooks, $${pct}\\%$ are Mathematics books. How many Mathematics books are on the shelf?`,
+        options: [
+          `$${resVal}$ books`,
+          `$${resVal + 6}$ books`,
+          `$${Math.max(2, numBase - resVal)}$ books`,
+          `$${resVal * 2}$ books`,
+        ],
+        correctIndex: 0,
+        explanation: `Step 1: Number of Mathematics books $= \\frac{${pct}}{100} \\times ${numBase} = ${resVal}$ books.`,
+        hint: `Multiply $${numBase}$ by $\\frac{${pct}}{100}$.`,
+        xpReward: baseXp,
+        sourceLabel: `${bookLabel} — Chapter 4: Decimals and Percentages`,
       };
     }
 
     if (cLower.includes('form 2')) {
-      const r1 = v + 2;
-      const r2 = v + 5;
+      const r1 = (v % 6) + 2;
+      const r2 = (v % 5) + 4;
       const bCoeff = r1 + r2;
       const cCoeff = r1 * r2;
       return {
@@ -835,7 +1526,7 @@ function buildParameterizedLevelProblem(
     }
 
     if (cLower.includes('form 4') || cLower.includes('form 5') || cLower.includes('form 6')) {
-      const kVal = v + 2;
+      const kVal = (v % 7) + 2;
       const bVal = 3;
       const cVal = 2 * kVal;
       const dVal = 6;
@@ -861,8 +1552,8 @@ function buildParameterizedLevelProblem(
     }
 
     // Default Form 3 Math (AP/GP & Functions)
-    const a1 = v * 2 + 1;
-    const d = v + 2;
+    const a1 = (v % 8) * 2 + 1;
+    const d = (v % 5) + 2;
     const n = 10;
     const an = a1 + (n - 1) * d;
     const sn = (n / 2) * (a1 + an);
@@ -889,7 +1580,7 @@ function buildParameterizedLevelProblem(
 
   // PHYSICS PARAMETERIZED LEVEL-SPECIFIC TEXTBOOK PROBLEMS
   if (sLower.includes('physic')) {
-    const rExt = v + 3;
+    const rExt = (v % 7) + 3;
     const rInt = 1;
     const currentI = 2;
     const emf = currentI * (rExt + rInt);
@@ -943,7 +1634,7 @@ function buildParameterizedLevelProblem(
   }
 
   // GEOGRAPHY PARAMETERIZED LEVEL-SPECIFIC TEXTBOOK PROBLEMS
-  const mapCm = 6 + v * 2;
+  const mapCm = 6 + (v % 10) * 2;
   const groundKm = mapCm * 0.5;
   return {
     id: `dyn-gen-${cls}-${subject}-${v}`,

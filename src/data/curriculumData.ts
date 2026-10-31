@@ -1,3 +1,5 @@
+import { FULL_EXTRACTED_TEXTBOOK_BANK } from './extractedTextbookExerciseBank';
+
 export interface PaperRecord {
   id: string;
   title: string;
@@ -132,37 +134,29 @@ export const TIE_CURRICULUM_SUBJECTS: Record<string, string[]> = {
 export const TIE_SYLLABUS_COMPETENCES: Record<string, Record<string, string[]>> = {
   'Basic Mathematics': {
     'Form 1': [
-      'Chapter 1: Concept of Mathematics (Meaning of Mathematics, Branches of Mathematics, Relationship Between Mathematics and Other Subjects & Importance of Mathematics)',
-      'Chapter 2: Numbers I (Base Ten Numeration, Place Value & Total Value, Natural and Whole Numbers, Even, Odd & Prime Numbers, Operations on Whole Numbers, BODMAS, Factors & Multiples, HCF & LCM, Operations on Integers)',
-      'Chapter 3: Fractions (Proper, Improper and Mixed Fractions, Equivalent Fractions, Comparison of Fractions & Operations on Fractions)',
-      'Chapter 4: Decimals and Percentages (Decimals, Types of Decimals, Operations on Decimals & Percentages)',
-      'Chapter 5: Metric Units (Metric Units of Length, Metric Units of Mass, Metric Units of Time & Metric Units of Capacity)',
-      'Chapter 6: Approximations (Rounding Off Numbers, Approximations in Calculations, Significant Figures & Decimal Places)',
-      'Chapter 7: Introduction to Geometry (Points, Lines, Rays, Line Segments and Planes, Angles, Perpendicular Lines, Transversals, Polygons, Triangles, Quadrilaterals & Circles)',
-      'Chapter 8: Algebra (Algebraic Expressions, Linear Equations in One Unknown, Simultaneous Linear Equations & Linear Inequalities)',
-      'Chapter 9: Numbers II (Rational Numbers, Irrational Numbers, Real Numbers & Absolute Value of a Real Number)',
-      'Chapter 10: Ratios, Profit and Loss (Ratios, Proportions, Profit and Loss & Simple Interest)',
-      'Chapter 11: Coordinate Geometry (Coordinates of a Point, Gradient/Slope of a Line, Equation of a Straight Line y = mx + c & Graphing Linear Equations)',
-      'Chapter 12: Perimeters and Areas (Perimeters of Triangles and Quadrilaterals, Circumference of a Circle, Areas of Triangles, Quadrilaterals & Circles)',
+      'Chapter 1: Concept of Mathematics (Meaning of Mathematics, Branches of Mathematics: Arithmetic, Algebra & Geometry, Relationship Between Mathematics and Other Subjects & Importance of Mathematics)',
+      'Chapter 2: Numbers (Concept of Numbers, Rational Numbers on a Number Line, Repeating/Recurring Decimals, Converting Repeating Decimals into Fractions & Vice Versa, Irrational Numbers, Real Numbers, Inequalities in Real Numbers & Absolute Value of a Real Number)',
+      'Chapter 3: Approximations (Meaning of Approximations, Rounding Off Numbers by Place Values, Rounding Off by Number of Decimal Places, Significant Figures & Approximations in Calculations)',
+      'Chapter 4: Ratios and Proportions (Ratios, Combining Ratios A : B : C, Sharing in a Given Ratio, Direct and Inverse Proportions, Map Scales & Third/Fourth Proportionals)',
+      'Chapter 5: Algebra (Algebraic Expressions, Simplifying Algebraic Fractions, Linear Equations in One Unknown, Equations Involving Absolute Values, Linear Simultaneous Equations by Elimination & Substitution, Word Problems & Inequalities in One Unknown)',
+      'Chapter 6: Coordinate Geometry (Basic Concepts of Coordinate Geometry, Quadrants & Polygons on the xy-Plane, Gradient/Slope of a Straight Line, Equation of a Straight Line y = mx + c, General Equation ax + by + c = 0, x- and y-Intercepts, Graphing Linear Equations & Solving Simultaneous Equations Graphically)',
     ],
     'Form 2': [
-      'Chapter 1: Rates and Variations (Rates, Direct Variation, Inverse Variation, Joint Variation & Partial Variation)',
-      'Chapter 2: Congruence (The Concept of Congruence, Postulates, Theorems and Proofs & Congruence of Triangles: SSS, SAS, ASA, AAS, RHS)',
-      'Chapter 3: Similarity (Similar Figures, Similar Triangles & Similarity Theorems)',
-      'Chapter 4: Algebra (Binary Operations, Transposition of Formulae, Quadratic Expressions, Factorisation of Quadratic Expressions & Quadratic Equations)',
-      'Chapter 5: Exponents and Radicals (Exponents, Laws of Exponents, Exponential Equations, Fractional Exponents, Radicals/Surds, Rationalisation of Denominators & Finding Roots by Calculators)',
-      'Chapter 6: Logarithms (Standard Form of Numbers, Concept of Logarithms, Laws of Logarithms, Logarithms of Numbers, Antilogarithms & Applications of Logarithms)',
-      'Chapter 7: Sets (Concept of a Set, Types of Sets, Subsets, Operations on Sets: Union, Intersection, Complement & Venn Diagrams)',
-      'Chapter 8: Trigonometry (Trigonometric Ratios sin, cos, tan, Pythagoras Theorem, Trigonometric Ratios of Special Angles 30°, 45°, 60°, Trigonometric Ratios of Any Angle, Inverse of Trigonometric Ratios & Angles of Elevation and Depression)',
+      'Chapter 1: Rates and Variations (Rates, Currency Exchange Rates, Direct Variations, Inverse Variations, Joint and Combined Variations)',
+      'Chapter 2: Congruence (Concept of Congruence, Postulates, Theorems and Proofs, Congruence of Triangles: SSS, SAS, AAS, ASA, RHS & Isosceles Triangle Theorems)',
+      'Chapter 3: Similarity (Similar Figures, Similar Triangles, Similarity Theorems: AA, SSS, SAS & Intercept/Altitude Proportionality)',
+      'Chapter 4: Algebra (Binary Operations, Transposition of Formulae, Quadratic Expressions, Factorisation by Splitting the Middle Term, Difference of Two Squares, Perfect Squares, Solving Quadratic Equations by Factorisation, Completing the Square & Quadratic Formula)',
+      'Chapter 5: Exponents and Radicals (Exponents, Laws of Exponents, Exponential Equations, Fractional Exponents, Radicals/Surds, Operations on Radicals, Rationalising the Denominator & Square/Cube Roots)',
+      'Chapter 6: Logarithms (Standard Form A × 10ⁿ, Concept of Logarithms, Laws of Logarithms, Change of Base, Antilogarithms & Applications of Logarithms)',
+      'Chapter 7: Sets (Concept of a Set, Roster & Set-Builder Notation, Types of Sets, Subsets 2ⁿ, Operations on Sets: Union, Intersection, Complement, De Morgan Laws & Venn Diagrams)',
+      'Chapter 8: Trigonometry (Trigonometric Ratios sin, cos, tan, Special Angles 0°, 30°, 45°, 60°, 90°, Trigonometric Ratios in All 4 Quadrants, Positive & Negative Angles, Complementary Angles & Angles of Elevation and Depression)',
     ],
     'Form 3': [
-      'Chapter 1: Relations (Meaning of a Relation, Types of Relations, Domain and Range of a Relation, Graphs of Relations & Inverse of a Relation)',
-      'Chapter 2: Functions (Concept of a Function, Function Notation, Domain and Range of a Function, Graphs of Linear, Quadratic, Step & Absolute Value Functions, Inverse of a Function)',
-      'Chapter 3: Linear Programming (Formulation of Linear Programming Problems, Objective Function, Constraints, Feasible Region & Graphical Solutions)',
-      'Chapter 4: Sequences and Series (Sequences, Series, Arithmetic Progression AP, Arithmetic Mean, Geometric Progression GP, Geometric Mean & Compound Interest)',
-      'Chapter 5: Circles (Concept of a Circle, Central Angles, Arc Length of a Circle, Radian Measure, Angle Properties of Circles, Cyclic Quadrilaterals, Chord Properties & Tangent Properties of Circles)',
-      'Chapter 6: Statistics (Mean, Median, Mode for Grouped & Ungrouped Data, Assumed Mean, Histograms, Frequency Polygons & Cumulative Frequency Curve/Ogive)',
-      'Chapter 7: The Earth as a Sphere & Accounts (Great & Small Circles, Latitudes & Longitudes, Distance in Kilometres & Nautical Miles; Double Entry Principle, Cash Book, Ledger, Trial Balance & Financial Statements)',
+      'Chapter 1: Relations (Meaning of a Relation, Types of Relations: One-to-One, Many-to-One, One-to-Many & Many-to-Many, Domain and Range of a Relation, Graphs of Linear & Quadratic Relations and Inequalities & Inverse of a Relation R⁻¹)',
+      'Chapter 2: Functions (Concept of a Function, Vertical & Horizontal Line Tests, Function Notation, Domain and Range of Functions, Graphs of Linear & Quadratic Functions, Turning Points & Axis of Symmetry, Step Floor/Ceiling Functions, Absolute Value Functions & Inverse Functions f⁻¹(x))',
+      'Chapter 3: Linear Programming (Formulation of Linear Programming Problems, Decision Variables, Objective Function, Linear Inequality Constraints, Feasible Region, Corner Points & Optimal Solution and Value)',
+      'Chapter 4: Sequences and Series (Sequences, Series, Arithmetic Progression AP, nth Term & Sum of AP, Arithmetic Mean AM, Geometric Progression GP, nth Term & Sum of GP, Geometric Mean GM & Compound Interest)',
+      'Chapter 5: Circles (Parts of a Circle, Central Angles, Arc Length l = πrθ/180°, Radian Measure s = rθ, Angle Properties of Circles, Cyclic Quadrilaterals, Chord Properties, Intersecting Chords & Secants, Tangent Properties, Alternate Segment Theorem & Secant-Tangent Theorem)',
     ],
     'Form 4': [
       'Chapter 1: Coordinate Geometry (Midpoint, Distance Formula, Parallel & Perpendicular Lines m1·m2 = -1)',
@@ -184,19 +178,19 @@ export const TIE_SYLLABUS_COMPETENCES: Record<string, Record<string, string[]>> 
       'Chapter 5: Coordinate Geometry (Internal & External Division of a Line Segment, Collinear Points, Parallel & Perpendicular Lines)',
     ],
     'Form 2': [
-      'Chapter 1: Algebra (Simultaneous Equations with Two and Three Unknowns, Linear & Quadratic Systems)',
-      'Chapter 2: Variations (Direct, Inverse, Joint and Partial Variations & Graphical Representation)',
-      'Chapter 3: Logic (Statements, Propositions, Truth Tables, Negation, Conjunction, Disjunction, Implication, Converse, Inverse, Contrapositive & Validity of Arguments)',
-      'Chapter 4: Locus (Concept of Locus, Locus About a Point, Two Fixed Points, Intersecting Lines & Cartesian Representation of Loci)',
-      'Chapter 5: Sets (Set Operations, Cardinality of Three Intersecting Sets & Venn Diagrams)',
+      'Chapter 1: Algebra (Simultaneous Equations Involving One Linear and One Quadratic Equation: Algebraic Solutions by Substitution, Graphical Solutions & Word Problems)',
+      'Chapter 2: Variations (Direct Variations, Inverse Variations, Joint Variations & Graphical Representation)',
+      'Chapter 3: Logic (Statements/Propositions, Truth Tables, Negation, Conjunction, Disjunction, Implication, Biconditional, Converse, Inverse, Contrapositive, Tautologies, Contradictions, Electrical Switching Networks & Validity of Arguments)',
+      'Chapter 4: Locus (Concept of Locus, Locus About a Fixed Point/Circle, Locus About Two Fixed Points/Perpendicular Bisector, Locus About a Straight Line & Locus About Two Intersecting Lines)',
+      'Chapter 5: Sets (Operations on Three Sets, Three-Set Venn Diagrams, Cardinality of Three Intersecting Finite Sets & Survey Word Problems)',
     ],
     'Form 3': [
-      'Chapter 1: Sets (Set Properties, Verification of Set Properties Using Venn Diagrams, Simplification of Set Expressions & De Morgan Laws)',
-      'Chapter 2: Equation and Remainder Theorem (Nature & Sum/Product of Roots of a Quadratic Equation α and β, Polynomial Division & The Remainder Theorem)',
-      'Chapter 3: Functions (Rational Functions, Domain and Range of Rational Functions, Basic Operations, Asymptotes & Graphs of Rational Functions)',
-      'Chapter 4: Statistics (Quartiles, Interquartile Range, Measures of Central Tendency, Assumed Mean, Measures of Dispersion, Variance & Standard Deviation)',
-      'Chapter 5: Trigonometry (Trigonometric Identities, Derivation of Identities, Compound Angle Formulae, Double Angle Formulae & Trigonometric Equations)',
-      'Chapter 6: Differentiation (Derivative of a Function, First Principles, Power Rule, Chain Rule, Product Rule, Quotient Rule, Derivatives of Trigonometric Functions, Rates of Change, Turning Points, Curve Sketching, Tangents & Normals)',
+      'Chapter 1: Sets (Set Properties: Commutative, Associative, Distributive, Identity, Complement & Idempotent Laws, Verification Using Venn Diagrams, Simplification of Set Expressions & De Morgan Laws)',
+      'Chapter 2: Equation and Remainder Theorem (Roots of a Quadratic Equation α + β = -b/a and αβ = c/a, Forming Quadratic Equations from Symmetric Roots, Polynomial Long Division, Remainder Theorem & Factor Theorem)',
+      'Chapter 3: Functions (Proper & Improper Rational Functions, Domain and Range of Rational Functions, Basic Operations, Partial Fractions, Vertical & Horizontal Asymptotes & Graphs of Rational Functions)',
+      'Chapter 4: Statistics (Quartiles Q₁, Q₂, Q₃, Interquartile Range IQR & Semi-Interquartile Range SIR, Cumulative Frequency Curve/Ogive, Assumed Mean, Variance σ² & Standard Deviation σ for Grouped and Ungrouped Data)',
+      'Chapter 5: Trigonometry (Pythagorean Trigonometric Identities, Elimination of θ, Compound Angle Formulae for sin(A±B), cos(A±B), tan(A±B), Double Angle Formulae & Solving Trigonometric Equations)',
+      'Chapter 6: Differentiation (Derivative from First Principles, Power Rule, Chain Rule, Product Rule, Quotient Rule, Derivatives of Trigonometric Functions, Second Derivative, Rates of Change, Turning Points, Points of Inflexion, Optimization, Curve Sketching, Tangents & Normals)',
     ],
     'Form 4': [
       'Chapter 1: Integration (Indefinite & Definite Integrals, Area Under a Curve, Volume of Revolution & Kinematics)',
@@ -1031,10 +1025,10 @@ export const OFFICIAL_ATTACHED_TIE_BOOKS: PaperRecord[] = [
   { id: 'tie-drive-book-48', title: "Economics Teacher's guide F5", form: 'Form 5', subject: 'Economics', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1t_d9rQxPc7m5Dn6R8E3LY9NMPVDhbdga/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-49', title: 'Agriculture Form Six', form: 'Form 6', subject: 'Agriculture', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1WeiTum4yLHCiXXBn9CWSVnGVHJ4YAXMN/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-50', title: 'FASIHI YA KISWAHILI F5 NEW (2)', form: 'Form 5', subject: 'Kiswahili', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1ck5tzwHGwCE6ukrgW7Zn5D2-YAWLz9dc/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
-  { id: 'tie-drive-book-51', title: 'ADDITIONAL BOOK 3', form: 'Form 3', subject: 'Additional Mathematics', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1o6_JCDYRIwDcMrXLlNtD-YJqNi-BFC1m/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
+  { id: 'tie-drive-book-51', title: "Additional Mathematics for Secondary Schools Student's Book Form Three (TIE 2023)", form: 'Form 3', subject: 'Additional Mathematics', year: '2023', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1o6_JCDYRIwDcMrXLlNtD-YJqNi-BFC1m/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-52', title: 'HTM TIE BOOK 3', form: 'Form 3', subject: 'Historia ya Tanzania na Maadili', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1Z4FozWO42KRLx6mcfEf9GIhlR3qg6lOC/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-53', title: 'BIOLOGY FORM 3 TIE NEW', form: 'Form 3', subject: 'Biology', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1Q94YKhRZphRYjeJIPHPkvD7ZCnh_zGKt/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
-  { id: 'tie-drive-book-54', title: 'FORM THREE TIE MATHEMATICS', form: 'Form 3', subject: 'Basic Mathematics', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1euVsPlxlXUYLdkX7ajEk7FjMRDgVNO8j/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
+  { id: 'tie-drive-book-54', title: "Mathematics for Secondary Schools Student's Book Form Three (TIE 2025 Revised Edition)", form: 'Form 3', subject: 'Basic Mathematics', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1euVsPlxlXUYLdkX7ajEk7FjMRDgVNO8j/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-55', title: 'F3 BUSINESS STUDIES BOOK TIE', form: 'Form 3', subject: 'Business Studies', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1uRLc0lLlqogCdCn8EP8CXCTFwxsvYEaU/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-56', title: 'Home Economics Form Two', form: 'Form 2', subject: 'Home Economics', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1pKLsxQpklSiPjBnvLWuUFUifIUcyquY1/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-57', title: 'CIVICS F2', form: 'Form 2', subject: 'Civics', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1txw6yyIKY3cBScGxWD3vqwmjsI3hklMD/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
@@ -1051,7 +1045,7 @@ export const OFFICIAL_ATTACHED_TIE_BOOKS: PaperRecord[] = [
   { id: 'tie-drive-book-68', title: 'BIOLOGY FORM 2 TIE NEW SYLLABUS', form: 'Form 2', subject: 'Biology', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1A0voCf2A83VvMEEaQONtnyQhuNGBXrX2/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-69', title: 'Geography F2', form: 'Form 2', subject: 'Geography', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1IloB7ZSJzZ1BxkzibrC7uCzaiEsRgC0s/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-70', title: 'Acting F2', form: 'Form 2', subject: 'General Studies', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1uR6zEY6mryLyA8AIwSbYxIT0dotA3aC5/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
-  { id: 'tie-drive-book-71', title: 'Additional Mathematics Form Two', form: 'Form 2', subject: 'Additional Mathematics', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1GlOxsR4aMBoQBPxDpqWQ0H4aRwlbn_I1/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
+  { id: 'tie-drive-book-71', title: "Additional Mathematics Form Two (TIE 2023 Student's Book)", form: 'Form 2', subject: 'Additional Mathematics', year: '2023', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1GlOxsR4aMBoQBPxDpqWQ0H4aRwlbn_I1/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-72', title: 'AGRICULTURE F2 TIE NEW SYLLABUS', form: 'Form 2', subject: 'Agriculture', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1ceZTZ9uuyylvj7mKvyQgZZRmxepfuJE1/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-73', title: 'Agromechanics', form: 'Form 2', subject: 'Agriculture', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1n58bAzDBkMX6EM3VrAQQj_eHfh3uwpft/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-74', title: 'Animal Health and Production', form: 'Form 2', subject: 'Agriculture', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1xGo30_Jwid5C1x2SfK_7FXIQ6igs2xz4/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
@@ -1064,7 +1058,7 @@ export const OFFICIAL_ATTACHED_TIE_BOOKS: PaperRecord[] = [
   { id: 'tie-drive-book-81', title: 'kiswahili f2', form: 'Form 2', subject: 'Kiswahili', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1Uy6QCfS8lORVPB38N4vej6PY_KOgzVah/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-82', title: 'PHYSICS F2 NEW TIE', form: 'Form 2', subject: 'Physics', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1FLxPeajErXbEESO0Evezeh4QL8pQ8LY8/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-83', title: 'HISTORIA YA TANZANIA NA MAADILI KIDATO CHA PILI', form: 'Form 2', subject: 'Historia ya Tanzania na Maadili', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1EhCwHX6cmAqtEdF1zvbEG_HuQbBtZdEU/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
-  { id: 'tie-drive-book-84', title: 'Basic Mathematics F2', form: 'Form 2', subject: 'Basic Mathematics', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1yhx10LAspqFck81xdn56WcPsnH_JbLzI/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
+  { id: 'tie-drive-book-84', title: 'Mathematics Form Two (TIE 2024 Revised Edition)', form: 'Form 2', subject: 'Basic Mathematics', year: '2024', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1yhx10LAspqFck81xdn56WcPsnH_JbLzI/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-85', title: 'BUSINESS STUDIES F2', form: 'Form 2', subject: 'Business Studies', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1ttUVMMlXRG1tXVuwECsB6_OgYbgCJeHZ/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-86', title: 'BUSINESS STUDIES FI', form: 'Form 1', subject: 'Business Studies', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1O4Ax5H-gAT5UaHbXCq9ztqROv_zrKPrt/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-87', title: 'F1 Engineering Science', form: 'Form 1', subject: 'Physics', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/13tvaVdsstSbCp5xiQR7x9D8T7KXs3MUZ/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
@@ -1084,7 +1078,7 @@ export const OFFICIAL_ATTACHED_TIE_BOOKS: PaperRecord[] = [
   { id: 'tie-drive-book-101', title: 'Home Economics F1', form: 'Form 1', subject: 'Home Economics', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/16sPDL6ymcvAKTnL_66j_dATs-4tzuaQm/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-102', title: 'ICT Computer Studies F1', form: 'Form 1', subject: 'Computer Science', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/15rOmh17imv9zkPsJL7Wo7PxUTDWIBHyx/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-103', title: 'Kiswahili F1', form: 'Form 1', subject: 'Kiswahili', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1LfBotG42DW_gV_L7eBAutmt_ffKWIry_/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
-  { id: 'tie-drive-book-104', title: 'MATH TIE BOOK 1', form: 'Form 1', subject: 'Basic Mathematics', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1g0lE1PZAyD1wjQP_EyjzUJow39caujxn/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
+  { id: 'tie-drive-book-104', title: 'MATHEMATICS F1 (TIE 2023 Revised Book)', form: 'Form 1', subject: 'Basic Mathematics', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1g0lE1PZAyD1wjQP_EyjzUJow39caujxn/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-105', title: 'PHYSICS F1', form: 'Form 1', subject: 'Physics', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1mUAUNoLsP0c_kAJ89Uhr0Zl5O13mgyVp/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
 ];
 
@@ -1212,36 +1206,232 @@ export function normalizeClassName(rawForm: string): string {
 
 export function normalizeSubjectName(rawSubject: string, rawTitle = ''): string {
   const s = (rawSubject || '').trim();
-  const lower = s.toLowerCase();
-  const titleLower = (rawTitle || '').toLowerCase();
+  const rawLower = s.toLowerCase().replace(/\s+/g, ' ');
+  const titleLower = (rawTitle || '').toLowerCase().replace(/\s+/g, ' ');
 
-  if (lower === 'htm' || lower.includes('historia ya tanzania') || titleLower.includes('historia ya tanzania na maadili')) {
+  // Self-heal any previously cached record where rawSubject was wrongly set to 'Computer Science'
+  // due to the old 'ics ' substring match on titles like 'Physics ', 'Mathematics ', 'Civics ', 'Economics '
+  const isMismatchedCachedComputer =
+    rawLower === 'computer science' &&
+    titleLower.length > 0 &&
+    !/\b(computer|ics|ict|information\s+and\s+computer)\b/i.test(titleLower);
+  const lower = isMismatchedCachedComputer ? '' : rawLower;
+
+  // Handle sheet rows where title explicitly starts with "History Form ..." while subject column had a copy-paste typo
+  if (
+    /^history\s+form\s+(five|six|5|6|one|two|three|four|1|2|3|4)\b/i.test(titleLower) &&
+    !lower.includes('historia')
+  ) {
+    return 'History';
+  }
+
+  // 1. Historia ya Tanzania na Maadili
+  if (
+    lower === 'htm' ||
+    lower.includes('historia ya tanzania') ||
+    titleLower.includes('historia ya tanzania na maadil')
+  ) {
     return 'Historia ya Tanzania na Maadili';
   }
-  if (lower === 'ict' || lower === 'ics' || lower.includes('computer') || lower.includes('information and computer') || titleLower.includes('ict tie') || titleLower.includes('ics ')) {
+
+  // 2. Computer Science / Information and Computer Studies (ICS / ICT)
+  // Strict word boundaries so 'Physics', 'Mathematics', 'Civics', 'Economics' never match 'ics'
+  if (
+    lower === 'ict' ||
+    lower === 'ics' ||
+    lower.includes('computer') ||
+    /\b(information and computer|computer science|computer studies|ics|ict)\b/i.test(lower) ||
+    /\b(information and computer studies|computer science)\b/i.test(titleLower) ||
+    (!lower && /\b(ics|ict|computer science|information and computer)\b/i.test(titleLower)) ||
+    /\b(form\s*[1-6]\s+(ics|ict)|^(ics|ict)\s+(tie|form|book|mock|necta|ftna|csee))\b/i.test(titleLower)
+  ) {
     return 'Computer Science';
   }
-  if (lower === 'english' || lower === 'english language' || titleLower.includes('english tie')) {
-    return 'English Language';
+
+  // 3. Basic Applied Mathematics (BAM)
+  if (
+    lower === 'bam' ||
+    lower.includes('basic applied math') ||
+    titleLower.includes('basic applied math') ||
+    /\bbam\b/i.test(titleLower)
+  ) {
+    return 'Basic Applied Mathematics (BAM)';
   }
-  if (lower === 'book-keeping' || lower === 'book keeping' || lower === 'bookkeeping' || titleLower.includes('book-keeping') || titleLower.includes('book keeping')) {
-    return 'Book-Keeping';
+
+  // 4. Advanced Mathematics
+  if (
+    lower.includes('advanced math') ||
+    lower.includes('adv math') ||
+    titleLower.includes('advanced math') ||
+    titleLower.includes('mayombya')
+  ) {
+    return 'Advanced Mathematics';
   }
-  if (lower === 'business studies' || lower === 'bussiness studies' || titleLower.includes('bussiness studies') || titleLower.includes('business studies')) {
-    return 'Business Studies';
-  }
-  if (lower === 'additional mathematics' || lower === 'aditional mathematics' || titleLower.includes('additional mathematics') || titleLower.includes('aditional mathematics')) {
+
+  // 5. Additional Mathematics
+  if (
+    lower.includes('additional math') ||
+    lower.includes('aditional math') ||
+    titleLower.includes('additional math') ||
+    titleLower.includes('aditional math')
+  ) {
     return 'Additional Mathematics';
   }
-  if (lower === 'home economics' || lower.includes('food and human nutrition')) {
-    return 'Home Economics';
-  }
-  if (lower === 'fasihi ya kiswahili' || lower === 'kiswahili') {
-    return 'Kiswahili';
-  }
-  if (lower === 'basic mathematics' || lower === 'mathematics') {
+
+  // 6. Basic Mathematics
+  if (
+    lower === 'basic mathematics' ||
+    lower === 'mathematics' ||
+    lower === 'math' ||
+    lower === 'maths' ||
+    lower.startsWith('basic math') ||
+    (!lower && /\b(basic mathematics|mathematics)\b/i.test(titleLower))
+  ) {
     return 'Basic Mathematics';
   }
+
+  // 7. Physics (including Physics 1, Physics 2A, Physics (Practical))
+  if (lower.startsWith('physics') || (!lower && /\bphysics\b/i.test(titleLower))) {
+    return 'Physics';
+  }
+
+  // 8. Chemistry (including Chemistry 1, Chemistry 02, Chemistry (Practical), Physical/Organic/Inorganic Chemistry)
+  if (
+    lower.startsWith('chemistry') ||
+    lower.includes('chemistry') ||
+    (!lower && /\bchemistry\b/i.test(titleLower))
+  ) {
+    return 'Chemistry';
+  }
+
+  // 9. Biology (including Biology 1, Biology 2A, Biology (Practical))
+  if (lower.startsWith('biology') || (!lower && /\bbiology\b/i.test(titleLower))) {
+    return 'Biology';
+  }
+
+  // 10. Geography (including Physical Geography, Practical Geography)
+  if (lower.includes('geography') || (!lower && /\bgeography\b/i.test(titleLower))) {
+    return 'Geography';
+  }
+
+  // 11. Literature in English
+  if (
+    lower === 'literature' ||
+    lower === 'literature in english' ||
+    lower.includes('literature in english') ||
+    (!lower && /\bliterature\b/i.test(titleLower))
+  ) {
+    return 'Literature in English';
+  }
+
+  // 12. English Language
+  if (
+    lower === 'english' ||
+    lower === 'english language' ||
+    lower.startsWith('english language') ||
+    (!lower && /\benglish\b/i.test(titleLower))
+  ) {
+    return 'English Language';
+  }
+
+  // 13. Book-Keeping
+  if (
+    lower === 'book-keeping' ||
+    lower === 'book keeping' ||
+    lower === 'bookkeeping' ||
+    lower === 'b.keeping' ||
+    titleLower.includes('book-keeping') ||
+    titleLower.includes('book keeping') ||
+    titleLower.includes('bookkeeping') ||
+    titleLower.includes('b.keeping')
+  ) {
+    return 'Book-Keeping';
+  }
+
+  // 14. Business Studies
+  if (
+    lower.includes('business studies') ||
+    lower.includes('bussiness studies') ||
+    titleLower.includes('bussiness studies') ||
+    titleLower.includes('business studies')
+  ) {
+    return 'Business Studies';
+  }
+
+  // 15. Home Economics / Food and Human Nutrition (check before Economics)
+  if (
+    lower === 'home economics' ||
+    lower.includes('home economics') ||
+    lower.includes('food and human nutrition') ||
+    (!lower && /\b(home economics|food and human nutrition)\b/i.test(titleLower))
+  ) {
+    return 'Home Economics';
+  }
+
+  // 16. Economics (including Microeconomics, Macroeconomics)
+  if (
+    lower === 'economics' ||
+    lower.includes('economics') ||
+    (!lower && /\b(economics|macroeconomics|microeconomics)\b/i.test(titleLower))
+  ) {
+    return 'Economics';
+  }
+
+  // 17. Kiswahili / Fasihi ya Kiswahili
+  if (
+    lower === 'fasihi ya kiswahili' ||
+    lower === 'kiswahili' ||
+    (!lower && /\bkiswahili\b/i.test(titleLower))
+  ) {
+    return 'Kiswahili';
+  }
+
+  // 18. Civics
+  if (lower === 'civics' || lower.startsWith('civics') || (!lower && /\bcivics\b/i.test(titleLower))) {
+    return 'Civics';
+  }
+
+  // 19. History
+  if (lower === 'history' || lower.startsWith('history') || (!lower && /\bhistory\b/i.test(titleLower))) {
+    return 'History';
+  }
+
+  // 20. Commerce
+  if (lower === 'commerce' || lower.startsWith('commerce') || (!lower && /\bcommerce\b/i.test(titleLower))) {
+    return 'Commerce';
+  }
+
+  // 21. Agriculture
+  if (lower.includes('agriculture') || (!lower && /\bagriculture\b/i.test(titleLower))) {
+    return 'Agriculture';
+  }
+
+  // 22. Accountancy
+  if (lower.includes('accountancy') || (!lower && /\baccountancy\b/i.test(titleLower))) {
+    return 'Accountancy';
+  }
+
+  // 23. Academic Communication
+  if (
+    lower.includes('academic communication') ||
+    (!lower && /\bacademic communication\b/i.test(titleLower))
+  ) {
+    return 'Academic Communication';
+  }
+
+  // 24. General Studies
+  if (lower.includes('general studies') || (!lower && /\bgeneral studies\b/i.test(titleLower))) {
+    return 'General Studies';
+  }
+
+  // 25. Arabic / French / Fine Art / Bible Knowledge
+  if (lower === 'arabic' || (!lower && /\barabic\b/i.test(titleLower))) return 'Arabic';
+  if (lower === 'french' || (!lower && /\bfrench\b/i.test(titleLower))) return 'French';
+  if (lower === 'fine art' || (!lower && /\bfine art\b/i.test(titleLower))) return 'Fine Art';
+  if (lower.includes('bible knowledge') || (!lower && /\bbible knowledge\b/i.test(titleLower))) {
+    return 'Bible Knowledge';
+  }
+
   return s || 'General';
 }
 
@@ -1251,8 +1441,15 @@ export function matchesSubjectQuery(recordSubject: string, targetSubject: string
   if (normA === normB) return true;
   if (normA.includes(normB) || normB.includes(normA)) {
     if (
-      (normA.includes('additional') !== normB.includes('additional')) ||
-      (normA.includes('maadili') !== normB.includes('maadili'))
+      normA.includes('additional') !== normB.includes('additional') ||
+      normA.includes('advanced') !== normB.includes('advanced') ||
+      normA.includes('applied') !== normB.includes('applied') ||
+      normA.includes('maadili') !== normB.includes('maadili') ||
+      normA.includes('home') !== normB.includes('home') ||
+      normA.includes('literature') !== normB.includes('literature') ||
+      normA.includes('computer') !== normB.includes('computer') ||
+      normA.includes('business') !== normB.includes('business') ||
+      normA.includes('general') !== normB.includes('general')
     ) {
       return false;
     }
@@ -2154,10 +2351,10 @@ export function buildInstantOfficialDocument(
         .map((s) => s.trim())
         .filter(Boolean);
       if (sentences.length <= 1) {
-        return `<p style="margin:0; line-height:1.65; color:#1e293b;">${escaped}</p>`;
+        return `<p style="margin:0; line-height:1.65; color:var(--text-primary);">${escaped}</p>`;
       }
-      return `<p style="margin:0 0 6px 0; line-height:1.65; color:#1e293b;">${sentences[0]}</p>
-        <ul style="margin:0; padding-left:18px; color:#334155; line-height:1.6;">
+      return `<p style="margin:0 0 6px 0; line-height:1.65; color:var(--text-primary);">${sentences[0]}</p>
+        <ul style="margin:0; padding-left:18px; color:var(--text-secondary); line-height:1.6;">
           ${sentences
             .slice(1)
             .map((s) => `<li style="margin-bottom:3px;">${s}</li>`)
@@ -2174,7 +2371,7 @@ export function buildInstantOfficialDocument(
       return lines
         .map(
           (line) =>
-            `<div style="margin-bottom:4px; line-height:1.6; color:#1e293b;">• ${line.replace(
+            `<div style="margin-bottom:4px; line-height:1.6; color:var(--text-primary);">• ${line.replace(
               /^(Step\s*\d+[^:]*:)/i,
               '<strong>$1</strong>'
             )}</div>`
@@ -2182,22 +2379,22 @@ export function buildInstantOfficialDocument(
         .join('');
     };
 
-    return `<div class="official-tie-doc" style="padding:18px 20px; line-height:1.6; color:#0f172a; background:#ffffff; border:1px solid #cbd5e1; border-radius:10px;">
+    return `<div class="official-tie-doc" style="padding:18px 20px; line-height:1.6; color:var(--text-primary); background:var(--bg-surface); border:1px solid var(--border-strong); border-radius:10px;">
       <!-- Clean Document Title Banner -->
-      <div style="text-align:center; border-bottom:2px solid #0f172a; padding-bottom:10px; margin-bottom:14px;">
-        <div style="font-weight:800; font-size:11px; letter-spacing:0.04em; color:#475569; text-transform:uppercase;">
+      <div style="text-align:center; border-bottom:2px solid var(--border-strong); padding-bottom:10px; margin-bottom:14px;">
+        <div style="font-weight:800; font-size:11px; letter-spacing:0.04em; color:var(--text-secondary); text-transform:uppercase;">
           THE UNITED REPUBLIC OF TANZANIA · TANZANIA INSTITUTE OF EDUCATION (TIE)
         </div>
-        <div style="font-weight:900; font-size:15px; color:#0f172a; margin-top:2px; text-transform:uppercase;">
+        <div style="font-weight:900; font-size:15px; color:var(--text-primary); margin-top:2px; text-transform:uppercase;">
           ${school} — COMPREHENSIVE TEXTBOOK LESSON NOTES
         </div>
-        <div style="font-weight:700; font-size:12px; color:#1d4ed8; margin-top:2px;">
+        <div style="font-weight:700; font-size:12px; color:#6366f1; margin-top:2px;">
           ${cls} · ${subject} — ${escapeHtml(tbInfo.matchedChapter)}: ${subTopic}
         </div>
       </div>
 
       <!-- Clean Metadata Strip -->
-      <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 14px; margin-bottom:16px; font-size:11.5px; line-height:1.6;">
+      <div style="background:var(--bg-elevated); border:1px solid var(--border-subtle); border-radius:8px; padding:10px 14px; margin-bottom:16px; font-size:11.5px; line-height:1.6;">
         <div style="display:flex; flex-wrap:wrap; gap:6px 20px;">
           <div><strong>Class:</strong> ${cls}</div>
           <div><strong>Subject:</strong> ${subject}</div>
@@ -2206,21 +2403,21 @@ export function buildInstantOfficialDocument(
           <div><strong>Sub-Topic:</strong> ${subTopic}</div>
           <div><strong>Prepared By:</strong> ${teacher}</div>
         </div>
-        <div style="margin-top:6px; padding-top:6px; border-top:1px solid #e2e8f0; color:#475569;">
+        <div style="margin-top:6px; padding-top:6px; border-top:1px solid var(--border-subtle); color:var(--text-secondary);">
           <strong>Chapter Sub-Topics Covered:</strong> ${escapeHtml(tbInfo.subTopicsList.join(' • '))}
         </div>
       </div>
 
       <!-- PART I: STRUCTURED TOPIC NOTES FOLLOWING ATTACHED TEXTBOOK -->
       <div style="margin-bottom:18px;">
-        <div style="font-weight:900; font-size:12.5px; color:#0f172a; text-transform:uppercase; letter-spacing:0.03em; border-bottom:1px solid #cbd5e1; padding-bottom:4px; margin-bottom:10px;">
+        <div style="font-weight:900; font-size:12.5px; color:var(--text-primary); text-transform:uppercase; letter-spacing:0.03em; border-bottom:1px solid var(--border-strong); padding-bottom:4px; margin-bottom:10px;">
           Part I: Core Textbook Notes &amp; Key Concepts (${escapeHtml(tbInfo.bookTitle)})
         </div>
         <div style="display:flex; flex-direction:column; gap:12px;">
           ${concepts
             .map(
-              (c) => `<div style="padding:10px 14px; background:#ffffff; border:1px solid #e2e8f0; border-radius:8px;">
-                <div style="font-weight:800; font-size:12.5px; color:#1e3a8a; margin-bottom:5px;">
+              (c) => `<div style="padding:10px 14px; background:var(--bg-elevated); border:1px solid var(--border-subtle); border-radius:8px;">
+                <div style="font-weight:800; font-size:12.5px; color:#6366f1; margin-bottom:5px;">
                   ${escapeHtml(c.heading)}
                 </div>
                 <div style="font-size:12px;">
@@ -2234,15 +2431,15 @@ export function buildInstantOfficialDocument(
 
       <!-- PART II: LABELED TEXTBOOK DIAGRAM & VISUAL ILLUSTRATION -->
       <div style="margin-bottom:18px;">
-        <div style="font-weight:900; font-size:12.5px; color:#0f172a; text-transform:uppercase; letter-spacing:0.03em; border-bottom:1px solid #cbd5e1; padding-bottom:4px; margin-bottom:10px;">
+        <div style="font-weight:900; font-size:12.5px; color:var(--text-primary); text-transform:uppercase; letter-spacing:0.03em; border-bottom:1px solid var(--border-strong); padding-bottom:4px; margin-bottom:10px;">
           Part II: Labeled Textbook Diagram &amp; Visual Illustration
         </div>
-        <div style="padding:12px 14px; background:#ffffff; border:1px solid #cbd5e1; border-radius:8px;">
-          <div style="font-weight:800; font-size:12px; color:#0f172a; margin-bottom:8px; text-align:center;">
+        <div style="padding:12px 14px; background:var(--bg-elevated); border:1px solid var(--border-strong); border-radius:8px;">
+          <div style="font-weight:800; font-size:12px; color:var(--text-primary); margin-bottom:8px; text-align:center;">
             ${diagramBlock.title}
           </div>
           ${diagramBlock.svgHtml}
-          <div style="font-size:11px; color:#475569; margin-top:8px; text-align:center; font-style:italic;">
+          <div style="font-size:11px; color:var(--text-secondary); margin-top:8px; text-align:center; font-style:italic;">
             ${diagramBlock.caption}
           </div>
         </div>
@@ -2250,18 +2447,18 @@ export function buildInstantOfficialDocument(
 
       <!-- PART III: STEP-BY-STEP WORKED EXAMPLES -->
       <div style="margin-bottom:18px;">
-        <div style="font-weight:900; font-size:12.5px; color:#0f172a; text-transform:uppercase; letter-spacing:0.03em; border-bottom:1px solid #cbd5e1; padding-bottom:4px; margin-bottom:10px;">
+        <div style="font-weight:900; font-size:12.5px; color:var(--text-primary); text-transform:uppercase; letter-spacing:0.03em; border-bottom:1px solid var(--border-strong); padding-bottom:4px; margin-bottom:10px;">
           Part III: Step-by-Step Worked Examples (TIE Textbook &amp; NECTA Standard)
         </div>
         <div style="display:flex; flex-direction:column; gap:10px;">
           ${examples
             .map(
-              (ex, idx) => `<div style="padding:12px 14px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px;">
-                <div style="font-weight:800; font-size:12px; color:#0f172a; margin-bottom:6px;">
+              (ex, idx) => `<div style="padding:12px 14px; background:var(--bg-elevated); border:1px solid var(--border-strong); border-radius:8px;">
+                <div style="font-weight:800; font-size:12px; color:var(--text-primary); margin-bottom:6px;">
                   Example ${idx + 1}: ${escapeHtml(ex.problem)}
                 </div>
-                <div style="font-size:11.5px; padding-top:6px; border-top:1px dashed #cbd5e1;">
-                  <div style="font-weight:800; color:#047857; margin-bottom:4px;">Worked Solution:</div>
+                <div style="font-size:11.5px; padding-top:6px; border-top:1px dashed var(--border-strong);">
+                  <div style="font-weight:800; color:#10b981; margin-bottom:4px;">Worked Solution:</div>
                   ${formatSolutionStepsHtml(ex.solution)}
                 </div>
               </div>`
@@ -2272,17 +2469,17 @@ export function buildInstantOfficialDocument(
 
       <!-- PART IV: SELF-ASSESSMENT & REVISION EXERCISE -->
       <div>
-        <div style="font-weight:900; font-size:12.5px; color:#0f172a; text-transform:uppercase; letter-spacing:0.03em; border-bottom:1px solid #cbd5e1; padding-bottom:4px; margin-bottom:10px;">
+        <div style="font-weight:900; font-size:12.5px; color:var(--text-primary); text-transform:uppercase; letter-spacing:0.03em; border-bottom:1px solid var(--border-strong); padding-bottom:4px; margin-bottom:10px;">
           Part IV: Self-Assessment &amp; Textbook Chapter Revision Exercise
         </div>
         <div style="display:flex; flex-direction:column; gap:8px;">
           ${practiceQs
             .map(
-              (pq, idx) => `<div style="padding:10px 14px; background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; font-size:12px;">
-                <div style="font-weight:800; color:#0f172a; margin-bottom:4px;">
+              (pq, idx) => `<div style="padding:10px 14px; background:var(--bg-elevated); border:1px solid var(--border-subtle); border-radius:8px; font-size:12px;">
+                <div style="font-weight:800; color:var(--text-primary); margin-bottom:4px;">
                   Question ${idx + 1}: ${escapeHtml(pq.question)}
                 </div>
-                <div style="font-size:11.5px; color:#065f46; background:#ecfdf5; border:1px solid #a7f3d0; padding:5px 10px; border-radius:6px;">
+                <div style="font-size:11.5px; color:var(--callout-emerald-text); background:var(--callout-emerald-bg); border:1px solid var(--callout-emerald-border); padding:5px 10px; border-radius:6px;">
                   <strong>Marking Guide / Key Points:</strong> ${escapeHtml(pq.answerHint)}
                 </div>
               </div>`
@@ -2526,7 +2723,7 @@ export function buildInstantOfficialDocument(
         <tbody>
           ${
             showOrientation
-              ? `<tr><td colspan="12" style="text-align:center; font-weight:800; background:#fef3c7;">Registration &amp; Orientation Course (13/01/2026 - 28/02/2026)</td></tr>`
+              ? `<tr><td colspan="12" style="text-align:center; font-weight:800; background:var(--callout-amber-bg); color:var(--callout-amber-text);">Registration &amp; Orientation Course (13/01/2026 - 28/02/2026)</td></tr>`
               : ''
           }
           <tr>
@@ -2571,7 +2768,7 @@ export function buildInstantOfficialDocument(
             <td>${bookRef}</td>
             <td></td>
           </tr>
-          <tr><td colspan="12" style="text-align:center; font-weight:800; background:#f1f5f9;">MID-TERM ASSESSMENT &amp; SHORT BREAK</td></tr>
+          <tr><td colspan="12" style="text-align:center; font-weight:800; background:var(--bg-elevated); color:var(--text-primary);">MID-TERM ASSESSMENT &amp; SHORT BREAK</td></tr>
         </tbody>
       </table>
     </div>`;
@@ -2762,7 +2959,7 @@ export function buildInstantOfficialDocument(
           </tr>`
             )
             .join('')}
-          <tr style="background:#f1f5f9; font-weight:900;">
+          <tr style="background:var(--bg-elevated); color:var(--text-primary); font-weight:900;">
             <td>TOTAL (NECTA STANDARD 100%)</td>
             <td>40</td>
             <td>100%</td>
@@ -3022,6 +3219,54 @@ export function generateLocalSmartTutorReply(
     });
   }
 
+  // Simultaneous equations solver: e.g., "2x + y = 5 and x + 2y = 4"
+  const simulMatch = cleanInput.match(
+    /([+-]?\d*)x\s*([+-]\s*\d*)y\s*=\s*([+-]?\d+(?:\.\d+)?)\s*(?:,|and|;|\n)\s*([+-]?\d*)x\s*([+-]\s*\d*)y\s*=\s*([+-]?\d+(?:\.\d+)?)/i
+  );
+  if (simulMatch) {
+    const parseCoef = (s: string) => {
+      const cleaned = s.replace(/\s+/g, '');
+      if (cleaned === '' || cleaned === '+') return 1;
+      if (cleaned === '-') return -1;
+      return parseFloat(cleaned);
+    };
+    const a1 = parseCoef(simulMatch[1]);
+    const b1 = parseCoef(simulMatch[2]);
+    const c1 = parseFloat(simulMatch[3]);
+    const a2 = parseCoef(simulMatch[4]);
+    const b2 = parseCoef(simulMatch[5]);
+    const c2 = parseFloat(simulMatch[6]);
+    const det = a1 * b2 - a2 * b1;
+    if (det !== 0 && !Number.isNaN(det)) {
+      const xVal = (c1 * b2 - c2 * b1) / det;
+      const yVal = (a1 * c2 - a2 * c1) / det;
+      return `**Step 1 (Write the System of Linear Equations):**\n$$\\begin{cases} ${a1}x + (${b1})y = ${c1} \\\\ ${a2}x + (${b2})y = ${c2} \\end{cases}$$\n**Step 2 (Elimination / Cramer's Determinant):**\n$$\\Delta = (${a1})(${b2}) - (${a2})(${b1}) = ${det}$$\n$$x = \\frac{(${c1})(${b2}) - (${c2})(${b1})}{${det}} = ${xVal}, \\quad y = \\frac{(${a1})(${c2}) - (${a2})(${c1})}{${det}} = ${yVal}$$\n\n**Final Answer:** $$\\mathbf{x = ${xVal}, \\quad y = ${yVal}}$$`;
+    }
+  }
+
+  // Linear equation solver (supports variables on both sides: ax + b = cx + d or ax + b = c)
+  const twoSideLinearMatch = cleanInput.match(
+    /(?:solve\s+)?([+-]?\d*)x\s*([+-]\s*\d+)?\s*=\s*([+-]?\d*)x\s*([+-]\s*\d+)/i
+  );
+  if (twoSideLinearMatch && !cleanInput.includes('x^2')) {
+    const parseCoef = (s?: string) => {
+      const cleaned = (s || '').replace(/\s+/g, '');
+      if (cleaned === '' || cleaned === '+') return 1;
+      if (cleaned === '-') return -1;
+      return parseFloat(cleaned);
+    };
+    const a = parseCoef(twoSideLinearMatch[1]);
+    const b = twoSideLinearMatch[2] ? parseFloat(twoSideLinearMatch[2].replace(/\s+/g, '')) : 0;
+    const c = parseCoef(twoSideLinearMatch[3]);
+    const d = parseFloat(twoSideLinearMatch[4].replace(/\s+/g, ''));
+    if (a - c !== 0 && !Number.isNaN(a) && !Number.isNaN(c) && !Number.isNaN(d)) {
+      const netCoef = a - c;
+      const netRhs = d - b;
+      const xVal = netRhs / netCoef;
+      return `**Step 1 (Collect $x$ terms on the left and constants on the right):**\n$$(${a} - ${c})x = ${d} - (${b}) \\implies ${netCoef}x = ${netRhs}$$\n**Step 2 (Divide both sides by $${netCoef}$):**\n$$x = \\frac{${netRhs}}{${netCoef}} = ${xVal}$$\n\n**Final Answer:** $$\\mathbf{x = ${xVal}}$$`;
+    }
+  }
+
   // Linear equation solver: e.g., "solve 2x + 5 = 15"
   const linearEqMatch = cleanInput.match(/(?:solve\s+)?([+-]?\d*)x\s*([+-]\s*\d+)\s*=\s*([+-]?\d+)/i);
   if (linearEqMatch && !cleanInput.includes('x^2')) {
@@ -3046,6 +3291,23 @@ export function generateLocalSmartTutorReply(
       const r1 = (-b + Math.sqrt(disc)) / (2 * a);
       const r2 = (-b - Math.sqrt(disc)) / (2 * a);
       return `**Step 1 (Coefficients & Discriminant):** $a = ${a},\\; b = ${b},\\; c = ${c}$\n$$\\Delta = b^2 - 4ac = (${b})^2 - 4(${a})(${c}) = ${disc}$$\n**Step 2 (Quadratic Formula):**\n$$x = \\frac{-b \\pm \\sqrt{\\Delta}}{2a} = \\frac{${-b} \\pm ${Math.sqrt(disc)}}{${2 * a}}$$\n\n**Final Answer:** $$\\mathbf{x_1 = ${r1}, \\quad x_2 = ${r2}}$$`;
+    }
+  }
+
+  // Coordinate geometry gradient & line solver: e.g., "line passing through (1, 2) and (4, 8)"
+  const twoPointsMatch = cleanInput.match(
+    /\(\s*([+-]?\d+(?:\.\d+)?)\s*,\s*([+-]?\d+(?:\.\d+)?)\s*\)\s*(?:and|to|,)\s*\(\s*([+-]?\d+(?:\.\d+)?)\s*,\s*([+-]?\d+(?:\.\d+)?)\s*\)/i
+  );
+  if (twoPointsMatch) {
+    const x1 = parseFloat(twoPointsMatch[1]);
+    const y1 = parseFloat(twoPointsMatch[2]);
+    const x2 = parseFloat(twoPointsMatch[3]);
+    const y2 = parseFloat(twoPointsMatch[4]);
+    if (x2 !== x1) {
+      const m = (y2 - y1) / (x2 - x1);
+      const c = y1 - m * x1;
+      const cSign = c >= 0 ? `+ ${c}` : `- ${Math.abs(c)}`;
+      return `**Step 1 (Find the Gradient $m$):**\n$$m = \\frac{y_2 - y_1}{x_2 - x_1} = \\frac{${y2} - (${y1})}{${x2} - (${x1})} = \\frac{${y2 - y1}}{${x2 - x1}} = ${m}$$\n**Step 2 (Find the Equation of the Straight Line $y = mx + c$):**\n$$y - (${y1}) = ${m}(x - (${x1})) \\implies y = ${m}x ${cSign}$$\n\n**Final Answer:** **Gradient $m = ${m}$, Equation: $y = ${m}x ${cSign}$**`;
     }
   }
 
@@ -3074,6 +3336,11 @@ export function generateLocalSmartTutorReply(
     } catch {
       // Fall through
     }
+  }
+
+  // If the user uploaded a photo with the default "Solve this question step-by-step." prompt and the AI vision call timed out
+  if (/^solve\s+this\s+question\s+step-by-step\.?$/i.test(cleanInput)) {
+    return `📷 **Image Upload Notice:** Your question photo took too long to upload over the current mobile connection, or the AI Vision service timed out.\n\n**How to get your instant step-by-step solution right now:**\n1. **Tap Send again** (images are now automatically compressed for faster mobile upload), **OR**\n2. **Type or dictate (🎤) the question text** (for example: *"Solve 2x + y = 5 and x + 2y = 4"* or *"Find the inverse of f(x) = 3x - 5"*) and Moha AI will solve every part step-by-step immediately!`;
   }
 
   const explicitlyWantsDiagram = /\b(draw|chora|sketch|diagram|mchoro|plot\s+a\s+graph)\b/i.test(lower);
@@ -3151,8 +3418,7 @@ export function generateLocalSmartTutorReply(
     lower.includes('maswali') ||
     lower.includes('practice') ||
     lower.includes('5 high-yield') ||
-    lower.includes('exercise') ||
-    lower.includes('solve')
+    lower.includes('exercise')
   ) {
     const formattedQuestions = scoredQuiz
       .slice(0, 5)
@@ -3422,9 +3688,9 @@ export function parseClassSubjectTopicFromPrompt(
     { keywords: ['determinant', 'cramer', 'singular matrix', 'inverse matrix', 'matrices'], topic: 'Chapter 7: Matrices and Transformations (2×2 Matrix Operations, Determinant, Inverse Matrix, Simultaneous Equations & Linear Transformations)', defaultForm: 'Form 4', subjects: ['Basic Mathematics', 'Additional Mathematics', 'Basic Applied Mathematics (BAM)'] },
     { keywords: ['position vector', 'unit vector', 'dot product'], topic: 'Chapter 6: Vectors (Displacement & Position Vectors, Magnitude & Direction, Vector Addition, Scalar Multiplication & Bearings)', defaultForm: 'Form 4', subjects: ['Basic Mathematics', 'Physics', 'Additional Mathematics'] },
     { keywords: ['mutually exclusive', 'independent events', 'tree diagram', 'probability'], topic: 'Chapter 4: Probability (Sample Space, Event Probability, Mutually Exclusive Events, Independent Events & Tree Diagrams)', defaultForm: 'Form 4', subjects: ['Basic Mathematics', 'Additional Mathematics'] },
-    { keywords: ['simultaneous equation', 'linear equation', 'linear inequality'], topic: 'Chapter 8: Algebra (Algebraic Expressions, Linear Equations in One Unknown, Simultaneous Linear Equations & Linear Inequalities)', defaultForm: 'Form 1', subjects: ['Basic Mathematics', 'Additional Mathematics'] },
-    { keywords: ['simple interest', 'profit and loss'], topic: 'Chapter 10: Ratios, Profit and Loss (Ratios, Proportions, Profit and Loss & Simple Interest)', defaultForm: 'Form 1', subjects: ['Basic Mathematics'] },
-    { keywords: ['coordinate geometry', 'gradient of a line', 'equation of a line', 'parallel and perpendicular lines'], topic: 'Chapter 11: Coordinate Geometry (Coordinates of a Point, Gradient/Slope of a Line, Equation of a Straight Line y = mx + c & Graphing Linear Equations)', defaultForm: 'Form 1', subjects: ['Basic Mathematics', 'Additional Mathematics'] },
+    { keywords: ['simultaneous equation', 'linear equation', 'linear inequality'], topic: 'Chapter 5: Algebra (Algebraic Expressions, Simplifying Algebraic Fractions, Linear Equations in One Unknown, Equations Involving Absolute Values, Linear Simultaneous Equations by Elimination & Substitution, Word Problems & Inequalities in One Unknown)', defaultForm: 'Form 1', subjects: ['Basic Mathematics', 'Additional Mathematics'] },
+    { keywords: ['ratios and proportions', 'third proportional', 'fourth proportional', 'sharing in ratio'], topic: 'Chapter 4: Ratios and Proportions (Ratios, Combining Ratios A : B : C, Sharing in a Given Ratio, Direct and Inverse Proportions, Map Scales & Third/Fourth Proportionals)', defaultForm: 'Form 1', subjects: ['Basic Mathematics'] },
+    { keywords: ['coordinate geometry', 'gradient of a line', 'equation of a line', 'parallel and perpendicular lines'], topic: 'Chapter 6: Coordinate Geometry (Basic Concepts of Coordinate Geometry, Quadrants & Polygons on the xy-Plane, Gradient/Slope of a Straight Line, Equation of a Straight Line y = mx + c, General Equation ax + by + c = 0, x- and y-Intercepts, Graphing Linear Equations & Solving Simultaneous Equations Graphically)', defaultForm: 'Form 1', subjects: ['Basic Mathematics', 'Additional Mathematics'] },
     { keywords: ['integration', 'integral', 'integrals', 'indefinite integral', 'definite integral', 'area under a curve', 'volume of revolution', 'antiderivative'], topic: 'Chapter 1: Integration (Indefinite & Definite Integrals, Area Under a Curve, Volume of Revolution & Kinematics)', defaultForm: 'Form 4', subjects: ['Additional Mathematics', 'Advanced Mathematics', 'Basic Applied Mathematics (BAM)', 'Basic Mathematics'] },
     { keywords: ['differentiation', 'differentiate', 'derivative', 'derivatives', 'first principles', 'chain rule', 'product rule', 'quotient rule', 'stationary point', 'turning point', 'tangent and normal', 'calculus'], topic: 'Chapter 6: Differentiation (Derivative of a Function, First Principles, Power Rule, Chain Rule, Product Rule, Quotient Rule, Derivatives of Trigonometric Functions, Rates of Change, Turning Points, Curve Sketching, Tangents & Normals)', defaultForm: 'Form 3', subjects: ['Additional Mathematics', 'Advanced Mathematics', 'Basic Applied Mathematics (BAM)', 'Basic Mathematics'] },
     { keywords: ['double entry', 'trial balance', 'ledger', 'balance sheet'], topic: 'Chapter 7: The Earth as a Sphere & Accounts (Great & Small Circles, Latitudes & Longitudes, Distance in Kilometres & Nautical Miles; Double Entry Principle, Cash Book, Ledger, Trial Balance & Financial Statements)', defaultForm: 'Form 3', subjects: ['Basic Mathematics', 'Book-Keeping', 'Business Studies', 'Accountancy'] },
@@ -5324,9 +5590,92 @@ export function buildContentIntegratedQuizQuestions(
 
   const shortFocusTopic = focusTopic.replace(/\s*\([^)]*\)/g, '').trim() || focusTopic;
 
-  const buildTopicPureMathPad = (): Array<Omit<QuizItem, 'topic' | 'subTopic' | 'sourceRef'>> => {
+  const doesMathTopicMatchStrict = (bankTopicRaw: string, bankSubTopicRaw: string, targetTopicRaw: string): boolean => {
+    const parseT = (raw: string) => {
+      const cleaned = (raw || '').trim();
+      const chMatch = cleaned.match(/^(?:Chapter|Topic)\s*(\d+)\s*[:.-]?\s*(.*)$/i);
+      const chapterNum = chMatch ? chMatch[1] : null;
+      const withoutPrefix = chMatch ? chMatch[2] : cleaned;
+      const core = withoutPrefix
+        .replace(/\s*\([^)]*\)/g, '')
+        .replace(/—.*$/, '')
+        .trim()
+        .toLowerCase();
+      return { chapterNum, core };
+    };
+    const sel = parseT(targetTopicRaw);
+    const bnk = parseT(bankTopicRaw);
+    if (!sel.core && !sel.chapterNum) return true;
+    if (sel.chapterNum && bnk.chapterNum && sel.chapterNum !== bnk.chapterNum) {
+      return false;
+    }
+    if (bnk.core && sel.core) {
+      if (bnk.core === sel.core || bnk.core.includes(sel.core) || sel.core.includes(bnk.core)) {
+        return true;
+      }
+    }
+    const stopWords = new Set(['and', 'the', 'of', 'in', 'to', 'for', 'with', 'on', 'by', 'a', 'an', 'chapter', 'topic', 'introduction']);
+    const selWords = sel.core.replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter((w) => w.length >= 3 && !stopWords.has(w));
+    const bnkCombined = `${bnk.core} ${(bankSubTopicRaw || '').toLowerCase()}`.replace(/[^a-z0-9\s]/g, ' ');
+    if (selWords.length > 0 && selWords.every((w) => bnkCombined.includes(w))) {
+      return true;
+    }
+    return false;
+  };
+
+  const buildTopicPureMathPad = (): Array<Omit<QuizItem, 'topic' | 'subTopic' | 'sourceRef'> & { subTopic?: string }> => {
+    const isAddMath = subLower.includes('additional');
+    const exactLevelAndSubjectBank = FULL_EXTRACTED_TEXTBOOK_BANK.filter((seed) => {
+      if (seed.cls.toLowerCase() !== cls.toLowerCase()) return false;
+      const seedIsAdd = seed.subject.toLowerCase().includes('additional');
+      if (isAddMath !== seedIsAdd) return false;
+      return seed.subject.toLowerCase().includes('math');
+    });
+
+    if (exactLevelAndSubjectBank.length > 0) {
+      if (topic && topic !== 'ALL') {
+        const topicMatched = exactLevelAndSubjectBank.filter((seed) =>
+          doesMathTopicMatchStrict(seed.topic, seed.subTopic, focusTopic)
+        );
+        if (topicMatched.length > 0) {
+          return topicMatched.map((seed) => ({
+            subTopic: seed.subTopic,
+            question: `[${cls} • ${shortFocusTopic}] [${seed.exerciseRef}] ${seed.question}`,
+            options: [...seed.options],
+            correctIndex: seed.correctIndex,
+            explanation: seed.explanation,
+          }));
+        }
+      } else {
+        // Interleave across chapters of this exact Form & Subject so 'ALL' covers the whole level evenly
+        const byChap = new Map<string, typeof exactLevelAndSubjectBank>();
+        for (const s of exactLevelAndSubjectBank) {
+          const arr = byChap.get(s.topic) || [];
+          arr.push(s);
+          byChap.set(s.topic, arr);
+        }
+        const buckets = Array.from(byChap.values());
+        const interleaved: typeof exactLevelAndSubjectBank = [];
+        const maxLen = buckets.reduce((m, b) => Math.max(m, b.length), 0);
+        for (let i = 0; i < maxLen && interleaved.length < 25; i++) {
+          for (const b of buckets) {
+            if (i < b.length) interleaved.push(b[i]);
+          }
+        }
+        return interleaved.map((seed) => ({
+          subTopic: seed.subTopic,
+          question: `[${cls} • ${seed.topic}] [${seed.exerciseRef}] ${seed.question}`,
+          options: [...seed.options],
+          correctIndex: seed.correctIndex,
+          explanation: seed.explanation,
+        }));
+      }
+    }
+
+    const dynamicTopicItems: Array<Omit<QuizItem, 'topic' | 'subTopic' | 'sourceRef'> & { subTopic?: string }> = [];
+
     if (/\b(logarithm|standard\s+form)\b/i.test(topicCombinedLower)) {
-      return [
+      dynamicTopicItems.push(
         {
           question: `[${cls} • ${shortFocusTopic}] Evaluate without mathematical tables: $\\log_{10} 80 - \\log_{10} 8$`,
           options: ['$1$', '$10$', '$0$', '$2$'],
@@ -5350,11 +5699,11 @@ export function buildContentIntegratedQuizQuestions(
           options: ['$3$', '$9$', '$\\log_{10} 9$', '$24$'],
           correctIndex: 0,
           explanation: `Step 1: Write $27 = 3^3 \\Rightarrow \\frac{\\log_{10}(3^3)}{\\log_{10} 3} = \\frac{3 \\log_{10} 3}{\\log_{10} 3} = 3$.`,
-        },
-      ];
+        }
+      );
     }
     if (/\b(relations|functions|domain|inverse\s+of\s+a\s+relation|inverse\s+function|composite\s+function)\b/i.test(topicCombinedLower) && !/\b(relationship|relationships|concept\s+of\s+mathematics)\b/i.test(topicCombinedLower)) {
-      return [
+      dynamicTopicItems.push(
         {
           question: `[${cls} • ${shortFocusTopic}] Given the relation $R = \\{(1, 4), (2, 7), (3, 10), (4, 13)\\}$, state its Domain and Range`,
           options: [
@@ -5398,21 +5747,118 @@ export function buildContentIntegratedQuizQuestions(
           ],
           correctIndex: 0,
           explanation: `Step 1: Since $x^2 \\ge 0$ for all $x \\in \\mathbb{R}$, adding $4$ gives $x^2 + 4 \\ge 4$. Thus the Range is $y \\ge 4$.`,
-        },
-      ];
+        }
+      );
     }
-    return [];
+    const pushTupleBank = (rows: Array<[string, string, string, string, string, string]>) => {
+      rows.forEach(([qStem, opt0, opt1, opt2, opt3, exp], idx) => {
+        dynamicTopicItems.push({
+          question: `[${cls} • ${shortFocusTopic}] [Exercise #${idx + 1}] ${qStem}`,
+          options: [opt0, opt1, opt2, opt3],
+          correctIndex: 0,
+          explanation: exp,
+        });
+      });
+    };
+
+    if (/\b(matrix|matrices|determinant|cramer|transformation)\b/i.test(topicCombinedLower)) {
+      pushTupleBank([
+        ['Given $A = \\begin{pmatrix} 3 & -2 \\\\ 5 & 4 \\end{pmatrix}$ and $B = \\begin{pmatrix} -1 & 6 \\\\ 2 & 3 \\end{pmatrix}$, find $A + B$:', '$\\begin{pmatrix} 2 & 4 \\\\ 7 & 7 \\end{pmatrix}$', '$\\begin{pmatrix} 4 & -8 \\\\ 3 & 1 \\end{pmatrix}$', '$\\begin{pmatrix} -3 & -12 \\\\ 10 & 12 \\end{pmatrix}$', '$\\begin{pmatrix} 2 & 8 \\\\ 7 & 1 \\end{pmatrix}$', 'Add corresponding entries: $(3-1, -2+6; 5+2, 4+3)$.'],
+        ['Evaluate the matrix product $\\begin{pmatrix} 2 & 1 \\\\ 3 & 4 \\end{pmatrix}\\begin{pmatrix} 5 \\\\ -2 \\end{pmatrix}$:', '$\\begin{pmatrix} 8 \\\\ 7 \\end{pmatrix}$', '$\\begin{pmatrix} 12 \\\\ 23 \\end{pmatrix}$', '$\\begin{pmatrix} 10 \\\\ -8 \\end{pmatrix}$', '$\\begin{pmatrix} 7 \\\\ 8 \\end{pmatrix}$', 'Row-by-column: $(2(5)+1(-2),\\; 3(5)+4(-2)) = (8, 7)^T$.'],
+        ['Find the determinant $|M|$ of $M = \\begin{pmatrix} 6 & 4 \\\\ 3 & 5 \\end{pmatrix}$:', '$18$', '$42$', '$-18$', '$2$', '$|M| = 6(5) - 4(3) = 30 - 12 = 18$.'],
+        ['Find the value of $x$ for which the matrix $P = \\begin{pmatrix} x & 6 \\\\ 4 & 3 \\end{pmatrix}$ is singular ($|P| = 0$):', '$x = 8$', '$x = 6$', '$x = -8$', '$x = 2$', '$3x - 24 = 0 \\Rightarrow x = 8$.'],
+        ['Find the adjoint $\\text{adj}(A)$ of $A = \\begin{pmatrix} 4 & -3 \\\\ 2 & 5 \\end{pmatrix}$:', '$\\begin{pmatrix} 5 & 3 \\\\ -2 & 4 \\end{pmatrix}$', '$\\begin{pmatrix} 5 & -3 \\\\ 2 & 4 \\end{pmatrix}$', '$\\begin{pmatrix} -4 & 3 \\\\ -2 & -5 \\end{pmatrix}$', '$\\begin{pmatrix} 4 & 2 \\\\ -3 & 5 \\end{pmatrix}$', 'Swap main diagonal elements and negate off-diagonal elements.'],
+        ['Find the inverse $A^{-1}$ of $A = \\begin{pmatrix} 5 & 3 \\\\ 3 & 2 \\end{pmatrix}$:', '$\\begin{pmatrix} 2 & -3 \\\\ -3 & 5 \\end{pmatrix}$', '$\\begin{pmatrix} 2 & 3 \\\\ 3 & 5 \\end{pmatrix}$', '$\\begin{pmatrix} -2 & 3 \\\\ 3 & -5 \\end{pmatrix}$', '$\\begin{pmatrix} 5 & -3 \\\\ -3 & 2 \\end{pmatrix}$', '$|A| = 10 - 9 = 1$, so $A^{-1} = \\text{adj}(A)$.'],
+        ['Using Cramer\'s rule on $2x + y = 7$ and $3x - y = 8$, find $\\Delta$, $\\Delta_x$, and $x$:', '$\\Delta = -5,\\; \\Delta_x = -15,\\; x = 3$', '$\\Delta = 5,\\; \\Delta_x = 15,\\; x = 3$', '$\\Delta = -5,\\; \\Delta_x = -10,\\; x = 2$', '$\\Delta = -1,\\; \\Delta_x = -3,\\; x = 3$', '$\\Delta = -2 - 3 = -5$ and $\\Delta_x = -7 - 8 = -15 \\Rightarrow x = 3$.'],
+        ['Find the image of the point $(4, -3)$ under reflection in the line $y = x$:', '$(-3, 4)$', '$(4, 3)$', '$(-4, -3)$', '$(3, -4)$', 'Reflection in $y = x$ swaps $(x, y) \\mapsto (y, x)$.'],
+        ['Find the image of the point $(2, 5)$ under a $90^\\circ$ anticlockwise rotation about the origin:', '$(-5, 2)$', '$(5, -2)$', '$(-2, -5)$', '$(5, 2)$', '$R_{90^\\circ} = \\begin{pmatrix} 0 & -1 \\\\ 1 & 0 \\end{pmatrix}$ maps $(x, y) \\mapsto (-y, x)$.'],
+        ['What is the $2 \\times 2$ transformation matrix for an enlargement with scale factor $k = 3$ centred at the origin?', '$\\begin{pmatrix} 3 & 0 \\\\ 0 & 3 \\end{pmatrix}$', '$\\begin{pmatrix} 0 & 3 \\\\ 3 & 0 \\end{pmatrix}$', '$\\begin{pmatrix} 3 & 3 \\\\ 0 & 0 \\end{pmatrix}$', '$\\begin{pmatrix} 1 & 3 \\\\ 3 & 1 \\end{pmatrix}$', 'An enlargement by scale factor $k$ about $(0,0)$ has matrix $kI$.'],
+        ['Find the transpose $M^T$ of $M = \\begin{pmatrix} 1 & 4 \\\\ -2 & 7 \\end{pmatrix}$:', '$\\begin{pmatrix} 1 & -2 \\\\ 4 & 7 \\end{pmatrix}$', '$\\begin{pmatrix} 7 & -4 \\\\ 2 & 1 \\end{pmatrix}$', '$\\begin{pmatrix} -1 & -4 \\\\ 2 & -7 \\end{pmatrix}$', '$\\begin{pmatrix} 1 & 4 \\\\ -2 & 7 \\end{pmatrix}$', 'Interchange rows and columns of $M$.'],
+        ['A triangle of area $6\\text{ cm}^2$ is transformed by the matrix $T = \\begin{pmatrix} 3 & 1 \\\\ 2 & 4 \\end{pmatrix}$. Find the area of its image:', '$60\\text{ cm}^2$', '$10\\text{ cm}^2$', '$84\\text{ cm}^2$', '$36\\text{ cm}^2$', '$|\\det(T)| = |12 - 2| = 10 \\Rightarrow \\text{Area of image} = 10 \\times 6 = 60\\text{ cm}^2$.'],
+      ]);
+    } else if (/\b(vector|vectors|position\s+vector|dot\s+product|magnitude)\b/i.test(topicCombinedLower)) {
+      pushTupleBank([
+        ['Given $\\mathbf{a} = 6\\mathbf{i} - 8\\mathbf{j}$, calculate the magnitude $|\\mathbf{a}|$ and unit vector $\\hat{\\mathbf{a}}$:', '$|\\mathbf{a}| = 10$ and $\\hat{\\mathbf{a}} = 0.6\\mathbf{i} - 0.8\\mathbf{j}$', '$|\\mathbf{a}| = 14$ and $\\hat{\\mathbf{a}} = 6\\mathbf{i} - 8\\mathbf{j}$', '$|\\mathbf{a}| = 100$ and $\\hat{\\mathbf{a}} = 0.6\\mathbf{i} + 0.8\\mathbf{j}$', '$|\\mathbf{a}| = 10$ and $\\hat{\\mathbf{a}} = 0.8\\mathbf{i} - 0.6\\mathbf{j}$', '$|\\mathbf{a}| = \\sqrt{36 + 64} = 10$.'],
+        ['Given points $A(2, -1)$ and $B(7, 11)$, find the displacement vector $\\overrightarrow{AB}$ and its length $|\\overrightarrow{AB}|$:', '$\\overrightarrow{AB} = 5\\mathbf{i} + 12\\mathbf{j}$ and $|\\overrightarrow{AB}| = 13$', '$\\overrightarrow{AB} = 9\\mathbf{i} + 10\\mathbf{j}$ and $|\\overrightarrow{AB}| = 13$', '$\\overrightarrow{AB} = -5\\mathbf{i} - 12\\mathbf{j}$ and $|\\overrightarrow{AB}| = 17$', '$\\overrightarrow{AB} = 5\\mathbf{i} + 10\\mathbf{j}$ and $|\\overrightarrow{AB}| = 12$', '$\\overrightarrow{AB} = (7-2)\\mathbf{i} + (11-(-1))\\mathbf{j} = 5\\mathbf{i} + 12\\mathbf{j}$.'],
+        ['If $\\mathbf{p} = 3\\mathbf{i} + 2\\mathbf{j}$ and $\\mathbf{q} = \\mathbf{i} - 4\\mathbf{j}$, evaluate $2\\mathbf{p} - 3\\mathbf{q}$:', '$3\\mathbf{i} + 16\\mathbf{j}$', '$9\\mathbf{i} - 8\\mathbf{j}$', '$3\\mathbf{i} - 8\\mathbf{j}$', '$5\\mathbf{i} + 16\\mathbf{j}$', '$2(3\\mathbf{i} + 2\\mathbf{j}) - 3(\\mathbf{i} - 4\\mathbf{j}) = 3\\mathbf{i} + 16\\mathbf{j}$.'],
+        ['Compute the scalar (dot) product $\\mathbf{u} \\cdot \\mathbf{v}$ for $\\mathbf{u} = 4\\mathbf{i} - 3\\mathbf{j}$ and $\\mathbf{v} = 2\\mathbf{i} + 5\\mathbf{j}$:', '$-7$', '$23$', '$7$', '$-23$', '$\\mathbf{u} \\cdot \\mathbf{v} = 4(2) + (-3)(5) = 8 - 15 = -7$.'],
+        ['Find the value of $k$ if the vectors $\\mathbf{a} = 6\\mathbf{i} + k\\mathbf{j}$ and $\\mathbf{b} = 2\\mathbf{i} - 3\\mathbf{j}$ are perpendicular:', '$k = 4$', '$k = -4$', '$k = 9$', '$k = -9$', 'For perpendicular vectors, $\\mathbf{a} \\cdot \\mathbf{b} = 12 - 3k = 0 \\Rightarrow k = 4$.'],
+        ['Find the position vector of the midpoint $M$ of the segment joining $P(4, -6)$ and $Q(10, 2)$:', '$7\\mathbf{i} - 2\\mathbf{j}$', '$3\\mathbf{i} + 4\\mathbf{j}$', '$14\\mathbf{i} - 4\\mathbf{j}$', '$6\\mathbf{i} + 8\\mathbf{j}$', '$\\mathbf{m} = \\frac{1}{2}(\\mathbf{p} + \\mathbf{q}) = 7\\mathbf{i} - 2\\mathbf{j}$.'],
+        ['Find the angle $\\theta$ between $\\mathbf{a} = \\mathbf{i} + \\mathbf{j}$ and $\\mathbf{b} = \\mathbf{i} - \\mathbf{j}$:', '$90^\\circ$', '$45^\\circ$', '$60^\\circ$', '$0^\\circ$', '$\\mathbf{a} \\cdot \\mathbf{b} = 1(1) + 1(-1) = 0 \\Rightarrow \\theta = 90^\\circ$.'],
+        ['A boat heads due North at $12\\text{ m/s}$ across a river flowing due East at $5\\text{ m/s}$. Find its resultant speed:', '$13\\text{ m/s}$', '$17\\text{ m/s}$', '$7\\text{ m/s}$', '$15\\text{ m/s}$', '$v = \\sqrt{12^2 + 5^2} = 13\\text{ m/s}$.'],
+        ['If vectors $\\mathbf{u} = 4\\mathbf{i} - 6\\mathbf{j}$ and $\\mathbf{v} = -6\\mathbf{i} + m\\mathbf{j}$ are parallel (collinear), find $m$:', '$m = 9$', '$m = -9$', '$m = 4$', '$m = 6$', '$\\frac{-6}{4} = \\frac{m}{-6} \\Rightarrow m = 9$.'],
+        ['Find the scalar projection of $\\mathbf{a} = 3\\mathbf{i} + 4\\mathbf{j}$ onto the unit vector along the $x$-axis $\\mathbf{i}$:', '$3$', '$4$', '$5$', '$7$', '$\\mathbf{a} \\cdot \\mathbf{i} = 3$.'],
+        ['Find the work done $W = \\mathbf{F} \\cdot \\mathbf{d}$ by a force $\\mathbf{F} = (5\\mathbf{i} + 3\\mathbf{j})\\text{ N}$ moving a particle through displacement $\\mathbf{d} = (4\\mathbf{i} + 2\\mathbf{j})\\text{ m}$:', '$26\\text{ J}$', '$16\\text{ J}$', '$30\\text{ J}$', '$14\\text{ J}$', '$W = 5(4) + 3(2) = 26\\text{ J}$.'],
+        ['In $\\triangle ABC$, if $\\overrightarrow{AB} = \\mathbf{u}$ and $\\overrightarrow{BC} = \\mathbf{v}$, express $\\overrightarrow{AC}$ and $\\overrightarrow{CA}$ in terms of $\\mathbf{u}$ and $\\mathbf{v}$:', '$\\overrightarrow{AC} = \\mathbf{u} + \\mathbf{v}$ and $\\overrightarrow{CA} = -(\\mathbf{u} + \\mathbf{v})$', '$\\overrightarrow{AC} = \\mathbf{u} - \\mathbf{v}$ and $\\overrightarrow{CA} = \\mathbf{v} - \\mathbf{u}$', '$\\overrightarrow{AC} = \\mathbf{v} - \\mathbf{u}$', '$\\overrightarrow{AC} = 2\\mathbf{u} + \\mathbf{v}$', 'By the triangle law of vector addition, $\\overrightarrow{AC} = \\overrightarrow{AB} + \\overrightarrow{BC} = \\mathbf{u} + \\mathbf{v}$.'],
+      ]);
+    } else if (/\b(probability|mutually\s+exclusive|independent\s+events|sample\s+space)\b/i.test(topicCombinedLower)) {
+      pushTupleBank([
+        ['Two fair six-sided dice are rolled simultaneously. What is the probability that the sum of the numbers obtained is $8$?', '$\\frac{5}{36}$', '$\\frac{1}{6}$', '$\\frac{7}{36}$', '$\\frac{1}{9}$', 'Favourable pairs: $(2,6),(3,5),(4,4),(5,3),(6,2) \\Rightarrow \\frac{5}{36}$.'],
+        ['A fair coin is tossed $3$ times. Find the probability of obtaining **at least two heads**:', '$\\frac{1}{2}$ (or $\\frac{4}{8}$)', '$\\frac{3}{8}$', '$\\frac{1}{8}$', '$\\frac{7}{8}$', 'Outcomes with $\\ge 2$ heads: $HHH, HHT, HTH, THH$ ($4$ out of $8$).'],
+        ['Events $A$ and $B$ are mutually exclusive with $P(A) = 0.35$ and $P(B) = 0.45$. Find $P(A \\cup B)$ and $P(A \\cap B)$:', '$P(A \\cup B) = 0.80$ and $P(A \\cap B) = 0$', '$P(A \\cup B) = 0.6425$ and $P(A \\cap B) = 0.1575$', '$P(A \\cup B) = 0.80$ and $P(A \\cap B) = 0.20$', '$P(A \\cup B) = 1.00$ and $P(A \\cap B) = 0$', 'For mutually exclusive events, $P(A \\cap B) = 0$ and $P(A \\cup B) = P(A) + P(B) = 0.80$.'],
+        ['Events $X$ and $Y$ are independent with $P(X) = 0.4$ and $P(Y) = 0.5$. Find $P(X \\cap Y)$ and $P(X \\cup Y)$:', '$P(X \\cap Y) = 0.20$ and $P(X \\cup Y) = 0.70$', '$P(X \\cap Y) = 0$ and $P(X \\cup Y) = 0.90$', '$P(X \\cap Y) = 0.20$ and $P(X \\cup Y) = 0.90$', '$P(X \\cap Y) = 0.45$ and $P(X \\cup Y) = 0.70$', '$P(X \\cap Y) = 0.4 \\times 0.5 = 0.20$ and $P(X \\cup Y) = 0.4 + 0.5 - 0.2 = 0.70$.'],
+        ['A box contains $5$ red and $3$ blue pens. Two pens are drawn one after another **without replacement**. Find the probability that both pens are red:', '$\\frac{5}{14}$', '$\\frac{25}{64}$', '$\\frac{15}{56}$', '$\\frac{5}{8}$', '$\\frac{5}{8} \\times \\frac{4}{7} = \\frac{20}{56} = \\frac{5}{14}$.'],
+        ['A card is drawn at random from a standard pack of $52$ playing cards. Find the probability that it is a **King or a Heart**:', '$\\frac{4}{13}$ (or $\\frac{16}{52}$)', '$\\frac{17}{52}$', '$\\frac{1}{13}$', '$\\frac{1}{4}$', '$P(K \\cup H) = \\frac{4}{52} + \\frac{13}{52} - \\frac{1}{52} = \\frac{16}{52} = \\frac{4}{13}$.'],
+        ['Given $P(A) = 0.6$, $P(B) = 0.5$, and $P(A \\cap B) = 0.3$, find the conditional probability $P(A \\mid B)$:', '$0.60$', '$0.50$', '$0.30$', '$0.80$', '$P(A \\mid B) = \\frac{P(A \\cap B)}{P(B)} = \\frac{0.3}{0.5} = 0.60$.'],
+        ['The probability that a student passes a driving test on any attempt is $0.75$. What is the probability that the student fails?', '$0.25$', '$0.75$', '$0.50$', '$0.15$', '$P(E\') = 1 - P(E) = 1 - 0.75 = 0.25$.'],
+        ['An integer is chosen at random from $\\{1, 2, 3, \\dots, 20\\}$. What is the probability that it is a **prime number**?', '$\\frac{2}{5}$ (or $\\frac{8}{20}$)', '$\\frac{9}{20}$', '$\\frac{7}{20}$', '$\\frac{1}{2}$', 'Primes $\\le 20$ are $2, 3, 5, 7, 11, 13, 17, 19$ ($8$ primes), so $\\frac{8}{20} = \\frac{2}{5}$.'],
+        ['If a fair coin and a fair six-sided die are tossed together, how many outcomes are in the sample space $S$, and what is $P(\\text{Head and Even number})$?', '$n(S) = 12$ and $P = \\frac{1}{4}$', '$n(S) = 8$ and $P = \\frac{1}{4}$', '$n(S) = 12$ and $P = \\frac{1}{2}$', '$n(S) = 6$ and $P = \\frac{1}{6}$', '$n(S) = 2 \\times 6 = 12$, and $P = \\frac{1}{2} \\times \\frac{3}{6} = \\frac{1}{4}$.'],
+        ['The probability that it rains on Monday is $0.3$ and on Tuesday is $0.4$ (independently). Find the probability that it rains on **neither** day:', '$0.42$', '$0.12$', '$0.30$', '$0.58$', '$P(\\text{no rain Mon}) \\times P(\\text{no rain Tue}) = 0.7 \\times 0.6 = 0.42$.'],
+        ['In a class of $40$ students, $25$ play football, $18$ play basketball, and $8$ play both. If one student is chosen at random, find the probability that the student plays **neither** sport:', '$\\frac{1}{8}$ (or $\\frac{5}{40}$)', '$\\frac{1}{5}$', '$\\frac{35}{40}$', '$\\frac{3}{40}$', '$n(F \\cup B) = 25 + 18 - 8 = 35 \\Rightarrow n(\\text{neither}) = 40 - 35 = 5 \\Rightarrow P = \\frac{5}{40} = \\frac{1}{8}$.'],
+      ]);
+    } else {
+      pushTupleBank([
+        ['Find the midpoint $M$ and length $|AB|$ of the line segment joining $A(1, 2)$ and $B(7, 10)$:', '$M(4, 6)$ and $|AB| = 10$', '$M(3, 4)$ and $|AB| = 10$', '$M(4, 6)$ and $|AB| = 14$', '$M(8, 12)$ and $|AB| = 100$', '$M = (\\frac{1+7}{2}, \\frac{2+10}{2}) = (4, 6)$ and $|AB| = \\sqrt{6^2 + 8^2} = 10$.'],
+        ['Find the equation of the line passing through $(2, 5)$ that is **perpendicular** to $y = -\\frac{1}{3}x + 4$:', '$y = 3x - 1$', '$y = -\\frac{1}{3}x + \\frac{17}{3}$', '$y = 3x + 5$', '$y = -3x + 11$', 'Perpendicular gradient $m_2 = 3 \\Rightarrow y - 5 = 3(x - 2) \\Rightarrow y = 3x - 1$.'],
+        ['A solid cylinder has base radius $r = 7\\text{ cm}$ and height $h = 10\\text{ cm}$. Using $\\pi = \\frac{22}{7}$, find its curved surface area and volume:', '$\\text{CSA} = 440\\text{ cm}^2,\\; V = 1,540\\text{ cm}^3$', '$\\text{CSA} = 220\\text{ cm}^2,\\; V = 1,540\\text{ cm}^3$', '$\\text{CSA} = 440\\text{ cm}^2,\\; V = 770\\text{ cm}^3$', '$\\text{CSA} = 748\\text{ cm}^2,\\; V = 1,540\\text{ cm}^3$', '$\\text{CSA} = 2\\pi rh = 440\\text{ cm}^2$ and $V = \\pi r^2 h = 1,540\\text{ cm}^3$.'],
+        ['A right circular cone has base radius $r = 6\\text{ cm}$ and vertical height $h = 8\\text{ cm}$. Find its slant height $l$ and volume in terms of $\\pi$:', '$l = 10\\text{ cm}$ and $V = 96\\pi\\text{ cm}^3$', '$l = 10\\text{ cm}$ and $V = 288\\pi\\text{ cm}^3$', '$l = 14\\text{ cm}$ and $V = 96\\pi\\text{ cm}^3$', '$l = 10\\text{ cm}$ and $V = 60\\pi\\text{ cm}^3$', '$l = \\sqrt{6^2 + 8^2} = 10\\text{ cm}$ and $V = \\frac{1}{3}\\pi(36)(8) = 96\\pi\\text{ cm}^3$.'],
+        ['Find the surface area and volume of a sphere of radius $r = 3\\text{ cm}$ in terms of $\\pi$:', '$A = 36\\pi\\text{ cm}^2$ and $V = 36\\pi\\text{ cm}^3$', '$A = 12\\pi\\text{ cm}^2$ and $V = 36\\pi\\text{ cm}^3$', '$A = 36\\pi\\text{ cm}^2$ and $V = 108\\pi\\text{ cm}^3$', '$A = 18\\pi\\text{ cm}^2$ and $V = 27\\pi\\text{ cm}^3$', '$A = 4\\pi(3^2) = 36\\pi\\text{ cm}^2$ and $V = \\frac{4}{3}\\pi(3^3) = 36\\pi\\text{ cm}^3$.'],
+        ['Evaluate the definite integral $\\int_1^3 (3x^2 - 2x + 1)\\,dx$:', '$20$', '$18$', '$24$', '$16$', '$[x^3 - x^2 + x]_1^3 = (27 - 9 + 3) - (1 - 1 + 1) = 21 - 1 = 20$.'],
+        ['Find the coordinates of the stationary points of $y = x^3 - 6x^2 + 9x + 2$:', '$(1, 6)$ (local max) and $(3, 2)$ (local min)', '$(1, 6)$ (local min) and $(3, 2)$ (local max)', '$(-1, -14)$ and $(-3, -106)$', '$(0, 2)$ and $(3, 2)$', '$\\frac{dy}{dx} = 3(x - 1)(x - 3) = 0 \\Rightarrow x = 1, 3$.'],
+        ['Find the acute angle between the line $y = \\sqrt{3}x + 2$ and the positive $x$-axis:', '$60^\\circ$', '$30^\\circ$', '$45^\\circ$', '$75^\\circ$', '$\\tan\\theta = m = \\sqrt{3} \\Rightarrow \\theta = 60^\\circ$.'],
+        ['Solve the simultaneous equations $2x + 3y = 13$ and $5x - y = 7$:', '$x = 2,\\; y = 3$', '$x = 3,\\; y = 2$', '$x = 1,\\; y = -2$', '$x = 2,\\; y = -3$', 'From $y = 5x - 7$, $2x + 3(5x - 7) = 13 \\Rightarrow 17x = 34 \\Rightarrow x = 2,\\; y = 3$.'],
+        ['Find the perpendicular distance from the point $(3, 1)$ to the straight line $3x + 4y - 23 = 0$:', '$2\\text{ units}$', '$5\\text{ units}$', '$10\\text{ units}$', '$4\\text{ units}$', '$d = \\frac{|3(3) + 4(1) - 23|}{\\sqrt{3^2 + 4^2}} = \\frac{|-10|}{5} = 2\\text{ units}$.'],
+        ['A regular polygon has an interior angle of $140^\\circ$. How many sides does the polygon have?', '$9$ sides (nonagon)', '$8$ sides (octagon)', '$10$ sides (decagon)', '$12$ sides (dodecagon)', 'Exterior angle $= 180^\\circ - 140^\\circ = 40^\\circ \\Rightarrow n = \\frac{360^\\circ}{40^\\circ} = 9$.'],
+        ['Find the area of the region bounded by the curve $y = 4 - x^2$ and the $x$-axis between $x = -2$ and $x = 2$:', '$\\frac{32}{3}\\text{ sq. units}$', '$\\frac{16}{3}\\text{ sq. units}$', '$8\\text{ sq. units}$', '$16\\text{ sq. units}$', '$\\int_{-2}^2 (4 - x^2)\\,dx = 2\\left[4x - \\frac{x^3}{3}\\right]_0^2 = 2\\left(8 - \\frac{8}{3}\\right) = \\frac{32}{3}$.'],
+      ]);
+    }
+    return dynamicTopicItems;
   };
 
   type RawQuizDraft = Omit<QuizItem, 'topic' | 'subTopic' | 'sourceRef'> & { subTopic?: string };
 
+  const normalizeDraftQuestionKey = (qText: string): string =>
+    (qText || '')
+      .replace(/^\[[^\]]+\]\s*/g, '')
+      .replace(/^\[[^\]]+\]\s*/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim()
+      .slice(0, 140);
+
   const attachMetadata = (items: RawQuizDraft[]): QuizItem[] => {
     const sources = [src1, src2, src3, src4];
-    const topicPad: RawQuizDraft[] =
-      subLower.includes('math') || subLower.includes('hisabati') ? buildTopicPureMathPad() : [];
-    const extraItems: RawQuizDraft[] =
-      items.length >= 20 ? [] : [...topicPad, ...buildAdditionalSubjectQuestions()];
-    let combined: RawQuizDraft[] = [...items, ...extraItems].slice(0, 20);
+    const isMathSub = subLower.includes('math') || subLower.includes('hisabati') || subLower.includes('kuhesabu');
+    const topicPad: RawQuizDraft[] = isMathSub ? buildTopicPureMathPad() : [];
+    // Never pad a specific math topic with buildAdditionalSubjectQuestions() (which mixes Form 1-4 topics);
+    // only use buildAdditionalSubjectQuestions() for non-math subjects or when topicPad is empty and topic === 'ALL'
+    const fallbackPool: RawQuizDraft[] =
+      isMathSub && (topicPad.length >= 16 || (topic && topic !== 'ALL'))
+        ? topicPad
+        : [...topicPad, ...buildAdditionalSubjectQuestions()];
+
+    const deduplicated: RawQuizDraft[] = [];
+    const seenDraftKeys = new Set<string>();
+    for (const candidate of [...items, ...fallbackPool]) {
+      if (!candidate || !candidate.question) continue;
+      const key = normalizeDraftQuestionKey(candidate.question);
+      if (!key || seenDraftKeys.has(key)) continue;
+      seenDraftKeys.add(key);
+      deduplicated.push(candidate);
+      if (deduplicated.length >= 20) break;
+    }
+
+    let combined: RawQuizDraft[] = deduplicated.slice(0, 20);
 
     // If a specific subTopic was requested and items carry subTopic tags, sort matching subTopic items first
     if (subTopic && subTopic !== 'ALL' && items.some((it) => it.subTopic)) {
@@ -6338,15 +6784,162 @@ export function buildContentIntegratedQuizQuestions(
       ]);
     }
 
-    // 1O. 3D FIGURES, AREAS, PERIMETERS, GEOMETRY, CONGRUENCE & SIMILARITY (Form 1, Form 2 & Form 4)
+    // 1N-2. LOGIC & PROPOSITIONS (Form 2 Additional Mathematics Chapter 3)
+    if (
+      /\b(logic|propositions?|truth\s+tables?|tautolog|contradiction|contrapositive|electrical\s+switching|validity\s+of\s+arguments?)\b/i.test(
+        topicCombinedLower
+      )
+    ) {
+      return attachMetadata([
+        {
+          question: `[${cls} • ${focusTopic}] [Exercise 3.4 Q4 & Q7] Classify the compound statements (i) $\\sim(p \\vee q) \\rightarrow (\\sim p \\wedge \\sim q)$ and (ii) $(p \\vee q) \\wedge (\\sim p \\wedge \\sim q)$ as a Tautology or a Contradiction:`,
+          options: [
+            '(i) Tautology (always True) ; (ii) Contradiction (always False)',
+            '(i) Contradiction ; (ii) Tautology',
+            '(i) Neither ; (ii) Contradiction',
+            '(i) Tautology ; (ii) Tautology',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: By De Morgan's Law, $\\sim(p \\vee q) \\equiv \\sim p \\wedge \\sim q$, so $\\sim(p \\vee q) \\rightarrow (\\sim p \\wedge \\sim q)$ is always True (Tautology). Step 2: Conjoining $(p \\vee q)$ with its negation $(\\sim p \\wedge \\sim q)$ is always False (Contradiction).`,
+        },
+        {
+          question: `[${cls} • ${focusTopic}] [Exercise 3.3] State the Converse, Inverse, and Contrapositive of the conditional statement $p \\rightarrow q$:`,
+          options: [
+            'Converse: $q \\rightarrow p$ ; Inverse: $\\sim p \\rightarrow \\sim q$ ; Contrapositive: $\\sim q \\rightarrow \\sim p$',
+            'Converse: $\\sim p \\rightarrow \\sim q$ ; Inverse: $q \\rightarrow p$ ; Contrapositive: $\\sim q \\rightarrow \\sim p$',
+            'Converse: $\\sim q \\rightarrow \\sim p$ ; Inverse: $q \\rightarrow p$ ; Contrapositive: $\\sim p \\rightarrow \\sim q$',
+            'Converse: $p \\leftrightarrow q$ ; Inverse: $\\sim p \\wedge q$ ; Contrapositive: $\\sim q \\rightarrow p$',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: For an implication $p \\rightarrow q$, swapping hypothesis and conclusion gives the Converse ($q \\rightarrow p$), negating both gives the Inverse ($\\sim p \\rightarrow \\sim q$), and swapping and negating both gives the Contrapositive ($\\sim q \\rightarrow \\sim p$).`,
+        },
+        {
+          question: `[${cls} • ${focusTopic}] [Exercise 3.5 Q2] Write the symbolic compound statement for an electrical network between $T_1$ and $T_2$ having parallel switches $\\sim r$ and $p$ connected in series with switch $q$:`,
+          options: [
+            '$(\\sim r \\vee p) \\wedge q$',
+            '$(\\sim r \\wedge p) \\vee q$',
+            '$\\sim r \\vee (p \\wedge q)$',
+            '$\\sim r \\wedge p \\wedge q$',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Parallel switches correspond to disjunction ($\\vee$) and series switches correspond to conjunction ($\\wedge$). Thus parallel $\\sim r$ and $p$ in series with $q$ is $(\\sim r \\vee p) \\wedge q$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic}] [Exercise 3.6 Q1] Test the validity of the argument: "If I am clever ($p$), then I know how to reason ($q$). I do not know how to reason ($\\sim q$). Therefore, I am not clever ($\\sim p$)."`,
+          options: [
+            'Valid argument — $[(p \\rightarrow q) \\wedge \\sim q] \\rightarrow \\sim p$ is a Tautology (Modus Tollens)',
+            'Invalid argument — Fallacy of the Inverse',
+            'Invalid argument — Fallacy of the Converse',
+            'Contradiction',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: The symbolic form is $[(p \\rightarrow q) \\wedge \\sim q] \\rightarrow \\sim p$. Since its truth table column contains only T, it is a Tautology and the argument is Valid.`,
+        },
+      ]);
+    }
+
+    // 1N-3. LOCUS (Form 2 Additional Mathematics Chapter 4)
+    if (/\b(locus|loci|equidistant|fixed\s+point|perpendicular\s+bisector)\b/i.test(topicCombinedLower)) {
+      return attachMetadata([
+        {
+          question: `[${cls} • ${focusTopic}] [Exercise 4.1 Q4] Find the Cartesian equation of the locus of a point $P(x, y)$ that is always $3$ units from the fixed point $(-2, -3)$:`,
+          options: [
+            '$x^2 + y^2 + 4x + 6y + 4 = 0$',
+            '$x^2 + y^2 - 4x - 6y + 4 = 0$',
+            '$x^2 + y^2 + 4x + 6y + 13 = 0$',
+            '$x^2 + y^2 + 2x + 3y - 9 = 0$',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: By the distance formula, $(x - (-2))^2 + (y - (-3))^2 = 3^2$. Step 2: Expand $(x + 2)^2 + (y + 3)^2 = 9 \\Rightarrow x^2 + 4x + 4 + y^2 + 6y + 9 - 9 = 0 \\Rightarrow x^2 + y^2 + 4x + 6y + 4 = 0$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic}] [Exercise 4.1 Q5] The equation of the locus of a moving point $Q(x, y)$ is $x^2 + y^2 - 6x - 4y - 12 = 0$. Find the fixed centre $P$ and constant distance (radius) $r$:`,
+          options: [
+            'Centre $P(3, 2)$ and distance $r = 5$ units',
+            'Centre $P(-3, -2)$ and distance $r = 5$ units',
+            'Centre $P(3, 2)$ and distance $r = 12$ units',
+            'Centre $P(6, 4)$ and distance $r = 5$ units',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Complete the square: $(x - 3)^2 - 9 + (y - 2)^2 - 4 - 12 = 0 \\Rightarrow (x - 3)^2 + (y - 2)^2 = 25 = 5^2$. Step 2: Centre $P(3, 2)$ and radius $r = 5$ units.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic}] [Exercise 4.2 Q2] Find the equation of the locus of a point $P(x, y)$ which is equidistant from $A(2, 3)$ and $B(-4, 5)$:`,
+          options: [
+            '$3x - y + 7 = 0$',
+            '$3x + y - 7 = 0$',
+            '$x - 3y + 7 = 0$',
+            '$3x - y - 7 = 0$',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Equate squared distances $PA^2 = PB^2 \\Rightarrow (x - 2)^2 + (y - 3)^2 = (x + 4)^2 + (y - 5)^2$. Step 2: Simplify $-4x - 6y + 13 = 8x - 10y + 41 \\Rightarrow 12x - 4y + 28 = 0 \\Rightarrow 3x - y + 7 = 0$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic}] [Exercise 4.3 Q1] Find the equation of the locus of a point $P(x, y)$ that moves at equal distance from the point $D(2, 3)$ and the vertical line $x = 5$:`,
+          options: [
+            '$y^2 + 6x - 6y - 12 = 0$',
+            '$y^2 - 6x - 6y + 12 = 0$',
+            '$x^2 + 6x - 6y - 12 = 0$',
+            '$y^2 + 4x - 6y - 12 = 0$',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Equate distance to $D(2, 3)$ and perpendicular distance to $x = 5$: $(x - 2)^2 + (y - 3)^2 = (x - 5)^2$. Step 2: Expand $x^2 - 4x + 4 + y^2 - 6y + 9 = x^2 - 10x + 25 \\Rightarrow y^2 + 6x - 6y - 12 = 0$.`,
+        },
+      ]);
+    }
+
+    // 1N-4. CONGRUENCE & SIMILARITY OF TRIANGLES (Form 2 Basic Mathematics Chapters 2 & 3)
+    if (/\b(congruence|congruent|similarity|similar\s+figures|similar\s+triangles)\b/i.test(topicCombinedLower)) {
+      return attachMetadata([
+        {
+          question: `[${cls} • ${focusTopic}] [Chapter 2: Congruence] Given that $\\triangle ABC \\cong \\triangle DEF$ with $\\overline{AB} = (3x - 2)\\text{ cm}$, $\\overline{DE} = 13\\text{ cm}$, $\\angle A = 55^\\circ$, $\\angle B = 65^\\circ$, and $\\angle F = (2y + 10)^\\circ$, find $x$ and $y$:`,
+          options: [
+            '$x = 5$ and $y = 25$',
+            '$x = 5$ and $y = 30$',
+            '$x = 3$ and $y = 25$',
+            '$x = 5$ and $y = 22.5$',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Corresponding sides of congruent triangles are equal: $3x - 2 = 13 \\Rightarrow 3x = 15 \\Rightarrow x = 5$. Step 2: $\\angle C = 180^\\circ - (55^\\circ + 65^\\circ) = 60^\\circ$. Since $\\angle F = \\angle C$, $2y + 10 = 60 \\Rightarrow y = 25$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic}] [Chapter 3: Similarity] In $\\triangle ABC$, a line segment $\\overline{DE}$ is parallel to $\\overline{BC}$ ($D$ on $\\overline{AB}$, $E$ on $\\overline{AC}$) with $\\overline{AD} = 6\\text{ cm}$, $\\overline{DB} = 4\\text{ cm}$, and $\\overline{BC} = 15\\text{ cm}$. Find $\\overline{DE}$:`,
+          options: [
+            '$\\overline{DE} = 9\\text{ cm}$',
+            '$\\overline{DE} = 10\\text{ cm}$',
+            '$\\overline{DE} = 6\\text{ cm}$',
+            '$\\overline{DE} = 12\\text{ cm}$',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: Since $\\overline{DE} \\parallel \\overline{BC}$, $\\triangle ADE \\sim \\triangle ABC$ by AA similarity, and $\\overline{AB} = 6 + 4 = 10\\text{ cm}$. Step 2: $\\frac{\\overline{DE}}{\\overline{BC}} = \\frac{\\overline{AD}}{\\overline{AB}} \\Rightarrow \\frac{\\overline{DE}}{15} = \\frac{6}{10} \\Rightarrow \\overline{DE} = 9\\text{ cm}$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic}] [Chapter 3: Similarity] Two similar triangles have corresponding side lengths in the ratio $2 : 5$. If the area of the smaller triangle is $16\\text{ cm}^2$, calculate the area of the larger triangle:`,
+          options: ['$100\\text{ cm}^2$', '$40\\text{ cm}^2$', '$64\\text{ cm}^2$', '$80\\text{ cm}^2$'],
+          correctIndex: 0,
+          explanation: `Step 1: Ratio of areas of similar triangles equals the square of the ratio of their corresponding sides: $\\frac{A_1}{A_2} = \\left(\\frac{2}{5}\\right)^2 = \\frac{4}{25}$. Step 2: $\\frac{16}{A_2} = \\frac{4}{25} \\Rightarrow A_2 = 100\\text{ cm}^2$.`,
+        },
+        {
+          question: `[${cls} • ${focusTopic}] [Chapter 2: Congruence] Which of the following is NOT a valid postulate/theorem for proving that two triangles are congruent?`,
+          options: [
+            '$\\text{AAA}$ (Angle-Angle-Angle — proves similarity only, not congruence)',
+            '$\\text{SAS}$ (Side-Angle-Side)',
+            '$\\text{ASA}$ (Angle-Side-Angle)',
+            '$\\text{RHS}$ (Right angle-Hypotenuse-Side)',
+          ],
+          correctIndex: 0,
+          explanation: `Step 1: SSS, SAS, ASA, AAS, and RHS guarantee congruence, whereas AAA only guarantees that two triangles are similar (same shape, not necessarily the same size).`,
+        },
+      ]);
+    }
+
+    // 1O. 3D FIGURES, AREAS, PERIMETERS & GEOMETRY (Form 1 & Form 4)
     if (
       topicCombinedLower.includes('three-dimensional') ||
       topicCombinedLower.includes('3d') ||
       topicCombinedLower.includes('area') ||
       topicCombinedLower.includes('perimeter') ||
       topicCombinedLower.includes('geometry') ||
-      topicCombinedLower.includes('congruence') ||
-      topicCombinedLower.includes('similarity') ||
       topicCombinedLower.includes('volume')
     ) {
       return attachMetadata([
@@ -6373,10 +6966,15 @@ export function buildContentIntegratedQuizQuestions(
           explanation: `Step 1: Slant height l = √(r² + h²) = √(6² + 8²) = √100 = 10 cm. Step 2: Volume of cone V = (1/3)πr²h = (1/3) × π × 36 × 8 = 96π cm³.`,
         },
         {
-          question: `[${cls} • ${focusTopic}] Two similar triangles have corresponding side lengths in the ratio 2 : 5. If the area of the smaller triangle is 16 cm², calculate the area of the larger triangle`,
-          options: ['100 cm²', '40 cm²', '64 cm²', '80 cm²'],
+          question: `[${cls} • ${focusTopic}] A rectangular prism (cuboid) has length 12 cm, width 8 cm, and height 5 cm. Calculate its total surface area (TSA) and volume (V)`,
+          options: [
+            'TSA = 392 cm² ; V = 480 cm³',
+            'TSA = 196 cm² ; V = 480 cm³',
+            'TSA = 392 cm² ; V = 240 cm³',
+            'TSA = 480 cm² ; V = 392 cm³',
+          ],
           correctIndex: 0,
-          explanation: `Step 1: Ratio of areas of similar figures equals the square of the ratio of their corresponding sides: A₁ / A₂ = (s₁ / s₂)² = (2 / 5)² = 4 / 25. Step 2: 16 / A₂ = 4 / 25 → A₂ = (16 × 25) / 4 = 100 cm².`,
+          explanation: `Step 1: Total Surface Area TSA = 2(lw + lh + wh) = 2(12×8 + 12×5 + 8×5) = 2(96 + 60 + 40) = 2(196) = 392 cm². Step 2: Volume V = l × w × h = 12 × 8 × 5 = 480 cm³.`,
         },
         {
           question: `[${cls} • ${focusTopic}] Calculate the size of each interior angle of a regular octagon (8-sided polygon)`,

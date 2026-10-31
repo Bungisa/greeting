@@ -68,6 +68,20 @@ import {
   renderRichMathParagraphToPng,
   typesetMathInElement,
 } from './utils/mathRenderer';
+import { TextbookQuestionExtractorModal } from './components/TextbookQuestionExtractorModal';
+import { getQuestionDiagramSvg } from './utils/questionDiagramGenerator';
+import {
+  addQuestionsToStoredBank,
+  filterAndPrioritizeUnseenQuizItems,
+  getQuestionBankStats,
+  getSeenSignaturesForClassSubject,
+  getStoredBankQuestionsForClassSubject,
+  getVariantOffsetForClassSubject,
+  incrementVariantOffsetForClassSubject,
+  markQuestionAsSeenByStudent,
+  markQuestionsBatchAsSeenByStudent,
+  syncQuestionBankWithServer,
+} from './utils/questionBankManager';
 
 declare global {
   interface Window {
@@ -207,7 +221,7 @@ function detectDiagramPreset(promptText: string, subject: string): DiagramPreset
 function sanitizeUrl(rawUrl: string | null | undefined): string | null {
   if (!rawUrl) return null;
   const clean = String(rawUrl).trim();
-  return /^https?:\/\//i.test(clean) ? clean : null;
+  return /^(\/|https?:\/\/)/i.test(clean) ? clean : null;
 }
 
 function extractGoogleDriveId(url: string | null): string | null {
@@ -314,14 +328,20 @@ function processParsedRows(rows: string[][]): PaperRecord[] {
       const year = rawYear || '2025';
       const rawCatClean = rawCat || 'NECTA';
       const catLower = `${rawCatClean} ${rawTitle}`.toLowerCase();
+      const rawCatOnlyLower = rawCatClean.toLowerCase();
+      const catWithoutBookkeeping = catLower.replace(/book[- ]?keeping/gi, '');
+      const isExplicitBookCat =
+        /\b(book|kitabu|textbook)\b/i.test(rawCatOnlyLower) && !/keeping/i.test(rawCatOnlyLower);
 
-      const isSyllabus = catLower.includes('syllabus') || catLower.includes('muhtasari');
+      const isSyllabus =
+        !isExplicitBookCat &&
+        (rawCatOnlyLower.includes('syllabus') ||
+          rawCatOnlyLower.includes('muhtasari') ||
+          (/\b(syllabus|muhtasari)\b/i.test(catWithoutBookkeeping) &&
+            !/\bnew\s+syllabus\b/i.test(catWithoutBookkeeping)));
       const isBook =
         !isSyllabus &&
-        (catLower.includes('book') ||
-          catLower.includes('kitabu') ||
-          catLower.includes('textbook') ||
-          catLower.includes('tie'));
+        (isExplicitBookCat || /\b(book|kitabu|textbook|tie\s+book)\b/i.test(catWithoutBookkeeping));
 
       const normalizedExamCat =
         /mid[- ]?term|nusu\s*muhula/i.test(catLower)
@@ -614,11 +634,11 @@ function formatMwalimuHtml(raw: string): string {
     const trimmed = formattedLine.trim();
     if (/^<strong>[1-9]\.\s/.test(trimmed)) {
       outLines.push(
-        `<div style="margin-top:10px; margin-bottom:4px; padding:6px 10px; background:#f8fafc; border-left:3px solid #4f46e5; border-radius:6px; font-weight:700; color:#0f172a;">${formattedLine}</div>`
+        `<div style="margin-top:10px; margin-bottom:4px; padding:6px 10px; background:var(--bg-elevated); border-left:3px solid #6366f1; border-radius:6px; font-weight:700; color:var(--text-primary);">${formattedLine}</div>`
       );
     } else if (/^(•|-|\*)\s+/.test(trimmed)) {
       outLines.push(
-        `<div style="margin-left:10px; margin-top:3px; margin-bottom:3px; padding-left:8px; border-left:2px solid #cbd5e1; color:#1e293b;">${formattedLine}</div>`
+        `<div style="margin-left:10px; margin-top:3px; margin-bottom:3px; padding-left:8px; border-left:2px solid var(--border-strong); color:var(--text-primary);">${formattedLine}</div>`
       );
     } else {
       outLines.push(formattedLine);
@@ -690,9 +710,41 @@ export default function App() {
   const [mohaOpen, setMohaOpen] = useState<boolean>(false);
   const [mohaViewMode, setMohaViewMode] = useState<'chat' | 'studio' | 'quiz' | 'diagram' | 'profile'>('chat');
   const [activeDiagramPreset, setActiveDiagramPreset] = useState<DiagramPreset>('physics_ohm');
-  const [mohaActiveClass, setMohaActiveClass] = useState<string>('Form 3');
-  const [mohaActiveSubject, setMohaActiveSubject] = useState<string>('Basic Mathematics');
-  const [mohaMessages, setMohaMessages] = useState<ChatMessage[]>([]);
+  const [mohaActiveClass, setMohaActiveClass] = useState<string>(() => {
+    try {
+      return localStorage.getItem('elimika_moha_active_class_v1') || 'Form 3';
+    } catch {
+      return 'Form 3';
+    }
+  });
+  const [mohaActiveSubject, setMohaActiveSubject] = useState<string>(() => {
+    try {
+      return localStorage.getItem('elimika_moha_active_subject_v1') || 'Basic Mathematics';
+    } catch {
+      return 'Basic Mathematics';
+    }
+  });
+  const [mohaMessages, setMohaMessages] = useState<ChatMessage[]>(() => {
+    try {
+      const raw = localStorage.getItem('elimika_moha_chat_history_v2');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map((m: ChatMessage) =>
+            m.text === 'Moha AI is thinking...'
+              ? {
+                  ...m,
+                  text: '⚠️ Request was interrupted when switching apps. Tap **Send** or ask your question again for an instant step-by-step solution.',
+                }
+              : m
+          );
+        }
+      }
+    } catch {
+      // ignore storage errors
+    }
+    return [];
+  });
   const [mohaInput, setMohaInput] = useState<string>('');
   const [mohaPendingImage, setMohaPendingImage] = useState<{
     mimeType: string;
@@ -730,10 +782,24 @@ export default function App() {
   const [learnedMemory, setLearnedMemory] = useState<LearnedMemoryItem[]>([]);
   const [legalModalType, setLegalModalType] = useState<'privacy' | 'terms' | 'about' | null>(null);
   const [whatsappModalOpen, setWhatsappModalOpen] = useState<boolean>(false);
-  const [whatsappTab, setWhatsappTab] = useState<'join' | 'broadcast' | 'logo' | 'setup' | 'adsense'>('join');
+  const [whatsappTab, setWhatsappTab] = useState<'join' | 'broadcast' | 'logo' | 'setup' | 'adsense' | 'playstore'>('join');
   const [whatsappAdminUnlocked, setWhatsappAdminUnlocked] = useState<boolean>(false);
   const [whatsappAdminPinPrompt, setWhatsappAdminPinPrompt] = useState<boolean>(false);
   const [whatsappAdminPinInput, setWhatsappAdminPinInput] = useState<string>('');
+  const [playStorePackageName, setPlayStorePackageName] = useState<string>(() => {
+    try {
+      return localStorage.getItem('elimika_playstore_pkg') || 'online.elimika.twa';
+    } catch {
+      return 'online.elimika.twa';
+    }
+  });
+  const [playStoreSha256, setPlayStoreSha256] = useState<string>(() => {
+    try {
+      return localStorage.getItem('elimika_playstore_sha256') || '';
+    } catch {
+      return '';
+    }
+  });
   const [adsensePubId, setAdsensePubId] = useState<string>(() => {
     try {
       return localStorage.getItem('elimika_adsense_pub_id') || 'ca-pub-7502193981138651';
@@ -969,6 +1035,167 @@ export default function App() {
     showToast('✅ Downloaded HD 1080×1080 Elimika Online Logo (Blue, Black & White)!');
   };
 
+  const downloadPlayStoreFeatureGraphicPng = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1024;
+    canvas.height = 500;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // 1024x500 Google Play Store Feature Graphic (No alpha channel, 24-bit RGB compliant)
+    const grad = ctx.createLinearGradient(0, 0, 1024, 500);
+    grad.addColorStop(0, '#090d16');
+    grad.addColorStop(0.55, '#1d4ed8');
+    grad.addColorStop(1, '#0f172a');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 1024, 500);
+
+    // Subtle decorative geometric grid circles
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(880, 250, 210, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(880, 250, 145, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Left badge pill
+    ctx.fillStyle = '#38bdf8';
+    ctx.beginPath();
+    ctx.roundRect(64, 72, 370, 42, 21);
+    ctx.fill();
+    ctx.fillStyle = '#090d16';
+    ctx.font = '900 20px Inter, system-ui, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('TANZANIA EDUCATION SUPER-APP', 86, 99);
+
+    // Main Title
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 78px Inter, system-ui, sans-serif';
+    ctx.fillText('ELIMIKA TZ', 64, 205);
+
+    // Subtitle
+    ctx.fillStyle = '#e0f2fe';
+    ctx.font = '700 30px Inter, system-ui, sans-serif';
+    ctx.fillText('NECTA Past Papers • TIE Books • Moha AI Solver', 64, 262);
+
+    // Feature bullets
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '600 23px Inter, system-ui, sans-serif';
+    ctx.fillText('✓ Primary (Std 1–7) & Secondary (Form 1–6) Curriculum', 64, 330);
+    ctx.fillText('✓ Step-by-Step Photo & Math Question Solver (Moha AI)', 64, 372);
+    ctx.fillText('✓ Non-Repeating Textbook Exercise Quizzes & STEM Games', 64, 414);
+
+    // Right Emblem Circle
+    ctx.save();
+    ctx.translate(860, 250);
+    ctx.beginPath();
+    ctx.arc(0, 0, 115, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    ctx.lineWidth = 8;
+    ctx.strokeStyle = '#38bdf8';
+    ctx.stroke();
+    ctx.fillStyle = '#1d4ed8';
+    ctx.textAlign = 'center';
+    ctx.font = '900 84px Inter, system-ui, sans-serif';
+    ctx.fillText('E', 0, 30);
+    ctx.restore();
+
+    const dataUrl = canvas.toDataURL('image/png');
+    const link = document.createElement('a');
+    link.download = 'Elimika-PlayStore-Feature-Graphic-1024x500.png';
+    link.href = dataUrl;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('✅ Downloaded 1024×500 Google Play Store Feature Graphic PNG!');
+  };
+
+  const downloadPlayStoreAppIcon512Png = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const grad = ctx.createLinearGradient(0, 0, 512, 512);
+    grad.addColorStop(0, '#090d16');
+    grad.addColorStop(0.5, '#1d4ed8');
+    grad.addColorStop(1, '#090d16');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 512, 512);
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+    ctx.lineWidth = 10;
+    ctx.beginPath();
+    ctx.arc(256, 256, 224, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Graduation Cap
+    ctx.save();
+    ctx.translate(256, 155);
+    ctx.beginPath();
+    ctx.moveTo(0, -48);
+    ctx.lineTo(105, -8);
+    ctx.lineTo(0, 32);
+    ctx.lineTo(-105, -8);
+    ctx.closePath();
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    ctx.restore();
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 76px Inter, system-ui, sans-serif';
+    ctx.fillText('ELIMIKA', 256, 298);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.roundRect(146, 326, 220, 46, 23);
+    ctx.fill();
+    ctx.fillStyle = '#090d16';
+    ctx.font = '900 26px Inter, system-ui, sans-serif';
+    ctx.fillText('TANZANIA', 256, 358);
+
+    ctx.fillStyle = '#93c5fd';
+    ctx.font = '800 18px Inter, system-ui, sans-serif';
+    ctx.fillText('STD 1–7 • FORM 1–6', 256, 415);
+
+    const dataUrl = canvas.toDataURL('image/png');
+    const link = document.createElement('a');
+    link.download = 'Elimika-PlayStore-Icon-512x512.png';
+    link.href = dataUrl;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('✅ Downloaded 512×512 Google Play Store High-Res App Icon PNG!');
+  };
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('elimika_moha_active_class_v1', mohaActiveClass);
+      localStorage.setItem('elimika_moha_active_subject_v1', mohaActiveSubject);
+    } catch {
+      // ignore storage errors
+    }
+  }, [mohaActiveClass, mohaActiveSubject]);
+
+  useEffect(() => {
+    if (mohaMessages.length === 0) return;
+    try {
+      // Persist recent 25 messages (stripping huge base64 image previews to stay well under localStorage quota)
+      const compact = mohaMessages.slice(-25).map((m) => ({
+        ...m,
+        imagePreview: m.imagePreview && m.imagePreview.length > 120000 ? undefined : m.imagePreview,
+      }));
+      localStorage.setItem('elimika_moha_chat_history_v2', JSON.stringify(compact));
+    } catch {
+      // ignore storage quota errors
+    }
+  }, [mohaMessages]);
+
 
   // User Profile & Mastery Progress State
   const [userProfile, setUserProfile] = useState<UserProfileData>({
@@ -1016,6 +1243,7 @@ export default function App() {
   const [joinChallengeCode, setJoinChallengeCode] = useState<string>('');
   const [joiningChallengeByCode, setJoiningChallengeByCode] = useState<boolean>(false);
   const [serverPublicAppUrl, setServerPublicAppUrl] = useState<string>('');
+  const [textbookExtractorModalOpen, setTextbookExtractorModalOpen] = useState<boolean>(false);
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     try {
       const saved = localStorage.getItem('elimika_dark_mode');
@@ -1588,8 +1816,8 @@ export default function App() {
     return allPapers
       .filter(
         (p) =>
-          matchesSubjectQuery(p.subject, subVal) &&
-          (matchesFormRange(p.form, clsVal) || p.paperUrl !== null || p.isUserAttached)
+          matchesSubjectQuery(p.subject, subVal, p.title) &&
+          (matchesFormRange(p.form, clsVal) || p.isUserAttached)
       )
       .sort((a, b) => {
         const aExactCls = matchesFormRange(a.form, clsVal) ? 1 : 0;
@@ -1621,15 +1849,16 @@ export default function App() {
       allPapers.filter(
         (p) =>
           p.isBook &&
-          matchesSubjectQuery(p.subject, subVal) &&
-          (matchesFormRange(p.form, clsVal) || p.paperUrl !== null || p.isUserAttached)
+          matchesSubjectQuery(p.subject, subVal, p.title) &&
+          (matchesFormRange(p.form, clsVal) || p.isUserAttached)
       )
     );
     const matchingSyllabuses = sortByRelevance(
       allPapers.filter(
         (p) =>
           p.isSyllabus &&
-          (matchesSubjectQuery(p.subject, subVal) || matchesFormRange(p.form, clsVal))
+          matchesSubjectQuery(p.subject, subVal, p.title) &&
+          matchesFormRange(p.form, clsVal)
       )
     );
     const matchingPapers = sortByRelevance(
@@ -1637,15 +1866,12 @@ export default function App() {
         (p) =>
           !p.isBook &&
           !p.isSyllabus &&
-          matchesSubjectQuery(p.subject, subVal) &&
-          (matchesFormRange(p.form, clsVal) || p.paperUrl !== null || p.isUserAttached)
+          matchesSubjectQuery(p.subject, subVal, p.title) &&
+          (matchesFormRange(p.form, clsVal) || p.isUserAttached)
       )
     );
 
-    const crossPapers =
-      matchingPapers.length > 0
-        ? matchingPapers
-        : allPapers.filter((p) => !p.isBook && !p.isSyllabus).slice(0, 8);
+    const crossPapers = matchingPapers;
 
     const candidateManualFocus = explicitFocusedDoc || mohaFocusedResource;
     const canUseManualFocus =
@@ -1798,13 +2024,18 @@ export default function App() {
   }, [userProfile.targetClass, mohaActiveClass, learnedMemory, quizHistory]);
 
   function mergePapersWithAttached(sheetItems: PaperRecord[], customItems: PaperRecord[]): PaperRecord[] {
+    const sanitizeRecord = (item: PaperRecord): PaperRecord => ({
+      ...item,
+      form: normalizeClassName(item.form),
+      subject: normalizeSubjectName(item.subject || 'General', item.title || ''),
+    });
     const byId = new Map<string, PaperRecord>();
     for (const c of customItems) {
-      byId.set(c.id, c);
+      byId.set(c.id, sanitizeRecord(c));
     }
     for (const s of sheetItems) {
       if (!byId.has(s.id)) {
-        byId.set(s.id, s);
+        byId.set(s.id, sanitizeRecord(s));
       }
     }
     return Array.from(byId.values());
@@ -1831,7 +2062,8 @@ export default function App() {
     }
 
     try {
-      const cached = localStorage.getItem('elimika_papers_cache_v3');
+      localStorage.removeItem('elimika_papers_cache_v3');
+      const cached = localStorage.getItem('elimika_papers_cache_v5');
       if (cached) {
         const parsedCache = JSON.parse(cached);
         if (Array.isArray(parsedCache) && parsedCache.length > 0) {
@@ -1872,7 +2104,7 @@ export default function App() {
     try {
       const raw = parseCSV(csvText);
       const processed = processParsedRows(raw);
-      localStorage.setItem('elimika_papers_cache_v3', JSON.stringify(processed));
+      localStorage.setItem('elimika_papers_cache_v5', JSON.stringify(processed));
       setAllPapers(mergePapersWithAttached(processed, localCustom));
       setSyncStatus('live');
     } catch {
@@ -1882,19 +2114,30 @@ export default function App() {
 
   async function handleSaveNewAttachedResource(e: React.FormEvent) {
     e.preventDefault();
-    const title = newResTitle.trim() || `${newResClass} ${newResSubject} — ${newResCategory} (${newResYear})`;
+    const cleanClass = normalizeClassName(newResClass);
+    const title = newResTitle.trim() || `${cleanClass} ${newResSubject} — ${newResCategory} (${newResYear})`;
+    const cleanSubject = normalizeSubjectName(newResSubject, title);
     const catLower = `${newResCategory} ${title}`.toLowerCase();
-    const isSyllabus = catLower.includes('syllabus') || catLower.includes('muhtasari');
+    const rawCatOnlyLower = newResCategory.toLowerCase();
+    const catWithoutBookkeeping = catLower.replace(/book[- ]?keeping/gi, '');
+    const isExplicitBookCat =
+      /\b(book|kitabu|textbook)\b/i.test(rawCatOnlyLower) && !/keeping/i.test(rawCatOnlyLower);
+    const isSyllabus =
+      !isExplicitBookCat &&
+      (rawCatOnlyLower.includes('syllabus') ||
+        rawCatOnlyLower.includes('muhtasari') ||
+        (/\b(syllabus|muhtasari)\b/i.test(catWithoutBookkeeping) &&
+          !/\bnew\s+syllabus\b/i.test(catWithoutBookkeeping)));
     const isBook =
       !isSyllabus &&
-      (catLower.includes('book') || catLower.includes('kitabu') || catLower.includes('textbook') || catLower.includes('tie'));
+      (isExplicitBookCat || /\b(book|kitabu|textbook|tie\s+book)\b/i.test(catWithoutBookkeeping));
 
     const id = `attached-${Date.now()}`;
     const created: PaperRecord = {
       id,
       title,
-      form: newResClass,
-      subject: newResSubject,
+      form: cleanClass,
+      subject: cleanSubject,
       year: newResYear.trim() || '2026',
       category: isSyllabus ? 'TIE Syllabus' : isBook ? 'TIE Book' : newResCategory,
       paperUrl: sanitizeUrl(newResPaperUrl),
@@ -2014,16 +2257,19 @@ export default function App() {
     customSubTopic?: string,
     customSource?: 'ALL' | 'textbook' | 'past_paper'
   ) {
-    const cls = customClass || selectedClass || savedClass || mohaActiveClass || 'Form 4';
+    const safeCls = typeof customClass === 'string' ? customClass : undefined;
+    const safeSub = typeof customSubject === 'string' ? customSubject : undefined;
+    const safeTop = typeof customTopic === 'string' ? customTopic : undefined;
+    const safeSubTop = typeof customSubTopic === 'string' ? customSubTopic : undefined;
+
+    const cls = safeCls || selectedClass || savedClass || mohaActiveClass || 'Form 1';
     const sub =
-      customSubject ||
+      safeSub ||
       selectedSubject ||
       mohaActiveSubject ||
       (TIE_CURRICULUM_SUBJECTS[cls]?.[0] ?? 'Basic Mathematics');
-    const topics = getSyllabusTopicsForClassSubject(cls, sub);
-    const firstTopic = customTopic || (topics[0] ? topics[0].replace(/^\d+\.\d+\s*/, '') : 'ALL');
-    const subTopics = getSubTopicsForMainTopic(sub, firstTopic);
-    const firstSubTopic = customSubTopic || subTopics[0] || 'ALL';
+    const firstTopic = safeTop || 'ALL';
+    const firstSubTopic = safeSubTop || 'ALL';
     const src = customSource || selectedQuizSourceFilter || 'ALL';
 
     setActivePage('daily_quiz');
@@ -2724,7 +2970,8 @@ export default function App() {
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 22000);
+      const requestTimeoutMs = attachedImg ? 42000 : 26000;
+      const timeoutId = setTimeout(() => controller.abort(), requestTimeoutMs);
       const response = await fetchElimikaApi('/api/moha/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2755,24 +3002,13 @@ export default function App() {
           }));
         }
         if (data.reply) {
-          const finalReplyText =
-            data.source === 'local'
-              ? generateLocalSmartTutorReply(
-                  displayPrompt,
-                  targetCls,
-                  targetSub,
-                  learnedMemory,
-                  promptSiteResources,
-                  recentHistory
-                )
-              : data.reply;
           setMohaMessages((prev) =>
             prev.map((m) =>
               m.id === loadingId
                 ? {
                     id: `ai-${Date.now()}`,
                     role: 'ai',
-                    text: finalReplyText,
+                    text: data.reply,
                     quizTarget: {
                       cls: targetCls,
                       subject: targetSub,
@@ -2787,17 +3023,19 @@ export default function App() {
         }
       }
     } catch {
-      // Instant fallback to local smart tutor below (never hangs or displays "Connection busy")
+      // Instant fallback to local smart tutor below
     }
 
-    const localReply = generateLocalSmartTutorReply(
-      displayPrompt,
-      targetCls,
-      targetSub,
-      learnedMemory,
-      promptSiteResources,
-      recentHistory
-    );
+    const localReply = attachedImg
+      ? `📷 **Image Processing Interrupted:** It looks like the connection paused or you switched apps while Moha AI was reading your photo.\n\n• **Tap the camera button (📷) and send again** (photos are now automatically compressed for fast mobile solving), OR\n• **Type or dictate (🎤) the question text** below for an instant step-by-step solution!`
+      : generateLocalSmartTutorReply(
+          displayPrompt,
+          targetCls,
+          targetSub,
+          learnedMemory,
+          promptSiteResources,
+          recentHistory
+        );
     setMohaMessages((prev) =>
       prev.map((m) =>
         m.id === loadingId
@@ -2852,11 +3090,16 @@ export default function App() {
     stayOnDailyQuizPage?: boolean,
     explicitFocusedDoc?: PaperRecord | null
   ) {
+    const safeCustomClass = typeof customClass === 'string' ? customClass : undefined;
+    const safeCustomSubject = typeof customSubject === 'string' ? customSubject : undefined;
+    const safeCustomTopic = typeof customTopic === 'string' ? customTopic : undefined;
+    const safeCustomSubTopic = typeof customSubTopic === 'string' ? customSubTopic : undefined;
+
     const activeDoc = explicitFocusedDoc || mohaFocusedResource;
-    const targetCls = explicitFocusedDoc?.form || customClass || mohaActiveClass;
-    const targetSub = explicitFocusedDoc?.subject || customSubject || mohaActiveSubject;
-    const targetTopic = customTopic !== undefined ? customTopic : selectedQuizTopic;
-    const targetSubTopic = customSubTopic !== undefined ? customSubTopic : selectedQuizSubTopic;
+    const targetCls = explicitFocusedDoc?.form || safeCustomClass || mohaActiveClass;
+    const targetSub = explicitFocusedDoc?.subject || safeCustomSubject || mohaActiveSubject;
+    const targetTopic = safeCustomTopic !== undefined ? safeCustomTopic : selectedQuizTopic;
+    const targetSubTopic = safeCustomSubTopic !== undefined ? safeCustomSubTopic : selectedQuizSubTopic;
     const targetSourceFilter =
       customSourceFilter !== undefined ? customSourceFilter : selectedQuizSourceFilter;
 
@@ -2871,8 +3114,8 @@ export default function App() {
       setMohaActiveSubject(targetSub);
       setTsSubject(targetSub);
     }
-    if (customTopic !== undefined) setSelectedQuizTopic(customTopic);
-    if (customSubTopic !== undefined) setSelectedQuizSubTopic(customSubTopic);
+    if (safeCustomTopic !== undefined) setSelectedQuizTopic(safeCustomTopic);
+    if (safeCustomSubTopic !== undefined) setSelectedQuizSubTopic(safeCustomSubTopic);
     if (customSourceFilter !== undefined) setSelectedQuizSourceFilter(customSourceFilter);
 
     if (stayOnDailyQuizPage || activePage === 'daily_quiz') {
@@ -2896,6 +3139,35 @@ export default function App() {
       activeDoc
     );
 
+    const seenSet = getSeenSignaturesForClassSubject(targetCls, targetSub);
+    const excludeSignatures = Array.from(seenSet);
+    const variantOffset = incrementVariantOffsetForClassSubject(targetCls, targetSub);
+
+    // Check if we already have rich unseen textbook exercise questions in the built-in/stored bank for this Class & Subject
+    const storedForSubject = getStoredBankQuestionsForClassSubject(targetCls, targetSub, targetTopic);
+    const fallbackPool = buildContentIntegratedQuizQuestions(
+      targetCls,
+      targetSub,
+      targetTopic,
+      quizSiteResources,
+      targetSubTopic,
+      targetSourceFilter
+    );
+
+    if (storedForSubject.length > 0) {
+      const immediateBatch = filterAndPrioritizeUnseenQuizItems(
+        targetCls,
+        targetSub,
+        targetTopic,
+        fallbackPool,
+        20
+      );
+      markQuestionsBatchAsSeenByStudent(targetCls, targetSub, immediateBatch);
+      setQuizItems(immediateBatch);
+      setQuizLoading(false);
+      return;
+    }
+
     try {
       const response = await fetchElimikaApi('/api/moha/quiz', {
         method: 'POST',
@@ -2909,27 +3181,44 @@ export default function App() {
           siteResources: quizSiteResources,
           count: 20,
           specificResourceTitle: activeDoc?.title,
+          excludeSignatures,
+          variantOffset,
         }),
       });
       if (response.ok) {
         const data = await response.json();
         if (Array.isArray(data.questions) && data.questions.length > 0) {
-          const fallbackTwenty = buildContentIntegratedQuizQuestions(
-            targetCls,
-            targetSub,
-            targetTopic,
-            quizSiteResources,
-            targetSubTopic,
-            targetSourceFilter
+          addQuestionsToStoredBank(
+            data.questions.map((q: QuizItem) => ({
+              cls: targetCls,
+              subject: targetSub,
+              topic: q.topic || targetTopic || 'Core Competence',
+              subTopic: q.subTopic || targetSubTopic || q.topic || 'Core Competence',
+              question: q.question,
+              options: q.options,
+              correctIndex: q.correctIndex,
+              explanation: q.explanation,
+              textbookTitle:
+                q.sourceRef || activeDoc?.title || `Official TIE ${targetCls} ${targetSub} Student's Book`,
+            }))
           );
+
           const merged = [...data.questions];
-          for (const fq of fallbackTwenty) {
-            if (merged.length >= 20) break;
+          for (const fq of fallbackPool) {
+            if (merged.length >= 25) break;
             if (!merged.some((q) => q.question === fq.question)) {
               merged.push(fq);
             }
           }
-          setQuizItems(merged.slice(0, 20));
+          const prioritizedUnseen = filterAndPrioritizeUnseenQuizItems(
+            targetCls,
+            targetSub,
+            targetTopic,
+            merged,
+            20
+          );
+          markQuestionsBatchAsSeenByStudent(targetCls, targetSub, prioritizedUnseen);
+          setQuizItems(prioritizedUnseen);
           setQuizLoading(false);
           return;
         }
@@ -2938,16 +3227,15 @@ export default function App() {
       // fallback below
     }
 
-    setQuizItems(
-      buildContentIntegratedQuizQuestions(
-        targetCls,
-        targetSub,
-        targetTopic,
-        quizSiteResources,
-        targetSubTopic,
-        targetSourceFilter
-      )
+    const finalFallbackBatch = filterAndPrioritizeUnseenQuizItems(
+      targetCls,
+      targetSub,
+      targetTopic,
+      fallbackPool,
+      20
     );
+    markQuestionsBatchAsSeenByStudent(targetCls, targetSub, finalFallbackBatch);
+    setQuizItems(finalFallbackBatch);
     setQuizLoading(false);
   }
 
@@ -3156,6 +3444,12 @@ export default function App() {
     const nextAnswers = { ...quizSelectedAnswers, [qIdx]: oIdx };
     setQuizSelectedAnswers(nextAnswers);
 
+    // Immediately record this question in the student's seen-question tracker so it won't repeat in future quizzes or games
+    const answeredItem = quizItems[qIdx];
+    if (answeredItem && answeredItem.question) {
+      markQuestionAsSeenByStudent(mohaActiveClass, mohaActiveSubject, answeredItem.question);
+    }
+
     // If all questions in the quiz have been answered and not yet saved, record mastered topics & post to Leaderboard!
     if (!quizResultSaved && quizItems.length > 0 && Object.keys(nextAnswers).length === quizItems.length) {
       setQuizResultSaved(true);
@@ -3188,6 +3482,17 @@ export default function App() {
     }
   }
 
+  function handleToggleQuizSolution(qIdx: number) {
+    if (quizSelectedAnswers[qIdx] !== undefined) {
+      const nextAnswers = { ...quizSelectedAnswers };
+      delete nextAnswers[qIdx];
+      setQuizSelectedAnswers(nextAnswers);
+      return;
+    }
+    const correctIdx = quizItems[qIdx]?.correctIndex ?? 0;
+    handleSelectQuizOption(qIdx, correctIdx);
+  }
+
   function handleMwalimuImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -3203,14 +3508,72 @@ export default function App() {
       textReader.readAsText(file);
       return;
     }
+
     const reader = new FileReader();
     reader.onload = () => {
       const resultStr = String(reader.result);
+      if (file.type.startsWith('image/')) {
+        // Compress & resize large mobile camera photos (max 1600px, JPEG 0.82) for fast, reliable AI Vision solving
+        const img = new Image();
+        img.onload = () => {
+          const maxDim = 1600;
+          let targetW = img.width;
+          let targetH = img.height;
+          if (targetW > maxDim || targetH > maxDim) {
+            if (targetW >= targetH) {
+              targetH = Math.round((targetH * maxDim) / targetW);
+              targetW = maxDim;
+            } else {
+              targetW = Math.round((targetW * maxDim) / targetH);
+              targetH = maxDim;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = targetW;
+          canvas.height = targetH;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, targetW, targetH);
+            ctx.drawImage(img, 0, 0, targetW, targetH);
+            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.82);
+            const base64Data = compressedDataUrl.split(',')[1];
+            setMohaPendingImage({
+              mimeType: 'image/jpeg',
+              base64Data,
+              previewUrl: compressedDataUrl,
+              fileName: file.name,
+            });
+            showToast(`📷 Photo optimized & attached! Tap Send for step-by-step solutions.`);
+            return;
+          }
+          const rawBase64 = resultStr.split(',')[1];
+          setMohaPendingImage({
+            mimeType: file.type,
+            base64Data: rawBase64,
+            previewUrl: resultStr,
+            fileName: file.name,
+          });
+          showToast(`📎 Attached "${file.name}" for Moha AI analysis!`);
+        };
+        img.onerror = () => {
+          const rawBase64 = resultStr.split(',')[1];
+          setMohaPendingImage({
+            mimeType: file.type,
+            base64Data: rawBase64,
+            previewUrl: resultStr,
+            fileName: file.name,
+          });
+        };
+        img.src = resultStr;
+        return;
+      }
+
       const base64Data = resultStr.split(',')[1];
       setMohaPendingImage({
         mimeType: file.type || 'application/pdf',
         base64Data,
-        previewUrl: file.type.startsWith('image/') ? resultStr : '',
+        previewUrl: '',
         fileName: file.name,
       });
       showToast(`📎 Attached "${file.name}" for Moha AI analysis!`);
@@ -3491,7 +3854,7 @@ export default function App() {
     if (!selectedClass) return [];
     const classItems = allPapers.filter((p) => {
       if (p.isSyllabus || p.isBook) return false;
-      return p.form.toLowerCase() === selectedClass.toLowerCase();
+      return normalizeClassName(p.form).toLowerCase() === selectedClass.toLowerCase();
     });
     const counts: Record<string, number> = {};
     const officialSubs = TIE_CURRICULUM_SUBJECTS[selectedClass] || [];
@@ -3499,8 +3862,10 @@ export default function App() {
       counts[s] = 0;
     });
     classItems.forEach((p) => {
-      const s = p.subject.trim();
-      counts[s] = (counts[s] || 0) + 1;
+      const normalizedSub = normalizeSubjectName(p.subject, p.title);
+      const matchedOfficial = officialSubs.find((s) => matchesSubjectQuery(normalizedSub, s));
+      const key = matchedOfficial || normalizedSub;
+      counts[key] = (counts[key] || 0) + 1;
     });
     return Object.entries(counts)
       .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
@@ -3518,8 +3883,8 @@ export default function App() {
     } else {
       baseMatches = allPapers.filter((p) => {
         if (p.isSyllabus || p.isBook) return false;
-        const matchClass = p.form.toLowerCase() === selectedClass.toLowerCase();
-        const matchSub = p.subject.toLowerCase() === selectedSubject.toLowerCase();
+        const matchClass = normalizeClassName(p.form).toLowerCase() === selectedClass.toLowerCase();
+        const matchSub = matchesSubjectQuery(p.subject, selectedSubject, p.title);
         return matchClass && matchSub;
       });
     }
@@ -3675,26 +4040,26 @@ export default function App() {
   }, [mohaViewMode, tsClass, mohaActiveClass, tsSubject, mohaActiveSubject, activeSiteResources, extractedBookChaptersMap]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--bg-canvas)] text-[var(--text-primary)] transition-colors">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden flex flex-col bg-[var(--bg-canvas)] text-[var(--text-primary)] transition-colors">
       {/* TOP BAR CONTRACT: 3 Zones (Brand, Nav Links, Primary Action) — hidden in full-viewport Moha AI & Game modes */}
       {activePage !== 'moha' && activePage !== 'game' && (
       <header className="sticky top-0 z-40 bg-[var(--bg-surface-glass)] backdrop-blur-md border-b border-[var(--border-subtle)] transition-colors">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4 sm:gap-8">
+        <div className="max-w-5xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2 sm:gap-6">
           <a
             href="#home"
             onClick={(e) => {
               e.preventDefault();
               resetToStep1();
             }}
-            className="text-lg sm:text-xl font-black tracking-tight text-slate-900 whitespace-nowrap shrink-0 flex items-center gap-2"
+            className="text-base sm:text-xl font-black tracking-tight text-slate-900 whitespace-nowrap shrink-0 flex items-center gap-1.5 sm:gap-2"
           >
-            <GraduationCap className="w-6 h-6 text-blue-600 shrink-0" />
+            <GraduationCap className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 shrink-0" />
             <span>
               ELIMIKA<span className="text-blue-600">.</span>
             </span>
           </a>
 
-          <nav className="hidden md:flex items-center gap-6 text-sm font-semibold text-slate-600">
+          <nav className="hidden lg:flex items-center gap-5 text-sm font-semibold text-slate-600">
             <button
               onClick={() => resetToStep1()}
               className={`hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
@@ -3756,13 +4121,23 @@ export default function App() {
             </button>
           </nav>
 
-          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+            <button
+              onClick={() => setWhatsappModalOpen(true)}
+              className="px-2.5 sm:px-3.5 py-2 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-1.5 shadow-xs transition-colors whitespace-nowrap shrink-0 cursor-pointer bg-[#25D366] hover:bg-[#1ebe5d] text-white"
+              title="Join or Manage Elimika WhatsApp Channel & Community"
+            >
+              <svg className="w-4 h-4 fill-current shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824zm-3.423-14.416c-6.627 0-12 5.373-12 12 0 2.625.846 5.059 2.284 7.033l-1.494 5.457 5.586-1.466c1.911 1.251 4.187 1.976 6.624 1.976 6.627 0 12-5.373 12-12s-5.373-12-12-12z"/>
+              </svg>
+              <span>WhatsApp</span>
+            </button>
 
             <button
               onClick={() => setDarkMode((prev) => !prev)}
               aria-label={darkMode ? 'Switch to light theme' : 'Switch to dark theme'}
               title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-              className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-900 border border-slate-300 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+              className="px-2.5 sm:px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-900 border border-slate-300 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
             >
               {darkMode ? (
                 <>
@@ -3778,19 +4153,12 @@ export default function App() {
             </button>
 
             <button
-              onClick={() => setWhatsappModalOpen(true)}
-              className="px-3 py-2 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-1.5 shadow-xs transition-colors whitespace-nowrap shrink-0 cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white"
-              title="Join or Manage Elimika WhatsApp Channel & Community"
-            >
-              <span>💬 WhatsApp</span>
-            </button>
-
-            <button
               onClick={() => openMwalimuModal()}
-              className="px-3.5 sm:px-4 py-2 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-1.5 shadow-sm transition-colors whitespace-nowrap shrink-0 cursor-pointer bg-violet-600 hover:bg-violet-700 text-white"
+              className="px-2.5 sm:px-4 py-2 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-1.5 shadow-sm transition-colors whitespace-nowrap shrink-0 cursor-pointer bg-violet-600 hover:bg-violet-700 text-white"
             >
               <Sparkles className="w-4 h-4" />
-              <span>Open Moha AI Site</span>
+              <span className="sm:hidden">Moha AI</span>
+              <span className="hidden sm:inline">Open Moha AI Site</span>
             </button>
 
             <PWAInstallButton />
@@ -4913,11 +5281,11 @@ export default function App() {
         return (
           <motion.div
             key="view-daily-quiz"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.22, ease: 'easeOut' }}
-            className="flex-grow py-6 pb-24 bg-slate-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="flex-grow w-full max-w-full overflow-x-hidden py-6 pb-24 bg-slate-50"
           >
             <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-5">
               {/* Top Header Bar */}
@@ -5016,21 +5384,27 @@ export default function App() {
                       Every generated quiz question requires solving a real problem from the TIE Student&apos;s Book or NECTA Past Examination Papers.
                     </p>
                   </div>
-                  <button
-                    onClick={() =>
-                      startAiQuiz(
-                        mohaActiveClass,
-                        mohaActiveSubject,
-                        selectedQuizTopic,
-                        selectedQuizSubTopic,
-                        selectedQuizSourceFilter,
-                        true
-                      )
-                    }
-                    className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs rounded-xl cursor-pointer shrink-0"
-                  >
-                    🔄 Generate New Solving Set
-                  </button>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 font-bold text-xs">
+                      ✓ Non-Repeating Bank Active (
+                      {getQuestionBankStats(mohaActiveClass, mohaActiveSubject).seenByStudentCount} Solved)
+                    </span>
+                    <button
+                      onClick={() =>
+                        startAiQuiz(
+                          mohaActiveClass,
+                          mohaActiveSubject,
+                          selectedQuizTopic,
+                          selectedQuizSubTopic,
+                          selectedQuizSourceFilter,
+                          true
+                        )
+                      }
+                      className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs rounded-xl cursor-pointer shrink-0"
+                    >
+                      🔄 Generate New Non-Repeating Set
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
@@ -5239,7 +5613,20 @@ export default function App() {
                     {quizItems.map((q, qIdx) => {
                       const selectedIdx = quizSelectedAnswers[qIdx];
                       const hasAnswered = selectedIdx !== undefined;
-                      const isPastPaperSource = (q.sourceRef || '').toLowerCase().includes('necta') || (q.sourceRef || '').toLowerCase().includes('paper');
+                      const isPastPaperSource =
+                        (q.sourceRef || '').toLowerCase().includes('necta') ||
+                        (q.sourceRef || '').toLowerCase().includes('paper');
+                      const diagramSpec = getQuestionDiagramSvg(
+                        q.question,
+                        q.topic,
+                        q.subTopic,
+                        mohaActiveSubject
+                      );
+                      const finalAnswerText =
+                        Array.isArray(q.options) && q.options[q.correctIndex]
+                          ? q.options[q.correctIndex]
+                          : '';
+
                       return (
                         <div
                           key={qIdx}
@@ -5248,7 +5635,7 @@ export default function App() {
                           <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
                             <div className="flex flex-wrap items-center gap-2">
                               <span className="px-2.5 py-0.5 rounded-md bg-slate-900 text-white font-black">
-                                Problem {qIdx + 1} of {quizItems.length}
+                                Question {qIdx + 1} of {quizItems.length}
                               </span>
                               {q.sourceRef && (
                                 <span
@@ -5277,54 +5664,68 @@ export default function App() {
                             </div>
                           </div>
 
-                          <div className="font-bold text-sm text-slate-900 leading-relaxed">
-                            <MathText text={q.question} />
+                          <div className="font-bold text-sm text-slate-900 leading-relaxed bg-white p-3.5 rounded-xl border border-slate-200">
+                            <MathText as="div" text={q.question} className="space-y-1" />
                           </div>
 
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            {q.options.map((opt, oIdx) => {
-                              const optionLetter = String.fromCharCode(65 + oIdx);
-                              let btnClass =
-                                'w-full text-left p-3 rounded-xl border border-slate-200 bg-white hover:border-violet-400 text-xs font-semibold text-slate-800 transition-colors cursor-pointer flex items-start gap-2';
-                              if (hasAnswered) {
-                                if (oIdx === q.correctIndex) {
-                                  btnClass =
-                                    'w-full text-left p-3 rounded-xl border-2 border-emerald-600 bg-emerald-50 text-xs font-bold text-emerald-950 flex items-start gap-2';
-                                } else if (oIdx === selectedIdx) {
-                                  btnClass =
-                                    'w-full text-left p-3 rounded-xl border-2 border-rose-500 bg-rose-50 text-xs font-bold text-rose-900 flex items-start gap-2';
-                                }
-                              }
-                              return (
-                                <button
-                                  key={oIdx}
-                                  onClick={() => handleSelectQuizOption(qIdx, oIdx)}
-                                  className={btnClass}
-                                >
-                                  <span className="w-5 h-5 rounded-md bg-slate-100 text-slate-800 font-black flex items-center justify-center shrink-0 text-[11px]">
-                                    {optionLetter}
-                                  </span>
-                                  <MathText text={opt} />
-                                </button>
-                              );
-                            })}
+                          {diagramSpec && (
+                            <div className="p-3 rounded-xl bg-white border border-slate-200 space-y-1.5">
+                              <div className="text-[11px] font-black text-slate-700 flex items-center justify-between">
+                                <span>📐 {diagramSpec.title}</span>
+                                <span className="text-[10px] font-semibold text-slate-500">SVG Figure</span>
+                              </div>
+                              <div
+                                className="w-full overflow-x-auto"
+                                dangerouslySetInnerHTML={{ __html: diagramSpec.svgHtml }}
+                              />
+                              {diagramSpec.caption && (
+                                <p className="text-[11px] text-slate-500 text-center font-medium">
+                                  {diagramSpec.caption}
+                                </p>
+                              )}
+                            </div>
+                          )}
+
+                          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                            <button
+                              onClick={() => handleToggleQuizSolution(qIdx)}
+                              className={`px-4 py-2 rounded-xl font-black text-xs transition-all cursor-pointer flex items-center gap-2 shadow-sm ${
+                                hasAnswered
+                                  ? 'bg-slate-800 hover:bg-slate-900 text-white'
+                                  : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                              }`}
+                            >
+                              <span>{hasAnswered ? '🙈 Hide Solution' : '💡 Show Solution'}</span>
+                            </button>
+
+                            <button
+                              onClick={() => {
+                                openMwalimuModal(mohaActiveClass, mohaActiveSubject, 'chat');
+                                sendMwalimuMessage(
+                                  `Show me the complete step-by-step working for this ${mohaActiveClass} ${mohaActiveSubject} problem (${q.topic || ''} - ${q.subTopic || ''}): ${q.question}`
+                                );
+                              }}
+                              className="px-3 py-2 rounded-xl bg-violet-100 hover:bg-violet-200 text-violet-900 font-bold text-xs cursor-pointer"
+                            >
+                              Ask Moha AI Tutor →
+                            </button>
                           </div>
 
                           {hasAnswered && (
-                            <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-950 space-y-2">
-                              <div className="font-black text-emerald-900 flex items-center justify-between gap-2">
-                                <span>✅ Worked Step-by-Step Solution ({q.sourceRef || 'TIE / NECTA Standard'}):</span>
-                                <button
-                                  onClick={() => {
-                                    openMwalimuModal(mohaActiveClass, mohaActiveSubject, 'chat');
-                                    sendMwalimuMessage(
-                                      `Show me the complete step-by-step working for this ${mohaActiveClass} ${mohaActiveSubject} problem (${q.topic || ''} - ${q.subTopic || ''}): ${q.question}`
-                                    );
-                                  }}
-                                  className="px-2.5 py-1 rounded-lg bg-violet-600 hover:bg-violet-700 text-white font-bold text-[11px] cursor-pointer shrink-0"
-                                >
-                                  Ask Moha AI Tutor →
-                                </button>
+                            <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-950 space-y-2.5">
+                              {finalAnswerText && (
+                                <div className="p-2.5 rounded-lg bg-white border border-emerald-300 flex flex-wrap items-center gap-2">
+                                  <span className="px-2 py-0.5 rounded bg-emerald-600 text-white font-black text-[11px]">
+                                    Final Answer
+                                  </span>
+                                  <MathText
+                                    text={finalAnswerText}
+                                    className="font-black text-emerald-950 text-xs sm:text-sm"
+                                  />
+                                </div>
+                              )}
+                              <div className="font-black text-emerald-900">
+                                ✅ Worked Step-by-Step Solution ({q.sourceRef || 'TIE / NECTA Standard'}):
                               </div>
                               <MathText as="div" text={q.explanation} className="leading-relaxed font-medium" />
                             </div>
@@ -5621,11 +6022,11 @@ export default function App() {
       {activePage === 'moha' && (
         <motion.div
           key={`view-moha-${mohaViewMode === 'studio' ? 'studio' : 'portal'}`}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -6 }}
-          transition={{ duration: 0.22, ease: 'easeOut' }}
-          className="h-[100dvh] bg-slate-50 flex flex-col overflow-hidden"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+          className="fixed inset-0 z-40 w-full max-w-full h-[100dvh] bg-slate-50 flex flex-col overflow-hidden"
         >
           {/* Unified Navigation & Context Bar (Responsive Mobile-First Layout) */}
           <div className="shrink-0 bg-white border-b border-slate-200 px-2.5 sm:px-4 py-1.5 shadow-2xs">
@@ -5757,6 +6158,16 @@ export default function App() {
                       setSelectedQuizTopic(chosenChap);
                       setTsTopic(chosenChap);
                       setTsSubTopic(chosenChap);
+                      if (mohaViewMode === 'quiz') {
+                        void startAiQuiz(
+                          mohaActiveClass,
+                          mohaActiveSubject,
+                          chosenChap,
+                          'ALL',
+                          selectedQuizSourceFilter,
+                          false
+                        );
+                      }
                     }}
                     title="Select Syllabus Chapter / Topic"
                     className="max-w-[95px] sm:max-w-[125px] lg:max-w-[175px] bg-transparent text-slate-800 font-semibold text-[11px] truncate focus:outline-none cursor-pointer"
@@ -5817,6 +6228,26 @@ export default function App() {
                       {learnedMemory.length}
                     </span>
                   )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setWhatsappModalOpen(true)}
+                  className="px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-bold whitespace-nowrap bg-[#25D366] hover:bg-[#1ebe5d] text-white shadow-2xs cursor-pointer flex items-center gap-1 shrink-0"
+                  title="Elimika WhatsApp Channel & Community"
+                >
+                  <svg className="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824zm-3.423-14.416c-6.627 0-12 5.373-12 12 0 2.625.846 5.059 2.284 7.033l-1.494 5.457 5.586-1.466c1.911 1.251 4.187 1.976 6.624 1.976 6.627 0 12-5.373 12-12s-5.373-12-12-12z"/>
+                  </svg>
+                  <span>WhatsApp</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDarkMode((prev) => !prev)}
+                  className="px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-bold whitespace-nowrap bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer flex items-center gap-1 shrink-0"
+                  title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                >
+                  {darkMode ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-slate-700" />}
+                  <span className="hidden sm:inline">{darkMode ? 'Light' : 'Dark'}</span>
                 </button>
               </div>
             </div>
@@ -6480,15 +6911,26 @@ export default function App() {
                         {quizItems.map((q, qIdx) => {
                           const selectedIdx = quizSelectedAnswers[qIdx];
                           const hasAnswered = selectedIdx !== undefined;
+                          const diagramSpec = getQuestionDiagramSvg(
+                            q.question,
+                            q.topic,
+                            q.subTopic,
+                            mohaActiveSubject
+                          );
+                          const finalAnswerText =
+                            Array.isArray(q.options) && q.options[q.correctIndex]
+                              ? q.options[q.correctIndex]
+                              : '';
+
                           return (
                             <div
                               key={qIdx}
-                              className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2"
+                              className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2.5"
                             >
                               <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500">
                                 <div className="flex flex-wrap items-center gap-1.5">
                                   <span className="font-bold text-slate-800">
-                                    Problem {qIdx + 1} of {quizItems.length}
+                                    Question {qIdx + 1} of {quizItems.length}
                                   </span>
                                   {q.sourceRef && (
                                     <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-900 border border-blue-200 font-semibold">
@@ -6505,36 +6947,61 @@ export default function App() {
                                   )}
                                 </div>
                               </div>
-                              <div className="font-bold text-xs sm:text-sm text-slate-900">
-                                <MathText text={q.question} />
+
+                              <div className="font-bold text-xs sm:text-sm text-slate-900 leading-relaxed bg-white p-3 rounded-lg border border-slate-200">
+                                <MathText as="div" text={q.question} className="space-y-1" />
                               </div>
-                              <div className="space-y-1.5">
-                                {q.options.map((opt, oIdx) => {
-                                  let btnClass =
-                                    'w-full text-left p-2.5 rounded-lg border border-slate-200 bg-white hover:border-violet-400 text-xs font-semibold text-slate-700 transition-colors cursor-pointer';
-                                  if (hasAnswered) {
-                                    if (oIdx === q.correctIndex) {
-                                      btnClass =
-                                        'w-full text-left p-2.5 rounded-lg border-2 border-emerald-600 bg-emerald-50 text-xs font-bold text-emerald-950';
-                                    } else if (oIdx === selectedIdx) {
-                                      btnClass =
-                                        'w-full text-left p-2.5 rounded-lg border-2 border-rose-500 bg-rose-50 text-xs font-bold text-rose-900';
-                                    }
-                                  }
-                                  return (
-                                    <button
-                                      key={oIdx}
-                                      onClick={() => handleSelectQuizOption(qIdx, oIdx)}
-                                      className={btnClass}
-                                    >
-                                      <MathText text={opt} />
-                                    </button>
-                                  );
-                                })}
+
+                              {diagramSpec && (
+                                <div className="p-2.5 rounded-lg bg-white border border-slate-200 space-y-1">
+                                  <div className="text-[10px] font-black text-slate-700 flex items-center justify-between">
+                                    <span>📐 {diagramSpec.title}</span>
+                                    <span className="text-[10px] text-slate-500">SVG Figure</span>
+                                  </div>
+                                  <div
+                                    className="w-full overflow-x-auto"
+                                    dangerouslySetInnerHTML={{ __html: diagramSpec.svgHtml }}
+                                  />
+                                  {diagramSpec.caption && (
+                                    <p className="text-[10px] text-slate-500 text-center font-medium">
+                                      {diagramSpec.caption}
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+
+                              <div className="flex items-center justify-between gap-2 pt-0.5">
+                                <button
+                                  onClick={() => handleToggleQuizSolution(qIdx)}
+                                  className={`px-3.5 py-1.5 rounded-lg font-black text-xs transition-all cursor-pointer flex items-center gap-1.5 ${
+                                    hasAnswered
+                                      ? 'bg-slate-800 hover:bg-slate-900 text-white'
+                                      : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                                  }`}
+                                >
+                                  <span>{hasAnswered ? '🙈 Hide Solution' : '💡 Show Solution'}</span>
+                                </button>
                               </div>
+
                               {hasAnswered && (
-                                <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs font-medium text-emerald-900">
-                                  <strong>NECTA Explanation:</strong> <MathText text={q.explanation} />
+                                <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-xs font-medium text-emerald-950 space-y-2">
+                                  {finalAnswerText && (
+                                    <div className="p-2 rounded bg-white border border-emerald-300 flex flex-wrap items-center gap-2">
+                                      <span className="px-2 py-0.5 rounded bg-emerald-600 text-white font-black text-[10px]">
+                                        Final Answer
+                                      </span>
+                                      <MathText
+                                        text={finalAnswerText}
+                                        className="font-black text-emerald-950 text-xs"
+                                      />
+                                    </div>
+                                  )}
+                                  <div>
+                                    <strong className="block mb-1 text-emerald-900">
+                                      ✅ Worked Step-by-Step Solution:
+                                    </strong>
+                                    <MathText as="div" text={q.explanation} className="leading-relaxed" />
+                                  </div>
                                 </div>
                               )}
                             </div>
@@ -7520,7 +7987,7 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 p-1 bg-slate-100 rounded-2xl border border-slate-200 text-xs font-bold">
+                  <div className="grid grid-cols-2 sm:grid-cols-6 gap-1.5 p-1 bg-slate-100 rounded-2xl border border-slate-200 text-xs font-bold">
                   <button
                     type="button"
                     onClick={() => setWhatsappTab('join')}
@@ -7531,6 +7998,17 @@ export default function App() {
                     }`}
                   >
                     📲 Join Channel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setWhatsappTab('playstore')}
+                    className={`py-2 px-2.5 rounded-xl transition-colors cursor-pointer ${
+                      whatsappTab === 'playstore'
+                        ? 'bg-indigo-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    🤖 Play Store
                   </button>
                   <button
                     type="button"
@@ -7576,6 +8054,144 @@ export default function App() {
                   >
                     ⚙️ Setup Links
                   </button>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB PLAYSTORE: GOOGLE PLAY STORE APK / AAB PUBLISHER & GRAPHICS GENERATOR */}
+              {whatsappAdminUnlocked && whatsappTab === 'playstore' && (
+                <div className="space-y-4 text-xs">
+                  <div className="p-4 rounded-2xl bg-gradient-to-r from-indigo-950 via-blue-900 to-slate-950 text-white space-y-2.5 border border-indigo-500/30 shadow-md">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="font-black text-sm text-sky-300">
+                        🤖 Publish Elimika TZ on Google Play Store (AAB / APK Ready)
+                      </span>
+                      <span className="px-2.5 py-0.5 rounded-md bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 font-bold text-[10px]">
+                        PWA + TWA + Digital Asset Links Ready ✓
+                      </span>
+                    </div>
+                    <p className="text-slate-200 leading-relaxed text-[11px]">
+                      Your app is pre-configured with a Google Play compliant Web App Manifest (<code>/manifest.webmanifest</code>), offline Service Worker, 192×192 &amp; 512×512 Maskable Icons, and a live <code>/.well-known/assetlinks.json</code> endpoint for full-screen Android Trusted Web Activity (TWA).
+                    </p>
+                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={downloadPlayStoreAppIcon512Png}
+                        className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs cursor-pointer shadow-xs"
+                      >
+                        ⬇️ Download 512×512 Play Store Icon (PNG)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={downloadPlayStoreFeatureGraphicPng}
+                        className="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs cursor-pointer shadow-xs"
+                      >
+                        ⬇️ Download 1024×500 Feature Graphic (PNG)
+                      </button>
+                      <a
+                        href="/.well-known/assetlinks.json"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs"
+                      >
+                        🔗 View /.well-known/assetlinks.json
+                      </a>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5 text-slate-800">
+                    <div className="font-black text-sm text-slate-900">
+                      📋 4-Step Guide to Put Elimika TZ on Google Play Store
+                    </div>
+                    <ol className="list-decimal pl-5 space-y-1.5 leading-relaxed text-slate-700">
+                      <li>
+                        <strong>Step 1 — Package Your Android Bundle (<code>.aab</code> &amp; <code>.apk</code>) for Free:</strong> Go to{' '}
+                        <a
+                          href="https://www.pwabuilder.com"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-blue-600 underline font-bold"
+                        >
+                          pwabuilder.com
+                        </a>
+                        , enter your live app URL (<code>https://elimika.online</code> or your deployed URL), click <strong>Package for stores → Android (Google Play)</strong>, and set Package ID to <code>{playStorePackageName}</code>.
+                      </li>
+                      <li>
+                        <strong>Step 2 — Download Your Signed ZIP:</strong> PWABuilder will download a zip containing your <code>.aab</code> (for Google Play Console), <code>.apk</code> (for direct phone testing), and <code>assetlinks.json</code> containing your <strong>SHA-256 fingerprint</strong>.
+                      </li>
+                      <li>
+                        <strong>Step 3 — Paste Your SHA-256 Fingerprint Below:</strong> Copy the SHA-256 string from PWABuilder or Google Play Console (<em>Setup → App signing</em>) and save it below so your app opens in <strong>100% full-screen native mode</strong> with no browser address bar.
+                      </li>
+                      <li>
+                        <strong>Step 4 — Upload to Google Play Console:</strong> Open{' '}
+                        <a
+                          href="https://play.google.com/console"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-blue-600 underline font-bold"
+                        >
+                          play.google.com/console
+                        </a>
+                        , create a new app named <strong>Elimika TZ - Past Papers &amp; AI</strong>, upload the 512×512 Icon &amp; 1024×500 Feature Graphic downloaded above, and upload your <code>.aab</code> file under <strong>Production</strong>.
+                      </li>
+                    </ol>
+                  </div>
+
+                  <div className="p-4 rounded-2xl border border-slate-200 bg-white space-y-3">
+                    <div className="font-black text-slate-900">
+                      🔐 Configure Android Package Name &amp; SHA-256 Digital Asset Link
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div>
+                        <label className="font-bold text-slate-700 block mb-1">
+                          Android Package Name (Application ID)
+                        </label>
+                        <input
+                          type="text"
+                          value={playStorePackageName}
+                          onChange={(e) => setPlayStorePackageName(e.target.value)}
+                          placeholder="online.elimika.twa"
+                          className="w-full px-3 py-2 rounded-xl border border-slate-300 font-mono text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="font-bold text-slate-700 block mb-1">
+                          Signing Key SHA-256 Fingerprint
+                        </label>
+                        <input
+                          type="text"
+                          value={playStoreSha256}
+                          onChange={(e) => setPlayStoreSha256(e.target.value)}
+                          placeholder="AA:BB:CC:DD:EE:FF:..."
+                          className="w-full px-3 py-2 rounded-xl border border-slate-300 font-mono text-xs"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            localStorage.setItem('elimika_playstore_pkg', playStorePackageName.trim());
+                            localStorage.setItem('elimika_playstore_sha256', playStoreSha256.trim());
+                            await fetchElimikaApi('/api/playstore/assetlinks', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                packageName: playStorePackageName.trim(),
+                                sha256Fingerprint: playStoreSha256.trim(),
+                              }),
+                            });
+                            showToast('✅ Saved Android Package & SHA-256 to /.well-known/assetlinks.json!');
+                          } catch {
+                            showToast('⚠️ Saved locally.');
+                          }
+                        }}
+                        className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold cursor-pointer"
+                      >
+                        💾 Save to /.well-known/assetlinks.json
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -8094,6 +8710,23 @@ export default function App() {
           </div>
         </footer>
       )}
+
+      {/* GLOBAL TEXTBOOK UPLOAD & PERSISTENT NON-REPEATING QUESTION BANK MODAL */}
+      <TextbookQuestionExtractorModal
+        isOpen={textbookExtractorModalOpen}
+        initialClass={mohaActiveClass}
+        initialSubject={mohaActiveSubject}
+        onClose={() => setTextbookExtractorModalOpen(false)}
+        onQuestionsUpdated={(cls, sub) => {
+          setMohaActiveClass(cls);
+          setMohaActiveSubject(sub);
+          void syncQuestionBankWithServer(cls, sub);
+          if (activePage === 'daily_quiz' || (activePage === 'moha' && mohaViewMode === 'quiz')) {
+            void startAiQuiz(cls, sub, selectedQuizTopic, selectedQuizSubTopic, selectedQuizSourceFilter, activePage === 'daily_quiz');
+          }
+          showToast(`✅ Extracted & stored non-repeating textbook questions for ${cls} ${sub}!`);
+        }}
+      />
     </div>
   );
 }

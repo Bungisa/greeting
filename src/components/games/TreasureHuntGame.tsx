@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowLeft,
   Award,
+  BookOpen,
   Camera,
   CheckCircle2,
   Compass,
@@ -55,6 +56,12 @@ import {
   TreasureCameraMode,
   TreasureHunt3DScene,
 } from './TreasureHunt3DScene';
+import {
+  getQuestionBankStats,
+  incrementVariantOffsetForClassSubject,
+  markQuestionAsSeenByStudent,
+  syncQuestionBankWithServer,
+} from '../../utils/questionBankManager';
 
 export interface TreasureHuntGameProps {
   initialClass?: string;
@@ -85,7 +92,7 @@ const CHECKPOINT_QUESTION_RANGES: Array<[number, number]> = [
 ];
 
 export const TreasureHuntGame: React.FC<TreasureHuntGameProps> = ({
-  initialClass = 'Form 3',
+  initialClass = 'Form 1',
   initialSubject = 'Basic Mathematics',
   initialTopic = 'ALL',
   allPapers,
@@ -98,7 +105,7 @@ export const TreasureHuntGame: React.FC<TreasureHuntGameProps> = ({
   const [progress, setProgress] = useState<ElimikaPlayProgress>(() => loadPlayProgress());
   const [selectedWorldId, setSelectedWorldId] = useState<string>(TREASURE_ADVENTURE_WORLDS[0].id);
   const [selectedClass, setSelectedClass] = useState<string>(
-    PLAY_CLASSES.includes(initialClass as never) ? initialClass : 'Form 3'
+    PLAY_CLASSES.includes(initialClass as never) ? initialClass : 'Form 1'
   );
   const [selectedSubject, setSelectedSubject] = useState<string>(
     PLAY_SUBJECTS.includes(initialSubject as never) ? initialSubject : 'Basic Mathematics'
@@ -109,6 +116,7 @@ export const TreasureHuntGame: React.FC<TreasureHuntGameProps> = ({
   const [difficulty, setDifficulty] = useState<GameDifficulty>('Medium');
   const [isGeneratingAiQuestions, setIsGeneratingAiQuestions] = useState<boolean>(false);
   const [aiQuestionsOverride, setAiQuestionsOverride] = useState<GameQuestion[] | null>(null);
+  const [bankRefreshTick, setBankRefreshTick] = useState<number>(0);
 
   // Launch directly into the 3D Island World so there's no boring text wall
   const [phase, setPhase] = useState<HuntPhase>('EXPLORING');
@@ -212,8 +220,20 @@ export const TreasureHuntGame: React.FC<TreasureHuntGameProps> = ({
       sourceFilter,
       allPapers,
       specificResourceTitle,
+      bankRefreshTick,
     ]
   );
+
+  const bankStats = useMemo(
+    () => getQuestionBankStats(selectedClass, selectedSubject),
+    [selectedClass, selectedSubject, bankRefreshTick, completedCheckpoints.length]
+  );
+
+  useEffect(() => {
+    void syncQuestionBankWithServer(selectedClass, selectedSubject).then(() => {
+      setBankRefreshTick((t) => t + 1);
+    });
+  }, [selectedClass, selectedSubject]);
 
   const questions: GameQuestion[] = aiQuestionsOverride || baseQuestions;
 
@@ -349,6 +369,9 @@ export const TreasureHuntGame: React.FC<TreasureHuntGameProps> = ({
 
   const startNewAdventure = () => {
     soundEngine.playClick();
+    incrementVariantOffsetForClassSubject(selectedClass, selectedSubject);
+    setAiQuestionsOverride(null);
+    setBankRefreshTick((t) => t + 1);
     setCompletedCheckpoints([]);
     setActiveCheckpointModalIdx(null);
     setCheckpointSubQuestionIdx(0);
@@ -373,6 +396,9 @@ export const TreasureHuntGame: React.FC<TreasureHuntGameProps> = ({
     if (selectedOptionIdx === q.correctIndex) {
       soundEngine.playCorrect();
       setFeedbackState('correct');
+
+      // Record this question as answered/seen by the student so it never repeats in future games or quizzes!
+      markQuestionAsSeenByStudent(selectedClass, selectedSubject, q.question);
 
       const bonusXp = attemptCount === 0 ? 15 : 0;
       const earned = q.xpReward + bonusXp;
@@ -552,6 +578,19 @@ export const TreasureHuntGame: React.FC<TreasureHuntGameProps> = ({
               <Settings className="w-3.5 h-3.5" />
               <span>World / Subject</span>
             </button>
+
+            <div
+              className="px-2.5 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 text-xs font-black flex items-center gap-1.5 border border-emerald-400/40"
+              title="Non-Repeating Textbook Question Bank Active"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="hidden sm:inline">No-Repeat Bank</span>
+              {bankStats.seenByStudentCount > 0 && (
+                <span className="px-1.5 py-0.5 rounded bg-emerald-400 text-slate-950 text-[10px] font-black">
+                  {bankStats.seenByStudentCount} Solved
+                </span>
+              )}
+            </div>
           </div>
 
           {/* HIGHLIGHTED VISUAL TARGET SIGN BANNER (NO BORING TEXT) */}
@@ -953,6 +992,60 @@ export const TreasureHuntGame: React.FC<TreasureHuntGameProps> = ({
                 ))}
               </div>
 
+              {/* 1-Click Quick Preset Bar for Mathematics & Additional Mathematics (Form 1 - Form 4) */}
+              <div className="p-3.5 rounded-2xl bg-slate-950 border border-emerald-500/30 space-y-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="text-xs font-black text-emerald-300 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Quick Start: Mathematics &amp; Additional Mathematics (Non-Repeating Bank)</span>
+                  </div>
+                  <span className="px-2.5 py-0.5 rounded-lg bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-[11px] font-bold">
+                    ✓ Non-Repeating Questions Active
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {[
+                    { cls: 'Form 1', sub: 'Basic Mathematics', label: 'Form 1 Basic Math' },
+                    { cls: 'Form 1', sub: 'Additional Mathematics', label: 'Form 1 Additional Math' },
+                    { cls: 'Form 2', sub: 'Basic Mathematics', label: 'Form 2 Basic Math' },
+                    { cls: 'Form 2', sub: 'Additional Mathematics', label: 'Form 2 Additional Math' },
+                    { cls: 'Form 3', sub: 'Basic Mathematics', label: 'Form 3 Basic Math' },
+                    { cls: 'Form 3', sub: 'Additional Mathematics', label: 'Form 3 Additional Math' },
+                    { cls: 'Form 4', sub: 'Basic Mathematics', label: 'Form 4 Basic Math' },
+                    { cls: 'Form 4', sub: 'Additional Mathematics', label: 'Form 4 Additional Math' },
+                  ].map((preset) => {
+                    const active =
+                      selectedClass === preset.cls && selectedSubject === preset.sub;
+                    return (
+                      <button
+                        key={`${preset.cls}-${preset.sub}`}
+                        type="button"
+                        onClick={() => {
+                          setSelectedClass(preset.cls);
+                          setSelectedSubject(preset.sub);
+                          setSelectedTopic('ALL');
+                          setAiQuestionsOverride(null);
+                        }}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-black border cursor-pointer transition-all ${
+                          active
+                            ? 'bg-emerald-400 text-slate-950 border-white shadow-sm'
+                            : 'bg-slate-900 text-slate-300 border-slate-800 hover:border-amber-400/50'
+                        }`}
+                      >
+                        {preset.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="text-[11px] text-slate-400 flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-800/80">
+                  <span>
+                    Question Bank for <strong className="text-white">{selectedClass} {selectedSubject}</strong>:{' '}
+                    <strong className="text-emerald-300">{bankStats.unseenInStoredBankCount}</strong> unseen ·{' '}
+                    <strong className="text-sky-300">{bankStats.seenByStudentCount}</strong> already solved (excluded from repeating)
+                  </span>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-400 mb-1">Class</label>
@@ -1137,7 +1230,7 @@ export const TreasureHuntGame: React.FC<TreasureHuntGameProps> = ({
                   className="px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center gap-1.5 cursor-pointer"
                 >
                   <RotateCcw className="w-4 h-4" />
-                  <span>Play Again</span>
+                  <span>Play Again (New Non-Repeating Questions)</span>
                 </button>
                 <button
                   onClick={() => setPhase('SETUP')}
@@ -1155,6 +1248,7 @@ export const TreasureHuntGame: React.FC<TreasureHuntGameProps> = ({
             </div>
           </div>
         )}
+
       </div>
     </div>
   );

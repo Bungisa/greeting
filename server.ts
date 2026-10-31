@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import express from 'express';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { GenerateVideosOperation, GoogleGenAI, ThinkingLevel, Type } from '@google/genai';
@@ -20,6 +21,7 @@ import {
   type SiteResourceContext,
   type TeacherMetadata,
 } from './src/data/curriculumData.ts';
+import { FULL_EXTRACTED_TEXTBOOK_BANK } from './src/data/extractedTextbookExerciseBank.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -56,11 +58,8 @@ function getGenAIClient(): GoogleGenAI | null {
 
 const GEMINI_FALLBACK_MODELS = [
   'gemini-3.8-flash',
-  'gemini-3-flash-preview',
-  'gemini-2.5-flash',
   'gemini-flash-latest',
   'gemini-3.1-flash-lite',
-  'gemini-flash-lite-latest',
 ] as const;
 const modelCooldownUntil = new Map<string, number>();
 
@@ -149,10 +148,12 @@ async function generateContentWithQuotaFallback(
     config?: Record<string, unknown>;
     useGoogleSearch?: boolean;
     enableThinking?: boolean;
+    timeoutMs?: number;
   }
 ): Promise<string | null> {
   const now = Date.now();
   const totalModels = GEMINI_FALLBACK_MODELS.length;
+  const primaryTimeoutMs = params.timeoutMs || 18000;
 
   for (let idx = 0; idx < totalModels; idx++) {
     const modelName = GEMINI_FALLBACK_MODELS[idx];
@@ -162,10 +163,9 @@ async function generateContentWithQuotaFallback(
     }
     try {
       const baseConfig: Record<string, unknown> = { ...(params.config || {}) };
-      if (!params.enableThinking) {
-        baseConfig.thinkingConfig = modelName.startsWith('gemini-3')
-          ? { thinkingLevel: ThinkingLevel.LOW }
-          : { thinkingBudget: 0 };
+      delete baseConfig.temperature;
+      if (!params.enableThinking && modelName.startsWith('gemini-3')) {
+        baseConfig.thinkingConfig = { thinkingLevel: ThinkingLevel.LOW };
       }
 
       const configWithTools =
@@ -181,7 +181,7 @@ async function generateContentWithQuotaFallback(
             contents: params.contents as never,
             config: configWithTools as never,
           }),
-          10000
+          primaryTimeoutMs
         );
       } catch (innerErr) {
         const innerMsg = innerErr instanceof Error ? innerErr.message : String(innerErr);
@@ -198,6 +198,7 @@ async function generateContentWithQuotaFallback(
           throw innerErr;
         }
         const cleanConfig: Record<string, unknown> = { ...(params.config || {}) };
+        delete cleanConfig.temperature;
         delete cleanConfig.thinkingConfig;
         delete cleanConfig.tools;
         response = await withPromiseTimeout(
@@ -206,7 +207,7 @@ async function generateContentWithQuotaFallback(
             contents: params.contents as never,
             config: cleanConfig as never,
           }),
-          9000
+          primaryTimeoutMs
         );
       }
 
@@ -308,8 +309,20 @@ const serverAttachedResources = new Map<string, AttachedResourceServerItem>();
 const drivePdfCache = new Map<string, { mimeType: string; base64Data: string; fetchedAt: number }>();
 const driveExtractedPagesCache = new Map<string, { pages: string[]; totalPages: number; fetchedAt: number }>();
 
+const LEGACY_AISTUDIO_PDF_DRIVE_MAP: Record<string, string> = {
+  'ADDITIONAL_BOOK_3-elimika.online_71df8e17.pdf': '1o6_JCDYRIwDcMrXLlNtD-YJqNi-BFC1m',
+  'FORM_THREE_TIE_MATHEMATICS-elimika.online_da6faf57.pdf': '1euVsPlxlXUYLdkX7ajEk7FjMRDgVNO8j',
+  'Additional_Mathematics_Form_Two_elimika.online_21d0053d.pdf': '1GlOxsR4aMBoQBPxDpqWQ0H4aRwlbn_I1',
+  'Basic_Mathematics_F2_elimika.online_65ef9876.pdf': '1yhx10LAspqFck81xdn56WcPsnH_JbLzI',
+  'MATHEMATICS_F1_-_Elimuzone.com_0e32bcd9.pdf': '1g0lE1PZAyD1wjQP_EyjzUJow39caujxn',
+};
+
 function extractDriveFileIdFromUrl(rawUrl?: string | null): string | null {
-  if (!rawUrl || !rawUrl.includes('drive.google.com')) return null;
+  if (!rawUrl) return null;
+  for (const [fileName, driveId] of Object.entries(LEGACY_AISTUDIO_PDF_DRIVE_MAP)) {
+    if (rawUrl.includes(fileName)) return driveId;
+  }
+  if (!rawUrl.includes('drive.google.com')) return null;
   const match = rawUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || rawUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
   return match ? match[1] : null;
 }
@@ -564,6 +577,21 @@ app.post('/api/attached-resources', async (req, res) => {
     createdAt: new Date().toISOString().split('T')[0],
   };
   serverAttachedResources.set(id, item);
+
+  // If this uploaded resource is a Textbook, automatically extract & store questions in serverQuestionBank
+  if (isBook) {
+    void extractAndStoreQuestionsIntoServerBank({
+      cls: form,
+      subject,
+      topic: 'ALL',
+      bookTitle: title,
+      customContent: combinedCustomContent,
+      paperUrl: body.paperUrl || undefined,
+      attachedFileBase64: body.attachedFileBase64,
+      count: 20,
+    }).catch(() => {});
+  }
+
   return res.json({
     resource: {
       ...item,
@@ -576,6 +604,933 @@ app.delete('/api/attached-resources/:id', (req, res) => {
   const { id } = req.params;
   serverAttachedResources.delete(id);
   return res.json({ deleted: true, id });
+});
+
+// ==================== PERSISTENT TEXTBOOK QUESTION BANK STORE & EXTRACTOR ====================
+interface ServerStoredTextbookQuestion {
+  id: string;
+  signature: string;
+  cls: string;
+  subject: string;
+  topic: string;
+  subTopic: string;
+  question: string;
+  options: [string, string, string, string];
+  correctIndex: number;
+  hint: string;
+  explanation: string;
+  sourceBookTitle: string;
+  difficulty: 'Easy' | 'Medium' | 'Hard';
+  createdAt: string;
+}
+
+const QUESTION_BANK_FILE_PATH = path.join(__dirname, '.aistudio', 'question-bank-v7.json');
+const serverQuestionBank = new Map<string, ServerStoredTextbookQuestion>();
+const builtinSeedIds = new Set<string>(FULL_EXTRACTED_TEXTBOOK_BANK.map((s) => s.id));
+
+function computeServerQuestionSignature(questionText: string): string {
+  return String(questionText || '')
+    .toLowerCase()
+    .replace(/\[[^\]]*\]/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .slice(0, 140);
+}
+
+function loadServerQuestionBankFromDisk(): void {
+  const legacyF1BasicMathTopics = [
+    'numbers i',
+    'chapter 3: fractions',
+    'decimals and percentages',
+    'metric units',
+    'chapter 6: approximations',
+    'introduction to geometry',
+    'chapter 8: algebra',
+    'numbers ii',
+    'ratios, profit',
+    'chapter 11: coordinate geometry',
+    'perimeters and areas',
+  ];
+  try {
+    if (fs.existsSync(QUESTION_BANK_FILE_PATH)) {
+      const raw = fs.readFileSync(QUESTION_BANK_FILE_PATH, 'utf-8');
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        for (const item of parsed) {
+          if (item && typeof item.question === 'string' && Array.isArray(item.options) && item.options.length >= 4) {
+            const clsLower = String(item.cls || '').toLowerCase().trim();
+            const subLower = String(item.subject || '').toLowerCase().trim();
+            const topicLower = String(item.topic || '').toLowerCase();
+            const idStr = String(item.id || '');
+            const idLower = idStr.toLowerCase();
+            // Skip any built-in seed item on disk so code updates to FULL_EXTRACTED_TEXTBOOK_BANK always take precedence
+            if (
+              builtinSeedIds.has(idStr) ||
+              idLower.includes('-bank-ch') ||
+              idLower.startsWith('addmath-') ||
+              idLower.startsWith('bmath-') ||
+              idLower.startsWith('cs-f1-')
+            ) {
+              continue;
+            }
+            if (
+              clsLower === 'form 1' &&
+              subLower.includes('basic math') &&
+              legacyF1BasicMathTopics.some((legacy) => topicLower.includes(legacy))
+            ) {
+              continue;
+            }
+            const sig = item.signature || computeServerQuestionSignature(item.question);
+            const key = `${clsLower}__${subLower}__${sig}`;
+            serverQuestionBank.set(key, {
+              ...item,
+              signature: sig,
+              options: [
+                String(item.options[0]),
+                String(item.options[1]),
+                String(item.options[2]),
+                String(item.options[3]),
+              ],
+            });
+          }
+        }
+      }
+    }
+  } catch {
+    // ignore read error
+  }
+}
+
+function saveServerQuestionBankToDisk(): void {
+  try {
+    const dir = path.dirname(QUESTION_BANK_FILE_PATH);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    const allItems = Array.from(serverQuestionBank.values()).slice(-2500);
+    fs.writeFileSync(QUESTION_BANK_FILE_PATH, JSON.stringify(allItems, null, 2), 'utf-8');
+  } catch {
+    // ignore write error
+  }
+}
+
+function seedBuiltinExtractedBankOnServer(): void {
+  for (const seed of FULL_EXTRACTED_TEXTBOOK_BANK) {
+    const sig = computeServerQuestionSignature(seed.question);
+    const key = `${seed.cls.toLowerCase()}__${seed.subject.toLowerCase()}__${sig}`;
+    serverQuestionBank.set(key, {
+      id: seed.id,
+      signature: sig,
+      cls: seed.cls,
+      subject: seed.subject,
+      topic: seed.topic,
+      subTopic: seed.subTopic,
+      question: seed.question,
+      options: [seed.options[0], seed.options[1], seed.options[2], seed.options[3]],
+      correctIndex: seed.correctIndex,
+      hint: seed.hint,
+      explanation: seed.explanation,
+      sourceBookTitle: `${seed.textbookTitle} — ${seed.exerciseRef}`,
+      difficulty: 'Medium',
+      createdAt: '2026-10-30',
+    });
+  }
+}
+
+seedBuiltinExtractedBankOnServer();
+loadServerQuestionBankFromDisk();
+saveServerQuestionBankToDisk();
+
+function doesServerSubjectMatchStrict(itemSub: string, targetSub: string): boolean {
+  const a = String(itemSub || '').toLowerCase().trim();
+  const b = String(targetSub || '').toLowerCase().trim();
+  if (!a || !b) return false;
+  if (a === b) return true;
+  if (a.includes('additional math') || b.includes('additional math')) {
+    return a.includes('additional math') && b.includes('additional math');
+  }
+  if (a.includes('advanced math') || b.includes('advanced math') || a.includes('bam') || b.includes('bam')) {
+    return (a.includes('advanced math') || a.includes('bam')) && (b.includes('advanced math') || b.includes('bam'));
+  }
+  if (a.includes('mathematics') || b.includes('mathematics') || a.includes('hisabati') || b.includes('hisabati')) {
+    return (
+      (a.includes('basic math') || a === 'mathematics' || a.includes('hisabati')) &&
+      (b.includes('basic math') || b === 'mathematics' || b.includes('hisabati'))
+    );
+  }
+  if (
+    a.includes('computer') ||
+    a.includes('information and computer') ||
+    a === 'ics' ||
+    a === 'ict' ||
+    b.includes('computer') ||
+    b.includes('information and computer') ||
+    b === 'ics' ||
+    b === 'ict'
+  ) {
+    return (
+      (a.includes('computer') || a.includes('information and computer') || a === 'ics' || a === 'ict') &&
+      (b.includes('computer') || b.includes('information and computer') || b === 'ics' || b === 'ict')
+    );
+  }
+  return a.includes(b) || b.includes(a);
+}
+
+function getServerStoredQuestions(cls?: string, subject?: string): ServerStoredTextbookQuestion[] {
+  const all = Array.from(serverQuestionBank.values());
+  return all.filter((q) => {
+    if (cls && q.cls.toLowerCase().trim() !== cls.toLowerCase().trim()) return false;
+    if (subject && !doesServerSubjectMatchStrict(q.subject, subject)) return false;
+    return true;
+  });
+}
+
+function buildDeterministicTextbookQuestionsForBank(
+  cls: string,
+  subject: string,
+  topic: string,
+  bookTitle: string,
+  targetCount: number,
+  excludeSigs: Set<string>
+): ServerStoredTextbookQuestion[] {
+  const chapters = getSyllabusTopicsForClassSubject(cls, subject);
+  const effectiveChapters =
+    topic && topic !== 'ALL'
+      ? [topic, ...chapters.filter((c) => c !== topic)]
+      : chapters.length > 0
+      ? chapters
+      : ['Chapter 1: Core Competence'];
+
+  const results: ServerStoredTextbookQuestion[] = [];
+  const subLower = subject.toLowerCase();
+  const isAddMath = subLower.includes('additional math');
+  const isBasicMath = !isAddMath && (subLower.includes('math') || subLower.includes('hisabati'));
+  const formMatch = cls.match(/Form\s*([1-6])/i);
+  const formNum = formMatch ? Number(formMatch[1]) : 1;
+
+  // First pull from built-in content-integrated textbook questions across every chapter
+  for (const ch of effectiveChapters) {
+    if (results.length >= targetCount) break;
+    const chapterQns = buildContentIntegratedQuizQuestions(cls, subject, ch, undefined, undefined, 'BOOK');
+    for (const cq of chapterQns) {
+      if (results.length >= targetCount) break;
+      const sig = computeServerQuestionSignature(cq.question);
+      if (!sig || excludeSigs.has(sig) || results.some((r) => r.signature === sig)) continue;
+      if (!Array.isArray(cq.options) || cq.options.length < 4) continue;
+      results.push({
+        id: `tb-${Date.now()}-${results.length}`,
+        signature: sig,
+        cls,
+        subject,
+        topic: cq.topic || ch,
+        subTopic: cq.subTopic || ch,
+        question: cq.question,
+        options: [cq.options[0], cq.options[1], cq.options[2], cq.options[3]],
+        correctIndex: cq.correctIndex ?? 0,
+        hint: `Apply the ${cls} ${subject} formula from ${ch}.`,
+        explanation: cq.explanation || 'Step-by-step TIE textbook solution.',
+        sourceBookTitle: bookTitle || cq.sourceRef || `Official TIE ${cls} ${subject} Student's Book`,
+        difficulty: results.length % 3 === 0 ? 'Easy' : results.length % 3 === 1 ? 'Medium' : 'Hard',
+        createdAt: new Date().toISOString().split('T')[0],
+      });
+    }
+  }
+
+  // Generate additional parameterized textbook exercises for Mathematics & Additional Mathematics so the bank never runs out
+  let seedIdx = 0;
+  while (results.length < targetCount && seedIdx < 80) {
+    seedIdx++;
+    const ch = effectiveChapters[(seedIdx - 1) % effectiveChapters.length] || 'Chapter 1';
+    const correctIndex = seedIdx % 4;
+    let qText = '';
+    let correctAns = '';
+    let distractors: [string, string, string] = ['', '', ''];
+    let hint = '';
+    let explanation = '';
+
+    if (isAddMath) {
+      const mode = seedIdx % 5;
+      if (formNum === 1) {
+        if (mode === 0) {
+          const d = (seedIdx % 5) + 2;
+          const a1 = (seedIdx % 6) + 2;
+          const t5 = a1 + 4 * d;
+          qText = `[${cls} • ${bookTitle} — Number Patterns] In an arithmetic sequence with first term $a_1 = ${a1}$ and common difference $d = ${d}$, find the 5th term $T_5$.`;
+          correctAns = `$${t5}$`;
+          distractors = [`$${t5 + d}$`, `$${t5 - d}$`, `$${a1 * 5}$`];
+          hint = 'Use $T_n = a_1 + (n - 1)d$.';
+          explanation = `$T_5 = ${a1} + (5 - 1)\\times ${d} = ${a1} + ${4 * d} = ${t5}$.`;
+        } else if (mode === 1) {
+          const x0 = (seedIdx % 5) + 1;
+          const y0 = (seedIdx % 6) + 2;
+          qText = `[${cls} • ${bookTitle} — Coordinate Geometry & Symmetry] Find the image of the point $P(${x0}, ${y0})$ after reflection in the line $y = x$.`;
+          correctAns = `$(${y0}, ${x0})$`;
+          distractors = [`$(-${x0}, ${y0})$`, `$(${x0}, -${y0})$`, `$(-${y0}, -${x0})$`];
+          hint = 'Reflection in $y = x$ swaps $(x, y) \\to (y, x)$.';
+          explanation = `Reflecting $P(${x0}, ${y0})$ across $y = x$ gives $P'(${y0}, ${x0})$.`;
+        } else if (mode === 2) {
+          const k = (seedIdx % 4) + 2;
+          const b = (seedIdx % 5) + 1;
+          const c = k * b + (seedIdx % 6) + 3;
+          const sol = (c - k * b) / k;
+          if (Number.isInteger(sol) && sol > 0) {
+            qText = `[${cls} • ${bookTitle} — Algebraic Manipulation] Solve for $x$: $${k}(x + ${b}) = ${c}$.`;
+            correctAns = `$x = ${sol}$`;
+            distractors = [`$x = ${sol + 2}$`, `$x = ${sol + 1}$`, `$x = ${c - b}$`];
+            hint = 'Divide by the coefficient or expand first.';
+            explanation = `$${k}x + ${k * b} = ${c} \\Rightarrow ${k}x = ${c - k * b} \\Rightarrow x = ${sol}$.`;
+          } else {
+            const p = (seedIdx % 5) + 2;
+            const q = (seedIdx % 4) + 1;
+            qText = `[${cls} • ${bookTitle} — Simultaneous Equations] Solve for $(x, y)$ if $x + y = ${p + q}$ and $x - y = ${p - q}$.`;
+            correctAns = `$(${p}, ${q})$`;
+            distractors = [`$(${q}, ${p + 1})$`, `$(${p + 1}, ${q - 1})$`, `$(${p + q}, ${p})$`];
+            hint = 'Add the two equations to find $2x$.';
+            explanation = `$2x = ${2 * p} \\Rightarrow x = ${p}$, and $y = ${q}$.`;
+          }
+        } else if (mode === 3) {
+          const x1 = 2;
+          const y1 = (seedIdx % 4) + 2;
+          const x2 = 6;
+          const y2 = y1 + ((seedIdx % 3) + 1) * 2;
+          qText = `[${cls} • ${bookTitle} — Coordinate Geometry] Find the midpoint $M$ of the line segment joining $A(${x1}, ${y1})$ and $B(${x2}, ${y2})$.`;
+          correctAns = `$(${(x1 + x2) / 2}, ${(y1 + y2) / 2})$`;
+          distractors = [`$(${x2 - x1}, ${y2 - y1})$`, `$(${x1 + x2}, ${y1 + y2})$`, `$(${(x1 + x2) / 2}, ${y2})$`];
+          hint = 'Use $M = \\left(\\frac{x_1+x_2}{2}, \\frac{y_1+y_2}{2}\\right)$.';
+          explanation = `$M = \\left(\\frac{${x1}+${x2}}{2}, \\frac{${y1}+${y2}}{2}\\right) = (${(x1 + x2) / 2}, ${(y1 + y2) / 2})$.`;
+        } else {
+          const a = (seedIdx % 4) + 2;
+          const b = (seedIdx % 5) + 3;
+          qText = `[${cls} • ${bookTitle} — Algebraic Identities] Expand and simplify $(x + ${a})(x + ${b})$.`;
+          correctAns = `$x^2 + ${a + b}x + ${a * b}$`;
+          distractors = [`$x^2 + ${a * b}x + ${a + b}$`, `$x^2 + ${a + b}x + ${a + b}$`, `$x^2 - ${a + b}x + ${a * b}$`];
+          hint = 'Use $(x + a)(x + b) = x^2 + (a + b)x + ab$.';
+          explanation = `$(x + ${a})(x + ${b}) = x^2 + ${a + b}x + ${a * b}$.`;
+        }
+      } else if (formNum === 2) {
+        if (mode === 0) {
+          const x1Sol = (seedIdx % 4) + 1;
+          const y1Sol = (seedIdx % 3) + 2;
+          const sumXY = x1Sol + y1Sol;
+          const sumSq = x1Sol * x1Sol + y1Sol * y1Sol;
+          qText = `[${cls} • ${bookTitle} — Chapter 1: Algebra] Solve the simultaneous equations $x + y = ${sumXY}$ and $x^2 + y^2 = ${sumSq}$.`;
+          correctAns = `$(${x1Sol}, ${y1Sol})$ and $(${y1Sol}, ${x1Sol})$`;
+          distractors = [
+            `$(-${x1Sol}, -${y1Sol})$ and $(${x1Sol}, -${y1Sol})$`,
+            `$(${x1Sol + 1}, ${y1Sol - 1})$ and $(${y1Sol}, ${x1Sol})$`,
+            `$(${sumXY}, 0)$ and $(0, ${sumXY})$`,
+          ];
+          hint = 'Substitute $y = ' + sumXY + ' - x$ into $x^2 + y^2 = ' + sumSq + '$.';
+          explanation = `Substituting $y = ${sumXY} - x$ into $x^2 + y^2 = ${sumSq}$ gives $(x - ${x1Sol})(x - ${y1Sol}) = 0 \\Rightarrow (${x1Sol}, ${y1Sol})$ and $(${y1Sol}, ${x1Sol})$.`;
+        } else if (mode === 1) {
+          const k = (seedIdx % 4) + 2;
+          const x0 = (seedIdx % 3) + 2;
+          const z0 = 2;
+          const y0 = k * x0 * z0 * z0;
+          const x1 = x0 + 1;
+          const y1 = k * x1 * 9;
+          qText = `[${cls} • ${bookTitle} — Chapter 2: Variations] Given $y$ varies jointly as $x$ and $z^2$ ($y = kxz^2$), and $y = ${y0}$ when $x = ${x0}, z = ${z0}$, find $y$ when $x = ${x1}$ and $z = 3$.`;
+          correctAns = `$y = ${y1}$ (with $k = ${k}$)`;
+          distractors = [`$y = ${k * x1 * 3}$`, `$y = ${y1 + 12}$`, `$y = ${y0 * 2}$`];
+          hint = 'Find $k = \\frac{y}{xz^2}$ first.';
+          explanation = `$k = \\frac{${y0}}{${x0} \\times ${z0}^2} = ${k}$. When $x = ${x1}, z = 3$, $y = ${k}(${x1})(9) = ${y1}$.`;
+        } else if (mode === 2) {
+          qText = `[${cls} • ${bookTitle} — Chapter 3: Logic] State the contrapositive of $p \\rightarrow q$ and classify $[(p \\rightarrow q) \\wedge \\sim q] \\rightarrow \\sim p$:`;
+          correctAns = `Contrapositive: $\\sim q \\rightarrow \\sim p$ ; Valid argument (Tautology / Modus Tollens)`;
+          distractors = [
+            `Contrapositive: $q \\rightarrow p$ ; Invalid argument`,
+            `Contrapositive: $\\sim p \\rightarrow \\sim q$ ; Contradiction`,
+            `Contrapositive: $\\sim q \\rightarrow \\sim p$ ; Contradiction`,
+          ];
+          hint = 'The contrapositive of $p \\rightarrow q$ negates and swaps both statements.';
+          explanation = `The contrapositive of $p \\rightarrow q$ is $\\sim q \\rightarrow \\sim p$, and Modus Tollens $[(p \\rightarrow q) \\wedge \\sim q] \\rightarrow \\sim p$ is a Tautology (Valid).`;
+        } else if (mode === 3) {
+          const h = (seedIdx % 4) + 1;
+          const k = (seedIdx % 3) + 2;
+          const r = (seedIdx % 3) + 3;
+          const cVal = h * h + k * k - r * r;
+          const cFmt = cVal >= 0 ? `+ ${cVal}` : `- ${Math.abs(cVal)}`;
+          qText = `[${cls} • ${bookTitle} — Chapter 4: Locus] Find the equation of the locus of a point $P(x, y)$ whose distance from $(${h}, ${k})$ is always $${r}$ units.`;
+          correctAns = `$x^2 + y^2 - ${2 * h}x - ${2 * k}y ${cFmt} = 0$`;
+          distractors = [
+            `$x^2 + y^2 + ${2 * h}x + ${2 * k}y ${cFmt} = 0$`,
+            `$x^2 + y^2 - ${h}x - ${k}y - ${r * r} = 0$`,
+            `$x^2 + y^2 - ${2 * h}x - ${2 * k}y + ${r * r} = 0$`,
+          ];
+          hint = 'Expand $(x - h)^2 + (y - k)^2 = r^2$.';
+          explanation = `$(x - ${h})^2 + (y - ${k})^2 = ${r}^2 \\Rightarrow x^2 + y^2 - ${2 * h}x - ${2 * k}y ${cFmt} = 0$.`;
+        } else {
+          const abc = (seedIdx % 4) + 5;
+          const nA = 40 + (seedIdx % 6);
+          const nB = 35 + (seedIdx % 5);
+          const nC = 30 + (seedIdx % 5);
+          const nAB = abc + 6;
+          const nAC = abc + 4;
+          const nBC = abc + 5;
+          const nUnion = nA + nB + nC - nAB - nAC - nBC + abc;
+          qText = `[${cls} • ${bookTitle} — Chapter 5: Sets] Given $n(A)=${nA}, n(B)=${nB}, n(C)=${nC}, n(A\\cap B)=${nAB}, n(A\\cap C)=${nAC}, n(B\\cap C)=${nBC},$ and $n(A\\cap B\\cap C)=${abc}$, find $n(A \\cup B \\cup C)$.`;
+          correctAns = `$${nUnion}$`;
+          distractors = [`$${nUnion - abc}$`, `$${nUnion + abc}$`, `$${nA + nB + nC}$`];
+          hint = 'Use $n(A \\cup B \\cup C) = n(A)+n(B)+n(C)-n(A\\cap B)-n(A\\cap C)-n(B\\cap C)+n(A\\cap B\\cap C)$.';
+          explanation = `$n(A \\cup B \\cup C) = ${nA} + ${nB} + ${nC} - ${nAB} - ${nAC} - ${nBC} + ${abc} = ${nUnion}$.`;
+        }
+      } else if (formNum === 3) {
+        if (mode === 0) {
+          qText = `[${cls} • ${bookTitle} — Chapter 1: Sets] Simplify $(B - A)'$ and $(B \\cap C) \\cup (B \\cap C')$ using the laws of algebra of sets.`;
+          correctAns = `$(B - A)' = A \\cup B'$ and $(B \\cap C) \\cup (B \\cap C') = B$`;
+          distractors = [
+            `$(B - A)' = A' \\cap B$ and $(B \\cap C) \\cup (B \\cap C') = C$`,
+            `$(B - A)' = A \\cup B'$ and $(B \\cap C) \\cup (B \\cap C') = \\varnothing$`,
+            `$(B - A)' = B \\cup A'$ and $(B \\cap C) \\cup (B \\cap C') = B \\cup C$`,
+          ];
+          hint = 'Use $B - A = B \\cap A\'$ and De Morgan’s law.';
+          explanation = `$(B - A)' = (B \\cap A')' = A \\cup B'$, and $(B \\cap C) \\cup (B \\cap C') = B \\cap (C \\cup C') = B$.`;
+        } else if (mode === 1) {
+          const sumR = (seedIdx % 4) + 2;
+          const prodR = (seedIdx % 3) + 1;
+          const sumSq = sumR * sumR - 2 * prodR;
+          qText = `[${cls} • ${bookTitle} — Chapter 2: Equation and Remainder Theorem] If $\\alpha$ and $\\beta$ are roots of $x^2 - ${sumR}x + ${prodR} = 0$, find $\\alpha^2 + \\beta^2$ and the remainder when $x^3 - 5x + 6$ is divided by $x - 2$.`;
+          correctAns = `$\\alpha^2 + \\beta^2 = ${sumSq}$ and Remainder $= 4$`;
+          distractors = [
+            `$\\alpha^2 + \\beta^2 = ${sumR * sumR}$ and Remainder $= 4$`,
+            `$\\alpha^2 + \\beta^2 = ${sumSq}$ and Remainder $= 8$`,
+            `$\\alpha^2 + \\beta^2 = ${sumR * sumR + 2 * prodR}$ and Remainder $= 0$`,
+          ];
+          hint = 'Use $\\alpha^2 + \\beta^2 = (\\alpha+\\beta)^2 - 2\\alpha\\beta$ and evaluate $p(2)$.';
+          explanation = `$\\alpha^2 + \\beta^2 = ${sumR}^2 - 2(${prodR}) = ${sumSq}$, and $p(2) = 8 - 10 + 6 = 4$.`;
+        } else if (mode === 2) {
+          const v1 = (seedIdx % 3) + 1;
+          const v2 = v1 + 3;
+          const lead = (seedIdx % 4) + 2;
+          qText = `[${cls} • ${bookTitle} — Chapter 3: Functions] Find the vertical and horizontal asymptotes of the rational function $f(x) = \\frac{${lead}x^2 - 1}{(x - ${v1})(x - ${v2})}$.`;
+          correctAns = `Vertical: $x = ${v1}, x = ${v2}$ ; Horizontal: $y = ${lead}$`;
+          distractors = [
+            `Vertical: $x = -${v1}, x = -${v2}$ ; Horizontal: $y = 0$`,
+            `Vertical: $x = ${v1}, x = ${v2}$ ; Horizontal: $y = \\frac{1}{${lead}}$`,
+            `Vertical: None ; Horizontal: $y = ${lead}$`,
+          ];
+          hint = 'Set the denominator to zero for vertical asymptotes and take the ratio of leading $x^2$ coefficients for the horizontal asymptote.';
+          explanation = `Denominator $(x-${v1})(x-${v2})=0$ gives $x=${v1}, ${v2}$, and ratio of $x^2$ coefficients gives $y=${lead}$.`;
+        } else if (mode === 3) {
+          qText = `[${cls} • ${bookTitle} — Chapter 5: Trigonometry] Simplify $\\tan x + \\frac{\\cos x}{1 + \\sin x}$ and find $\\sin 2\\theta$ if $\\sin\\theta = \\frac{1}{\\sqrt{5}}$ for acute $\\theta$.`;
+          correctAns = `$\\sec x$ and $\\sin 2\\theta = \\frac{4}{5}$`;
+          distractors = [
+            `$\\csc x$ and $\\sin 2\\theta = \\frac{3}{5}$`,
+            `$\\sec x$ and $\\sin 2\\theta = \\frac{2}{5}$`,
+            `$\\cos x$ and $\\sin 2\\theta = \\frac{4}{5}$`,
+          ];
+          hint = 'Combine over $\\cos x(1 + \\sin x)$ using $\\sin^2 x + \\cos^2 x = 1$, and use $\\sin 2\\theta = 2\\sin\\theta\\cos\\theta$.';
+          explanation = `$\\frac{\\sin x + \\sin^2 x + \\cos^2 x}{\\cos x(1+\\sin x)} = \\sec x$, and $\\sin 2\\theta = 2(\\frac{1}{\\sqrt{5}})(\\frac{2}{\\sqrt{5}}) = \\frac{4}{5}$.`;
+        } else {
+          const a = (seedIdx % 4) + 2;
+          const b = (seedIdx % 5) + 1;
+          const xVal = (seedIdx % 3) + 1;
+          const grad = 2 * a * xVal + b;
+          qText = `[${cls} • ${bookTitle} — Chapter 6: Differentiation] Find the gradient of the tangent to $y = ${a}x^2 + ${b}x - 3$ at $x = ${xVal}$.`;
+          correctAns = `$${grad}$`;
+          distractors = [`$${2 * a * xVal}$`, `$${a * xVal * xVal + b * xVal - 3}$`, `$${grad + a}$`];
+          hint = 'Differentiate $\\frac{dy}{dx} = 2ax + b$ and substitute $x$.';
+          explanation = `$\\frac{dy}{dx} = ${2 * a}x + ${b}$. At $x = ${xVal}$, gradient $= ${2 * a}(${xVal}) + ${b} = ${grad}$.`;
+        }
+      } else {
+        const k = ((seedIdx % 4) + 1) * 2;
+        const upper = (seedIdx % 3) + 2;
+        const val = (k / 2) * upper * upper;
+        qText = `[${cls} • ${bookTitle} — Definite Integration] Evaluate $\\int_0^{${upper}} ${k}x\\,dx$.`;
+        correctAns = `$${val}$`;
+        distractors = [`$${k * upper}$`, `$${val * 2}$`, `$${val + upper}$`];
+        hint = 'Use $\\int_0^b kx\\,dx = \\left[\\frac{k}{2}x^2\\right]_0^b$.';
+        explanation = `$\\left[${k / 2}x^2\\right]_0^{${upper}} = ${k / 2}(${upper}^2) = ${val}$.`;
+      }
+    } else if (isBasicMath) {
+      const mode = seedIdx % 5;
+      if (formNum === 1) {
+        if (mode === 0) {
+          const a = (seedIdx % 5) + 2;
+          const xVal = (seedIdx % 6) + 2;
+          const b = (seedIdx % 7) + 1;
+          const rhs = a * xVal + b;
+          qText = `[${cls} • ${bookTitle} — Chapter 5: Algebra] Solve for $x$ in the linear equation $${a}x + ${b} = ${rhs}$.`;
+          correctAns = `$x = ${xVal}$`;
+          distractors = [`$x = ${xVal + 2}$`, `$x = ${xVal - 1}$`, `$x = ${rhs - b}$`];
+          hint = 'Subtract the constant term and divide by the coefficient of $x$.';
+          explanation = `$${a}x = ${rhs} - ${b} = ${a * xVal} \\Rightarrow x = ${xVal}$.`;
+        } else if (mode === 1) {
+          const d1 = (seedIdx % 8) + 1;
+          const d2 = ((seedIdx + 3) % 8) + 1;
+          const num = d1 * 10 + d2;
+          qText = `[${cls} • ${bookTitle} — Chapter 2: Numbers] Express the repeating decimal $0.\\dot{${d1}}\\dot{${d2}}$ as a rational fraction in the form $\\frac{a}{b}$.`;
+          correctAns = `$\\frac{${num}}{99}$`;
+          distractors = [`$\\frac{${num}}{100}$`, `$\\frac{${num}}{90}$`, `$\\frac{${num - d1}}{99}$`];
+          hint = 'For a two-digit repeating block after the decimal point, place the two-digit number over $99$.';
+          explanation = `Let $x = 0.${d1}${d2}${d1}${d2}\\dots \\Rightarrow 100x - x = ${num} \\Rightarrow 99x = ${num} \\Rightarrow x = \\frac{${num}}{99}$.`;
+        } else if (mode === 2) {
+          const x1 = 1;
+          const y1 = (seedIdx % 4) + 1;
+          const m = (seedIdx % 4) + 2;
+          const x2 = 4;
+          const y2 = y1 + m * (x2 - x1);
+          qText = `[${cls} • ${bookTitle} — Chapter 6: Coordinate Geometry] Find the gradient (slope) of the straight line passing through $A(${x1}, ${y1})$ and $B(${x2}, ${y2})$.`;
+          correctAns = `$${m}$`;
+          distractors = [`$${m + 1}$`, `$\\frac{1}{${m}}$`, `$${-m}$`];
+          hint = 'Use $m = \\frac{y_2 - y_1}{x_2 - x_1}$.';
+          explanation = `$m = \\frac{${y2} - ${y1}}{${x2} - ${x1}} = \\frac{${y2 - y1}}{${x2 - x1}} = ${m}$.`;
+        } else if (mode === 3) {
+          const whole = (seedIdx % 8) + 2;
+          const decStr = `${whole}.${(seedIdx % 7) + 1}86`;
+          const val = parseFloat(decStr);
+          qText = `[${cls} • ${bookTitle} — Chapter 3: Approximations] Round off $${decStr}$ correct to $2$ decimal places and $3$ significant figures.`;
+          correctAns = `$${val.toFixed(2)}$ ($2$ d.p.) and $${val.toPrecision(3)}$ ($3$ s.f.)`;
+          distractors = [
+            `$${(val - 0.01).toFixed(2)}$ ($2$ d.p.) and $${(val - 0.01).toPrecision(3)}$ ($3$ s.f.)`,
+            `$${val.toFixed(1)}$ ($2$ d.p.) and $${val.toFixed(3)}$ ($3$ s.f.)`,
+            `$${(val + 0.02).toFixed(2)}$ ($2$ d.p.) and $${whole}.00$ ($3$ s.f.)`,
+          ];
+          hint = 'Check the 3rd decimal digit ($6 \\ge 5$) to round up the 2nd decimal place.';
+          explanation = `Since the 3rd decimal digit is $6 \\ge 5$, $${decStr}$ rounds to $${val.toFixed(2)}$ ($2$ d.p.) and $${val.toPrecision(3)}$ ($3$ s.f.).`;
+        } else {
+          const g1 = (seedIdx % 4) + 2;
+          const g2 = g1 + 1;
+          const totalParts = g1 + g2;
+          const mult = ((seedIdx % 5) + 2) * 1000;
+          const totalAmount = totalParts * mult;
+          qText = `[${cls} • ${bookTitle} — Chapter 4: Ratios and Proportions] Divide TZS $${totalAmount.toLocaleString()}$ in the ratio $${g1} : ${g2}$. What is the larger share?`;
+          correctAns = `TZS $${(g2 * mult).toLocaleString()}$`;
+          distractors = [
+            `TZS $${(g1 * mult).toLocaleString()}$`,
+            `TZS $${((g2 + 1) * mult).toLocaleString()}$`,
+            `TZS $${(totalAmount / 2).toLocaleString()}$`,
+          ];
+          hint = 'Divide the total by the sum of ratio parts, then multiply by the larger part.';
+          explanation = `Total parts $= ${g1} + ${g2} = ${totalParts}$. Larger share $= \\frac{${g2}}{${totalParts}} \\times ${totalAmount.toLocaleString()} = \\text{TZS } ${(g2 * mult).toLocaleString()}$.`;
+        }
+      } else if (formNum === 2) {
+        if (mode === 0) {
+          const r1 = (seedIdx % 5) + 1;
+          const r2 = r1 + (seedIdx % 4) + 2;
+          qText = `[${cls} • ${bookTitle} — Chapter 4: Algebra] Solve the quadratic equation $x^2 - ${r1 + r2}x + ${r1 * r2} = 0$ by factorisation.`;
+          correctAns = `$x = ${r1}$ or $x = ${r2}$`;
+          distractors = [
+            `$x = -${r1}$ or $x = -${r2}$`,
+            `$x = ${r1}$ or $x = -${r2}$`,
+            `$x = ${r1 + 1}$ or $x = ${r2 - 1}$`,
+          ];
+          hint = 'Factorise as $(x - a)(x - b) = 0$.';
+          explanation = `$x^2 - ${r1 + r2}x + ${r1 * r2} = (x - ${r1})(x - ${r2}) = 0 \\Rightarrow x = ${r1}$ or $x = ${r2}$.`;
+        } else if (mode === 1) {
+          const kPow = (seedIdx % 4) + 2;
+          const rhs = Math.pow(2, kPow + 1);
+          qText = `[${cls} • ${bookTitle} — Chapter 5: Exponents and Radicals] Solve for $x$ in $2^{x + 1} = ${rhs}$ and rationalise $\\frac{6}{\\sqrt{5} - \\sqrt{2}}$.`;
+          correctAns = `$x = ${kPow}$ and $2(\\sqrt{5} + \\sqrt{2})$`;
+          distractors = [
+            `$x = ${kPow + 1}$ and $2(\\sqrt{5} - \\sqrt{2})$`,
+            `$x = ${kPow}$ and $3(\\sqrt{5} + \\sqrt{2})$`,
+            `$x = ${kPow - 1}$ and $\\sqrt{5} + \\sqrt{2}$`,
+          ];
+          hint = 'Express the RHS as a power of $2$ and multiply the surd denominator by its conjugate $(\\sqrt{5} + \\sqrt{2})$.';
+          explanation = `$2^{x+1} = 2^{${kPow + 1}} \\Rightarrow x = ${kPow}$, and $\\frac{6(\\sqrt{5}+\\sqrt{2})}{5-2} = 2(\\sqrt{5}+\\sqrt{2})$.`;
+        } else if (mode === 2) {
+          const p2 = (seedIdx % 3) + 1;
+          const p3 = (seedIdx % 2) + 1;
+          const valN = Math.pow(2, p2) * Math.pow(3, p3);
+          const ansLog = (p2 * 0.3010 + p3 * 0.4771).toFixed(4);
+          qText = `[${cls} • ${bookTitle} — Chapter 6: Logarithms] Given $\\log_{10} 2 = 0.3010$ and $\\log_{10} 3 = 0.4771$, find $\\log_{10} ${valN}$.`;
+          correctAns = `$${ansLog}$`;
+          distractors = [
+            `$${(parseFloat(ansLog) + 0.3010).toFixed(4)}$`,
+            `$${(parseFloat(ansLog) - 0.1761).toFixed(4)}$`,
+            `$${(p2 * 0.4771 + p3 * 0.3010).toFixed(4)}$`,
+          ];
+          hint = `Write $${valN} = 2^{${p2}} \\times 3^{${p3}}$ and apply the laws of logarithms.`;
+          explanation = `$\\log_{10} ${valN} = ${p2}\\log_{10} 2 + ${p3}\\log_{10} 3 = ${ansLog}$.`;
+        } else if (mode === 3) {
+          const s1 = (seedIdx % 3) + 2;
+          const s2 = s1 + 3;
+          const a1 = s1 * s1 * 3;
+          const a2 = s2 * s2 * 3;
+          qText = `[${cls} • ${bookTitle} — Chapter 2 & 3: Congruence and Similarity] Two similar triangles have corresponding sides in the ratio $${s1} : ${s2}$. If the smaller triangle has area $${a1}\\text{ cm}^2$, find the area of the larger triangle.`;
+          correctAns = `$${a2}\\text{ cm}^2$`;
+          distractors = [`$${s1 * s2 * 3}\\text{ cm}^2$`, `$${a1 * 2}\\text{ cm}^2$`, `$${a2 + 15}\\text{ cm}^2$`];
+          hint = 'Ratio of areas of similar figures equals the square of the ratio of their corresponding sides.';
+          explanation = `$\\frac{A_1}{A_2} = \\left(\\frac{${s1}}{${s2}}\\right)^2 \\Rightarrow A_2 = \\frac{${a1} \\times ${s2 * s2}}{${s1 * s1}} = ${a2}\\text{ cm}^2$.`;
+        } else {
+          const d = ((seedIdx % 5) + 2) * 10;
+          qText = `[${cls} • ${bookTitle} — Chapter 8: Trigonometry] From a point $${d}\\text{ m}$ from the foot of a vertical tower on level ground, the angle of elevation of the top of the tower is $60^\\circ$. Find the height of the tower.`;
+          correctAns = `$${d}\\sqrt{3}\\text{ m}$`;
+          distractors = [`$\\frac{${d}}{\\sqrt{3}}\\text{ m}$`, `$${d}\\text{ m}$`, `$${2 * d}\\text{ m}$`];
+          hint = 'Use $\\tan 60^\\circ = \\frac{\\text{Opposite}}{\\text{Adjacent}} = \\sqrt{3}$.';
+          explanation = `$\\tan 60^\\circ = \\frac{h}{${d}} \\Rightarrow h = ${d}\\tan 60^\\circ = ${d}\\sqrt{3}\\text{ m}$.`;
+        }
+      } else if (formNum === 3) {
+        if (mode === 0) {
+          const m = (seedIdx % 4) + 2;
+          const c = (seedIdx % 5) + 1;
+          qText = `[${cls} • ${bookTitle} — Chapter 1: Relations] Find the inverse relation $R^{-1}$ of $R = \\{(x, y) : y = ${m}x + ${c}\\}$ and the range of $S = \\{(x, y) : y = x^2 + ${c}\\}$.`;
+          correctAns = `$R^{-1}: y = \\frac{x - ${c}}{${m}}$ and Range of $S$: $\\{y \\in \\mathbb{R} : y \\ge ${c}\\}$`;
+          distractors = [
+            `$R^{-1}: y = \\frac{x + ${c}}{${m}}$ and Range of $S$: $\\mathbb{R}$`,
+            `$R^{-1}: y = ${m}x - ${c}$ and Range of $S$: $\\{y \\ge 0\\}$`,
+            `$R^{-1}: y = \\frac{x - ${c}}{${m}}$ and Range of $S$: $\\{y \\le ${c}\\}$`,
+          ];
+          hint = 'Swap $x$ and $y$ to find $R^{-1}$, and note that $x^2 \\ge 0$ for all $x \\in \\mathbb{R}$.';
+          explanation = `Swapping $x$ and $y$ gives $x = ${m}y + ${c} \\Rightarrow y = \\frac{x - ${c}}{${m}}$, and since $x^2 \\ge 0$, $y = x^2 + ${c} \\ge ${c}$.`;
+        } else if (mode === 1) {
+          const h = (seedIdx % 4) + 2;
+          const k = (seedIdx % 5) + 1;
+          qText = `[${cls} • ${bookTitle} — Chapter 2: Functions] Find the turning point (vertex) and axis of symmetry of $f(x) = x^2 - ${2 * h}x + ${h * h + k}$, and evaluate $\\lfloor 5.75 \\rfloor$.`;
+          correctAns = `Vertex $(${h}, ${k})$, Axis $x = ${h}$, and $\\lfloor 5.75 \\rfloor = 5$`;
+          distractors = [
+            `Vertex $(-${h}, ${k})$, Axis $x = -${h}$, and $\\lfloor 5.75 \\rfloor = 6$`,
+            `Vertex $(${h}, ${k})$, Axis $x = ${h}$, and $\\lfloor 5.75 \\rfloor = 6$`,
+            `Vertex $(${h}, ${h * h + k})$, Axis $x = ${2 * h}$, and $\\lfloor 5.75 \\rfloor = 5$`,
+          ];
+          hint = 'Complete the square $f(x) = (x - h)^2 + k$.';
+          explanation = `$f(x) = (x - ${h})^2 + ${k}$ has minimum vertex $(${h}, ${k})$ on axis $x = ${h}$, and $\\lfloor 5.75 \\rfloor = 5$.`;
+        } else if (mode === 2) {
+          qText = `[${cls} • ${bookTitle} — Chapter 3: Linear Programming] Maximize $f(x, y) = 2x + 3y$ subject to $x + 2y \\le 10,\\; 3x + y \\le 15,\\; x \\ge 0,\\; y \\ge 0$.`;
+          correctAns = `Maximum value $= 17$ at $(4, 3)$`;
+          distractors = [
+            `Maximum value $= 15$ at $(0, 5)$`,
+            `Maximum value $= 10$ at $(5, 0)$`,
+            `Maximum value $= 20$ at $(4, 4)$`,
+          ];
+          hint = 'Find the intersection $(4, 3)$ of $x + 2y = 10$ and $3x + y = 15$ and test all corner points.';
+          explanation = `Corner points are $(0,0), (5,0), (4,3), (0,5)$, and $f(4,3) = 2(4) + 3(3) = 17$ is maximum.`;
+        } else if (mode === 3) {
+          const a1 = (seedIdx % 5) + 3;
+          const d = (seedIdx % 4) + 2;
+          const a10 = a1 + 9 * d;
+          const s10 = 5 * (a1 + a10);
+          qText = `[${cls} • ${bookTitle} — Chapter 4: Sequences and Series] In an AP with $A_1 = ${a1}$ and $d = ${d}$, find $A_{10}$ and $S_{10}$.`;
+          correctAns = `$A_{10} = ${a10},\\; S_{10} = ${s10}$`;
+          distractors = [
+            `$A_{10} = ${a1 + 10 * d},\\; S_{10} = ${s10 + 15}$`,
+            `$A_{10} = ${a10},\\; S_{10} = ${10 * a10}$`,
+            `$A_{10} = ${a10 - d},\\; S_{10} = ${s10 - a1}$`,
+          ];
+          hint = 'Use $A_n = A_1 + (n-1)d$ and $S_n = \\frac{n}{2}(A_1 + A_n)$.';
+          explanation = `$A_{10} = ${a1} + 9(${d}) = ${a10}$ and $S_{10} = 5(${a1} + ${a10}) = ${s10}$.`;
+        } else {
+          const ang = 70 + (seedIdx % 5) * 5;
+          const opp = 180 - ang;
+          qText = `[${cls} • ${bookTitle} — Chapter 5: Circles] In a cyclic quadrilateral $ABCD$, $\\angle ABC = ${ang}^\\circ$; find $\\angle ADC$, and find the length of a chord $5\\text{ cm}$ from the centre of a circle of radius $13\\text{ cm}$.`;
+          correctAns = `$\\angle ADC = ${opp}^\\circ$ and Chord length $= 24\\text{ cm}$`;
+          distractors = [
+            `$\\angle ADC = ${ang}^\\circ$ and Chord length $= 12\\text{ cm}$`,
+            `$\\angle ADC = ${opp}^\\circ$ and Chord length $= 12\\text{ cm}$`,
+            `$\\angle ADC = ${2 * ang}^\\circ$ and Chord length $= 24\\text{ cm}$`,
+          ];
+          hint = 'Opposite angles of a cyclic quadrilateral sum to $180^\\circ$, and half-chord $= \\sqrt{13^2 - 5^2} = 12\\text{ cm}$.';
+          explanation = `$\\angle ADC = 180^\\circ - ${ang}^\\circ = ${opp}^\\circ$, and chord length $= 2\\sqrt{13^2 - 5^2} = 24\\text{ cm}$.`;
+        }
+      } else {
+        const a = (seedIdx % 5) + 2;
+        const b = a + (seedIdx % 4) + 1;
+        qText = `[${cls} • ${bookTitle} — ${ch}] Solve for the positive root of $x^2 - ${a + b}x + ${a * b} = 0$ given $x > ${a}$.`;
+        correctAns = `$x = ${b}$`;
+        distractors = [`$x = ${a}$`, `$x = ${a + b}$`, `$x = ${a * b}$`];
+        hint = 'Factorise $(x - a)(x - b) = 0$.';
+        explanation = `$(x - ${a})(x - ${b}) = 0 \\Rightarrow x = ${b}$ (since $x > ${a}$).`;
+      }
+    } else {
+      break;
+    }
+
+    const sig = computeServerQuestionSignature(qText);
+    if (!sig || excludeSigs.has(sig) || results.some((r) => r.signature === sig)) continue;
+
+    const opts: [string, string, string, string] = ['', '', '', ''];
+    opts[correctIndex] = correctAns;
+    let dPtr = 0;
+    for (let i = 0; i < 4; i++) {
+      if (i !== correctIndex) {
+        opts[i] = distractors[dPtr++];
+      }
+    }
+
+    results.push({
+      id: `tb-gen-${Date.now()}-${results.length}`,
+      signature: sig,
+      cls,
+      subject,
+      topic: ch,
+      subTopic: ch,
+      question: qText,
+      options: opts,
+      correctIndex,
+      hint,
+      explanation,
+      sourceBookTitle: bookTitle || `Official TIE ${cls} ${subject} Student's Book`,
+      difficulty: results.length % 3 === 0 ? 'Easy' : results.length % 3 === 1 ? 'Medium' : 'Hard',
+      createdAt: new Date().toISOString().split('T')[0],
+    });
+  }
+
+  return results;
+}
+
+async function extractAndStoreQuestionsIntoServerBank(params: {
+  cls: string;
+  subject: string;
+  topic?: string;
+  bookTitle?: string;
+  customContent?: string;
+  paperUrl?: string;
+  attachedFileBase64?: string;
+  count?: number;
+}): Promise<{
+  addedCount: number;
+  totalStoredForSubject: number;
+  extractedQuestions: ServerStoredTextbookQuestion[];
+}> {
+  const cls = (params.cls || 'Form 1').trim();
+  const subject = (params.subject || 'Basic Mathematics').trim();
+  const topic = (params.topic || 'ALL').trim();
+  const targetCount = Math.min(40, Math.max(5, Number(params.count) || 25));
+  const tbInfo = getTieTextbookChapterContent(cls, subject, topic !== 'ALL' ? topic : '');
+  const bookTitle = (params.bookTitle || tbInfo.bookTitle || `Official TIE ${cls} ${subject} Student's Book`).trim();
+
+  let extractedPdfText = '';
+  if (params.attachedFileBase64) {
+    extractedPdfText = await Promise.race([
+      extractBase64PdfText(params.attachedFileBase64, `${cls} ${subject} ${topic}`),
+      new Promise<string>((resolve) => setTimeout(() => resolve(''), 8000)),
+    ]);
+  }
+  if (!extractedPdfText && params.paperUrl) {
+    extractedPdfText = await Promise.race([
+      extractGoogleDrivePdfText(params.paperUrl, `${cls} ${subject} ${topic}`),
+      new Promise<string>((resolve) => setTimeout(() => resolve(''), 8000)),
+    ]);
+  }
+
+  const syllabusTopics = getSyllabusTopicsForClassSubject(cls, subject);
+  const combinedSourceText = [
+    params.customContent || '',
+    extractedPdfText,
+    `Official TIE Textbook: ${bookTitle}`,
+    `Chapters: ${syllabusTopics.join('; ')}`,
+    tbInfo.chapterSummaryMarkdown || '',
+    tbInfo.chapterDeepNotes || '',
+  ]
+    .filter(Boolean)
+    .join('\n\n')
+    .slice(0, 11000);
+
+  const existingForSubject = getServerStoredQuestions(cls, subject);
+  const existingSignatures = new Set(existingForSubject.map((q) => q.signature));
+
+  const newlyExtracted: ServerStoredTextbookQuestion[] = [];
+  const ai = getGenAIClient();
+
+  if (ai) {
+    try {
+      const existingPreview = existingForSubject
+        .slice(-20)
+        .map((q) => `- ${q.question.slice(0, 90)}`)
+        .join('\n');
+
+      const promptText = `Extract and generate ${targetCount} distinct, authentic competence-based textbook exercises and problems for Tanzanian ${cls} ${subject} from the textbook "${bookTitle}"${topic && topic !== 'ALL' ? ` focusing on "${topic}"` : ` covering all chapters (${syllabusTopics.join(', ')})`}.
+
+TEXTBOOK CONTENT & EXERCISES SOURCE:
+${combinedSourceText}
+
+${existingPreview ? `DO NOT REPEAT ANY OF THESE ALREADY-STORED QUESTIONS:\n${existingPreview}\n` : ''}
+CRITICAL RULES:
+1. Every question MUST be strictly at ${cls} ${subject} curriculum level (never mix Basic Mathematics with Additional Mathematics).
+2. Format all mathematical formulas, fractions (\\frac{a}{b}), roots (\\sqrt{x}), exponents (x^2), sets, matrices, derivatives, and integrals inside $...$ inline LaTeX delimiters.
+3. Provide 4 distinct options, correctIndex (0 to 3), a helpful "hint", a step-by-step worked "explanation", the chapter "topic", and "subTopic".`;
+
+      const jsonText = await generateContentWithQuotaFallback(ai, {
+        contents: promptText,
+        config: {
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                question: { type: Type.STRING },
+                options: {
+                  type: Type.ARRAY,
+                  items: { type: Type.STRING },
+                },
+                correctIndex: { type: Type.INTEGER },
+                hint: { type: Type.STRING },
+                explanation: { type: Type.STRING },
+                topic: { type: Type.STRING },
+                subTopic: { type: Type.STRING },
+              },
+              required: ['question', 'options', 'correctIndex', 'explanation', 'topic'],
+            },
+          },
+        },
+        enableThinking: false,
+      });
+
+      if (jsonText) {
+        const parsed = JSON.parse(jsonText);
+        if (Array.isArray(parsed)) {
+          for (const raw of parsed) {
+            if (!raw || typeof raw.question !== 'string' || !Array.isArray(raw.options) || raw.options.length < 4) {
+              continue;
+            }
+            const sig = computeServerQuestionSignature(raw.question);
+            if (!sig || existingSignatures.has(sig) || newlyExtracted.some((n) => n.signature === sig)) {
+              continue;
+            }
+            newlyExtracted.push({
+              id: `tb-ai-${Date.now()}-${newlyExtracted.length}`,
+              signature: sig,
+              cls,
+              subject,
+              topic: raw.topic || (topic !== 'ALL' ? topic : syllabusTopics[0] || 'Chapter 1'),
+              subTopic: raw.subTopic || raw.topic || 'Textbook Exercise',
+              question: raw.question,
+              options: [
+                String(raw.options[0]),
+                String(raw.options[1]),
+                String(raw.options[2]),
+                String(raw.options[3]),
+              ],
+              correctIndex:
+                typeof raw.correctIndex === 'number' && raw.correctIndex >= 0 && raw.correctIndex <= 3
+                  ? raw.correctIndex
+                  : 0,
+              hint: raw.hint || `Use the ${cls} ${subject} formula from ${bookTitle}.`,
+              explanation: raw.explanation || 'Step-by-step TIE textbook solution.',
+              sourceBookTitle: bookTitle,
+              difficulty: newlyExtracted.length % 3 === 0 ? 'Easy' : newlyExtracted.length % 3 === 1 ? 'Medium' : 'Hard',
+              createdAt: new Date().toISOString().split('T')[0],
+            });
+          }
+        }
+      }
+    } catch {
+      // Fall back to deterministic textbook extractor below
+    }
+  }
+
+  if (newlyExtracted.length < targetCount) {
+    const combinedExcludes = new Set([
+      ...Array.from(existingSignatures),
+      ...newlyExtracted.map((n) => n.signature),
+    ]);
+    const deterministicBatch = buildDeterministicTextbookQuestionsForBank(
+      cls,
+      subject,
+      topic,
+      bookTitle,
+      targetCount - newlyExtracted.length,
+      combinedExcludes
+    );
+    newlyExtracted.push(...deterministicBatch);
+  }
+
+  let addedCount = 0;
+  for (const item of newlyExtracted) {
+    const key = `${item.cls.toLowerCase()}__${item.subject.toLowerCase()}__${item.signature}`;
+    if (!serverQuestionBank.has(key)) {
+      serverQuestionBank.set(key, item);
+      addedCount++;
+    }
+  }
+
+  if (addedCount > 0) {
+    saveServerQuestionBankToDisk();
+  }
+
+  const updatedForSubject = getServerStoredQuestions(cls, subject);
+  return {
+    addedCount,
+    totalStoredForSubject: updatedForSubject.length,
+    extractedQuestions: newlyExtracted,
+  };
+}
+
+// Get stored textbook questions from server bank
+app.get('/api/question-bank', (req, res) => {
+  const cls = req.query.cls ? String(req.query.cls) : undefined;
+  const subject = req.query.subject ? String(req.query.subject) : undefined;
+  const questions = getServerStoredQuestions(cls, subject);
+  return res.json({
+    questions,
+    totalCount: questions.length,
+  });
+});
+
+// Upload Textbook PDF / Drive Link / Text & Extract Questions into Persistent Question Bank
+app.post('/api/question-bank/extract', async (req, res) => {
+  try {
+    const {
+      cls = 'Form 1',
+      subject = 'Basic Mathematics',
+      topic = 'ALL',
+      bookTitle,
+      customContent,
+      paperUrl,
+      attachedFileBase64,
+      attachedFileName,
+      count = 25,
+    } = req.body as {
+      cls?: string;
+      subject?: string;
+      topic?: string;
+      bookTitle?: string;
+      customContent?: string;
+      paperUrl?: string;
+      attachedFileBase64?: string;
+      attachedFileName?: string;
+      count?: number;
+    };
+
+    // Also register the textbook in serverAttachedResources if a PDF or URL or content was provided
+    if (attachedFileBase64 || paperUrl || (customContent && customContent.trim().length > 40)) {
+      const resTitle =
+        (bookTitle || '').trim() ||
+        `Official TIE ${cls} ${subject} Student's Textbook`;
+      const resId = `tb-upload-${cls.toLowerCase().replace(/\s+/g, '')}-${subject.toLowerCase().replace(/\s+/g, '')}`;
+      serverAttachedResources.set(resId, {
+        id: resId,
+        title: resTitle,
+        form: cls,
+        subject,
+        year: new Date().getFullYear().toString(),
+        category: 'TIE Book',
+        paperUrl: paperUrl || null,
+        answersUrl: null,
+        isBook: true,
+        isSyllabus: false,
+        customContent: customContent || '',
+        attachedFileMimeType: attachedFileBase64 ? 'application/pdf' : undefined,
+        attachedFileBase64,
+        attachedFileName,
+        isUserAttached: true,
+        createdAt: new Date().toISOString().split('T')[0],
+      });
+    }
+
+    const result = await extractAndStoreQuestionsIntoServerBank({
+      cls,
+      subject,
+      topic,
+      bookTitle,
+      customContent,
+      paperUrl,
+      attachedFileBase64,
+      count,
+    });
+
+    return res.json({
+      addedCount: result.addedCount,
+      totalStoredForSubject: result.totalStoredForSubject,
+      extractedQuestions: result.extractedQuestions,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      error: err instanceof Error ? err.message : 'Failed to extract textbook questions',
+    });
+  }
 });
 
 // Extract Chapters / Table of Contents from Attached Textbook PDF
@@ -873,6 +1828,12 @@ CRITICAL RULES FOR ANSWERING:
           : `User's Question (Answer this exact question directly): ${userPrompt}`;
 
         if (activeInlineFile && activeInlineFile.base64Data && activeInlineFile.mimeType) {
+          const imageSolverInstruction = `IMPORTANT MULTIMODAL EXAM/QUESTION PHOTO INSTRUCTION:
+The user has attached an image or document containing examination or textbook question(s).
+1. Carefully read and transcribe EVERY question and sub-question ((a), (b), (c), (i), (ii), (iii), tables, diagrams, etc.) visible in the attached image.
+2. Solve EVERY visible question and sub-part completely, step-by-step, showing all formulas, substitutions, intermediate calculations, and the **Final Answer** for each part.
+3. NEVER output generic syllabus notes or unrelated chapter examples—solve the exact questions printed in the attached photo!\n\n${fullPromptText}`;
+
           const multimodalRes = await generateContentWithQuotaFallback(ai, {
             contents: {
               parts: [
@@ -882,15 +1843,15 @@ CRITICAL RULES FOR ANSWERING:
                     data: activeInlineFile.base64Data,
                   },
                 },
-                { text: fullPromptText },
+                { text: imageSolverInstruction },
               ],
             },
             config: {
               systemInstruction,
-              temperature: 0.25,
             },
             useGoogleSearch: false,
             enableThinking: false,
+            timeoutMs: 35000,
           });
           if (multimodalRes) return multimodalRes;
         }
@@ -899,10 +1860,10 @@ CRITICAL RULES FOR ANSWERING:
           contents: fullPromptText,
           config: {
             systemInstruction,
-            temperature: 0.3,
           },
           useGoogleSearch: needsWebGrounding,
           enableThinking: false,
+          timeoutMs: 20000,
         });
       };
 
@@ -914,9 +1875,10 @@ CRITICAL RULES FOR ANSWERING:
           )
         : runChatGeneration();
 
+      const outerTimeoutMs = activeInlineFile ? 40000 : 24000;
       const replyText = await Promise.race([
         rawGenerationPromise,
-        new Promise<null>((resolve) => setTimeout(() => resolve(null), 20000)),
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), outerTimeoutMs)),
       ]);
 
       if (replyText && replyText.length > 0) {
@@ -1154,10 +2116,10 @@ function buildFallbackTopicQuizQuestions(
   return buildContentIntegratedQuizQuestions(cls, subject, topic, siteResources, subTopic, sourceFilter);
 }
 
-// Moha AI Interactive Quiz & Game Question Generator Endpoint (integrates specific topic, subTopic & uploaded website books/past papers)
+// Moha AI Interactive Quiz & Game Question Generator Endpoint (integrates specific topic, subTopic & uploaded website books/past papers + Non-Repeating Question Bank)
 app.post('/api/moha/quiz', async (req, res) => {
   const {
-    cls = 'Form 3',
+    cls = 'Form 1',
     subject = 'Basic Mathematics',
     topic,
     subTopic,
@@ -1165,6 +2127,8 @@ app.post('/api/moha/quiz', async (req, res) => {
     siteResources,
     count = 20,
     specificResourceTitle,
+    excludeSignatures = [],
+    variantOffset = 0,
   } = req.body as {
     cls?: string;
     subject?: string;
@@ -1174,9 +2138,80 @@ app.post('/api/moha/quiz', async (req, res) => {
     siteResources?: SiteResourceContext;
     count?: number;
     specificResourceTitle?: string;
+    excludeSignatures?: string[];
+    variantOffset?: number;
   };
 
   const targetCount = Math.min(25, Math.max(4, Number(count) || 20));
+  const excludedSet = new Set(
+    Array.isArray(excludeSignatures)
+      ? excludeSignatures.map((s) => String(s || '').trim().toLowerCase()).filter(Boolean)
+      : []
+  );
+
+  // 1. Check Persistent Server Textbook Question Bank first for unseen questions!
+  const parseTopicLabelServer = (raw: string) => {
+    const cleaned = (raw || '').trim();
+    const chMatch = cleaned.match(/^(?:Chapter|Topic)\s*(\d+)\s*[:.-]?\s*(.*)$/i);
+    const chapterNum = chMatch ? chMatch[1] : null;
+    const withoutPrefix = chMatch ? chMatch[2] : cleaned;
+    const core = withoutPrefix
+      .replace(/\s*\([^)]*\)/g, '')
+      .replace(/—.*$/, '')
+      .trim()
+      .toLowerCase();
+    return { chapterNum, core };
+  };
+
+  const storedForClassSubject = getServerStoredQuestions(cls, subject).filter((q) => {
+    if (topic && topic !== 'ALL') {
+      const sel = parseTopicLabelServer(topic);
+      const qTop = parseTopicLabelServer(q.topic || '');
+      if (sel.chapterNum && qTop.chapterNum && sel.chapterNum !== qTop.chapterNum) {
+        return false;
+      }
+      if (sel.core && qTop.core) {
+        if (qTop.core === sel.core || qTop.core.includes(sel.core) || sel.core.includes(qTop.core)) {
+          return true;
+        }
+      }
+      const stopWords = new Set(['and', 'the', 'of', 'in', 'to', 'for', 'with', 'on', 'by', 'a', 'an', 'chapter', 'topic', 'introduction']);
+      const selWords = sel.core.replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter((w) => w.length >= 3 && !stopWords.has(w));
+      const qCombined = `${qTop.core} ${(q.subTopic || '').toLowerCase()}`.replace(/[^a-z0-9\s]/g, ' ');
+      if (selWords.length > 0 && selWords.every((w) => qCombined.includes(w))) {
+        return true;
+      }
+      return false;
+    }
+    return true;
+  });
+
+  const seenBankSigs = new Set<string>();
+  const unseenFromBank = storedForClassSubject
+    .filter((q) => {
+      if (!q.signature || excludedSet.has(q.signature) || seenBankSigs.has(q.signature)) {
+        return false;
+      }
+      seenBankSigs.add(q.signature);
+      return true;
+    })
+    .map((q) => ({
+      question: q.question,
+      options: q.options,
+      correctIndex: q.correctIndex,
+      explanation: q.explanation,
+      hint: q.hint,
+      topic: q.topic,
+      subTopic: q.subTopic,
+      sourceRef: q.sourceBookTitle,
+    }));
+
+  if (unseenFromBank.length >= targetCount) {
+    return res.json({
+      questions: unseenFromBank.slice(0, targetCount),
+      source: 'question_bank',
+    });
+  }
   const syllabusTopics = getSyllabusTopicsForClassSubject(cls, subject);
   const tbInfo = getTieTextbookChapterContent(cls, subject, topic && topic !== 'ALL' ? topic : '');
   const selectedTopicText =
@@ -1313,11 +2348,11 @@ app.post('/api/moha/quiz', async (req, res) => {
 
   if (ai) {
     try {
-      const quizCacheKey = `quiz:v4:${cls}:${subject}:${topic || 'ALL'}:${subTopic || 'ALL'}:${sourceFilter}:${targetCount}:${effectiveResourceTitle || 'ALL'}`;
+      const quizCacheKey = `quiz:v5:${cls}:${subject}:${topic || 'ALL'}:${subTopic || 'ALL'}:${sourceFilter}:${targetCount}:${effectiveResourceTitle || 'ALL'}:v${variantOffset}:ex${excludedSet.size}`;
       const jsonText = await withHighTrafficDedupe(
         quizCacheKey,
         async () => {
-          const promptText = `Generate ${targetCount} distinct, authentic NECTA Competence-Based Assessment (CBA) questions for Tanzanian ${cls} ${subject} ${selectedTopicText}.
+          const promptText = `Generate ${targetCount} distinct, authentic NECTA Competence-Based Assessment (CBA) questions for Tanzanian ${cls} ${subject} ${selectedTopicText} (Question Set Cycle #${Number(variantOffset) + 1}).
 ${specificResourceLine}
 ${sourceConstraintText}
 ${subjectAdaptationRules}
@@ -1359,25 +2394,74 @@ IMPORTANT RULES:
       if (jsonText) {
         const questions = JSON.parse(jsonText);
         if (Array.isArray(questions) && questions.length > 0) {
-          if (questions.length < targetCount) {
-            const padPool = buildFallbackTopicQuizQuestions(
+          // Persist newly generated textbook questions into serverQuestionBank so future games/quizzes have a larger non-repeating bank
+          for (const qItem of questions) {
+            if (qItem && typeof qItem.question === 'string' && Array.isArray(qItem.options) && qItem.options.length >= 4) {
+              const sig = computeServerQuestionSignature(qItem.question);
+              const key = `${cls.toLowerCase()}__${subject.toLowerCase()}__${sig}`;
+              if (sig && !serverQuestionBank.has(key)) {
+                serverQuestionBank.set(key, {
+                  id: `tb-quiz-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                  signature: sig,
+                  cls,
+                  subject,
+                  topic: qItem.topic || tbInfo.matchedChapter || 'Chapter 1',
+                  subTopic: qItem.subTopic || qItem.topic || 'Exercise',
+                  question: qItem.question,
+                  options: [
+                    String(qItem.options[0]),
+                    String(qItem.options[1]),
+                    String(qItem.options[2]),
+                    String(qItem.options[3]),
+                  ],
+                  correctIndex: typeof qItem.correctIndex === 'number' ? qItem.correctIndex : 0,
+                  hint: `Use the ${cls} ${subject} textbook method.`,
+                  explanation: qItem.explanation || '',
+                  sourceBookTitle: qItem.sourceRef || effectiveResourceTitle || tbInfo.bookTitle,
+                  difficulty: 'Medium',
+                  createdAt: new Date().toISOString().split('T')[0],
+                });
+              }
+            }
+          }
+          saveServerQuestionBankToDisk();
+
+          const merged = [
+            ...unseenFromBank,
+            ...questions.filter(
+              (q: { question?: string }) =>
+                q &&
+                typeof q.question === 'string' &&
+                !excludedSet.has(computeServerQuestionSignature(q.question)) &&
+                !unseenFromBank.some((u) => u.question === q.question)
+            ),
+          ];
+
+          if (merged.length < targetCount) {
+            const padPool = buildDeterministicTextbookQuestionsForBank(
               cls,
               subject,
-              topic,
-              siteResources,
-              subTopic,
-              sourceFilter
+              topic || 'ALL',
+              effectiveResourceTitle || tbInfo.bookTitle,
+              targetCount,
+              excludedSet
             );
-            const merged = [...questions];
             for (const p of padPool) {
               if (merged.length >= targetCount) break;
               if (!merged.some((m) => m.question === p.question)) {
-                merged.push(p);
+                merged.push({
+                  question: p.question,
+                  options: p.options,
+                  correctIndex: p.correctIndex,
+                  explanation: p.explanation,
+                  topic: p.topic,
+                  subTopic: p.subTopic,
+                  sourceRef: p.sourceBookTitle,
+                });
               }
             }
-            return res.json({ questions: merged.slice(0, targetCount), source: 'gemini' });
           }
-          return res.json({ questions: questions.slice(0, targetCount), source: 'gemini' });
+          return res.json({ questions: merged.slice(0, targetCount), source: 'gemini' });
         }
       }
     } catch {
@@ -1385,18 +2469,39 @@ IMPORTANT RULES:
     }
   }
 
-  const baseQuestions = buildFallbackTopicQuizQuestions(cls, subject, topic, siteResources, subTopic, sourceFilter);
-  if (targetCount > baseQuestions.length) {
-    const extraTopic = syllabusTopics.find((t) => t !== topic) || topic;
-    const extraQuestions = buildFallbackTopicQuizQuestions(cls, subject, extraTopic, siteResources, undefined, sourceFilter);
-    return res.json({
-      questions: [...baseQuestions, ...extraQuestions].slice(0, targetCount),
-      source: 'local',
-    });
+  const deterministicBankBatch = buildDeterministicTextbookQuestionsForBank(
+    cls,
+    subject,
+    topic || 'ALL',
+    effectiveResourceTitle || tbInfo.bookTitle,
+    targetCount,
+    excludedSet
+  );
+  const combinedFallback = [
+    ...unseenFromBank,
+    ...deterministicBankBatch.map((p) => ({
+      question: p.question,
+      options: p.options,
+      correctIndex: p.correctIndex,
+      explanation: p.explanation,
+      topic: p.topic,
+      subTopic: p.subTopic,
+      sourceRef: p.sourceBookTitle,
+    })),
+  ];
+
+  if (combinedFallback.length < targetCount) {
+    const baseQuestions = buildFallbackTopicQuizQuestions(cls, subject, topic, siteResources, subTopic, sourceFilter);
+    for (const bq of baseQuestions) {
+      if (combinedFallback.length >= targetCount) break;
+      if (!combinedFallback.some((c) => c.question === bq.question)) {
+        combinedFallback.push(bq);
+      }
+    }
   }
 
   return res.json({
-    questions: baseQuestions.slice(0, targetCount),
+    questions: combinedFallback.slice(0, targetCount),
     source: 'local',
   });
 });
@@ -1747,22 +2852,68 @@ app.post('/api/moha/flashcards', async (req, res) => {
 });
 
 // Google Play Store Trusted Web Activity (TWA) Digital Asset Links endpoint
+const ASSETLINKS_CONFIG_PATH = path.resolve(process.cwd(), '.aistudio', 'assetlinks-config.json');
+let runtimePlayStorePackage = process.env.ANDROID_PACKAGE_NAME || 'online.elimika.twa';
+let runtimePlayStoreSha256 =
+  process.env.ANDROID_SHA256_FINGERPRINT ||
+  '00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00';
+
+try {
+  if (fs.existsSync(ASSETLINKS_CONFIG_PATH)) {
+    const saved = JSON.parse(fs.readFileSync(ASSETLINKS_CONFIG_PATH, 'utf-8'));
+    if (saved.packageName) runtimePlayStorePackage = String(saved.packageName).trim();
+    if (saved.sha256Fingerprint) runtimePlayStoreSha256 = String(saved.sha256Fingerprint).trim();
+  }
+} catch {
+  // ignore read error
+}
+
 app.get('/.well-known/assetlinks.json', (_req, res) => {
-  const packageName = process.env.ANDROID_PACKAGE_NAME || 'tz.co.elimika.app';
-  const sha256Fingerprint =
-    process.env.ANDROID_SHA256_FINGERPRINT ||
-    '00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00';
   res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Access-Control-Allow-Origin', '*');
   res.json([
     {
       relation: ['delegate_permission/common.handle_all_urls'],
       target: {
         namespace: 'android_app',
-        package_name: packageName,
-        sha256_cert_fingerprints: [sha256Fingerprint],
+        package_name: runtimePlayStorePackage,
+        sha256_cert_fingerprints: [runtimePlayStoreSha256],
       },
     },
   ]);
+});
+
+app.post('/api/playstore/assetlinks', (req, res) => {
+  const { packageName, sha256Fingerprint } = req.body || {};
+  if (typeof packageName === 'string' && packageName.trim()) {
+    runtimePlayStorePackage = packageName.trim();
+  }
+  if (typeof sha256Fingerprint === 'string' && sha256Fingerprint.trim()) {
+    runtimePlayStoreSha256 = sha256Fingerprint.trim().toUpperCase();
+  }
+  try {
+    const dir = path.dirname(ASSETLINKS_CONFIG_PATH);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(
+      ASSETLINKS_CONFIG_PATH,
+      JSON.stringify(
+        {
+          packageName: runtimePlayStorePackage,
+          sha256Fingerprint: runtimePlayStoreSha256,
+        },
+        null,
+        2
+      ),
+      'utf-8'
+    );
+  } catch {
+    // ignore write error
+  }
+  res.json({
+    ok: true,
+    packageName: runtimePlayStorePackage,
+    sha256Fingerprint: runtimePlayStoreSha256,
+  });
 });
 
 app.get('/api/health', (_req, res) => {
@@ -1887,6 +3038,14 @@ app.post('/api/video-download', async (req, res) => {
 app.get('/ads.txt', (_req, res) => {
   res.setHeader('Content-Type', 'text/plain; charset=utf-8');
   res.send('google.com, pub-7502193981138651, DIRECT, f08c47fec0942fa0\n');
+});
+
+app.get('/assets/aistudio/:filename', (req, res) => {
+  const driveId = LEGACY_AISTUDIO_PDF_DRIVE_MAP[req.params.filename];
+  if (driveId) {
+    return res.redirect(302, `https://drive.google.com/file/d/${driveId}/view?usp=drive_link`);
+  }
+  return res.status(404).send('Not found');
 });
 
 async function startServer() {
