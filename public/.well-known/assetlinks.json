@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "online.elimika.ap",
+        "sha256_cert_fingerprints": ["AF:36:16:F9:1A:D7:5F:B0:F4:BC:13:6C:EB:F3:F0:20:C8:B2:F5:2C:27:E7:15:98:08:0B:7D:A2:63:EB:17:84"]
+      }
+    }]
