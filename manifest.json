@@ -1,0 +1,38 @@
+{
+  "name": "Elimika Tanzania",
+  "short_name": "Elimika",
+  "description": "NECTA past papers, TIE textbooks, syllabi, interactive learning games, and Moha AI tools for Tanzanian primary and secondary school students and teachers.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0056a3",
+  "lang": "en",
+  "scope": "/",
+  "id": "https://www.elimika.online/",
+  "orientation": "any",
+  "categories": [
+    "education",
+    "books",
+    "productivity"
+  ],
+  "icons": [
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
