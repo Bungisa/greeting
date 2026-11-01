@@ -3032,7 +3032,7 @@ function buildExpandedTextbookExerciseItems(): ExtractedTextbookExerciseSeed[] {
     d1: string,
     d2: string,
     d3: string,
-    explanation: string
+    explanation?: string
   ];
 
   const pushDistinctChapterBank = (
@@ -3057,7 +3057,7 @@ function buildExpandedTextbookExerciseItems(): ExtractedTextbookExerciseSeed[] {
         question: `[${exerciseRef}] ${q}`,
         options: rot.options,
         correctIndex: rot.correctIndex,
-        explanation,
+        explanation: explanation || `Correct Answer: ${ans}`,
         hint: `Apply the ${cls} ${subject} (${topic} — ${subTopic}) textbook method step by step.`,
       });
     });

@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { GenerateVideosOperation, GoogleGenAI, ThinkingLevel, Type } from '@google/genai';
@@ -640,9 +641,10 @@ interface ServerStoredTextbookQuestion {
   createdAt: string;
 }
 
-const QUESTION_BANK_FILE_PATH = path.join(__dirname, '.aistudio', 'question-bank-v7.json');
+const QUESTION_BANK_FILE_PATH = path.join(os.tmpdir(), 'elimika-question-bank-v7.json');
 const serverQuestionBank = new Map<string, ServerStoredTextbookQuestion>();
 const builtinSeedIds = new Set<string>(FULL_EXTRACTED_TEXTBOOK_BANK.map((s) => s.id));
+let isQuestionBankSeeded = false;
 
 function computeServerQuestionSignature(questionText: string): string {
   return String(questionText || '')
@@ -753,9 +755,12 @@ function seedBuiltinExtractedBankOnServer(): void {
   }
 }
 
-seedBuiltinExtractedBankOnServer();
-loadServerQuestionBankFromDisk();
-saveServerQuestionBankToDisk();
+function ensureServerQuestionBankSeeded(): void {
+  if (isQuestionBankSeeded) return;
+  isQuestionBankSeeded = true;
+  seedBuiltinExtractedBankOnServer();
+  loadServerQuestionBankFromDisk();
+}
 
 function doesServerSubjectMatchStrict(itemSub: string, targetSub: string): boolean {
   const a = String(itemSub || '').toLowerCase().trim();
@@ -793,6 +798,7 @@ function doesServerSubjectMatchStrict(itemSub: string, targetSub: string): boole
 }
 
 function getServerStoredQuestions(cls?: string, subject?: string): ServerStoredTextbookQuestion[] {
+  ensureServerQuestionBankSeeded();
   const all = Array.from(serverQuestionBank.values());
   return all.filter((q) => {
     if (cls && q.cls.toLowerCase().trim() !== cls.toLowerCase().trim()) return false;
@@ -2462,11 +2468,19 @@ IMPORTANT RULES:
     targetCount,
     excludedSet
   );
-  const combinedFallback = [
+  const combinedFallback: Array<{
+    question: string;
+    options: string[];
+    correctIndex: number;
+    explanation: string;
+    topic?: string;
+    subTopic?: string;
+    sourceRef?: string;
+  }> = [
     ...unseenFromBank,
     ...deterministicBankBatch.map((p) => ({
       question: p.question,
-      options: p.options,
+      options: [...p.options],
       correctIndex: p.correctIndex,
       explanation: p.explanation,
       topic: p.topic,
@@ -2837,7 +2851,7 @@ app.post('/api/moha/flashcards', async (req, res) => {
 });
 
 // Google Play Store Trusted Web Activity (TWA) Digital Asset Links endpoint
-const ASSETLINKS_CONFIG_PATH = path.resolve(process.cwd(), '.aistudio', 'assetlinks-config.json');
+const ASSETLINKS_CONFIG_PATH = path.join(os.tmpdir(), 'elimika-assetlinks-config.json');
 let runtimePlayStorePackage = process.env.ANDROID_PACKAGE_NAME || 'online.elimika.twa';
 let runtimePlayStoreSha256 =
   process.env.ANDROID_SHA256_FINGERPRINT ||
@@ -3035,29 +3049,47 @@ app.get('/assets/aistudio/:filename', (req, res) => {
 
 async function startServer() {
   const PORT = Number(process.env.PORT) || 3000;
+  const distPath = path.join(__dirname, 'dist');
+  const distIndexPath = path.join(distPath, 'index.html');
+  const isDevLifecycle = process.env.npm_lifecycle_event === 'dev';
+  const isProduction =
+    process.env.NODE_ENV === 'production' ||
+    Boolean(process.env.K_SERVICE) ||
+    process.env.npm_lifecycle_event === 'start' ||
+    (!isDevLifecycle && fs.existsSync(distIndexPath));
 
-  if (process.env.NODE_ENV !== 'production') {
+  if (isProduction && fs.existsSync(distIndexPath)) {
+    app.use(express.static(distPath));
+    app.get('*', (_req, res) => {
+      res.sendFile(distIndexPath);
+    });
+  }
+
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Elimika Tanzania server listening on http://0.0.0.0:${PORT}`);
+    setImmediate(() => {
+      try {
+        ensureServerQuestionBankSeeded();
+      } catch {
+        // ignore background seed errors
+      }
+    });
+  });
+
+  if (!isProduction || !fs.existsSync(distIndexPath)) {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true, hmr: false },
       appType: 'spa',
     });
     app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(__dirname, 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (_req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
   }
-
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Elimika Tanzania server listening on http://0.0.0.0:${PORT}`);
-  });
 }
 
 if (!process.env.VERCEL) {
-  startServer();
+  startServer().catch((err) => {
+    console.error('Failed to start server:', err);
+  });
 }
 
 export { app };

@@ -1,4 +1,4 @@
-import { FULL_EXTRACTED_TEXTBOOK_BANK } from './extractedTextbookExerciseBank';
+import { FULL_EXTRACTED_TEXTBOOK_BANK } from './extractedTextbookExerciseBank.ts';
 
 export interface PaperRecord {
   id: string;

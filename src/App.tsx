@@ -56,7 +56,7 @@ import {
   UserProfileData,
 } from './data/curriculumData';
 import { DiagramPreset, InteractiveDiagramLab } from './components/InteractiveDiagramLab';
-import { OfflineIndicator, PWAInstallButton } from './components/PWAInstallButton';
+import { GetElimikaAppSection, OfflineIndicator, PWAInstallButton } from './components/PWAInstallButton';
 import { StemArenaGame } from './components/StemArenaGame';
 import { ElimikaPlayHub, PlayGameRoute } from './components/ElimikaPlayHub';
 import { TopicMasteryPlanner } from './components/TopicMasteryPlanner';
@@ -4019,14 +4019,14 @@ export default function App() {
       {/* TOP BAR CONTRACT: 3 Zones (Brand, Nav Links, Primary Action) — hidden in full-viewport Moha AI & Game modes */}
       {activePage !== 'moha' && activePage !== 'game' && (
       <header className="sticky top-0 z-40 bg-[var(--bg-surface-glass)] backdrop-blur-md border-b border-[var(--border-subtle)] transition-colors">
-        <div className="max-w-5xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2 sm:gap-6">
+        <div className="max-w-5xl mx-auto px-2.5 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-1.5 sm:gap-4">
           <a
             href="#home"
             onClick={(e) => {
               e.preventDefault();
               resetToStep1();
             }}
-            className="text-base sm:text-xl font-black tracking-tight text-slate-900 whitespace-nowrap shrink-0 flex items-center gap-1.5 sm:gap-2"
+            className="text-sm sm:text-xl font-black tracking-tight text-slate-900 whitespace-nowrap shrink-0 flex items-center gap-1 sm:gap-2"
           >
             <GraduationCap className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 shrink-0" />
             <span>
@@ -4096,32 +4096,34 @@ export default function App() {
             </button>
           </nav>
 
-          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            <PWAInstallButton />
+
             <button
               onClick={() => setWhatsappModalOpen(true)}
-              className="px-2.5 sm:px-3.5 py-2 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-1.5 shadow-xs transition-colors whitespace-nowrap shrink-0 cursor-pointer bg-[#25D366] hover:bg-[#1ebe5d] text-white"
+              className="px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl font-bold text-[11px] sm:text-xs flex items-center gap-1 shadow-xs transition-colors whitespace-nowrap shrink-0 cursor-pointer bg-[#25D366] hover:bg-[#1ebe5d] text-white"
               title="Join or Manage Elimika WhatsApp Channel & Community"
             >
-              <svg className="w-4 h-4 fill-current shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+              <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current shrink-0" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824zm-3.423-14.416c-6.627 0-12 5.373-12 12 0 2.625.846 5.059 2.284 7.033l-1.494 5.457 5.586-1.466c1.911 1.251 4.187 1.976 6.624 1.976 6.627 0 12-5.373 12-12s-5.373-12-12-12z"/>
               </svg>
-              <span>WhatsApp</span>
+              <span className="hidden sm:inline">WhatsApp</span>
             </button>
 
             <button
               onClick={() => setDarkMode((prev) => !prev)}
               aria-label={darkMode ? 'Switch to light theme' : 'Switch to dark theme'}
               title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-              className="px-2.5 sm:px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-900 border border-slate-300 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+              className="p-1.5 sm:px-3 sm:py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-900 border border-slate-300 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
             >
               {darkMode ? (
                 <>
-                  <Sun className="w-4 h-4 text-amber-400" />
+                  <Sun className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
                   <span className="hidden sm:inline">Light</span>
                 </>
               ) : (
                 <>
-                  <Moon className="w-4 h-4 text-slate-700" />
+                  <Moon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-700" />
                   <span className="hidden sm:inline">Dark</span>
                 </>
               )}
@@ -4129,14 +4131,12 @@ export default function App() {
 
             <button
               onClick={() => openMwalimuModal()}
-              className="px-2.5 sm:px-4 py-2 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-1.5 shadow-sm transition-colors whitespace-nowrap shrink-0 cursor-pointer bg-violet-600 hover:bg-violet-700 text-white"
+              className="px-2 sm:px-4 py-1.5 sm:py-2 rounded-xl font-bold text-[11px] sm:text-xs flex items-center gap-1 shadow-sm transition-colors whitespace-nowrap shrink-0 cursor-pointer bg-violet-600 hover:bg-violet-700 text-white"
             >
-              <Sparkles className="w-4 h-4" />
+              <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
               <span className="sm:hidden">Moha AI</span>
               <span className="hidden sm:inline">Open Moha AI Site</span>
             </button>
-
-            <PWAInstallButton />
           </div>
         </div>
       </header>
@@ -7923,45 +7923,6 @@ export default function App() {
               {/* Navigation Tabs inside WhatsApp Hub (Visible ONLY to Admin when unlocked) */}
               {whatsappAdminUnlocked && (
                 <div className="space-y-2.5">
-                  <div className="p-3 rounded-2xl bg-slate-900 text-white flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
-                    <div>
-                      <span className="font-black text-emerald-400">🌐 Full Standalone Website HTML Code:</span>{' '}
-                      <span className="text-slate-300">WhatsApp Channel Only (No Community groups).</span>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-1.5 shrink-0">
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          try {
-                            const res = await fetch('/elimika-tanzania-website.html');
-                            const htmlCode = await res.text();
-                            await navigator.clipboard?.writeText(htmlCode);
-                            showToast('✅ Full Website HTML Code copied to clipboard! Paste it into your website.');
-                          } catch {
-                            showToast('⚠️ Could not copy HTML code — click Download HTML File instead.');
-                          }
-                        }}
-                        className="px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs cursor-pointer inline-flex items-center gap-1 shadow-xs"
-                      >
-                        <span>📋 Copy Full HTML Code</span>
-                      </button>
-                      <a
-                        href="/elimika-tanzania-website.html"
-                        download="index.html"
-                        className="px-3 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs inline-flex items-center gap-1 shadow-xs"
-                      >
-                        <span>⬇️ Download index.html</span>
-                      </a>
-                      <a
-                        href="/ads.txt"
-                        download="ads.txt"
-                        className="px-3 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs inline-flex items-center gap-1 shadow-xs"
-                      >
-                        <span>⬇️ Download ads.txt</span>
-                      </a>
-                    </div>
-                  </div>
-
                   <div className="grid grid-cols-2 sm:grid-cols-6 gap-1.5 p-1 bg-slate-100 rounded-2xl border border-slate-200 text-xs font-bold">
                   <button
                     type="button"
@@ -8525,13 +8486,6 @@ export default function App() {
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <a
-                          href="/elimika-tanzania-website.html"
-                          download="index.html"
-                          className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs inline-flex items-center gap-1"
-                        >
-                          <span>⬇️ Download index.html (for elimika.online)</span>
-                        </a>
-                        <a
                           href="/ads.txt"
                           download="ads.txt"
                           className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs inline-flex items-center gap-1"
@@ -8566,21 +8520,35 @@ export default function App() {
                       type="password"
                       value={whatsappAdminPinInput}
                       onChange={(e) => setWhatsappAdminPinInput(e.target.value)}
-                      placeholder="Admin Code"
-                      className="px-2 py-1 rounded-lg border border-slate-300 text-slate-700 text-[11px] w-24 focus:outline-none"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          const cleaned = whatsappAdminPinInput.trim().toLowerCase();
+                          if (cleaned === 'elimika4045') {
+                            setWhatsappAdminUnlocked(true);
+                            setWhatsappTab('broadcast');
+                            setWhatsappAdminPinPrompt(false);
+                            setWhatsappAdminPinInput('');
+                            showToast('🔓 Admin Tools unlocked (Post Generator, Logo & Setup).');
+                          } else {
+                            showToast('❌ Invalid Admin Password.');
+                          }
+                        }
+                      }}
+                      placeholder="Admin Password"
+                      className="px-2 py-1 rounded-lg border border-slate-300 text-slate-700 text-[11px] w-28 focus:outline-none"
                     />
                     <button
                       type="button"
                       onClick={() => {
                         const cleaned = whatsappAdminPinInput.trim().toLowerCase();
-                        if (cleaned === 'elimika' || cleaned === '2026' || cleaned === 'admin') {
+                        if (cleaned === 'elimika4045') {
                           setWhatsappAdminUnlocked(true);
                           setWhatsappTab('broadcast');
                           setWhatsappAdminPinPrompt(false);
                           setWhatsappAdminPinInput('');
                           showToast('🔓 Admin Tools unlocked (Post Generator, Logo & Setup).');
                         } else {
-                          showToast('❌ Invalid Admin Code.');
+                          showToast('❌ Invalid Admin Password.');
                         }
                       }}
                       className="px-2 py-1 rounded-lg bg-slate-800 text-white font-bold cursor-pointer"
@@ -8614,76 +8582,89 @@ export default function App() {
         );
       })()}
 
-      {/* FOOTER (Hidden when inside full-viewport Moha AI workspace or full-screen Game) */}
+      {/* GET ELIMIKA APP INSTALLATION SECTION & FOOTER */}
       {activePage !== 'moha' && activePage !== 'game' && (
-        <footer className="bg-slate-900 text-slate-400 py-8 border-t border-slate-800 text-xs text-center mt-auto">
-          <div className="max-w-5xl mx-auto px-4 space-y-4">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-              <div className="text-left">
-                <div className="font-black text-white text-sm tracking-tight">ELIMIKA TANZANIA</div>
-                <p className="text-slate-400 text-xs">
-                  Past Papers, Marking Schemes, TIE Books, Official Syllabuses &amp; Moha AI Teacher Studio.
-                </p>
+        <>
+          <GetElimikaAppSection />
+          <footer className="bg-slate-900 text-slate-400 py-8 border-t border-slate-800 text-xs text-center mt-auto">
+            <div className="max-w-5xl mx-auto px-4 space-y-4">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="text-left">
+                  <div className="font-black text-white text-sm tracking-tight">ELIMIKA TANZANIA</div>
+                  <p className="text-slate-400 text-xs">
+                    Past Papers, Marking Schemes, TIE Books, Official Syllabuses &amp; Moha AI Teacher Studio.
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-bold text-slate-300">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const el = document.getElementById('get-elimika-app-section');
+                      el?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    className="text-amber-400 hover:text-amber-300 underline underline-offset-4 cursor-pointer"
+                  >
+                    📲 Get Elimika App
+                  </button>
+                  <a
+                    href={whatsappConfig.mainChannelUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-emerald-400 hover:text-emerald-300 underline underline-offset-4"
+                  >
+                    🔔 Follow Elimika Online Channel
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => setWhatsappModalOpen(true)}
+                    className="text-sky-400 hover:text-sky-300 underline underline-offset-4 cursor-pointer"
+                  >
+                    💬 WhatsApp Channel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openBooksPage()}
+                    className="hover:text-white underline underline-offset-4 cursor-pointer"
+                  >
+                    📚 TIE Books
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openSyllabusPage()}
+                    className="hover:text-white underline underline-offset-4 cursor-pointer"
+                  >
+                    📜 Syllabus
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLegalModalType('privacy')}
+                    className="hover:text-white underline underline-offset-4 cursor-pointer"
+                  >
+                    Privacy Policy
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLegalModalType('terms')}
+                    className="hover:text-white underline underline-offset-4 cursor-pointer"
+                  >
+                    Terms of Service
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLegalModalType('about')}
+                    className="hover:text-white underline underline-offset-4 cursor-pointer"
+                  >
+                    About &amp; Contact
+                  </button>
+                </div>
               </div>
-              <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-bold text-slate-300">
-                <a
-                  href={whatsappConfig.mainChannelUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-emerald-400 hover:text-emerald-300 underline underline-offset-4"
-                >
-                  🔔 Follow Elimika Online Channel
-                </a>
-                <button
-                  type="button"
-                  onClick={() => setWhatsappModalOpen(true)}
-                  className="text-sky-400 hover:text-sky-300 underline underline-offset-4 cursor-pointer"
-                >
-                  💬 WhatsApp Channel
-                </button>
-                <button
-                  type="button"
-                  onClick={() => openBooksPage()}
-                  className="hover:text-white underline underline-offset-4 cursor-pointer"
-                >
-                  📚 TIE Books
-                </button>
-                <button
-                  type="button"
-                  onClick={() => openSyllabusPage()}
-                  className="hover:text-white underline underline-offset-4 cursor-pointer"
-                >
-                  📜 Syllabus
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setLegalModalType('privacy')}
-                  className="hover:text-white underline underline-offset-4 cursor-pointer"
-                >
-                  Privacy Policy
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setLegalModalType('terms')}
-                  className="hover:text-white underline underline-offset-4 cursor-pointer"
-                >
-                  Terms of Service
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setLegalModalType('about')}
-                  className="hover:text-white underline underline-offset-4 cursor-pointer"
-                >
-                  About &amp; Contact
-                </button>
+              <div className="pt-3 border-t border-slate-800/80 text-[11px] text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2">
+                <span>© {new Date().getFullYear()} Elimika Tanzania. All rights reserved.</span>
+                <span>100% English Interface · TIE &amp; NECTA Curriculum Aligned</span>
               </div>
             </div>
-            <div className="pt-3 border-t border-slate-800/80 text-[11px] text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2">
-              <span>© {new Date().getFullYear()} Elimika Tanzania. All rights reserved.</span>
-              <span>100% English Interface · TIE &amp; NECTA Curriculum Aligned</span>
-            </div>
-          </div>
-        </footer>
+          </footer>
+        </>
       )}
 
       {/* GLOBAL TEXTBOOK UPLOAD & PERSISTENT NON-REPEATING QUESTION BANK MODAL */}
@@ -8692,7 +8673,7 @@ export default function App() {
         initialClass={mohaActiveClass}
         initialSubject={mohaActiveSubject}
         onClose={() => setTextbookExtractorModalOpen(false)}
-        onQuestionsUpdated={(cls, sub) => {
+        onQuestionsExtracted={({ cls, subject: sub }) => {
           setMohaActiveClass(cls);
           setMohaActiveSubject(sub);
           void syncQuestionBankWithServer(cls, sub);
