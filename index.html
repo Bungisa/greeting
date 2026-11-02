@@ -46,13 +46,63 @@
     <meta property="og:title" content="Elimika TZ | Tanzania Past Papers, TIE Books, Syllabus & Moha AI" />
     <meta property="og:description" content="Simple, fast access to Tanzanian past examination papers, marking schemes, TIE books, official syllabuses, and Moha AI for Standard 1–7 and Form 1–6." />
     <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://elimika.online/" />
+    <meta property="og:site_name" content="Elimika Tanzania" />
+    <meta property="og:image" content="https://elimika.online/pwa-512x512.png" />
+    <meta property="og:image:secure_url" content="https://elimika.online/pwa-512x512.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:image:alt" content="Elimika Tanzania — NECTA Past Papers, Marking Schemes, TIE Books & Moha AI" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="theme-color" content="#1d4ed8" />
+    <meta name="twitter:title" content="Elimika TZ | Tanzania Past Papers, TIE Books, Syllabus & Moha AI" />
+    <meta name="twitter:description" content="Simple, fast access to Tanzanian past examination papers, marking schemes, TIE books, official syllabuses, and Moha AI for Standard 1–7 and Form 1–6." />
+    <meta name="twitter:image" content="https://elimika.online/pwa-512x512.png" />
+    <meta name="theme-color" content="#24132F" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Elimika" />
     <link rel="manifest" href="/manifest.json" />
+    <script>
+      (function () {
+        try {
+          var mode = localStorage.getItem('elimika_theme_mode');
+          if (mode !== 'light' && mode !== 'dark' && mode !== 'system') {
+            var legacy = localStorage.getItem('elimika_dark_mode');
+            mode = legacy === 'true' ? 'dark' : legacy === 'false' ? 'light' : 'system';
+          }
+          var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var isDark = mode === 'dark' || (mode === 'system' && prefersDark);
+          var root = document.documentElement;
+          if (isDark) {
+            root.classList.add('dark');
+            root.setAttribute('data-theme', 'dark');
+          } else {
+            root.classList.remove('dark');
+            root.setAttribute('data-theme', 'light');
+          }
+          root.setAttribute('data-theme-mode', mode);
+        } catch (e) {}
+      })();
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Elimika Tanzania",
+        "url": "https://elimika.online/",
+        "description": "Simple, fast access to Tanzanian past examination papers, marking schemes, TIE books, official syllabuses, and Moha AI for Standard 1–7 and Form 1–6.",
+        "applicationCategory": "EducationalApplication",
+        "operatingSystem": "All",
+        "image": "https://elimika.online/pwa-512x512.png",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "TZS"
+        }
+      }
+    </script>
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
 
@@ -88,14 +138,14 @@
       [data-aistudio-badge], #aistudio-badge, .aistudio-logo { display: none !important; }
     </style>
   </head>
-  <body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col selection:bg-blue-600 selection:text-white">
+  <body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col selection:bg-[#7047A3] selection:text-white">
     <div id="root">
-      <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f8fafc;font-family:'Plus Jakarta Sans',system-ui,sans-serif;padding:24px;">
+      <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg-canvas,#F8F6FA);font-family:'Plus Jakarta Sans',system-ui,sans-serif;padding:24px;">
         <div style="display:flex;align-items:center;gap:12px;">
-          <div style="width:44px;height:44px;border-radius:12px;background:#1d4ed8;color:#ffffff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;">E</div>
+          <div style="width:44px;height:44px;border-radius:12px;background:#24132F;border:2px solid #B89545;color:#ffffff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;">E</div>
           <div>
-            <div style="font-weight:800;font-size:18px;color:#0f172a;letter-spacing:-0.02em;">ELIMIKA <span style="color:#1d4ed8;">TZ</span></div>
-            <div style="font-size:12px;color:#64748b;font-weight:600;">Past Papers, TIE Books, Syllabuses &amp; Moha AI</div>
+            <div style="font-weight:800;font-size:18px;color:var(--text-primary,#28232D);letter-spacing:-0.02em;">ELIMIKA <span style="color:#7047A3;">TZ</span></div>
+            <div style="font-size:12px;color:var(--text-muted,#756D7C);font-weight:600;">Past Papers, TIE Books, Syllabuses &amp; Moha AI</div>
           </div>
         </div>
       </div>

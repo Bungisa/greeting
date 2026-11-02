@@ -112,8 +112,96 @@ export const CONFIG = {
   SHEET_ID: '1-7C_G-VAC2ICxuT3XwADzAluRoDvQyd04yS4BtSvXxM',
   ITEMS_PER_PAGE: 12,
   SEARCH_DEBOUNCE_MS: 200,
-  ADMIN_WHATSAPP: '255700000000',
+  ADMIN_WHATSAPP: '255689511868',
+  WHATSAPP_CHANNEL_URL: 'https://whatsapp.com/channel/0029VbE4Ctl0G0Xbp8kQwu0t',
 };
+
+export function normalizeSearchSynonymText(raw: string): string {
+  let s = String(raw || '')
+    .toLowerCase()
+    .replace(/[_/\\,.;:()[\]'"!?+-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!s) return '';
+
+  // Class level synonyms: f1..f6 -> form 1..form 6, std 1..7 / darasa 1..7 -> standard 1..7
+  s = s
+    .replace(/\bf\s*([1-6])\b/g, 'form $1')
+    .replace(/\bform([1-6])\b/g, 'form $1')
+    .replace(/\bkidato\s*(?:cha\s*)?([1-6])\b/g, 'form $1')
+    .replace(/\bstd\.?\s*([1-7])\b/g, 'standard $1')
+    .replace(/\bstandard([1-7])\b/g, 'standard $1')
+    .replace(/\bdarasa\s*(?:la\s*)?([1-7])\b/g, 'standard $1')
+    .replace(/\bpsle\b/g, 'standard 7 necta')
+    .replace(/\bsfna\b/g, 'standard 4 necta')
+    .replace(/\bftna\b/g, 'form 2 necta')
+    .replace(/\bcsee\b/g, 'form 4 necta')
+    .replace(/\bacsee\b/g, 'form 6 necta');
+
+  // Subject synonyms (English + Swahili abbreviations)
+  s = s
+    .replace(/\b(maths|math|bmath|hisabati|hesabu)\b/g, 'mathematics hisabati')
+    .replace(/\b(phy|phys|fizikia)\b/g, 'physics fizikia')
+    .replace(/\b(chem|kemia)\b/g, 'chemistry kemia')
+    .replace(/\b(bio|biolojia)\b/g, 'biology biolojia')
+    .replace(/\b(geo|geog|jiografia)\b/g, 'geography jiografia')
+    .replace(/\b(hist|historia)\b/g, 'history historia')
+    .replace(/\b(civ|uraia)\b/g, 'civics uraia')
+    .replace(/\b(eng|kiingereza)\b/g, 'english')
+    .replace(/\b(kisw|swahili)\b/g, 'kiswahili')
+    .replace(/\b(cs|ics|ict|tehama|comp)\b/g, 'computer science tehama')
+    .replace(/\b(sayansi|sci|science)\b/g, 'science sayansi')
+    .replace(/\b(agric|kilimo)\b/g, 'agriculture kilimo')
+    .replace(/\b(comm|biashara)\b/g, 'commerce biashara')
+    .replace(/\b(bk|bookkeeping)\b/g, 'book keeping');
+
+  return s.replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Tokenized Smart Search with Tanzanian curriculum synonym normalization.
+ * Splitting the query into tokens and normalizing synonyms ensures queries like
+ * "F4 Maths 2025" or "Std 7 Sayansi" match "Form 4 Basic Mathematics (2025)"
+ * and "Standard 7 Sayansi na Teknolojia".
+ */
+export function matchesSmartSearchTokens(rawQuery: string, targetHaystack: string): boolean {
+  const qClean = String(rawQuery || '').trim();
+  if (!qClean) return true;
+
+  // Expand query tokens (keep individual user tokens mapped to canonical equivalents)
+  let qNorm = String(qClean)
+    .toLowerCase()
+    .replace(/[_/\\,.;:()[\]'"!?+-]+/g, ' ')
+    .replace(/\bf\s*([1-6])\b/g, 'form $1')
+    .replace(/\bform([1-6])\b/g, 'form $1')
+    .replace(/\bkidato\s*(?:cha\s*)?([1-6])\b/g, 'form $1')
+    .replace(/\bstd\.?\s*([1-7])\b/g, 'standard $1')
+    .replace(/\bstandard([1-7])\b/g, 'standard $1')
+    .replace(/\bdarasa\s*(?:la\s*)?([1-7])\b/g, 'standard $1')
+    .replace(/\bpsle\b/g, 'standard 7')
+    .replace(/\bsfna\b/g, 'standard 4')
+    .replace(/\bftna\b/g, 'form 2')
+    .replace(/\bcsee\b/g, 'form 4')
+    .replace(/\bacsee\b/g, 'form 6')
+    .replace(/\b(maths|math|bmath|hesabu)\b/g, 'mathematics')
+    .replace(/\b(phy|phys|fizikia)\b/g, 'physics')
+    .replace(/\b(chem|kemia)\b/g, 'chemistry')
+    .replace(/\b(bio|biolojia)\b/g, 'biology')
+    .replace(/\b(geo|geog)\b/g, 'geography')
+    .replace(/\b(hist)\b/g, 'history')
+    .replace(/\b(civ)\b/g, 'civics')
+    .replace(/\b(eng|kiingereza)\b/g, 'english')
+    .replace(/\b(kisw|swahili)\b/g, 'kiswahili')
+    .replace(/\b(cs|ics|ict|comp)\b/g, 'computer')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const tokens = qNorm.split(' ').filter(Boolean);
+  if (tokens.length === 0) return true;
+
+  const hayNorm = normalizeSearchSynonymText(targetHaystack);
+  return tokens.every((token) => hayNorm.includes(token));
+}
 
 export const TIE_CURRICULUM_SUBJECTS: Record<string, string[]> = {
   'Standard 1': ['Kusoma', 'Kuandika', 'Kuhesabu', 'Afya na Mazingira', 'Michezo na Sanaa'],

@@ -1,71 +1,94 @@
 @import "tailwindcss";
 
 :root {
-  --bg-canvas: #f8fafc;
-  --bg-surface: #ffffff;
-  --bg-surface-glass: rgba(255, 255, 255, 0.95);
-  --bg-elevated: #f1f5f9;
-  --bg-subtle: #e2e8f0;
-  --text-primary: #0f172a;
-  --text-secondary: #334155;
-  --text-muted: #64748b;
-  --border-subtle: #e2e8f0;
-  --border-strong: #cbd5e1;
+  color-scheme: light;
+  /* 2. LIGHT MODE COLOR PALETTE — MIDNIGHT PLUM EDITION */
+  --brand-primary: #24132F;        /* Primary Brand — Midnight Plum */
+  --brand-secondary: #352044;      /* Secondary Brand — Deep Plum */
+  --btn-primary: #7047A3;          /* Primary Buttons — Royal Violet */
+  --btn-primary-hover: #5D398C;    /* Royal Violet Hover */
+  --btn-primary-text: #FFFFFF;     /* Primary Button Text */
+  --accent-secondary: #E9DDF7;     /* Secondary Accent — Soft Lavender */
+  --accent-gold: #B89545;          /* Premium Highlights — Champagne Gold */
+  --bg-canvas: #F8F6FA;            /* Main Background — Soft White */
+  --bg-nav: #24132F;               /* Brand Header / Sidebar — Midnight Plum */
+  --bg-surface: #FFFFFF;           /* Cards and Surfaces — Pure White */
+  --bg-surface-glass: rgba(255, 255, 255, 0.96);
+  --bg-elevated: #F2EDF7;          /* Subtle Lavender Surface */
+  --bg-subtle: #E9DDF7;            /* Soft Lavender Highlight */
+  --text-primary: #28232D;         /* Primary Text — Charcoal */
+  --text-secondary: #524A5B;       /* Readable Secondary Charcoal */
+  --text-muted: #756D7C;           /* Secondary Text — Muted Gray */
+  --border-subtle: #E8E1ED;        /* Borders and Dividers — Light Plum Gray */
+  --border-strong: #D5C8E0;        /* Stronger Plum Gray Border */
+  --color-success: #168568;        /* Success — Green */
+  --color-error: #DC2626;          /* Error — Red */
 
-  --callout-violet-bg: #f5f3ff;
-  --callout-violet-border: #ddd6fe;
-  --callout-violet-text: #4c1d95;
+  --callout-violet-bg: #E9DDF7;
+  --callout-violet-border: #D0B9EC;
+  --callout-violet-text: #24132F;
 
-  --callout-amber-bg: #fffbeb;
-  --callout-amber-border: #fde68a;
-  --callout-amber-text: #78350f;
+  --callout-amber-bg: #FAF5E8;
+  --callout-amber-border: #E5D19C;
+  --callout-amber-text: #5C4718;
 
-  --callout-emerald-bg: #ecfdf5;
-  --callout-emerald-border: #a7f3d0;
-  --callout-emerald-text: #064e3b;
+  --callout-emerald-bg: #EBF7F3;
+  --callout-emerald-border: #A5DECDBE;
+  --callout-emerald-text: #0F5C48;
 
-  --callout-blue-bg: #eff6ff;
-  --callout-blue-border: #bfdbfe;
-  --callout-blue-text: #1e3a8a;
+  --callout-blue-bg: #E9DDF7;
+  --callout-blue-border: #D0B9EC;
+  --callout-blue-text: #24132F;
 
-  --callout-rose-bg: #fff1f2;
-  --callout-rose-border: #fecdd3;
-  --callout-rose-text: #881337;
+  --callout-rose-bg: #FEF2F2;
+  --callout-rose-border: #FECACA;
+  --callout-rose-text: #991B1B;
 }
 
 html.dark,
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg-canvas: #090d16;
-  --bg-surface: #111827;
-  --bg-surface-glass: rgba(17, 24, 39, 0.95);
-  --bg-elevated: #1e293b;
-  --bg-subtle: #334155;
-  --text-primary: #f8fafc;
-  --text-secondary: #e2e8f0;
-  --text-muted: #94a3b8;
-  --border-subtle: #1e293b;
-  --border-strong: #334155;
+  /* 3. DARK MODE COLOR PALETTE — MIDNIGHT PLUM EDITION */
+  --brand-primary: #24132F;        /* Primary Brand — Midnight Plum */
+  --brand-secondary: #352044;      /* Deep Plum */
+  --bg-canvas: #18101F;            /* Main Background — Deep Night Plum */
+  --bg-nav: #24132F;               /* Sidebar and Navigation — Midnight Plum */
+  --bg-surface: #30223A;           /* Cards and Surfaces — Dark Plum */
+  --bg-surface-glass: rgba(36, 19, 47, 0.96);
+  --bg-elevated: #382844;          /* Elevated Dark Plum Surface */
+  --bg-subtle: #493751;            /* Subtle Plum Gray Surface */
+  --btn-primary: #A78BFA;          /* Primary Buttons — Light Royal Violet */
+  --btn-primary-hover: #C4B5FD;    /* Soft Lavender Hover */
+  --btn-primary-text: #18101F;     /* Deep Night Plum Text on Light Violet */
+  --accent-secondary: #C4B5FD;     /* Secondary Accent — Soft Lavender */
+  --accent-gold: #D6B56D;          /* Premium Highlights — Champagne Gold */
+  --text-primary: #F8F5FC;         /* Primary Text — Soft White */
+  --text-secondary: #DFD6E8;       /* Crisp Lavender White */
+  --text-muted: #C4B8D0;           /* Secondary Text — Lavender Gray */
+  --border-subtle: #493751;        /* Borders and Dividers — Plum Gray */
+  --border-strong: #5E4868;        /* Stronger Plum Gray Border */
+  --color-success: #34D399;        /* Success — Light Green */
+  --color-error: #F87171;          /* Error — Light Red */
 
-  --callout-violet-bg: rgba(109, 40, 217, 0.22);
-  --callout-violet-border: rgba(167, 139, 250, 0.45);
-  --callout-violet-text: #ede9fe;
+  --callout-violet-bg: rgba(167, 139, 250, 0.16);
+  --callout-violet-border: #493751;
+  --callout-violet-text: #F8F5FC;
 
-  --callout-amber-bg: rgba(180, 83, 9, 0.22);
-  --callout-amber-border: rgba(251, 191, 36, 0.45);
-  --callout-amber-text: #fef3c7;
+  --callout-amber-bg: rgba(214, 181, 109, 0.15);
+  --callout-amber-border: rgba(214, 181, 109, 0.45);
+  --callout-amber-text: #F8F5FC;
 
-  --callout-emerald-bg: rgba(5, 150, 105, 0.22);
-  --callout-emerald-border: rgba(52, 211, 153, 0.45);
-  --callout-emerald-text: #d1fae5;
+  --callout-emerald-bg: rgba(52, 211, 153, 0.15);
+  --callout-emerald-border: rgba(52, 211, 153, 0.42);
+  --callout-emerald-text: #F8F5FC;
 
-  --callout-blue-bg: rgba(37, 99, 235, 0.22);
-  --callout-blue-border: rgba(96, 165, 250, 0.45);
-  --callout-blue-text: #dbeafe;
+  --callout-blue-bg: rgba(196, 181, 253, 0.16);
+  --callout-blue-border: #493751;
+  --callout-blue-text: #F8F5FC;
 
-  --callout-rose-bg: rgba(225, 29, 72, 0.22);
-  --callout-rose-border: rgba(251, 113, 133, 0.45);
-  --callout-rose-text: #ffe4e6;
+  --callout-rose-bg: rgba(248, 113, 113, 0.16);
+  --callout-rose-border: rgba(248, 113, 113, 0.45);
+  --callout-rose-text: #FEE2E2;
 }
 
 @layer base {
@@ -81,7 +104,7 @@ html.dark,
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     background-color: var(--bg-canvas);
     color: var(--text-primary);
-    transition: background-color 0.2s ease, color 0.2s ease;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
   }
   #root {
     width: 100%;
@@ -124,9 +147,187 @@ mjx-container {
   scrollbar-width: none;
 }
 
-/* High-Contrast Dark Theme Overrides Using CSS Variables */
+/* ==========================================================================
+   LIGHT MODE — MIDNIGHT PLUM PALETTE MAPPING
+   ========================================================================== */
+html:not(.dark) .bg-slate-50,
+html:not(.dark) .bg-slate-50\/80,
+html:not(.dark) .bg-slate-50\/70 {
+  background-color: var(--bg-canvas) !important;
+}
+
+html:not(.dark) .bg-white {
+  background-color: var(--bg-surface) !important;
+}
+
+html:not(.dark) .bg-slate-100,
+html:not(.dark) .bg-slate-100\/80,
+html:not(.dark) .bg-slate-100\/90 {
+  background-color: var(--bg-elevated) !important;
+}
+
+html:not(.dark) .bg-slate-200,
+html:not(.dark) .bg-slate-200\/75 {
+  background-color: var(--accent-secondary) !important;
+}
+
+html:not(.dark) .bg-slate-900,
+html:not(.dark) .bg-slate-950 {
+  background-color: var(--brand-primary) !important;
+}
+
+html:not(.dark) .bg-slate-800 {
+  background-color: var(--brand-secondary) !important;
+}
+
+html:not(.dark) .text-slate-900,
+html:not(.dark) .text-slate-800 {
+  color: var(--text-primary) !important;
+}
+
+html:not(.dark) .text-slate-700,
+html:not(.dark) .text-slate-600,
+html:not(.dark) .text-slate-500 {
+  color: var(--text-muted) !important;
+}
+
+html:not(.dark) .border-slate-100,
+html:not(.dark) .border-slate-200,
+html:not(.dark) .border-slate-200\/80,
+html:not(.dark) .border-slate-200\/70 {
+  border-color: var(--border-subtle) !important;
+}
+
+html:not(.dark) .border-slate-300 {
+  border-color: var(--border-strong) !important;
+}
+
+/* Primary Buttons & Interactive Elements -> Royal Violet (#7047A3) in Light Mode */
+html:not(.dark) .bg-blue-600,
+html:not(.dark) .bg-blue-700,
+html:not(.dark) .bg-violet-600,
+html:not(.dark) .bg-violet-700,
+html:not(.dark) .bg-indigo-600,
+html:not(.dark) .bg-indigo-700 {
+  background-color: var(--btn-primary) !important;
+  color: #FFFFFF !important;
+}
+
+html:not(.dark) .hover\:bg-blue-700:hover,
+html:not(.dark) .hover\:bg-blue-800:hover,
+html:not(.dark) .hover\:bg-violet-700:hover,
+html:not(.dark) .hover\:bg-indigo-700:hover {
+  background-color: var(--brand-secondary) !important;
+  color: #FFFFFF !important;
+}
+
+/* Primary Links & Selected Navigation -> Royal Violet (#7047A3) in Light Mode */
+html:not(.dark) .text-blue-600,
+html:not(.dark) .text-blue-700,
+html:not(.dark) .text-violet-600,
+html:not(.dark) .text-violet-700,
+html:not(.dark) .text-indigo-600,
+html:not(.dark) .text-indigo-700 {
+  color: var(--btn-primary) !important;
+}
+
+html:not(.dark) .text-blue-800,
+html:not(.dark) .text-blue-900,
+html:not(.dark) .text-blue-950,
+html:not(.dark) .text-violet-800,
+html:not(.dark) .text-violet-900,
+html:not(.dark) .text-violet-950 {
+  color: var(--brand-primary) !important;
+}
+
+/* Secondary Accent — Soft Lavender (#E9DDF7) in Light Mode */
+html:not(.dark) .bg-blue-50,
+html:not(.dark) .bg-blue-50\/70,
+html:not(.dark) .bg-blue-100,
+html:not(.dark) .bg-violet-50,
+html:not(.dark) .bg-violet-50\/70,
+html:not(.dark) .bg-violet-100 {
+  background-color: var(--accent-secondary) !important;
+}
+
+html:not(.dark) .border-blue-200,
+html:not(.dark) .border-blue-300,
+html:not(.dark) .border-blue-400,
+html:not(.dark) .border-violet-200,
+html:not(.dark) .border-violet-300 {
+  border-color: var(--border-strong) !important;
+}
+
+html:not(.dark) .hover\:border-blue-400:hover,
+html:not(.dark) .hover\:border-blue-500:hover {
+  border-color: var(--btn-primary) !important;
+}
+
+/* Premium Highlights — Champagne Gold (#B89545) in Light Mode */
+html:not(.dark) .bg-amber-400,
+html:not(.dark) .bg-amber-500 {
+  background-color: var(--accent-gold) !important;
+  color: #FFFFFF !important;
+}
+
+html:not(.dark) .text-amber-400,
+html:not(.dark) .text-amber-300 {
+  color: #E5C678 !important;
+}
+
+html:not(.dark) .text-amber-700,
+html:not(.dark) .text-amber-800,
+html:not(.dark) .text-amber-900,
+html:not(.dark) .text-amber-950 {
+  color: #7A5F22 !important;
+}
+
+html:not(.dark) .bg-amber-50,
+html:not(.dark) .bg-amber-50\/70,
+html:not(.dark) .bg-amber-50\/80,
+html:not(.dark) .bg-amber-100 {
+  background-color: var(--callout-amber-bg) !important;
+}
+
+html:not(.dark) .border-amber-200,
+html:not(.dark) .border-amber-300,
+html:not(.dark) .border-amber-400 {
+  border-color: var(--callout-amber-border) !important;
+}
+
+/* Success — Green (#168568) & Error — Red (#DC2626) in Light Mode */
+html:not(.dark) .bg-emerald-600,
+html:not(.dark) .bg-emerald-700,
+html:not(.dark) .bg-teal-600,
+html:not(.dark) .bg-teal-700 {
+  background-color: var(--color-success) !important;
+  color: #FFFFFF !important;
+}
+
+html:not(.dark) .text-emerald-600,
+html:not(.dark) .text-emerald-700,
+html:not(.dark) .text-emerald-800,
+html:not(.dark) .text-teal-700 {
+  color: var(--color-success) !important;
+}
+
+html:not(.dark) .bg-rose-600,
+html:not(.dark) .bg-red-600 {
+  background-color: var(--color-error) !important;
+  color: #FFFFFF !important;
+}
+
+html:not(.dark) .text-rose-600,
+html:not(.dark) .text-rose-700 {
+  color: var(--color-error) !important;
+}
+
+/* ==========================================================================
+   DARK MODE — MIDNIGHT PLUM PALETTE MAPPING
+   ========================================================================== */
 html.dark .bg-slate-50,
-html.dark .bg-slate-50\/80 {
+html.dark .bg-slate-50\/80,
+html.dark .bg-slate-50\/70 {
   background-color: var(--bg-canvas) !important;
 }
 
@@ -140,6 +341,25 @@ html.dark .bg-white\/80 {
   background-color: var(--bg-surface-glass) !important;
 }
 
+html.dark header {
+  background-color: var(--bg-nav) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+html.dark footer {
+  background-color: var(--bg-nav) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+html.dark .bg-slate-900,
+html.dark .bg-slate-950 {
+  background-color: var(--brand-primary) !important;
+}
+
+html.dark .bg-slate-800 {
+  background-color: var(--brand-secondary) !important;
+}
+
 html.dark .bg-slate-100,
 html.dark .bg-slate-100\/80,
 html.dark .bg-slate-100\/90,
@@ -148,6 +368,7 @@ html.dark .bg-slate-50\/90 {
 }
 
 html.dark .bg-slate-200,
+html.dark .bg-slate-200\/75,
 html.dark .hover\:bg-slate-200:hover,
 html.dark .hover\:bg-slate-100:hover {
   background-color: var(--bg-subtle) !important;
@@ -165,7 +386,7 @@ html.dark .to-slate-100 {
   --tw-gradient-to: var(--bg-elevated) !important;
 }
 
-/* High-Contrast Text Overrides */
+/* Primary & Secondary Text in Dark Mode */
 html.dark .text-slate-900,
 html.dark .text-slate-800,
 html.dark .hover\:text-slate-900:hover {
@@ -178,58 +399,96 @@ html.dark .text-slate-600 {
 }
 
 html.dark .text-slate-500,
-html.dark .text-slate-400 {
+html.dark .text-slate-400,
+html.dark .text-slate-300 {
   color: var(--text-muted) !important;
 }
 
-/* Preserve dark text on bright high-visibility action buttons */
-html.dark .bg-amber-400.text-slate-950,
-html.dark .bg-amber-300.text-slate-950,
-html.dark .bg-amber-500.text-slate-950,
-html.dark .bg-emerald-500.text-slate-950,
-html.dark .bg-emerald-400.text-slate-950 {
-  color: #090d16 !important;
+/* Primary Buttons in Dark Mode -> Light Royal Violet (#A78BFA) with Deep Plum Text (#18101F) */
+html.dark .bg-blue-600,
+html.dark .bg-blue-700,
+html.dark .bg-violet-600,
+html.dark .bg-violet-700,
+html.dark .bg-indigo-600,
+html.dark .bg-indigo-700 {
+  background-color: var(--btn-primary) !important;
+  color: var(--btn-primary-text) !important;
 }
 
-/* High-Contrast Accent Text Adjustments for Dark Surfaces */
+html.dark .hover\:bg-blue-700:hover,
+html.dark .hover\:bg-violet-700:hover,
+html.dark .hover\:bg-indigo-700:hover {
+  background-color: var(--btn-primary-hover) !important;
+  color: var(--btn-primary-text) !important;
+}
+
+/* Secondary Accent — Soft Lavender (#C4B5FD) in Dark Mode */
 html.dark .text-blue-600,
 html.dark .text-blue-700,
 html.dark .text-blue-800,
 html.dark .text-blue-900,
-html.dark .text-blue-950 {
-  color: #93c5fd !important;
-}
-
+html.dark .text-blue-950,
 html.dark .text-violet-600,
 html.dark .text-violet-700,
 html.dark .text-violet-800,
 html.dark .text-violet-900,
-html.dark .text-violet-950 {
-  color: #ddd6fe !important;
+html.dark .text-violet-950,
+html.dark .text-indigo-700,
+html.dark .text-sky-400,
+html.dark .text-sky-300 {
+  color: var(--accent-secondary) !important;
 }
 
-html.dark .text-emerald-700,
-html.dark .text-emerald-800,
-html.dark .text-emerald-900,
-html.dark .text-emerald-950 {
-  color: #6ee7b7 !important;
+/* Champagne Gold (#D6B56D) Highlights in Dark Mode */
+html.dark .bg-amber-400,
+html.dark .bg-amber-300,
+html.dark .bg-amber-500 {
+  background-color: var(--accent-gold) !important;
+  color: #18101F !important;
 }
 
+html.dark .text-amber-400,
+html.dark .text-amber-300,
 html.dark .text-amber-700,
 html.dark .text-amber-800,
 html.dark .text-amber-900,
 html.dark .text-amber-950 {
-  color: #fde68a !important;
+  color: var(--accent-gold) !important;
+}
+
+/* Success (#34D399) & Error (#F87171) in Dark Mode */
+html.dark .bg-emerald-600,
+html.dark .bg-emerald-500,
+html.dark .bg-emerald-400,
+html.dark .bg-teal-600 {
+  background-color: var(--color-success) !important;
+  color: #18101F !important;
+}
+
+html.dark .text-emerald-400,
+html.dark .text-emerald-600,
+html.dark .text-emerald-700,
+html.dark .text-emerald-800,
+html.dark .text-emerald-900,
+html.dark .text-emerald-950,
+html.dark .text-teal-700 {
+  color: var(--color-success) !important;
+}
+
+html.dark .bg-rose-600,
+html.dark .bg-red-600 {
+  background-color: var(--color-error) !important;
+  color: #18101F !important;
 }
 
 html.dark .text-rose-600,
 html.dark .text-rose-700,
 html.dark .text-rose-800,
 html.dark .text-rose-900 {
-  color: #fda4af !important;
+  color: var(--color-error) !important;
 }
 
-/* Tinted Callout & Badge Surfaces */
+/* Tinted Callout & Badge Surfaces in Dark Mode */
 html.dark .bg-violet-50,
 html.dark .bg-violet-50\/70,
 html.dark .bg-violet-100,
@@ -255,7 +514,8 @@ html.dark .bg-amber-100 {
 
 html.dark .border-amber-200,
 html.dark .border-amber-200\/90,
-html.dark .border-amber-300 {
+html.dark .border-amber-300,
+html.dark .border-amber-400 {
   border-color: var(--callout-amber-border) !important;
 }
 
@@ -280,7 +540,8 @@ html.dark .bg-blue-100 {
 
 html.dark .border-blue-200,
 html.dark .border-blue-200\/80,
-html.dark .border-blue-300 {
+html.dark .border-blue-300,
+html.dark .border-blue-400 {
   border-color: var(--callout-blue-border) !important;
 }
 
@@ -290,11 +551,13 @@ html.dark .bg-rose-100 {
   color: var(--callout-rose-text) !important;
 }
 
-/* Borders & Dividers */
+/* Borders & Dividers in Dark Mode — Plum Gray (#493751) */
 html.dark .border-slate-100,
 html.dark .border-slate-200,
 html.dark .border-slate-200\/80,
-html.dark .border-slate-200\/70 {
+html.dark .border-slate-200\/70,
+html.dark .border-slate-700,
+html.dark .border-slate-800 {
   border-color: var(--border-subtle) !important;
 }
 
@@ -307,13 +570,20 @@ html.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
   border-color: var(--border-subtle) !important;
 }
 
-/* Form Controls in Dark Mode */
+/* Form Controls in Both Themes */
+html:not(.dark) input:not([type="range"]),
+html:not(.dark) select,
+html:not(.dark) textarea {
+  border-color: var(--border-subtle);
+  color: var(--text-primary);
+}
+
 html.dark input:not([type="range"]),
 html.dark select,
 html.dark textarea {
   background-color: var(--bg-elevated) !important;
   color: var(--text-primary) !important;
-  border-color: var(--border-strong) !important;
+  border-color: var(--border-subtle) !important;
 }
 
 html.dark input::placeholder,
@@ -361,7 +631,6 @@ html.dark textarea::placeholder {
 /* Interactive SVG Diagrams in Dark Mode - keep textbook diagrams crisp & legible */
 html.dark .moha-svg-diagram {
   background-color: var(--bg-elevated) !important;
-  border-color: var(--border-strong) !important;
+  border-color: var(--border-subtle) !important;
   color: var(--text-primary) !important;
 }
-

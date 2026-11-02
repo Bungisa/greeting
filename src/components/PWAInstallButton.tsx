@@ -486,23 +486,23 @@ export const GetElimikaAppSection: React.FC = () => {
   return (
     <section
       id="get-elimika-app-section"
-      className="bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 text-white border-t border-slate-800 py-8 sm:py-10 px-4"
+      className="bg-[#24132F] text-white border-t border-[#493751] py-8 sm:py-10 px-4"
     >
       <div className="max-w-5xl mx-auto">
-        <div className="rounded-3xl bg-slate-900/90 border border-slate-700/80 p-5 sm:p-7 shadow-xl flex flex-col lg:flex-row items-center justify-between gap-6">
+        <div className="rounded-3xl bg-[#30223A] border border-[#493751] p-5 sm:p-7 shadow-xl flex flex-col lg:flex-row items-center justify-between gap-6">
           {/* Left Column: Branding & App Icon */}
           <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-4 max-w-xl">
             <img
               src="/pwa-192x192.png"
               alt="Elimika Tanzania App Icon"
-              className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl border-2 border-blue-400/40 shadow-lg shrink-0"
+              className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl border-2 border-[#D6B56D]/60 shadow-lg shrink-0"
             />
             <div className="space-y-2">
               <div className="inline-flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                <span className="px-2.5 py-0.5 rounded-md bg-blue-600 text-white font-black text-[10px] uppercase tracking-wider">
+                <span className="px-2.5 py-0.5 rounded-md bg-[#7047A3] text-white font-black text-[10px] uppercase tracking-wider">
                   Get Elimika App
                 </span>
-                <span className="text-[11px] font-bold text-sky-300">
+                <span className="text-[11px] font-bold text-[#D6B56D]">
                   {previewOverride === 'auto'
                     ? isIOS
                       ? '📱 Detected: iPhone / iPad (iOS)'

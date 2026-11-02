@@ -15,6 +15,7 @@ import {
   GraduationCap,
   Home,
   Mic,
+  Monitor,
   Moon,
   Printer,
   RefreshCw,
@@ -41,6 +42,7 @@ import {
   getTieTextbookChapterContent,
   LearnedMemoryItem,
   matchesFormRange,
+  matchesSmartSearchTokens,
   matchesSubjectQuery,
   normalizeClassName,
   normalizeSubjectName,
@@ -695,10 +697,12 @@ export default function App() {
   const [booksPageLevel, setBooksPageLevel] = useState<'ALL' | 'Primary' | 'Secondary' | 'Advanced'>('ALL');
   const [booksPageSelectedClass, setBooksPageSelectedClass] = useState<string>('ALL');
   const [booksSearchQuery, setBooksSearchQuery] = useState<string>('');
+  const [showUpcomingBooks, setShowUpcomingBooks] = useState<boolean>(false);
 
   // Dedicated Syllabus Page State
   const [syllabusPageLevel, setSyllabusPageLevel] = useState<'ALL' | 'Primary' | 'Secondary' | 'Advanced'>('ALL');
   const [syllabusSearchQuery, setSyllabusSearchQuery] = useState<string>('');
+  const [showUpcomingSyllabuses, setShowUpcomingSyllabuses] = useState<boolean>(false);
 
   // Print Basket
   const [printBasket, setPrintBasket] = useState<PaperRecord[]>([]);
@@ -786,7 +790,14 @@ export default function App() {
   const [learnTopicInput, setLearnTopicInput] = useState<string>('');
   const [learnAnswerInput, setLearnAnswerInput] = useState<string>('');
   const [learnedMemory, setLearnedMemory] = useState<LearnedMemoryItem[]>([]);
-  const [legalModalType, setLegalModalType] = useState<'privacy' | 'terms' | 'about' | null>(null);
+  const [legalModalType, setLegalModalType] = useState<'privacy' | 'terms' | 'disclaimer' | 'about' | null>(null);
+  const [cookieConsentAccepted, setCookieConsentAccepted] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('elimika_cookie_consent') === 'accepted';
+    } catch {
+      return false;
+    }
+  });
   const [whatsappModalOpen, setWhatsappModalOpen] = useState<boolean>(false);
   const [whatsappTab, setWhatsappTab] = useState<'join' | 'broadcast' | 'logo' | 'setup' | 'adsense' | 'playstore'>('join');
   const [whatsappAdminUnlocked, setWhatsappAdminUnlocked] = useState<boolean>(false);
@@ -817,6 +828,7 @@ export default function App() {
   const [whatsappConfig, setWhatsappConfig] = useState<{
     channelName: string;
     mainChannelUrl: string;
+    supportWhatsappNumber: string;
     oLevelGroupUrl: string;
     aLevelGroupUrl: string;
     primaryGroupUrl: string;
@@ -830,7 +842,15 @@ export default function App() {
           parsed.mainChannelUrl &&
           parsed.mainChannelUrl !== 'https://whatsapp.com/channel/0029VaElimikaOnline'
         ) {
-          return parsed;
+          const savedNum = parsed.supportWhatsappNumber;
+          const resolvedNum =
+            !savedNum || savedNum === '255748404500' || savedNum === '255700000000'
+              ? CONFIG.ADMIN_WHATSAPP
+              : savedNum;
+          return {
+            ...parsed,
+            supportWhatsappNumber: resolvedNum,
+          };
         }
       }
     } catch {
@@ -839,6 +859,7 @@ export default function App() {
     return {
       channelName: 'Elimika Online',
       mainChannelUrl: 'https://whatsapp.com/channel/0029VbE4Ctl0G0Xbp8kQwu0t',
+      supportWhatsappNumber: CONFIG.ADMIN_WHATSAPP,
       oLevelGroupUrl: 'https://chat.whatsapp.com/ElimikaOLevelForm1to4',
       aLevelGroupUrl: 'https://chat.whatsapp.com/ElimikaALevelForm5to6',
       primaryGroupUrl: 'https://chat.whatsapp.com/ElimikaPrimaryStd1to7',
@@ -851,11 +872,43 @@ export default function App() {
     setWhatsappConfig(nextConfig);
     try {
       localStorage.setItem('elimika_whatsapp_community_v3', JSON.stringify(nextConfig));
-      showToast('✅ WhatsApp Channel & Community links saved!');
+      showToast('✅ WhatsApp Channel & Support Number saved!');
     } catch {
       showToast('⚠️ Could not save links in browser storage.');
     }
   };
+
+  function getRequestPaperWhatsAppUrl(cls?: string, sub?: string, issueContext?: string): string {
+    const cleanPhone = (whatsappConfig.supportWhatsappNumber || CONFIG.ADMIN_WHATSAPP || '')
+      .replace(/[^0-9]/g, '');
+    const targetCls = cls || selectedClass || 'Form 4';
+    const targetSub = sub || selectedSubject || 'General';
+    const msg = issueContext
+      ? `Hello Elimika Tanzania Team 👋,\nI would like to report/request: *${issueContext}* (${targetCls} • ${targetSub}).\nLink: ${window.location.href}`
+      : `Hello Elimika Tanzania Team 👋,\nPlease upload or share past papers / TIE book for *${targetCls} — ${targetSub}*.\nLink: ${window.location.href}`;
+    if (cleanPhone && cleanPhone.length >= 9 && cleanPhone !== '255700000000') {
+      return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
+    }
+    return `https://wa.me/?text=${encodeURIComponent(msg)}`;
+  }
+
+  function buildShareableSubjectUrl(cls: string, sub?: string): string {
+    const base = `${window.location.origin}${window.location.pathname}`;
+    const clsSlug = encodeURIComponent(cls.replace(/\s+/g, '-'));
+    if (sub && sub.trim()) {
+      const subSlug = encodeURIComponent(sub.replace(/\s+/g, '-'));
+      return `${base}#class=${clsSlug}&subject=${subSlug}`;
+    }
+    return `${base}#class=${clsSlug}`;
+  }
+
+  function copyShareableSubjectLink(cls: string, sub?: string) {
+    const url = buildShareableSubjectUrl(cls, sub);
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(url).catch(() => {});
+    }
+    showToast(`🔗 Direct link copied: ${sub ? `${cls} ${sub}` : cls}`);
+  }
 
   useEffect(() => {
     const cleaned = adsensePubId.trim();
@@ -1250,16 +1303,66 @@ export default function App() {
   const [joiningChallengeByCode, setJoiningChallengeByCode] = useState<boolean>(false);
   const [serverPublicAppUrl, setServerPublicAppUrl] = useState<string>('');
   const [textbookExtractorModalOpen, setTextbookExtractorModalOpen] = useState<boolean>(false);
-  const [darkMode, setDarkMode] = useState<boolean>(() => {
+  const [themeMode, setThemeMode] = useState<'light' | 'dark' | 'system'>(() => {
     try {
-      const saved = localStorage.getItem('elimika_dark_mode');
-      if (saved === 'true') return true;
-      if (saved === 'false') return false;
+      const savedMode = localStorage.getItem('elimika_theme_mode');
+      if (savedMode === 'light' || savedMode === 'dark' || savedMode === 'system') {
+        return savedMode;
+      }
+      const legacy = localStorage.getItem('elimika_dark_mode');
+      if (legacy === 'true') return 'dark';
+      if (legacy === 'false') return 'light';
+      return 'system';
+    } catch {
+      return 'system';
+    }
+  });
+  const [systemPrefersDark, setSystemPrefersDark] = useState<boolean>(() => {
+    try {
       return window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
     } catch {
       return false;
     }
   });
+
+  const darkMode = themeMode === 'dark' || (themeMode === 'system' && systemPrefersDark);
+
+  const selectThemeMode = (nextMode: 'light' | 'dark' | 'system') => {
+    setThemeMode(nextMode);
+    try {
+      localStorage.setItem('elimika_theme_mode', nextMode);
+      const resolvedDark =
+        nextMode === 'dark' ||
+        (nextMode === 'system' && (window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false));
+      localStorage.setItem('elimika_dark_mode', String(resolvedDark));
+    } catch {
+      // ignore storage errors
+    }
+  };
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleOsThemeChange = (e: MediaQueryListEvent) => {
+      setSystemPrefersDark(e.matches);
+    };
+    setSystemPrefersDark(mq.matches);
+    if (mq.addEventListener) {
+      mq.addEventListener('change', handleOsThemeChange);
+    }
+    const handleStorageSync = (e: StorageEvent) => {
+      if (e.key === 'elimika_theme_mode' && (e.newValue === 'light' || e.newValue === 'dark' || e.newValue === 'system')) {
+        setThemeMode(e.newValue);
+      }
+    };
+    window.addEventListener('storage', handleStorageSync);
+    return () => {
+      if (mq.removeEventListener) {
+        mq.removeEventListener('change', handleOsThemeChange);
+      }
+      window.removeEventListener('storage', handleStorageSync);
+    };
+  }, []);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -1270,12 +1373,14 @@ export default function App() {
       root.classList.remove('dark');
       root.setAttribute('data-theme', 'light');
     }
+    root.setAttribute('data-theme-mode', themeMode);
     try {
+      localStorage.setItem('elimika_theme_mode', themeMode);
       localStorage.setItem('elimika_dark_mode', String(darkMode));
     } catch {
       // ignore storage errors
     }
-  }, [darkMode]);
+  }, [darkMode, themeMode]);
 
   const [flashcards, setFlashcards] = useState<FlashcardItem[]>(() =>
     getDefaultFlashcardsForSubject('Form 3', 'Basic Mathematics')
@@ -1497,6 +1602,72 @@ export default function App() {
     fetchAllChallenges();
 
     const parsedChallenge = parseChallengeFromLocation();
+    const applyDeepLinkFromHash = (): boolean => {
+      const rawHash = (window.location.hash || '').replace(/^#/, '').trim();
+      if (!rawHash) return false;
+
+      if (rawHash.includes('class=') || rawHash.includes('subject=') || rawHash.includes('page=') || rawHash.includes('q=')) {
+        const params = new URLSearchParams(rawHash);
+        const pageParam = (params.get('page') || '').trim().toLowerCase();
+        const rawCls = (params.get('class') || params.get('cls') || '').replace(/-/g, ' ').trim();
+        const rawSub = (params.get('subject') || params.get('sub') || '').replace(/-/g, ' ').trim();
+        const rawQ = (params.get('q') || params.get('search') || '').replace(/-/g, ' ').trim();
+        const rawYr = (params.get('year') || '').trim();
+        const rawCat = (params.get('cat') || params.get('category') || '').trim();
+
+        const normCls = rawCls ? normalizeClassName(rawCls) : '';
+        const officialSubs = normCls ? TIE_CURRICULUM_SUBJECTS[normCls] || [] : [];
+        const matchedOfficialSub =
+          rawSub && officialSubs.length > 0
+            ? officialSubs.find((s) => matchesSubjectQuery(rawSub, s) || s.toLowerCase() === rawSub.toLowerCase()) ||
+              normalizeSubjectName(rawSub, rawSub)
+            : rawSub
+            ? normalizeSubjectName(rawSub, rawSub)
+            : '';
+
+        if (pageParam === 'books') {
+          openBooksPage(normCls, matchedOfficialSub || rawQ);
+          return true;
+        }
+        if (pageParam === 'syllabus') {
+          setActivePage('syllabus');
+          if (rawQ || matchedOfficialSub) setSyllabusSearchQuery(rawQ || matchedOfficialSub);
+          return true;
+        }
+        if (pageParam === 'daily_quiz' || pageParam === 'daily-quiz') {
+          openDailyQuizPage(normCls || undefined, matchedOfficialSub || undefined);
+          return true;
+        }
+
+        if (rawQ) {
+          setActivePage('papers');
+          setSearchQuery(rawQ);
+          setStep(3);
+          return true;
+        }
+
+        if (normCls && matchedOfficialSub) {
+          setActivePage('papers');
+          setSelectedClass(normCls);
+          setSelectedSubject(matchedOfficialSub);
+          setSelectedYear(rawYr || 'ALL');
+          setSelectedCategory(rawCat || 'ALL');
+          setPage(1);
+          setStep(3);
+          return true;
+        }
+
+        if (normCls) {
+          setActivePage('papers');
+          setSelectedClass(normCls);
+          setSelectedSubject('');
+          setStep(2);
+          return true;
+        }
+      }
+      return false;
+    };
+
     if (parsedChallenge) {
       loadSharedChallengeFromUrl(
         parsedChallenge.id,
@@ -1505,6 +1676,8 @@ export default function App() {
         parsedChallenge.topic,
         parsedChallenge.by
       );
+    } else if (applyDeepLinkFromHash()) {
+      // Handled via #class=...&subject=... deep link
     } else if (window.location.hash === '#syllabus') {
       setActivePage('syllabus');
     } else if (window.location.hash === '#books') {
@@ -1534,6 +1707,8 @@ export default function App() {
       const ch = parseChallengeFromLocation();
       if (ch) {
         loadSharedChallengeFromUrl(ch.id, ch.cls, ch.sub, ch.topic, ch.by);
+      } else if (applyDeepLinkFromHash()) {
+        // Deep link applied
       } else if (window.location.hash === '#play') {
         setPlayRoute('hub');
         setActivePage('game');
@@ -1639,9 +1814,33 @@ export default function App() {
     if (!isSame) {
       stack.push(nextSnap);
       try {
+        let nextHash = window.location.hash;
+        if (!nextHash.includes('challenge=')) {
+          if (activePage === 'papers') {
+            if (step === 3 && selectedClass && selectedSubject) {
+              nextHash = `#class=${encodeURIComponent(selectedClass.replace(/\s+/g, '-'))}&subject=${encodeURIComponent(selectedSubject.replace(/\s+/g, '-'))}`;
+            } else if (step === 2 && selectedClass) {
+              nextHash = `#class=${encodeURIComponent(selectedClass.replace(/\s+/g, '-'))}`;
+            } else if (step === 1) {
+              nextHash = '';
+            }
+          } else if (activePage === 'books') {
+            nextHash = '#books';
+          } else if (activePage === 'syllabus') {
+            nextHash = '#syllabus';
+          } else if (activePage === 'daily_quiz') {
+            nextHash = '#daily-quiz';
+          } else if (activePage === 'moha') {
+            nextHash = '#moha';
+          } else if (activePage === 'game') {
+            nextHash = '#play';
+          }
+        }
+        const nextUrl = `${window.location.pathname}${window.location.search}${nextHash}`;
         window.history.pushState(
           { elimikaNav: true, idx: stack.length - 1, ...nextSnap },
-          ''
+          '',
+          nextUrl
         );
       } catch {
         // ignore history push errors in restricted frames
@@ -3850,10 +4049,13 @@ export default function App() {
   const { filteredPapers, availableYears } = React.useMemo(() => {
     let baseMatches: PaperRecord[] = [];
     if (searchQuery.trim().length > 0) {
-      const q = searchQuery.toLowerCase();
+      const q = searchQuery.trim();
       baseMatches = allPapers.filter((p) => {
         if (p.isSyllabus || p.isBook) return false;
-        return `${p.title} ${p.subject} ${p.form} ${p.year} ${p.category}`.toLowerCase().includes(q);
+        return matchesSmartSearchTokens(
+          q,
+          `${p.title} ${p.subject} ${p.form} ${p.year} ${p.category}`
+        );
       });
     } else {
       baseMatches = allPapers.filter((p) => {
@@ -3891,18 +4093,27 @@ export default function App() {
   );
 
   const dedicatedBooks = React.useMemo(() => {
-    const q = booksSearchQuery.trim().toLowerCase();
+    const q = booksSearchQuery.trim();
     const list = allPapers.filter((p) => {
       if (!p.isBook) return false;
       if (!matchesSyllabusTier(p.form, booksPageLevel)) return false;
       if (booksPageSelectedClass !== 'ALL' && p.form.toLowerCase() !== booksPageSelectedClass.toLowerCase())
         return false;
-      if (q && !`${p.title} ${p.subject} ${p.form} ${p.year}`.toLowerCase().includes(q)) return false;
+      if (q && !matchesSmartSearchTokens(q, `${p.title} ${p.subject} ${p.form} ${p.year}`)) return false;
       return true;
     });
     list.sort((a, b) => (b.paperUrl ? 1 : 0) - (a.paperUrl ? 1 : 0));
     return list;
   }, [allPapers, booksPageLevel, booksPageSelectedClass, booksSearchQuery]);
+
+  const availableUploadedBooks = React.useMemo(
+    () => dedicatedBooks.filter((b) => Boolean(b.paperUrl || b.customContent)),
+    [dedicatedBooks]
+  );
+  const upcomingPlaceholderBooks = React.useMemo(
+    () => dedicatedBooks.filter((b) => !b.paperUrl && !b.customContent),
+    [dedicatedBooks]
+  );
 
   const booksLevelClasses = React.useMemo(() => {
     if (booksPageLevel === 'Primary') {
@@ -3932,14 +4143,25 @@ export default function App() {
   }, [booksPageLevel]);
 
   const dedicatedSyllabuses = React.useMemo(() => {
-    const q = syllabusSearchQuery.trim().toLowerCase();
-    return allPapers.filter((p) => {
+    const q = syllabusSearchQuery.trim();
+    const list = allPapers.filter((p) => {
       if (!p.isSyllabus) return false;
       if (!matchesSyllabusTier(p.form, syllabusPageLevel)) return false;
-      if (q && !`${p.title} ${p.subject} ${p.form} ${p.year}`.toLowerCase().includes(q)) return false;
+      if (q && !matchesSmartSearchTokens(q, `${p.title} ${p.subject} ${p.form} ${p.year}`)) return false;
       return true;
     });
+    list.sort((a, b) => (b.paperUrl ? 1 : 0) - (a.paperUrl ? 1 : 0));
+    return list;
   }, [allPapers, syllabusPageLevel, syllabusSearchQuery]);
+
+  const availableUploadedSyllabuses = React.useMemo(
+    () => dedicatedSyllabuses.filter((s) => Boolean(s.paperUrl || s.customContent)),
+    [dedicatedSyllabuses]
+  );
+  const upcomingPlaceholderSyllabuses = React.useMemo(
+    () => dedicatedSyllabuses.filter((s) => !s.paperUrl && !s.customContent),
+    [dedicatedSyllabuses]
+  );
 
   // Automatically extract real chapters from any attached TIE Textbook PDF when Class/Subject/Book changes
   useEffect(() => {
@@ -4110,24 +4332,54 @@ export default function App() {
               <span className="hidden sm:inline">WhatsApp</span>
             </button>
 
-            <button
-              onClick={() => setDarkMode((prev) => !prev)}
-              aria-label={darkMode ? 'Switch to light theme' : 'Switch to dark theme'}
-              title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-              className="p-1.5 sm:px-3 sm:py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-900 border border-slate-300 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+            <div
+              role="group"
+              aria-label="Theme Selector"
+              className="inline-flex items-center p-0.5 rounded-xl bg-slate-100 border border-slate-300 shrink-0"
             >
-              {darkMode ? (
-                <>
-                  <Sun className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
-                  <span className="hidden sm:inline">Light</span>
-                </>
-              ) : (
-                <>
-                  <Moon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-700" />
-                  <span className="hidden sm:inline">Dark</span>
-                </>
-              )}
-            </button>
+              <button
+                type="button"
+                onClick={() => selectThemeMode('light')}
+                aria-label="Light Mode"
+                title="Light Mode (Midnight Plum & Soft White)"
+                className={`px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg font-bold text-[11px] flex items-center gap-1 transition-colors cursor-pointer ${
+                  themeMode === 'light'
+                    ? 'bg-blue-600 text-white shadow-2xs'
+                    : 'text-slate-700 hover:text-slate-900'
+                }`}
+              >
+                <Sun className="w-3.5 h-3.5 shrink-0" />
+                <span className="hidden xl:inline">Light</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => selectThemeMode('dark')}
+                aria-label="Dark Mode"
+                title="Dark Mode (Deep Night Plum)"
+                className={`px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg font-bold text-[11px] flex items-center gap-1 transition-colors cursor-pointer ${
+                  themeMode === 'dark'
+                    ? 'bg-blue-600 text-white shadow-2xs'
+                    : 'text-slate-700 hover:text-slate-900'
+                }`}
+              >
+                <Moon className="w-3.5 h-3.5 shrink-0" />
+                <span className="hidden xl:inline">Dark</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => selectThemeMode('system')}
+                aria-label="System Default Theme"
+                title="System Default (Follow OS Light/Dark Preference)"
+                className={`px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg font-bold text-[11px] flex items-center gap-1 transition-colors cursor-pointer ${
+                  themeMode === 'system'
+                    ? 'bg-blue-600 text-white shadow-2xs'
+                    : 'text-slate-700 hover:text-slate-900'
+                }`}
+              >
+                <Monitor className="w-3.5 h-3.5 shrink-0" />
+                <span className="hidden xl:inline">System</span>
+              </button>
+            </div>
 
             <button
               onClick={() => openMwalimuModal()}
@@ -4690,6 +4942,14 @@ export default function App() {
 
                     <div className="flex flex-wrap items-center gap-1.5">
                       <button
+                        type="button"
+                        onClick={() => copyShareableSubjectLink(selectedClass)}
+                        className="px-3 py-2 rounded-xl font-bold text-xs border border-blue-300 bg-blue-50 text-blue-900 hover:bg-blue-100 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                        title="Copy direct shareable link for this class"
+                      >
+                        🔗 Share Class Link
+                      </button>
+                      <button
                         onClick={() => openBooksPage(selectedClass)}
                         className="px-3 py-2 rounded-xl font-bold text-xs border border-emerald-500 bg-emerald-100 text-emerald-950 hover:bg-emerald-200 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
                       >
@@ -4753,6 +5013,37 @@ export default function App() {
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2">
+                        {selectedClass && selectedSubject && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => copyShareableSubjectLink(selectedClass, selectedSubject)}
+                              className="px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-300 font-bold text-xs whitespace-nowrap shrink-0 cursor-pointer"
+                              title="Copy direct deep link to this Class & Subject"
+                            >
+                              🔗 Copy Subject Link
+                            </button>
+                            <a
+                              href={`https://wa.me/?text=${encodeURIComponent(
+                                `📚 *${selectedClass} — ${selectedSubject} Past Papers & Marking Schemes* on Elimika Tanzania:\n👉 ${buildShareableSubjectUrl(selectedClass, selectedSubject)}`
+                              )}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs whitespace-nowrap shrink-0"
+                            >
+                              📲 Share on WhatsApp
+                            </a>
+                          </>
+                        )}
+                        <a
+                          href={getRequestPaperWhatsAppUrl(selectedClass, selectedSubject)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-950 border border-amber-300 font-bold text-xs whitespace-nowrap shrink-0"
+                          title="Request a missing past paper or report a broken link via WhatsApp"
+                        >
+                          📩 Request Missing Paper
+                        </a>
                         <button
                           onClick={() => openBooksPage(selectedClass, selectedSubject)}
                           className="px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold text-xs whitespace-nowrap shrink-0 cursor-pointer"
@@ -4820,6 +5111,9 @@ export default function App() {
                         No {selectedCategory !== 'ALL' ? selectedCategory : ''} papers found for{' '}
                         {selectedYear !== 'ALL' ? selectedYear : 'this selection'} yet.
                       </h4>
+                      <p className="text-xs text-slate-500 max-w-md mx-auto">
+                        Have a paper to contribute or need a specific exam uploaded? Request it directly via WhatsApp below.
+                      </p>
                       <div className="flex flex-wrap justify-center gap-2">
                         <button
                           onClick={() => {
@@ -4830,6 +5124,18 @@ export default function App() {
                         >
                           Show All Years &amp; Paper Types
                         </button>
+                        <a
+                          href={getRequestPaperWhatsAppUrl(
+                            selectedClass,
+                            selectedSubject,
+                            searchQuery.trim() || `${selectedClass} ${selectedSubject} Past Paper`
+                          )}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl"
+                        >
+                          📩 Request Missing Paper on WhatsApp
+                        </a>
                       </div>
                     </div>
                   ) : (
@@ -5023,30 +5329,77 @@ export default function App() {
               </div>
 
               <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-medium text-slate-500 pt-2 border-t border-slate-100 tabular-nums">
-                <span>
-                  Showing {dedicatedBooks.length} TIE Books (
-                  {dedicatedBooks.filter((b) => Boolean(b.paperUrl)).length} with Google Drive PDF links)
+                <span className="font-bold text-emerald-800">
+                  ✅ Showing {availableUploadedBooks.length} Available TIE Books Ready for Instant Read &amp; PDF Download
                 </span>
+                {upcomingPlaceholderBooks.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowUpcomingBooks((prev) => !prev)}
+                    className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
+                  >
+                    {showUpcomingBooks
+                      ? `🙈 Hide Coming Soon Placeholders (${upcomingPlaceholderBooks.length})`
+                      : `⏳ Show Coming Soon / Request Books (${upcomingPlaceholderBooks.length})`}
+                  </button>
+                )}
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {dedicatedBooks.map((p) => {
-                const hasUrl = Boolean(p.paperUrl);
-                return (
+            {/* Available / Uploaded PDFs First */}
+            {availableUploadedBooks.length === 0 ? (
+              <div className="py-10 text-center bg-white rounded-2xl border border-slate-200 p-6 space-y-3">
+                <h3 className="text-base font-bold text-slate-900">
+                  No uploaded TIE PDF Books match this filter yet
+                </h3>
+                <p className="text-xs text-slate-500 max-w-md mx-auto">
+                  Try selecting &ldquo;All Levels&rdquo; or request a specific textbook via WhatsApp below.
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBooksPageLevel('ALL');
+                      setBooksPageSelectedClass('ALL');
+                      setBooksSearchQuery('');
+                    }}
+                    className="px-4 py-2 bg-emerald-600 text-white font-bold text-xs rounded-xl cursor-pointer"
+                  >
+                    Show All Available TIE Books
+                  </button>
+                  <a
+                    href={getRequestPaperWhatsAppUrl(
+                      booksPageSelectedClass !== 'ALL' ? booksPageSelectedClass : 'Secondary',
+                      booksSearchQuery || 'TIE Student Book',
+                      'Missing TIE Textbook PDF'
+                    )}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 bg-slate-900 text-white font-bold text-xs rounded-xl"
+                  >
+                    📩 Request a Textbook via WhatsApp
+                  </a>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {availableUploadedBooks.map((p) => (
                   <article
                     key={p.id}
-                    className={`bg-white p-5 rounded-2xl border ${
-                      hasUrl ? 'border-emerald-400 shadow-sm' : 'border-slate-200'
-                    } hover:border-emerald-600 transition-colors flex flex-col justify-between gap-4`}
+                    className="bg-white p-5 rounded-2xl border border-emerald-400 shadow-sm hover:border-emerald-600 transition-colors flex flex-col justify-between gap-4"
                   >
                     <div>
-                      <div className="flex items-center gap-2 text-xs text-slate-500 mb-1.5">
-                        <span className="font-bold text-emerald-700">{p.category}</span>
-                        <span aria-hidden="true">·</span>
-                        <span className="font-semibold text-slate-700">{p.form}</span>
-                        <span aria-hidden="true">·</span>
-                        <span>{p.subject}</span>
+                      <div className="flex items-center justify-between gap-2 text-xs text-slate-500 mb-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-emerald-700">{p.category}</span>
+                          <span aria-hidden="true">·</span>
+                          <span className="font-semibold text-slate-700">{p.form}</span>
+                          <span aria-hidden="true">·</span>
+                          <span>{p.subject}</span>
+                        </div>
+                        <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-[10px]">
+                          PDF Ready ✓
+                        </span>
                       </div>
                       <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
                         <span>{getSubjectIcon(p.subject)}</span>
@@ -5070,9 +5423,52 @@ export default function App() {
                       </button>
                     </div>
                   </article>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            )}
+
+            {/* Collapsed "Coming Soon" Section for Unuploaded TIE Books */}
+            {upcomingPlaceholderBooks.length > 0 && showUpcomingBooks && (
+              <div className="space-y-3 pt-4 border-t border-slate-200">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-black text-slate-700">
+                    ⏳ Upcoming TIE Curriculum Books — Coming Soon ({upcomingPlaceholderBooks.length})
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setShowUpcomingBooks(false)}
+                    className="text-xs font-bold text-slate-500 hover:text-slate-800 cursor-pointer"
+                  >
+                    Collapse ▲
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {upcomingPlaceholderBooks.map((p) => (
+                    <article
+                      key={p.id}
+                      className="bg-white/80 p-4 rounded-2xl border border-slate-200 flex items-center justify-between gap-3"
+                    >
+                      <div className="min-w-0">
+                        <div className="text-[11px] font-semibold text-slate-500">
+                          {p.form} · {p.subject}
+                        </div>
+                        <h4 className="text-xs sm:text-sm font-bold text-slate-800 truncate">
+                          {getSubjectIcon(p.subject)} {p.title}
+                        </h4>
+                      </div>
+                      <a
+                        href={getRequestPaperWhatsAppUrl(p.form, p.subject, p.title)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold text-[11px] whitespace-nowrap shrink-0"
+                      >
+                        📩 Request Book
+                      </a>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </motion.div>
       )}
@@ -5151,39 +5547,79 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between text-xs font-medium text-slate-500 pt-2 border-t border-slate-100 tabular-nums">
-                <span>
-                  {dedicatedSyllabuses.length} Official {dedicatedSyllabuses.length === 1 ? 'Syllabus' : 'Syllabuses'}{' '}
-                  Found
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-medium text-slate-500 pt-2 border-t border-slate-100 tabular-nums">
+                <span className="font-bold text-amber-900">
+                  ✅ {availableUploadedSyllabuses.length} Official Uploaded Syllabuses Ready for Download
                 </span>
+                {upcomingPlaceholderSyllabuses.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowUpcomingSyllabuses((prev) => !prev)}
+                    className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
+                  >
+                    {showUpcomingSyllabuses
+                      ? `🙈 Hide Coming Soon Syllabuses (${upcomingPlaceholderSyllabuses.length})`
+                      : `⏳ Show Coming Soon Syllabuses (${upcomingPlaceholderSyllabuses.length})`}
+                  </button>
+                )}
               </div>
             </div>
 
-            {dedicatedSyllabuses.length === 0 ? (
-              <div className="py-12 text-center bg-white rounded-3xl border border-slate-200 p-6 space-y-3">
+            {availableUploadedSyllabuses.length === 0 && !showUpcomingSyllabuses ? (
+              <div className="py-10 text-center bg-white rounded-3xl border border-slate-200 p-6 space-y-3">
                 <h3 className="text-base font-bold text-slate-900">
-                  Syllabuses Will Appear Here Once Uploaded to Your Google Sheet
+                  Official TIE Competence-Based Syllabuses
                 </h3>
                 <p className="text-xs text-slate-500 max-w-md mx-auto">
-                  Add rows to your Google Sheet with Category set to <strong>TIE Syllabus</strong> and your Google Drive
-                  link.
+                  You can view all interactive syllabus topics inside <strong>Moha AI Tutor</strong> or click below to browse upcoming syllabus placeholders.
                 </p>
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  {upcomingPlaceholderSyllabuses.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowUpcomingSyllabuses(true)}
+                      className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl cursor-pointer"
+                    >
+                      ⏳ View All {upcomingPlaceholderSyllabuses.length} Curriculum Syllabus Subjects
+                    </button>
+                  )}
+                  <a
+                    href={getRequestPaperWhatsAppUrl('Secondary', syllabusSearchQuery || 'TIE Syllabus', 'TIE Syllabus PDF')}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 bg-slate-900 text-white font-bold text-xs rounded-xl"
+                  >
+                    📩 Request Syllabus PDF on WhatsApp
+                  </a>
+                </div>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {dedicatedSyllabuses.map((p) => {
+                {(showUpcomingSyllabuses ? dedicatedSyllabuses : availableUploadedSyllabuses).map((p) => {
+                  const hasUrl = Boolean(p.paperUrl);
                   return (
                     <article
                       key={p.id}
                       className="bg-white p-5 rounded-2xl border border-amber-200 hover:border-amber-500 shadow-sm flex flex-col justify-between gap-4"
                     >
                       <div>
-                        <div className="flex items-center gap-2 text-xs text-slate-500 mb-1.5 tabular-nums">
-                          <span className="font-bold text-amber-800">{p.category}</span>
-                          <span aria-hidden="true">·</span>
-                          <span>{p.form}</span>
-                          <span aria-hidden="true">·</span>
-                          <span>{p.year}</span>
+                        <div className="flex items-center justify-between gap-2 text-xs text-slate-500 mb-1.5 tabular-nums">
+                          <div>
+                            <span className="font-bold text-amber-800">{p.category}</span>
+                            <span aria-hidden="true"> · </span>
+                            <span>{p.form}</span>
+                            <span aria-hidden="true"> · </span>
+                            <span>{p.year}</span>
+                          </div>
+                          <span
+                            className={`px-2 py-0.5 rounded-md font-bold text-[10px] ${
+                              hasUrl
+                                ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                                : 'bg-amber-50 text-amber-800 border border-amber-200'
+                            }`}
+                          >
+                            {hasUrl ? 'PDF Ready ✓' : 'Coming Soon'}
+                          </span>
                         </div>
                         <h3 className="text-base font-bold text-slate-900">{p.title}</h3>
                         <p className="text-xs font-medium text-slate-500 mt-1">
@@ -5191,20 +5627,33 @@ export default function App() {
                         </p>
                       </div>
                       <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-slate-100">
-                        <button
-                          onClick={() => openViewer(p.id, 'paper')}
-                          className="flex-1 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
-                        >
-                          <BookOpen className="w-3.5 h-3.5" />
-                          <span>Read</span>
-                        </button>
-                        <button
-                          onClick={() => triggerDirectDownloadUrl(p.paperUrl, `${p.title}.pdf`)}
-                          className="flex-1 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm whitespace-nowrap cursor-pointer"
-                        >
-                          <Download className="w-3.5 h-3.5" />
-                          <span>Download</span>
-                        </button>
+                        {hasUrl ? (
+                          <>
+                            <button
+                              onClick={() => openViewer(p.id, 'paper')}
+                              className="flex-1 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
+                            >
+                              <BookOpen className="w-3.5 h-3.5" />
+                              <span>Read</span>
+                            </button>
+                            <button
+                              onClick={() => triggerDirectDownloadUrl(p.paperUrl, `${p.title}.pdf`)}
+                              className="flex-1 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm whitespace-nowrap cursor-pointer"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                              <span>Download</span>
+                            </button>
+                          </>
+                        ) : (
+                          <a
+                            href={getRequestPaperWhatsAppUrl(p.form, p.subject, p.title)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-1 px-3.5 py-2 bg-amber-50 hover:bg-amber-100 text-amber-950 border border-amber-300 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 whitespace-nowrap"
+                          >
+                            <span>📩 Request Syllabus on WhatsApp</span>
+                          </a>
+                        )}
                       </div>
                     </article>
                   );
@@ -5884,7 +6333,7 @@ export default function App() {
                 </h3>
               </div>
 
-              <div className="flex items-center gap-1.5 shrink-0">
+              <div className="flex flex-wrap items-center gap-1.5 shrink-0">
                 {viewerPaper.paperUrl && viewerPaper.answersUrl && (
                   <div className="flex items-center bg-slate-200 p-0.5 rounded-xl">
                     <button
@@ -5911,6 +6360,19 @@ export default function App() {
                     </button>
                   </div>
                 )}
+                <a
+                  href={
+                    (viewerType === 'answers' && viewerPaper.answersUrl
+                      ? viewerPaper.answersUrl
+                      : viewerPaper.paperUrl) || '#'
+                  }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl inline-flex items-center gap-1 shadow-xs"
+                  title="Open fullscreen in Google Drive or mobile browser if preview is blocked"
+                >
+                  <span>Open Fullscreen in Drive / Browser ↗</span>
+                </a>
                 <button
                   onClick={() => setViewerPaper(null)}
                   className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl cursor-pointer"
@@ -5922,9 +6384,22 @@ export default function App() {
 
             <div className="flex-grow bg-slate-100 relative">
               {viewerLoading && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-white z-10">
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-white z-10 p-4 text-center">
                   <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-2"></div>
-                  <p className="text-xs font-bold text-slate-500">Loading PDF document...</p>
+                  <p className="text-xs font-bold text-slate-600 mb-3">Loading PDF document preview...</p>
+                  <a
+                    href={
+                      (viewerType === 'answers' && viewerPaper.answersUrl
+                        ? viewerPaper.answersUrl
+                        : viewerPaper.paperUrl) || '#'
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-sm"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>Taking too long on mobile? Open Fullscreen in Drive / Browser ↗</span>
+                  </a>
                 </div>
               )}
               <iframe
@@ -6215,15 +6690,51 @@ export default function App() {
                   </svg>
                   <span>WhatsApp</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setDarkMode((prev) => !prev)}
-                  className="px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-bold whitespace-nowrap bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer flex items-center gap-1 shrink-0"
-                  title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                <div
+                  role="group"
+                  aria-label="Theme Selector"
+                  className="inline-flex items-center p-0.5 rounded-lg bg-slate-100 border border-slate-300 shrink-0"
                 >
-                  {darkMode ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-slate-700" />}
-                  <span className="hidden sm:inline">{darkMode ? 'Light' : 'Dark'}</span>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => selectThemeMode('light')}
+                    className={`px-2 py-1 rounded-md text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors ${
+                      themeMode === 'light'
+                        ? 'bg-violet-600 text-white shadow-2xs'
+                        : 'text-slate-700 hover:text-slate-900'
+                    }`}
+                    title="Light Mode"
+                  >
+                    <Sun className="w-3 h-3 shrink-0" />
+                    <span className="hidden md:inline">Light</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => selectThemeMode('dark')}
+                    className={`px-2 py-1 rounded-md text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors ${
+                      themeMode === 'dark'
+                        ? 'bg-violet-600 text-white shadow-2xs'
+                        : 'text-slate-700 hover:text-slate-900'
+                    }`}
+                    title="Dark Mode"
+                  >
+                    <Moon className="w-3 h-3 shrink-0" />
+                    <span className="hidden md:inline">Dark</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => selectThemeMode('system')}
+                    className={`px-2 py-1 rounded-md text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors ${
+                      themeMode === 'system'
+                        ? 'bg-violet-600 text-white shadow-2xs'
+                        : 'text-slate-700 hover:text-slate-900'
+                    }`}
+                    title="System Default"
+                  >
+                    <Monitor className="w-3 h-3 shrink-0" />
+                    <span className="hidden md:inline">System</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -7530,6 +8041,88 @@ export default function App() {
                   </div>
                 </div>
 
+                {/* Appearance & Theme Selector (Midnight Plum Light / Dark / System Default) */}
+                <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 space-y-3 text-xs">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <div className="font-bold text-slate-900 text-sm">
+                        Appearance &amp; Theme Preference (Midnight Plum Edition)
+                      </div>
+                      <p className="text-slate-500 text-xs mt-0.5">
+                        Choose between Light Mode, Dark Mode, or System Default. Changes apply immediately and persist across sessions.
+                      </p>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-lg bg-amber-400 text-white font-black text-[11px]">
+                      Active: {themeMode === 'system' ? `System Default (${darkMode ? 'Dark' : 'Light'})` : themeMode === 'dark' ? 'Dark Mode' : 'Light Mode'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => selectThemeMode('light')}
+                      className={`p-3.5 rounded-xl border text-left flex items-center justify-between gap-3 cursor-pointer transition-all ${
+                        themeMode === 'light'
+                          ? 'bg-violet-600 text-white border-violet-600 shadow-sm'
+                          : 'bg-slate-50 hover:bg-slate-100 text-slate-800 border-slate-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Sun className="w-4 h-4 shrink-0" />
+                        <div>
+                          <div className="font-black text-xs">Light Mode</div>
+                          <div className={`text-[11px] ${themeMode === 'light' ? 'opacity-90' : 'text-slate-500'}`}>
+                            Soft White &amp; Royal Violet
+                          </div>
+                        </div>
+                      </div>
+                      {themeMode === 'light' && <CheckCircle2 className="w-4 h-4 shrink-0" />}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => selectThemeMode('dark')}
+                      className={`p-3.5 rounded-xl border text-left flex items-center justify-between gap-3 cursor-pointer transition-all ${
+                        themeMode === 'dark'
+                          ? 'bg-violet-600 text-white border-violet-600 shadow-sm'
+                          : 'bg-slate-50 hover:bg-slate-100 text-slate-800 border-slate-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Moon className="w-4 h-4 shrink-0" />
+                        <div>
+                          <div className="font-black text-xs">Dark Mode</div>
+                          <div className={`text-[11px] ${themeMode === 'dark' ? 'opacity-90' : 'text-slate-500'}`}>
+                            Deep Night Plum &amp; Lavender
+                          </div>
+                        </div>
+                      </div>
+                      {themeMode === 'dark' && <CheckCircle2 className="w-4 h-4 shrink-0" />}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => selectThemeMode('system')}
+                      className={`p-3.5 rounded-xl border text-left flex items-center justify-between gap-3 cursor-pointer transition-all ${
+                        themeMode === 'system'
+                          ? 'bg-violet-600 text-white border-violet-600 shadow-sm'
+                          : 'bg-slate-50 hover:bg-slate-100 text-slate-800 border-slate-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Monitor className="w-4 h-4 shrink-0" />
+                        <div>
+                          <div className="font-black text-xs">System Default</div>
+                          <div className={`text-[11px] ${themeMode === 'system' ? 'opacity-90' : 'text-slate-500'}`}>
+                            Follows Device ({systemPrefersDark ? 'Dark' : 'Light'})
+                          </div>
+                        </div>
+                      </div>
+                      {themeMode === 'system' && <CheckCircle2 className="w-4 h-4 shrink-0" />}
+                    </button>
+                  </div>
+                </div>
+
                 {/* Summary KPI Strip */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 tabular-nums">
                   <div className="bg-white p-4 rounded-2xl border border-slate-200">
@@ -7781,7 +8374,7 @@ export default function App() {
         </div>
       )}
 
-      {/* GOOGLE ADSENSE & LEGAL COMPLIANCE MODAL (PRIVACY POLICY / TERMS OF SERVICE / ABOUT) */}
+      {/* GOOGLE ADSENSE & LEGAL COMPLIANCE MODAL (PRIVACY POLICY / TERMS OF SERVICE / DISCLAIMER / ABOUT) */}
       {legalModalType && (
         <div
           className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4"
@@ -7791,14 +8384,53 @@ export default function App() {
             className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 border border-slate-200 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto text-slate-700 text-xs sm:text-sm leading-relaxed"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between gap-3 border-b border-slate-200 pb-3">
-              <h2 className="text-lg sm:text-xl font-black text-slate-900">
-                {legalModalType === 'privacy'
-                  ? 'Privacy Policy — Elimika Tanzania'
-                  : legalModalType === 'terms'
-                  ? 'Terms of Service — Elimika Tanzania'
-                  : 'About Elimika Tanzania & Contact'}
-              </h2>
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setLegalModalType('privacy')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer ${
+                    legalModalType === 'privacy'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  🔒 Privacy Policy
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLegalModalType('terms')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer ${
+                    legalModalType === 'terms'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  📋 Terms of Service
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLegalModalType('disclaimer')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer ${
+                    legalModalType === 'disclaimer'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  ⚖️ Disclaimer
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLegalModalType('about')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer ${
+                    legalModalType === 'about'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  🏛️ About &amp; Contact
+                </button>
+              </div>
               <button
                 onClick={() => setLegalModalType(null)}
                 className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs cursor-pointer"
@@ -7810,31 +8442,41 @@ export default function App() {
             {legalModalType === 'privacy' && (
               <div className="space-y-3">
                 <p>
-                  <strong>Effective Date:</strong> January 1, 2026
+                  <strong>Effective Date:</strong> January 1, 2026 · <strong>Publisher ID:</strong>{' '}
+                  <code>ca-pub-7502193981138651</code>
                 </p>
                 <p>
-                  At <strong>Elimika Tanzania</strong>, we respect and protect the privacy of all students, teachers, and visitors using our educational web platform. This Privacy Policy explains how information is handled when you browse Past Papers, TIE Books, Official Syllabuses, and Moha AI Teacher Tools.
+                  At <strong>Elimika Tanzania</strong> (<code>https://elimika.online</code>), we respect and protect the privacy of all students, teachers, and parents using our educational platform. This Privacy Policy explains how information is handled when you browse Past Papers, TIE Books, Official Syllabuses, and Teacher Tools.
                 </p>
-                <h3 className="font-bold text-slate-900">1. Information Stored Locally</h3>
+                <h3 className="font-bold text-slate-900">1. Google AdSense &amp; DoubleClick DART Cookie Disclosure</h3>
                 <p>
-                  Elimika uses your browser&apos;s <code>localStorage</code> to save your preferred class level, quiz progress, teacher document metadata, and custom notes added via the <strong>Teach AI</strong> feature. This data stays on your device and can be cleared by you at any time.
-                </p>
-                <h3 className="font-bold text-slate-900">2. Cookies &amp; Google AdSense Compliance</h3>
-                <p>
-                  Third-party vendors, including Google, use cookies to serve ads based on a user&apos;s prior visits to this website or other websites. Google&apos;s use of advertising cookies enables it and its partners to serve ads to users based on their visit to Elimika and/or other sites on the Internet. Users may opt out of personalized advertising by visiting{' '}
+                  Third-party vendors, including <strong>Google (Google AdSense)</strong>, use cookies (such as the DoubleClick DART cookie) to serve ads based on a user&apos;s prior visits to <code>https://elimika.online</code> or other websites on the internet. Google&apos;s use of advertising cookies enables it and its partners to serve relevant educational and general ads to our users based on their visit to Elimika Tanzania and/or other sites on the Internet. Users may opt out of personalized advertising at any time by visiting{' '}
                   <a
                     href="https://www.google.com/settings/ads"
                     target="_blank"
                     rel="noreferrer"
                     className="text-blue-600 underline font-semibold"
                   >
-                    Google Ads Settings
+                    Google Ads Settings (https://www.google.com/settings/ads)
+                  </a>{' '}
+                  or{' '}
+                  <a
+                    href="https://www.aboutads.info/choices/"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-blue-600 underline font-semibold"
+                  >
+                    www.aboutads.info
                   </a>
                   .
                 </p>
-                <h3 className="font-bold text-slate-900">3. Educational Resources &amp; Third-Party Links</h3>
+                <h3 className="font-bold text-slate-900">2. Information Stored Locally</h3>
                 <p>
-                  Our library links to publicly accessible educational PDFs hosted on Google Drive for curriculum study and revision. We do not sell, rent, or trade personal user data to third parties.
+                  Elimika uses your browser&apos;s <code>localStorage</code> to save your preferred theme mode (Light Mode, Dark Mode, or System Default), preferred class level, quiz progress, and offline print basket. This data stays on your device and can be cleared by you at any time.
+                </p>
+                <h3 className="font-bold text-slate-900">3. Educational Resources &amp; Student Safety</h3>
+                <p>
+                  Our library links to publicly accessible educational PDFs for curriculum study and revision. We do not knowingly collect personal financial or sensitive data from students, and we never sell, rent, or trade user data to third parties.
                 </p>
               </div>
             )}
@@ -7849,30 +8491,55 @@ export default function App() {
                 </p>
                 <h3 className="font-bold text-slate-900">1. Educational Use Only</h3>
                 <p>
-                  All Past Papers, Marking Schemes, TIE Textbooks, Official Syllabuses, and AI-generated Lesson Plans or Schemes of Work provided on Elimika are intended strictly for educational, classroom teaching, and examination revision purposes in accordance with Tanzania Institute of Education (TIE) and NECTA guidelines.
+                  All Past Papers, Marking Schemes, TIE Textbooks, Official Syllabuses, and Lesson Plans or Schemes of Work provided on Elimika are intended strictly for educational, classroom teaching, and examination revision purposes in accordance with Tanzania Institute of Education (TIE) and NECTA guidelines.
                 </p>
                 <h3 className="font-bold text-slate-900">2. User Conduct &amp; Content</h3>
                 <p>
-                  Teachers and students using Moha AI, Quiz Challenges, or the Teacher Document Studio agree to use the tools responsibly for academic growth. Automated scraping or redistribution of the platform code for commercial resale is prohibited.
+                  Teachers and students using Elimika agree to use the resources responsibly for academic growth. Packaging or reselling free public curriculum textbooks or past papers for commercial profit is prohibited.
                 </p>
                 <h3 className="font-bold text-slate-900">3. Disclaimer of Warranties</h3>
                 <p>
-                  While Elimika strives to keep all curriculum materials, worked solutions, and generated teacher documents accurate and aligned with current PO-RALG and TIE standards, materials are provided &ldquo;as is&rdquo; and teachers should review generated lesson plans and schemes for their specific school calendar.
+                  While Elimika strives to keep all curriculum materials, worked solutions, and teacher documents accurate and aligned with current MoEST, PO-RALG, and TIE standards, materials are provided &ldquo;as is&rdquo; for educational reference.
                 </p>
+              </div>
+            )}
+
+            {legalModalType === 'disclaimer' && (
+              <div className="space-y-3">
+                <p>
+                  <strong>Academic &amp; Intellectual Property Disclaimer</strong>
+                </p>
+                <p>
+                  <strong>Elimika Tanzania</strong> is an independent digital educational library created to support students and teachers across the United Republic of Tanzania.
+                </p>
+                <ul className="list-disc pl-5 space-y-1.5">
+                  <li>
+                    <strong>NECTA Examinations:</strong> Past national examination papers (PSLE, SFNA, FTNA, CSEE, ACSEE) and marking schemes are historical assessment materials administered by the <strong>National Examinations Council of Tanzania (NECTA)</strong>.
+                  </li>
+                  <li>
+                    <strong>TIE Curriculum Materials:</strong> Official textbooks and national syllabuses are the property of the <strong>Tanzania Institute of Education (TIE)</strong> under the Ministry of Education, Science and Technology, provided here strictly for free non-commercial classroom and home study.
+                  </li>
+                  <li>
+                    <strong>Inquiries &amp; Attribution:</strong> For any copyright or attribution inquiries, contact our editorial desk at <code>support@elimika.online</code>.
+                  </li>
+                </ul>
               </div>
             )}
 
             {legalModalType === 'about' && (
               <div className="space-y-3">
                 <p>
-                  <strong>Elimika Tanzania</strong> is a comprehensive digital learning and teacher productivity platform built for Primary (Standard 1–7), Ordinary Secondary (Form 1–4), and Advanced Secondary (Form 5–6) schools across Tanzania.
+                  <strong>Elimika Tanzania</strong> (<code>https://elimika.online</code>) is a comprehensive digital learning and teacher productivity platform built for Primary (Standard 1–7), Ordinary Secondary (Form 1–4), and Advanced Secondary (Form 5–6) schools across Tanzania.
                 </p>
                 <p>
-                  <strong>Key Features:</strong> Official TIE Textbooks, Syllabuses, NECTA Past Examination Papers, Interactive 3D Virtual Science Labs, Daily Solving Quizzes, and Moha AI with instant 4-Stage TIE Lesson Plan and 12-Column PO-RALG Scheme of Work PDF generation.
+                  <strong>Our Mission:</strong> To ensure every Tanzanian student and teacher has instant, zero-cost access to official TIE textbooks, national syllabuses, NECTA past examination papers, worked marking schemes, and competency-based revision guides on any phone or computer.
                 </p>
-                <p>
-                  <strong>Contact &amp; Support:</strong> For curriculum inquiries, resource contributions, or school partnerships, contact the Elimika Academic Desk at <code>support@elimika.ac.tz</code>.
-                </p>
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
+                  <div className="font-bold text-slate-900">📬 Official Contact &amp; Editorial Desk</div>
+                  <div><strong>Location:</strong> Dar es Salaam, United Republic of Tanzania</div>
+                  <div><strong>Official Email:</strong> <code>support@elimika.online</code> / <code>support@elimika.ac.tz</code></div>
+                  <div><strong>Phone &amp; WhatsApp Support:</strong> <code>+255689511868</code></div>
+                </div>
               </div>
             )}
           </div>
@@ -8398,6 +9065,23 @@ export default function App() {
                         className="w-full px-3 py-2 rounded-xl border border-slate-300 font-medium"
                       />
                     </div>
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">
+                        Support / Stationery WhatsApp Number (for &ldquo;Request a Missing Paper&rdquo;, e.g. +255689511868)
+                      </label>
+                      <input
+                        type="text"
+                        value={whatsappConfig.supportWhatsappNumber}
+                        onChange={(e) =>
+                          setWhatsappConfig((prev) => ({
+                            ...prev,
+                            supportWhatsappNumber: e.target.value.replace(/[^0-9]/g, ''),
+                          }))
+                        }
+                        placeholder="255689511868"
+                        className="w-full px-3 py-2 rounded-xl border border-slate-300 font-mono"
+                      />
+                    </div>
                   </div>
 
                   <div className="flex items-center justify-end gap-2 pt-1">
@@ -8406,7 +9090,7 @@ export default function App() {
                       onClick={() => saveWhatsappConfig(whatsappConfig)}
                       className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold cursor-pointer"
                     >
-                      💾 Save WhatsApp Channel
+                      💾 Save WhatsApp Channel &amp; Support Number
                     </button>
                   </div>
                 </div>
@@ -8493,6 +9177,52 @@ export default function App() {
                           <span>⬇️ Download ads.txt (for elimika.online)</span>
                         </a>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* FULL UPDATED ELIMIKA WEBSITE HTML EXPORT (ADMIN ONLY) */}
+                  <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-2.5">
+                    <div className="font-black text-emerald-950 text-xs flex items-center justify-between gap-2">
+                      <span>🌐 Complete Updated Elimika Website Code (index.html)</span>
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-900 text-[10px] font-extrabold">
+                        Google AdSense Verification Ready ✓
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-emerald-900 leading-relaxed">
+                      Download or copy your complete standalone <code>index.html</code> for <strong>https://elimika.online</strong> with all Google AdSense verification requirements built in: <code>ca-pub-7502193981138651</code> meta &amp; script tags, rich crawlable static NECTA &amp; TIE Curriculum Study Guides (so AdSense bots never flag &ldquo;Low Value / Thin Content&rdquo;), Privacy Policy with DoubleClick DART cookie disclosure, Terms of Service, Academic Disclaimer, About &amp; Contact modal, Cookie Consent banner, Midnight Plum Light/Dark/System theme switcher, and all 105 TIE Books.
+                    </p>
+                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                      <a
+                        href="/elimika-tanzania-website.html"
+                        download="index.html"
+                        className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs inline-flex items-center gap-1.5 shadow-sm"
+                      >
+                        <span>⬇️ Download Updated index.html</span>
+                      </a>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            const res = await fetch('/elimika-tanzania-website.html');
+                            const htmlText = await res.text();
+                            await navigator.clipboard.writeText(htmlText);
+                            showToast('✅ Full updated website index.html code copied to clipboard!');
+                          } catch {
+                            showToast('⚠️ Could not copy automatically — click "Download Updated index.html".');
+                          }
+                        }}
+                        className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs inline-flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <span>📋 Copy Full Website HTML Code</span>
+                      </button>
+                      <a
+                        href="/elimika-tanzania-website.html"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-3 py-2 rounded-xl bg-white hover:bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold text-xs inline-flex items-center gap-1"
+                      >
+                        <span>↗ View Raw Website File</span>
+                      </a>
                     </div>
                   </div>
                 </div>
@@ -8582,9 +9312,108 @@ export default function App() {
         );
       })()}
 
-      {/* GET ELIMIKA APP INSTALLATION SECTION & FOOTER */}
+      {/* COOKIE & GOOGLE ADSENSE PRIVACY CONSENT BANNER */}
+      {!cookieConsentAccepted && (
+        <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-5 sm:max-w-md z-40 bg-white border border-slate-300 rounded-2xl shadow-2xl p-4">
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black text-slate-900">🍪 Privacy &amp; Google AdSense Notice</span>
+              <button
+                type="button"
+                onClick={() => {
+                  try {
+                    localStorage.setItem('elimika_cookie_consent', 'accepted');
+                  } catch {
+                    // ignore
+                  }
+                  setCookieConsentAccepted(true);
+                }}
+                className="text-xs text-slate-400 font-bold cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="text-[11px] text-slate-600 leading-relaxed">
+              We use cookies and Google AdSense to keep Elimika Tanzania 100% free for students and teachers, and to remember your Light/Dark theme preferences. Read our{' '}
+              <button
+                type="button"
+                onClick={() => setLegalModalType('privacy')}
+                className="text-blue-600 font-bold underline cursor-pointer"
+              >
+                Privacy Policy
+              </button>{' '}
+              for details.
+            </p>
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  try {
+                    localStorage.setItem('elimika_cookie_consent', 'accepted');
+                  } catch {
+                    // ignore
+                  }
+                  setCookieConsentAccepted(true);
+                }}
+                className="flex-1 py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs cursor-pointer"
+              >
+                Accept &amp; Continue
+              </button>
+              <button
+                type="button"
+                onClick={() => setLegalModalType('privacy')}
+                className="py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
+              >
+                Learn More
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* GET ELIMIKA APP INSTALLATION SECTION, EDITORIAL STUDY GUIDES & FOOTER */}
       {activePage !== 'moha' && activePage !== 'game' && (
         <>
+          <section id="editorial-curriculum-guide" className="py-10 bg-white border-t border-slate-200">
+            <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-6">
+              <div className="text-center max-w-3xl mx-auto space-y-2">
+                <span className="inline-block px-3 py-1 rounded-lg bg-blue-50 text-blue-700 font-extrabold text-[11px] uppercase tracking-wider border border-blue-200">
+                  Tanzania National Curriculum &amp; Examination Reference Guide
+                </span>
+                <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                  Comprehensive Guide to NECTA Examinations, Official TIE Textbooks &amp; Competency-Based Revision
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                  Structured academic guidance for Primary School (Standard 1–7 SFNA &amp; PSLE), Ordinary Secondary (Form 1–4 FTNA &amp; CSEE), and Advanced Secondary (Form 5–6 ACSEE) candidates and educators across Tanzania.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <article className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                  <div className="text-xs font-extrabold uppercase tracking-wider text-blue-700">Primary Education · Standard 1–7</div>
+                  <h3 className="text-sm sm:text-base font-black text-slate-900">SFNA (Standard 4) &amp; PSLE (Standard 7)</h3>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Builds core numeracy, literacy, and scientific foundations under the Tanzania Institute of Education (TIE) syllabus. Practicing past NECTA papers strengthens multiple-choice precision and structured problem solving in Mathematics, Science and Technology, English, Kiswahili, Social Studies, and Civic and Moral Education.
+                  </p>
+                </article>
+                <article className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                  <div className="text-xs font-extrabold uppercase tracking-wider text-blue-700">Ordinary Level · Form 1–4</div>
+                  <h3 className="text-sm sm:text-base font-black text-slate-900">FTNA (Form 2) &amp; CSEE (Form 4) Mastery</h3>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Covers core and elective subjects from Form 1 to Form 4. Combining official TIE student textbooks with NECTA Paper 1 theory and Paper 2 laboratory practical marking schemes prepares candidates for top divisions in the Certificate of Secondary Education Examination (CSEE).
+                  </p>
+                </article>
+                <article className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                  <div className="text-xs font-extrabold uppercase tracking-wider text-blue-700">Advanced Level · Form 5–6</div>
+                  <h3 className="text-sm sm:text-base font-black text-slate-900">ACSEE Subject Combinations</h3>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Supports Science (PCM, PCB, PGM, CBG), Business (EGM, ECA), and Humanities (HGL, HGK, HKL) combinations alongside General Studies and Basic Applied Mathematics (BAM) for university degree preparation.
+                  </p>
+                </article>
+              </div>
+            </div>
+          </section>
+
           <GetElimikaAppSection />
           <footer className="bg-slate-900 text-slate-400 py-8 border-t border-slate-800 text-xs text-center mt-auto">
             <div className="max-w-5xl mx-auto px-4 space-y-4">
@@ -8651,15 +9480,30 @@ export default function App() {
                   </button>
                   <button
                     type="button"
+                    onClick={() => setLegalModalType('disclaimer')}
+                    className="hover:text-white underline underline-offset-4 cursor-pointer"
+                  >
+                    Disclaimer
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => setLegalModalType('about')}
                     className="hover:text-white underline underline-offset-4 cursor-pointer"
                   >
                     About &amp; Contact
                   </button>
+                  <a
+                    href="/ads.txt"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="hover:text-white underline underline-offset-4"
+                  >
+                    ads.txt
+                  </a>
                 </div>
               </div>
               <div className="pt-3 border-t border-slate-800/80 text-[11px] text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2">
-                <span>© {new Date().getFullYear()} Elimika Tanzania. All rights reserved.</span>
+                <span>© {new Date().getFullYear()} Elimika Tanzania · Contact: +255689511868 · All rights reserved.</span>
                 <span>100% English Interface · TIE &amp; NECTA Curriculum Aligned</span>
               </div>
             </div>
