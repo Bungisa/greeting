@@ -337,7 +337,9 @@ html.dark .bg-white {
 
 html.dark .bg-white\/95,
 html.dark .bg-white\/90,
-html.dark .bg-white\/80 {
+html.dark .bg-white\/80,
+html.dark .bg-white\/90,
+html.dark .bg-white\/95 {
   background-color: var(--bg-surface-glass) !important;
 }
 
@@ -363,7 +365,9 @@ html.dark .bg-slate-800 {
 html.dark .bg-slate-100,
 html.dark .bg-slate-100\/80,
 html.dark .bg-slate-100\/90,
-html.dark .bg-slate-50\/90 {
+html.dark .bg-slate-50\/90,
+html.dark .bg-slate-50\/80,
+html.dark .bg-slate-50\/70 {
   background-color: var(--bg-elevated) !important;
 }
 
@@ -374,16 +378,27 @@ html.dark .hover\:bg-slate-100:hover {
   background-color: var(--bg-subtle) !important;
 }
 
-html.dark .from-white {
-  --tw-gradient-from: var(--bg-surface) !important;
+html.dark .from-white,
+html.dark .from-slate-50,
+html.dark .from-violet-50,
+html.dark .from-blue-50,
+html.dark .from-emerald-50 {
+  --tw-gradient-from: #24132F !important;
+  --tw-gradient-via: #1D1226 !important;
+  --tw-gradient-to: #18101F !important;
+  background-image: linear-gradient(135deg, #24132F 0%, #1D1226 50%, #18101F 100%) !important;
 }
 
-html.dark .via-slate-50 {
-  --tw-gradient-via: var(--bg-canvas) !important;
+html.dark .via-slate-50,
+html.dark .via-white {
+  --tw-gradient-via: #1D1226 !important;
 }
 
-html.dark .to-slate-100 {
-  --tw-gradient-to: var(--bg-elevated) !important;
+html.dark .to-slate-100,
+html.dark .to-blue-50,
+html.dark .to-emerald-50,
+html.dark .to-white {
+  --tw-gradient-to: #18101F !important;
 }
 
 /* Primary & Secondary Text in Dark Mode */

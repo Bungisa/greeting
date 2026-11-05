@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>INFORMATION AND COMPUTER STUDIES — FORM ONE QUESTION BANK (ELIMIKA.ONLINE)</title>
+  
+  <!-- MathJax Configuration & Engine -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        processEscapes: true
+      },
+      svg: {
+        fontCache: 'global'
+      }
+    };
+  </script>
+  <script type="text/javascript" id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js">
+  </script>
+
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 15mm 15mm 28mm 15mm;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      background-color: #f1f5f9;
+      color: #000000;
+      font-family: "Times New Roman", Times, "Liberation Serif", serif;
+      font-size: 12pt;
+      line-height: 1.45;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    body {
+      padding: 20px 10px;
+    }
+
+    .paper-sheet {
+      background: #ffffff;
+      max-width: 210mm;
+      margin: 0 auto 30px auto;
+      padding: 18mm 18mm 25mm 18mm;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      border: 1px solid #cbd5e1;
+      position: relative;
+      overflow: visible;
+    }
+
+    .watermark {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-35deg);
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 5.5rem;
+      font-weight: 800;
+      color: rgba(30, 58, 138, 0.07);
+      letter-spacing: 0.12em;
+      text-transform: lowercase;
+      pointer-events: none;
+      user-select: none;
+      z-index: 1000;
+      white-space: nowrap;
+      display: block;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #000000;
+      padding-bottom: 4pt;
+      margin-bottom: 12pt;
+      font-size: 10.5pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .exam-heading {
+      text-align: center;
+      margin-bottom: 12pt;
+      position: relative;
+      z-index: 2;
+    }
+
+    .exam-heading .code-left {
+      font-size: 14pt;
+      font-weight: bold;
+      float: left;
+    }
+
+    .exam-heading h1 {
+      font-size: 13.5pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      margin: 2pt 0;
+    }
+
+    .exam-heading h2 {
+      font-size: 12.5pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      margin: 2pt 0;
+    }
+
+    .exam-heading h3 {
+      font-size: 13.5pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      margin: 4pt 0 2pt 0;
+    }
+
+    .exam-heading .scheme-title {
+      font-size: 12.5pt;
+      font-weight: bold;
+      color: #1e3a8a;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 4pt;
+    }
+
+    .exam-meta-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 11.5pt;
+      font-weight: bold;
+      border-bottom: 1.5pt solid #000000;
+      border-top: 1.5pt solid #000000;
+      padding: 5pt 0;
+      margin: 10pt 0 14pt 0;
+      clear: both;
+      position: relative;
+      z-index: 2;
+    }
+
+    .exam-section-title {
+      font-size: 12.5pt;
+      font-weight: bold;
+      text-align: center;
+      text-transform: uppercase;
+      margin: 22pt 0 10pt 0;
+      border-top: 1.5pt solid #000000;
+      padding-top: 6pt;
+      position: relative;
+      z-index: 2;
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+
+    .exam-question-block {
+      margin-bottom: 16pt;
+      text-align: justify;
+      position: relative;
+      z-index: 2;
+      font-size: 12pt;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .question-stem {
+      font-weight: bold;
+      font-size: 12pt;
+      margin-bottom: 6pt;
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+
+    .sub-question {
+      margin-left: 15pt;
+      margin-top: 4pt;
+      margin-bottom: 4pt;
+    }
+
+    .svg-container {
+      margin: 12pt 0;
+      text-align: center;
+      page-break-inside: avoid;
+    }
+
+    .exam-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 8pt 0;
+      font-size: 11pt;
+    }
+
+    .exam-table th, 
+    .exam-table td {
+      border: 1pt solid #000000;
+      padding: 5pt 6.5pt;
+      vertical-align: top;
+    }
+
+    .exam-table th {
+      background-color: #f1f5f9;
+      font-weight: bold;
+      text-align: left;
+    }
+
+    a.elimika-link {
+      color: #1e3a8a;
+      text-decoration: underline;
+      font-weight: bold;
+    }
+
+    a.elimika-link:hover {
+      color: #2563eb;
+    }
+
+    .page-footer {
+      border-top: 1.5pt solid #000000;
+      margin-top: 22pt;
+      padding-top: 6pt;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      font-size: 10pt;
+      color: #334155;
+      position: relative;
+      z-index: 2;
+    }
+
+    .running-print-footer {
+      display: none;
+    }
+
+    @media print {
+      html, body {
+        background: #ffffff !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        height: auto !important;
+        font-size: 12pt !important;
+        overflow: visible !important;
+      }
+
+      .paper-sheet {
+        box-shadow: none !important;
+        border: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        max-width: 100% !important;
+        overflow: visible !important;
+      }
+
+      .no-print {
+        display: none !important;
+      }
+
+      .watermark {
+        color: rgba(30, 58, 138, 0.05) !important;
+        position: fixed !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) rotate(-35deg) !important;
+        z-index: 99999 !important;
+        display: block !important;
+      }
+
+      .page-footer {
+        display: none !important;
+      }
+      
+      .running-print-footer {
+        display: flex !important;
+        position: fixed !important;
+        bottom: 0mm !important;
+        left: 0 !important;
+        right: 0 !important;
+        height: 10mm !important;
+        border-top: 1pt solid #000000 !important;
+        background: transparent !important;
+        font-size: 9.5pt !important;
+        color: #000000 !important;
+        justify-content: flex-end !important;
+        align-items: center !important;
+        padding: 0 1mm !important;
+        z-index: 99999 !important;
+      }
+
+      .exam-question-block {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+      }
+
+      p, li, tr, td, th {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+        orphans: 3;
+        widows: 3;
+      }
+
+      h1, h2, h3, .question-stem, .exam-section-title {
+        break-after: avoid !important;
+        page-break-after: avoid !important;
+      }
+    }
+
+    .print-bar {
+      position: fixed;
+      top: 15px;
+      right: 15px;
+      z-index: 1000;
+      background: #0f172a;
+      padding: 8px 14px;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+    }
+
+    .print-btn {
+      background: #1e3a8a;
+      color: #ffffff;
+      border: none;
+      padding: 7px 15px;
+      font-size: 12px;
+      font-weight: bold;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .print-btn:hover {
+      background: #1d4ed8;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Floating Print Control (Hidden in Print) -->
+  <div class="print-bar no-print">
+    <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+  </div>
+
+  <!-- Multi-Page Print Repeating Footer -->
+  <div class="running-print-footer">
+    <span>For more visit: <a href="https://elimika.online" target="_blank" rel="noopener noreferrer" class="elimika-link">elimika.online</a></span>
+  </div>
+
+  <!-- Visible Watermark -->
+  <div class="watermark">elimika.online</div>
+
+  <div class="paper-sheet">
+
+    <!-- Top Bar -->
+    <div class="top-bar">
+      <span>TANZANIA INSTITUTE OF EDUCATION</span>
+      <span>INFORMATION AND COMPUTER STUDIES — FORM ONE QUESTION BANK</span>
+    </div>
+
+    <!-- Council & Assessment Heading -->
+    <div class="exam-heading">
+      <div class="code-left">ICT-F1</div>
+      <h1>THE UNITED REPUBLIC OF TANZANIA</h1>
+      <h2>INFORMATION AND COMPUTER STUDIES FOR SECONDARY SCHOOLS</h2>
+      <h3>FORM ONE — COMPREHENSIVE QUESTION BANK (ACTIVITIES &amp; EXERCISES)</h3>
+      <div class="scheme-title">EXTRACTED FROM STUDENT'S BOOK FORM ONE</div>
+    </div>
+
+    <!-- Metadata Bar -->
+    <div class="exam-meta-bar">
+      <span>Subject: Information and Computer Studies</span>
+      <span>Level: Form One</span>
+      <span>Publisher: Tanzania Institute of Education (TIE)</span>
+    </div>
+
+    <!-- ====================================================================
+         CHAPTER 1
+         ==================================================================== -->
+    <div class="exam-section-title">CHAPTER ONE: INTRODUCTION TO INFORMATION AND COMPUTER STUDIES</div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Activity 1.1: Information and Computer Studies</div>
+      <p>In groups, discuss how computers, smartphones and radios can be used to facilitate learning at school and home.</p>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Activity 1.2: Relationship between ICS and other subjects</div>
+      <p>Outline the usefulness of computers in learning the subjects listed in the following categories:</p>
+      <div class="sub-question">1. Language subjects (English, Kiswahili, French, Chinese)</div>
+      <div class="sub-question">2. Science subjects (Agriculture, Biology, Chemistry, Home Economics and Physics)</div>
+      <div class="sub-question">3. Mathematics</div>
+      <div class="sub-question">4. Social Studies (History, Geography and Civics)</div>
+      <div class="sub-question">5. Business (Commerce and Bookkeeping)</div>
+      <div class="sub-question">6. Creative Arts (Music, Fine art, Theatre art)</div>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Exercise 1.1</div>
+      <div class="sub-question">1. Explain why studying ICS is important.</div>
+      <div class="sub-question">2. How does ICS relate to other subjects?</div>
+    </div>
+
+
+    <!-- ====================================================================
+         CHAPTER 2
+         ==================================================================== -->
+    <div class="exam-section-title">CHAPTER TWO: DATA AND INFORMATION</div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Activity 2.1: Data and information</div>
+      <p>Identify data and information from the following list of words and justify your answers:</p>
+      <p><em>List of words:</em> result slip, student name, grade, identity card, date of birth, driving license, sex, expiry date, and salary. Discuss your answers with your fellow student.</p>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Activity 2.2: Communication media</div>
+      <div class="sub-question">1. Identify communication media devices used in the community, at home and school.</div>
+      <div class="sub-question">2. Write how each can be used to communicate information.</div>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Exercise 2.1 — Part A: Answer the following questions</div>
+      <div class="sub-question">1. What is information?</div>
+      <div class="sub-question">2. What are the differences between data and information?</div>
+      <div class="sub-question">3. Why is it important to study ICS?</div>
+      <div class="sub-question">4. How can you collect information from your grandparent?</div>
+      <div class="sub-question">5. List the traditional and modern ways of disseminating information.</div>
+      <div class="sub-question">6. Compare and contrast traditional and modern ways of disseminating information.</div>
+      <div class="sub-question">7. What are communication media?</div>
+      <div class="sub-question">8. What is the importance of communication media?</div>
+      <div class="sub-question">9. List five differences between print media and electronic media.</div>
+      <div class="sub-question">10. Describe primary and secondary sources of information.</div>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Exercise 2.1 — Part B: True or False Statements</div>
+      <div class="sub-question">11. Data can only be alphabets A-Z or a-z. [ ]</div>
+      <div class="sub-question">12. In ICS, we usually say that data are comprised of four basic types: numbers, text, images and sound. [ ]</div>
+      <div class="sub-question">13. Information refers to meaningfully processed, organised, structured or presented in a given context. [ ]</div>
+      <div class="sub-question">14. An information source is anything that might inform a person or provide knowledge about something. [ ]</div>
+      <div class="sub-question">15. Data can be described as unprocessed information. [ ]</div>
+    </div>
+
+
+    <!-- ====================================================================
+         CHAPTER 3
+         ==================================================================== -->
+    <div class="exam-section-title">CHAPTER THREE: COMPUTER EVOLUTION</div>
+
+    <div class="svg-container">
+      <!-- Vector SVG Diagram for Early Abacus / Calculating Rack -->
+      <svg width="340" height="120" viewBox="0 0 340 120" xmlns="http://www.w3.org/2000/svg">
+        <rect width="340" height="120" fill="#f8fafc" rx="6" stroke="#cbd5e1"/>
+        <rect x="30" y="20" width="280" height="80" fill="#fff" stroke="#0f172a" stroke-width="2" rx="4"/>
+        <!-- Rods -->
+        <line x1="70" y1="20" x2="70" y2="100" stroke="#334155" stroke-width="2"/>
+        <line x1="110" y1="20" x2="110" y2="100" stroke="#334155" stroke-width="2"/>
+        <line x1="150" y1="20" x2="150" y2="100" stroke="#334155" stroke-width="2"/>
+        <line x1="190" y1="20" x2="190" y2="100" stroke="#334155" stroke-width="2"/>
+        <line x1="230" y1="20" x2="230" y2="100" stroke="#334155" stroke-width="2"/>
+        <line x1="270" y1="20" x2="270" y2="100" stroke="#334155" stroke-width="2"/>
+        <!-- Dividing Beam -->
+        <line x1="30" y1="50" x2="310" y2="50" stroke="#1e3a8a" stroke-width="3"/>
+        <!-- Beads -->
+        <circle cx="70" cy="35" r="6" fill="#f59e0b"/><circle cx="70" cy="65" r="6" fill="#f59e0b"/><circle cx="70" cy="85" r="6" fill="#f59e0b"/>
+        <circle cx="110" cy="35" r="6" fill="#f59e0b"/><circle cx="110" cy="75" r="6" fill="#f59e0b"/>
+        <circle cx="150" cy="35" r="6" fill="#f59e0b"/><circle cx="150" cy="65" r="6" fill="#f59e0b"/><circle cx="150" cy="85" r="6" fill="#f59e0b"/>
+        <circle cx="190" cy="35" r="6" fill="#f59e0b"/><circle cx="190" cy="70" r="6" fill="#f59e0b"/>
+        <circle cx="230" cy="35" r="6" fill="#f59e0b"/><circle cx="230" cy="65" r="6" fill="#f59e0b"/><circle cx="230" cy="85" r="6" fill="#f59e0b"/>
+        <circle cx="270" cy="35" r="6" fill="#f59e0b"/><circle cx="270" cy="75" r="6" fill="#f59e0b"/>
+        <text x="145" y="115" font-family="Times New Roman" font-size="11" font-weight="bold">Figure 3.1: Abacus Model</text>
+      </svg>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Activity 3.1: First and second computer generations</div>
+      <div class="sub-question">1. Explain why the first generation computers were large, over-heating and power inefficient.</div>
+      <div class="sub-question">2. In a tabular form, compare the characteristics of the first generation and second generation computers.</div>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Activity 3.2: Third generation computers</div>
+      <div class="sub-question">1. Identify at least three examples of third generation computers.</div>
+      <div class="sub-question">2. In a tabular form, compare the characteristics of second and third generation computers.</div>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Activity 3.3: Fifth generation computers</div>
+      <p>Identify at least three examples of fifth generation computers and explain what they can do differently from the previous generations of computers.</p>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Exercise 3.1</div>
+      <div class="sub-question">1. Match the following items in Column A with Column B:
+        <table class="exam-table" style="margin-top: 6pt;">
+          <tr><th>Column A</th><th>Column B</th></tr>
+          <tr><td>(i) Second generation computers</td><td>(a) Very Large Scale Integration</td></tr>
+          <tr><td>(ii) Fifth generation computers</td><td>(b) Vacuum tube technology</td></tr>
+          <tr><td>(iii) Fourth generation computers</td><td>(c) Transistor technology</td></tr>
+          <tr><td>(iv) First generation computers</td><td>(d) Superconductor technology</td></tr>
+          <tr><td>(v) Third generation computers</td><td>(e) Semiconductor technology</td></tr>
+        </table>
+      </div>
+      <div class="sub-question">2. Write TRUE for a true statement and FALSE for a false statement:
+        <br>(i) The world's first general purpose electronic digital computer was the Abacus.
+        <br>(ii) The first generation computers used machine language for programming.
+        <br>(iii) Charles Babbage designed the Analytical Engine.
+        <br>(iv) The Personal Computer (PC) was developed in the first generation.
+        <br>(v) Charles Babbage is considered as the "father of computers."
+        <br>(vi) The numerical Wheel Calculator was used for both additions and subtractions.
+        <br>(vii) Third generation of computers was marked by the use of integrated circuit technology.
+      </div>
+      <div class="sub-question">3. What is the name of the first computer made in 1944 which had both mechanical and electronic parts? Who invented it?</div>
+      <div class="sub-question">4. What does ENIAC stand for?</div>
+      <div class="sub-question">5. Compare the performance of ENIAC to computers today.</div>
+      <div class="sub-question">6. Explain why Neumann was popular in the development of computers.</div>
+      <div class="sub-question">7. What is the contribution of the following people to the development of computers?
+        <br>(i) Blaise Pascal &nbsp;&nbsp; (ii) Gottfried Wilhelm von Leibniz &nbsp;&nbsp; (iii) Charles Babbage &nbsp;&nbsp; (iv) William Seward Burroughs
+      </div>
+      <div class="sub-question">8. Briefly describe the following early forms of computers:
+        <br>(i) Mechanical calculator &nbsp;&nbsp; (ii) Mechanical computer &nbsp;&nbsp; (iii) Von Neumann machine
+      </div>
+      <div class="sub-question">9. Providing one example for each, briefly explain the following generations of computers considering their technologies and characteristics:
+        <br>(i) First generation &nbsp;&nbsp; (ii) Second generation &nbsp;&nbsp; (iii) Third generation &nbsp;&nbsp; (iv) Fourth generation &nbsp;&nbsp; (v) Fifth generation
+      </div>
+      <div class="sub-question">10. What new technology was used by the third generation computers?</div>
+      <div class="sub-question">11. Explain the concept of Artificial Intelligence.</div>
+      <div class="sub-question">12. State the major distinction between the first and third generation computers.</div>
+      <div class="sub-question">13. Highlight five achievements in the fifth generation computers.</div>
+      <div class="sub-question">14. Explain the relationship between the fourth generation computers and the second-generation computers.</div>
+    </div>
+
+
+    <!-- ====================================================================
+         CHAPTER 4
+         ==================================================================== -->
+    <div class="exam-section-title">CHAPTER FOUR: COMPUTER HARDWARE AND SOFTWARE</div>
+
+    <div class="svg-container">
+      <!-- Vector SVG Block Diagram for IPO Cycle -->
+      <svg width="420" height="90" viewBox="0 0 420 90" xmlns="http://www.w3.org/2000/svg">
+        <rect width="420" height="90" fill="#f8fafc" rx="6" stroke="#cbd5e1"/>
+        <!-- Input Box -->
+        <rect x="20" y="25" width="90" height="40" fill="#e0f2fe" stroke="#0284c7" stroke-width="2" rx="4"/>
+        <text x="65" y="50" font-family="Times New Roman" font-size="12" font-weight="bold" text-anchor="middle">INPUT</text>
+        <line x1="110" y1="45" x2="140" y2="45" stroke="#0f172a" stroke-width="2" marker-end="url(#arrow)"/>
+        <!-- Process Box -->
+        <rect x="145" y="25" width="110" height="40" fill="#fef08a" stroke="#ca8a04" stroke-width="2" rx="4"/>
+        <text x="200" y="50" font-family="Times New Roman" font-size="12" font-weight="bold" text-anchor="middle">PROCESS (CPU)</text>
+        <line x1="255" y1="45" x2="285" y2="45" stroke="#0f172a" stroke-width="2" marker-end="url(#arrow)"/>
+        <!-- Output Box -->
+        <rect x="290" y="25" width="105" height="40" fill="#dcfce7" stroke="#16a34a" stroke-width="2" rx="4"/>
+        <text x="342" y="50" font-family="Times New Roman" font-size="12" font-weight="bold" text-anchor="middle">OUTPUT</text>
+      </svg>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Activity 4.1: Selecting and opening a file</div>
+      <p>Point cursor over a file, click once to highlight, and double-click using the left mouse button to open a program or file.</p>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Activity 4.2: Digital cameras</div>
+      <p>Use the Internet or other reference resources to outline different uses of digital cameras in social-economic development.</p>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Activity 4.3: Memory unit</div>
+      <p>Discuss short and long term memory in human beings and relate it to the computer memory unit.</p>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Activity 4.4: Shutting down a Windows 10 computer</div>
+      <p>Practice shutting down the computer through Start &gt; Power &gt; Shut down.</p>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Activity 4.5 to 4.12: File and Folder Management</div>
+      <p>Practice creating, renaming, copying, pasting, deleting, and restoring files and folders using Windows File Explorer and Recycle Bin.</p>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Activity 4.13: Using Windows help and support</div>
+      <p>Use Windows Help and Support tool to search keywords and navigate support documentation.</p>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Exercise 4.1</div>
+      <div class="sub-question">1. Briefly explain some of the considerations you will make in choosing an input device for a particular task.</div>
+      <div class="sub-question">2. Identify the ports labeled A-F on the motherboard and explain which peripheral devices connect to them.</div>
+      <div class="sub-question">3. Explain the differences between primary and secondary storage devices.</div>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Exercise 4.2</div>
+      <div class="sub-question">1. What is computer hardware?</div>
+      <div class="sub-question">2. What is the importance of the CPU?</div>
+      <div class="sub-question">3. Explain the functions of the Control Unit (CU) and Arithmetic Logic Unit (ALU).</div>
+      <div class="sub-question">4. Describe five input and five output computer devices.</div>
+      <div class="sub-question">5. List examples of primary and secondary storage devices.</div>
+      <div class="sub-question">6. Describe the function of RAM and ROM.</div>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Exercise 4.3</div>
+      <div class="sub-question">1. Choose the most appropriate answer:
+        <br>(i) The basic operations performed by a computer are: (a) Arithmetic (b) Logical (c) Storage &amp; relative (d) All of the above
+        <br>(ii) ..... is the heart and brain of a computer: (a) ALU (b) Memory (c) CPU (d) Control Unit
+        <br>(iii) Best printer for large high-quality B&amp;W printouts: (a) Laser printer (b) Dot matrix (c) Plotter (d) All
+        <br>(iv) Examples of secondary storage memory devices: (a) Floppy &amp; ROM (b) Hard disk &amp; RAM (c) ROM &amp; RAM (d) Floppy &amp; Hard disk
+        <br>(v) Best input device for selecting objects on screen: (a) Joystick (b) Mouse (c) Keyboard (d) Touch screen
+        <br>(vi) Software installed on new computer: (a) Utility (b) OS (c) Firmware driver (d) Application software
+      </div>
+      <div class="sub-question">2. (a) Identify other Input and Output devices apart from those discussed and describe functions. (b) State purpose of data backup.</div>
+      <div class="sub-question">3. Identify appropriate output device for: (a) generating receipts with carbon copies (b) architectural drawing where precision is required.</div>
+      <div class="sub-question">4. (a) Differentiate primary memory from secondary memory. (b) Describe three uses of computers in society.</div>
+      <div class="sub-question">5. Briefly describe five areas where computers are used to process data.</div>
+      <div class="sub-question">6. Give three reasons why a mobile phone is regarded as a computer.</div>
+      <div class="sub-question">7. Give two reasons why the computer is referred to as an electronic device.</div>
+    </div>
+
+
+    <!-- ====================================================================
+         CHAPTER 5
+         ==================================================================== -->
+    <div class="exam-section-title">CHAPTER FIVE: CLASSIFICATION AND SIGNIFICANCE OF COMPUTERS</div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Activity 5.1: Mainframe computers</div>
+      <p>Describe how mainframe computers are used in large organisations such as banks, hospitals, and airlines.</p>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Activity 5.2: Project on Microcomputers</div>
+      <p>Briefly describe desktop computers, notebooks/laptops, tablets, palmtops, and smartphones and their uses in school, home, or business environments.</p>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Activity 5.3: Applications of computers to daily life</div>
+      <p>Discuss positive and negative implications of computers in education, business, health, government, entertainment, communication, security control, and transport.</p>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Exercise 5.1</div>
+      <div class="sub-question">1. Write T for a true statement and F for a false statement:
+        <br>(i) Hybrid computers are commonly used to count and measure specific phenomena. [ ]
+        <br>(ii) A desktop computer has a display, circuit and battery, all in a single unit. [ ]
+        <br>(iii) A palmtop computer needs a large space to be used. [ ]
+      </div>
+      <div class="sub-question">2. Choose the most correct answer:
+        <br>(i) Computers classified based on power and speed except: (a) Minicomputers (b) Supercomputers (c) Digital computers (d) Mainframes
+        <br>(ii) Used in large business companies like Google and Yahoo: (a) Tablets (b) Supercomputers (c) Minicomputers (d) Mainframes
+        <br>(iii) Analog and digital computers are classified based on: (a) Power/speed (b) Data type processed (c) Purpose (d) Portability
+      </div>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Exercise 5.2</div>
+      <div class="sub-question">1. Briefly describe characteristics of a computer.</div>
+      <div class="sub-question">2. What are the major advantages and disadvantages of using computers?</div>
+    </div>
+
+
+    <!-- ====================================================================
+         CHAPTER 6
+         ==================================================================== -->
+    <div class="exam-section-title">CHAPTER SIX: COMPUTER HANDLING</div>
+
+    <div class="svg-container">
+      <!-- Vector SVG Diagram for UPS / Surge Protection Setup -->
+      <svg width="400" height="110" viewBox="0 0 400 110" xmlns="http://www.w3.org/2000/svg">
+        <rect width="400" height="110" fill="#f8fafc" rx="6" stroke="#cbd5e1"/>
+        <!-- Wall Socket -->
+        <rect x="20" y="35" width="45" height="40" fill="#e2e8f0" stroke="#334155" stroke-width="2" rx="4"/>
+        <text x="42" y="60" font-family="Times New Roman" font-size="10" font-weight="bold" text-anchor="middle">Socket</text>
+        <!-- Wire 1 -->
+        <line x1="65" y1="55" x2="110" y2="55" stroke="#0f172a" stroke-width="2" marker-end="url(#arrow)"/>
+        <!-- UPS Unit -->
+        <rect x="115" y="25" width="80" height="60" fill="#dbeafe" stroke="#1d4ed8" stroke-width="2" rx="4"/>
+        <text x="155" y="55" font-family="Times New Roman" font-size="12" font-weight="bold" text-anchor="middle">UPS Unit</text>
+        <text x="155" y="72" font-family="Times New Roman" font-size="9" fill="#1e3a8a" text-anchor="middle">Battery Backup</text>
+        <!-- Wire 2 -->
+        <line x1="195" y1="55" x2="245" y2="55" stroke="#0f172a" stroke-width="2" marker-end="url(#arrow)"/>
+        <!-- Computer System Unit -->
+        <rect x="250" y="20" width="125" height="70" fill="#fef3c7" stroke="#d97706" stroke-width="2" rx="4"/>
+        <text x="312" y="50" font-family="Times New Roman" font-size="12" font-weight="bold" text-anchor="middle">Computer</text>
+        <text x="312" y="68" font-family="Times New Roman" font-size="10" fill="#b45309" text-anchor="middle">System Unit / Monitor</text>
+      </svg>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Activity 6.1: Connecting a computer to the UPS</div>
+      <p>Connect UPS input power cable to wall socket, and output power cable to computer system unit and monitor.</p>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Activity 6.2: Using Disk Clean up Utility</div>
+      <p>Use Disk Cleanup utility via Start menu search to remove temporary files and free up disk space.</p>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Activity 6.3: Data Backup and Restore on Windows 10</div>
+      <p>Configure automated file history backup and restoration via Windows 10 Update &amp; Security settings.</p>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Activity 6.4: Formatting a flash disk</div>
+      <p>Format a USB flash drive via File Explorer using NTFS file system options.</p>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Activity 6.5: Effect of dust, liquids and temperature on computers</div>
+      <p>Outline the effects of dust, humidity and temperature on computers and accessories.</p>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Exercise 6.1</div>
+      <div class="sub-question">1. What is power fluctuation?</div>
+      <div class="sub-question">2. What are the effects of power fluctuations on electrical equipment?</div>
+      <div class="sub-question">3. List types of power fluctuations.</div>
+      <div class="sub-question">4. List devices that are used to protect a computer from the effects of power fluctuations.</div>
+      <div class="sub-question">5. Explain how a voltage stabiliser functions.</div>
+      <div class="sub-question">6. Describe how to connect a computer to the UPS.</div>
+      <div class="sub-question">7. What is the difference between the UPS and voltage stabiliser?</div>
+      <div class="sub-question">8. What is a utility program? Give examples of utility programs and their usefulness.</div>
+      <div class="sub-question">9. What is a data backup and how important it is?</div>
+      <div class="sub-question">10. Describe the devices used to make data backups.</div>
+      <div class="sub-question">11. Differentiate between a local data backup from a cloud data backup.</div>
+      <div class="sub-question">12. What are the advantages of a local data backup?</div>
+      <div class="sub-question">13. Discuss possible risks the computer is likely to face if security measures are not observed.</div>
+      <div class="sub-question">14. Write TRUE for a true statement and FALSE for a false statement:
+        <br>(i) Blackout is a reduced voltage level. [ ]
+        <br>(ii) Antiviruses are utility programs. [ ]
+        <br>(iii) A computer is one of the backup devices. [ ]
+        <br>(iv) A local backup stores data to a storage server or facility connected to the computer via the Internet. [ ]
+        <br>(v) When a disk is formatted, all the data contained in the disk will be permanently deleted. [ ]
+      </div>
+    </div>
+
+    <!-- On-Screen Document Footer -->
+    <div class="page-footer">
+      <span>For more visit: <a href="https://elimika.online" target="_blank" rel="noopener noreferrer" class="elimika-link">elimika.online</a></span>
+    </div>
+
+  </div>
+
+</body>
+</html>

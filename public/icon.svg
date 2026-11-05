@@ -1,11 +1,53 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#1d4ed8" />
-      <stop offset="100%" stop-color="#0f172a" />
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#051367" />
+      <stop offset="55%" stop-color="#030944" />
+      <stop offset="100%" stop-color="#02052d" />
     </linearGradient>
+    <linearGradient id="waveTop" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1d4ed8" />
+      <stop offset="100%" stop-color="#0a218f" />
+    </linearGradient>
+    <linearGradient id="waveInner" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2563eb" />
+      <stop offset="100%" stop-color="#1230b5" />
+    </linearGradient>
+    <linearGradient id="capLeft" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffe600" />
+      <stop offset="100%" stop-color="#f59e0b" />
+    </linearGradient>
+    <linearGradient id="capRight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="100%" stop-color="#ea580c" />
+    </linearGradient>
+    <linearGradient id="bookLeft" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#e2e8f0" />
+    </linearGradient>
+    <linearGradient id="bookRight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f1f5f9" />
+      <stop offset="100%" stop-color="#cbd5e1" />
+    </linearGradient>
+    <clipPath id="squircle">
+      <rect width="512" height="512" rx="116" />
+    </clipPath>
   </defs>
-  <rect width="512" height="512" rx="112" fill="url(#bg)" />
-  <path d="M256 120L88 196l168 76 136-61.5V312h32V196L256 120z" fill="#fbbf24" />
-  <path d="M152 259.6v76.4c0 35.3 46.6 64 104 64s104-28.7 104-64v-76.4L256 306.8l-104-47.2z" fill="#ffffff" />
+  <g clip-path="url(#squircle)">
+    <rect width="512" height="512" fill="url(#bgGrad)" />
+    <!-- Top-left layered royal blue waves -->
+    <path d="M0 0 H255 C190 78 96 156 0 218 Z" fill="url(#waveTop)" />
+    <path d="M0 0 H175 C132 58 68 118 0 158 Z" fill="url(#waveInner)" />
+    <!-- Bottom-right royal blue wave -->
+    <path d="M512 355 C418 408 320 462 232 512 H512 Z" fill="url(#waveTop)" />
+    <!-- White Open Book Base -->
+    <path d="M154 252 Q212 268 256 308 L256 356 L154 316 Z" fill="url(#bookLeft)" />
+    <path d="M358 252 Q300 268 256 308 L256 356 L358 316 Z" fill="url(#bookRight)" />
+    <!-- Golden Graduation Cap Diamond (Left & Right Shaded Halves) -->
+    <path d="M256 130 L86 204 L256 278 Z" fill="url(#capLeft)" />
+    <path d="M256 130 L426 204 L256 278 Z" fill="url(#capRight)" />
+    <!-- Golden Tassel on Right -->
+    <rect x="398" y="212" width="10" height="54" rx="5" fill="#f59e0b" />
+    <path d="M393 262 C393 255 413 255 413 262 L417 308 C417 313 413 316 408 316 H398 C393 316 389 313 389 308 Z" fill="url(#capLeft)" />
+  </g>
 </svg>

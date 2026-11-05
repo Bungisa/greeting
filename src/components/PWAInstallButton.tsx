@@ -182,9 +182,13 @@ export const IOSInstallGuideModal: React.FC<{
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
             <img
-              src="/pwa-192x192.png"
+              src="/assets/aistudio/Golden_Graduation_Cap_Emblem_on_Indigo_Gradient_c53b7e46.png"
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = '/pwa-192x192.png';
+              }}
               alt="Elimika App Icon"
-              className="w-12 h-12 rounded-2xl border border-slate-200 shadow-xs shrink-0"
+              className="w-12 h-12 rounded-2xl border border-slate-200 shadow-xs shrink-0 object-cover"
             />
             <div>
               <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-slate-900 text-white text-[10px] font-black uppercase tracking-wider">
@@ -315,9 +319,13 @@ export const AndroidPlayStoreModal: React.FC<{
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
             <img
-              src="/pwa-192x192.png"
+              src="/assets/aistudio/Golden_Graduation_Cap_Emblem_on_Indigo_Gradient_c53b7e46.png"
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = '/pwa-192x192.png';
+              }}
               alt="Elimika App Icon"
-              className="w-12 h-12 rounded-2xl border border-slate-200 shadow-xs shrink-0"
+              className="w-12 h-12 rounded-2xl border border-slate-200 shadow-xs shrink-0 object-cover"
             />
             <div>
               <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-emerald-700 text-white text-[10px] font-black uppercase tracking-wider">
@@ -493,9 +501,13 @@ export const GetElimikaAppSection: React.FC = () => {
           {/* Left Column: Branding & App Icon */}
           <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-4 max-w-xl">
             <img
-              src="/pwa-192x192.png"
+              src="/assets/aistudio/Golden_Graduation_Cap_Emblem_on_Indigo_Gradient_c53b7e46.png"
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = '/pwa-192x192.png';
+              }}
               alt="Elimika Tanzania App Icon"
-              className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl border-2 border-[#D6B56D]/60 shadow-lg shrink-0"
+              className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl border-2 border-[#D6B56D]/60 shadow-lg shrink-0 object-cover"
             />
             <div className="space-y-2">
               <div className="inline-flex flex-wrap items-center justify-center sm:justify-start gap-2">

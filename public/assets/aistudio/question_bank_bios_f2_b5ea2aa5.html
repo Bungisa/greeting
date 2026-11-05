@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BIOLOGY FOR SECONDARY SCHOOLS — FORM TWO COMPREHENSIVE QUESTION BANK (ELIMIKA.ONLINE)</title>
+  
+  <!-- MathJax Configuration & Engine -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        processEscapes: true
+      },
+      svg: {
+        fontCache: 'global'
+      }
+    };
+  </script>
+  <script type="text/javascript" id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js">
+  </script>
+
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 15mm 15mm 28mm 15mm;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      background-color: #f1f5f9;
+      color: #000000;
+      font-family: "Times New Roman", Times, "Liberation Serif", serif;
+      font-size: 12pt;
+      line-height: 1.45;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    body {
+      padding: 20px 10px;
+    }
+
+    .paper-sheet {
+      background: #ffffff;
+      max-width: 210mm;
+      margin: 0 auto 30px auto;
+      padding: 18mm 18mm 25mm 18mm;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      border: 1px solid #cbd5e1;
+      position: relative;
+      overflow: visible;
+    }
+
+    .watermark {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-35deg);
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 5.5rem;
+      font-weight: 800;
+      color: rgba(30, 58, 138, 0.07);
+      letter-spacing: 0.12em;
+      text-transform: lowercase;
+      pointer-events: none;
+      user-select: none;
+      z-index: 1000;
+      white-space: nowrap;
+      display: block;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #000000;
+      padding-bottom: 4pt;
+      margin-bottom: 12pt;
+      font-size: 10.5pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .exam-heading {
+      text-align: center;
+      margin-bottom: 12pt;
+      position: relative;
+      z-index: 2;
+    }
+
+    .exam-heading .code-left {
+      font-size: 14pt;
+      font-weight: bold;
+      float: left;
+    }
+
+    .exam-heading h1 {
+      font-size: 13.5pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      margin: 2pt 0;
+    }
+
+    .exam-heading h2 {
+      font-size: 12.5pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      margin: 2pt 0;
+    }
+
+    .exam-heading h3 {
+      font-size: 13.5pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      margin: 4pt 0 2pt 0;
+    }
+
+    .exam-heading .scheme-title {
+      font-size: 12.5pt;
+      font-weight: bold;
+      color: #1e3a8a;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 4pt;
+    }
+
+    .exam-meta-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 11.5pt;
+      font-weight: bold;
+      border-bottom: 1.5pt solid #000000;
+      border-top: 1.5pt solid #000000;
+      padding: 5pt 0;
+      margin: 10pt 0 14pt 0;
+      clear: both;
+      position: relative;
+      z-index: 2;
+    }
+
+    .exam-section-title {
+      font-size: 12.5pt;
+      font-weight: bold;
+      text-align: center;
+      text-transform: uppercase;
+      margin: 22pt 0 10pt 0;
+      border-top: 1.5pt solid #000000;
+      padding-top: 6pt;
+      position: relative;
+      z-index: 2;
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+
+    .exam-question-block {
+      margin-bottom: 16pt;
+      text-align: justify;
+      position: relative;
+      z-index: 2;
+      font-size: 12pt;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .question-stem {
+      font-weight: bold;
+      font-size: 12pt;
+      margin-bottom: 6pt;
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+
+    .sub-question {
+      margin-left: 15pt;
+      margin-top: 4pt;
+      margin-bottom: 4pt;
+    }
+
+    .svg-container {
+      margin: 12pt 0;
+      text-align: center;
+      page-break-inside: avoid;
+    }
+
+    .exam-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 8pt 0;
+      font-size: 11pt;
+    }
+
+    .exam-table th, 
+    .exam-table td {
+      border: 1pt solid #000000;
+      padding: 5pt 6.5pt;
+      vertical-align: top;
+    }
+
+    .exam-table th {
+      background-color: #f1f5f9;
+      font-weight: bold;
+      text-align: left;
+    }
+
+    a.elimika-link {
+      color: #1e3a8a;
+      text-decoration: underline;
+      font-weight: bold;
+    }
+
+    a.elimika-link:hover {
+      color: #2563eb;
+    }
+
+    .page-footer {
+      border-top: 1.5pt solid #000000;
+      margin-top: 22pt;
+      padding-top: 6pt;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      font-size: 10pt;
+      color: #334155;
+      position: relative;
+      z-index: 2;
+    }
+
+    .running-print-footer {
+      display: none;
+    }
+
+    @media print {
+      html, body {
+        background: #ffffff !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        height: auto !important;
+        font-size: 12pt !important;
+        overflow: visible !important;
+      }
+
+      .paper-sheet {
+        box-shadow: none !important;
+        border: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        max-width: 100% !important;
+        overflow: visible !important;
+      }
+
+      .no-print {
+        display: none !important;
+      }
+
+      .watermark {
+        color: rgba(30, 58, 138, 0.05) !important;
+        position: fixed !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) rotate(-35deg) !important;
+        z-index: 99999 !important;
+        display: block !important;
+      }
+
+      .page-footer {
+        display: none !important;
+      }
+      
+      .running-print-footer {
+        display: flex !important;
+        position: fixed !important;
+        bottom: 0mm !important;
+        left: 0 !important;
+        right: 0 !important;
+        height: 10mm !important;
+        border-top: 1pt solid #000000 !important;
+        background: transparent !important;
+        font-size: 9.5pt !important;
+        color: #000000 !important;
+        justify-content: flex-end !important;
+        align-items: center !important;
+        padding: 0 1mm !important;
+        z-index: 99999 !important;
+      }
+
+      .exam-question-block {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+      }
+
+      p, li, tr, td, th {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+        orphans: 3;
+        widows: 3;
+      }
+
+      h1, h2, h3, .question-stem, .exam-section-title {
+        break-after: avoid !important;
+        page-break-after: avoid !important;
+      }
+    }
+
+    .print-bar {
+      position: fixed;
+      top: 15px;
+      right: 15px;
+      z-index: 1000;
+      background: #0f172a;
+      padding: 8px 14px;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+    }
+
+    .print-btn {
+      background: #1e3a8a;
+      color: #ffffff;
+      border: none;
+      padding: 7px 15px;
+      font-size: 12px;
+      font-weight: bold;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .print-btn:hover {
+      background: #1d4ed8;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Floating Print Control (Hidden in Print) -->
+  <div class="print-bar no-print">
+    <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+  </div>
+
+  <!-- Multi-Page Print Repeating Footer -->
+  <div class="running-print-footer">
+    <span>For more visit: <a href="https://elimika.online" target="_blank" rel="noopener noreferrer" class="elimika-link">elimika.online</a></span>
+  </div>
+
+  <!-- Visible Watermark -->
+  <div class="watermark">elimika.online</div>
+
+  <div class="paper-sheet">
+
+    <!-- Top Bar -->
+    <div class="top-bar">
+      <span>TANZANIA INSTITUTE OF EDUCATION</span>
+      <span>BIOLOGY FORM TWO QUESTION BANK</span>
+    </div>
+
+    <!-- Council & Assessment Heading -->
+    <div class="exam-heading">
+      <div class="code-left">BIO-F2</div>
+      <h1>THE UNITED REPUBLIC OF TANZANIA</h1>
+      <h2>BIOLOGY FOR SECONDARY SCHOOLS</h2>
+      <h3>FORM TWO — COMPREHENSIVE QUESTION BANK (ACTIVITIES, EXERCISES &amp; REVISION)</h3>
+      <div class="scheme-title">EXTRACTED FROM STUDENT'S BOOK FORM TWO</div>
+    </div>
+
+    <!-- Metadata Bar -->
+    <div class="exam-meta-bar">
+      <span>Subject: Biology</span>
+      <span>Level: Form Two</span>
+      <span>Publisher: Tanzania Institute of Education (TIE)</span>
+    </div>
+
+    <!-- ====================================================================
+         CHAPTER 1: NUTRITION IN ANIMALS
+         ==================================================================== -->
+    <div class="exam-section-title">CHAPTER ONE: NUTRITION IN ANIMALS</div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Exercise 1.1</div>
+      <div class="sub-question">1. Using relevant examples, briefly explain the following types of heterotrophic nutrition:
+        <br>(a) holozoic nutrition; <br>(b) saprophytic nutrition; and <br>(c) symbiotic nutrition.
+      </div>
+      <div class="sub-question">2. Why are omnivores regarded as opportunistic feeders?</div>
+      <div class="sub-question">3. What is the role of enzymes in the saprophytic mode of feeding?</div>
+      <div class="sub-question">4. Why are large trees in the forest not harmed by the epiphytes that grow on their bodies?</div>
+      <div class="sub-question">5. Explain the meaning of the following: (a) commensalism; (b) parasitism; and (c) mutualism.</div>
+      <div class="sub-question">6. How would you apply the concept of nutrition to improve your diet?</div>
+      <div class="sub-question">7. What would happen to the heterotrophs if there were no autotrophs?</div>
+      <div class="sub-question">8. Why is proper nutrition essential for maintaining health?</div>
+      <div class="sub-question">9. Why are human beings, pigs, and bears regarded as omnivorous animals?</div>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Revision Exercise 1 — Section A &amp; B</div>
+      <div class="sub-question">1. Write TRUE for a correct statement and FALSE for an incorrect statement:
+        <br>(a) All disaccharides are soluble in water. [ ]
+        <br>(b) Galactose is a fruit sugar. [ ]
+        <br>(c) Proteins are the major source of energy. [ ]
+        <br>(d) The emulsion test is used to test for proteins. [ ]
+        <br>(e) Nutrients are chemical components of food. [ ]
+        <br>(f) Macronutrients are required by the body in small quantities. [ ]
+        <br>(g) The calorie is a unit of measurement of food energy. [ ]
+        <br>(h) Nutrients contain kilocalories (kcal) which can be burned in the body to provide heat. [ ]
+        <br>(i) Carbohydrates are micronutrients because they are required by the body in large quantities. [ ]
+      </div>
+      <div class="sub-question">2. Differentiate the following terms:
+        <br>(a) food and nutrient; <br>(b) kwashiorkor and marasmus; <br>(c) macronutrients and micronutrients; <br>(d) monosaccharides and polysaccharides; and <br>(e) oils and fats.
+      </div>
+      <div class="sub-question">3. Answer the following questions regarding food tests:
+        <br>(a) Explain briefly how you would carry out the test for: (i) proteins, (ii) starch.
+        <br>(b) Which food substances are tested by: (i) Biuret test, (ii) Grease spot test, (iii) Sudan III test?
+      </div>
+    </div>
+
+
+    <!-- ====================================================================
+         CHAPTER 2: DIGESTIVE SYSTEM
+         ==================================================================== -->
+    <div class="exam-section-title">CHAPTER TWO: DIGESTIVE SYSTEM</div>
+
+    <div class="svg-container">
+      <!-- Vector SVG Diagram for Human Digestive System -->
+      <svg width="260" height="260" viewBox="0 0 260 260" xmlns="http://www.w3.org/2000/svg">
+        <rect width="260" height="260" fill="#f8fafc" rx="6" stroke="#cbd5e1"/>
+        <!-- Mouth / Pharynx -->
+        <path d="M 110 30 Q 130 30 140 45 Q 135 55 125 55 Z" fill="#fca5a5" stroke="#0f172a" stroke-width="1.5"/>
+        <!-- Oesophagus -->
+        <line x1="125" y1="55" x2="125" y2="90" stroke="#fca5a5" stroke-width="8"/>
+        <!-- Stomach -->
+        <path d="M 100 90 Q 90 120 125 130 Q 155 130 145 95 Z" fill="#f87171" stroke="#0f172a" stroke-width="1.5"/>
+        <!-- Liver -->
+        <path d="M 135 80 Q 165 85 160 110 Q 135 115 120 100 Z" fill="#ef4444" stroke="#0f172a" stroke-width="1.5"/>
+        <!-- Small Intestine (Coils) -->
+        <path d="M 110 135 Q 90 150 115 165 Q 140 180 120 195" fill="none" stroke="#fbbf24" stroke-width="6"/>
+        <!-- Large Intestine (Colon frame) -->
+        <rect x="90" y="125" width="70" height="85" fill="none" stroke="#34d399" stroke-width="7" rx="6"/>
+        <text x="130" y="245" font-family="Times New Roman" font-size="11" font-weight="bold" text-anchor="middle">Figure 2.1: Human Digestive System</text>
+      </svg>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Exercise 2.1</div>
+      <div class="sub-question">1. (a) Which specific stomach enzymes are most effective at digesting proteins found in fish and milk? (b) How do these enzymes work to break down these foods?</div>
+      <div class="sub-question">2. (a) How do incisors contribute to effective consumption of meat in human beings? (b) Explain the adaptive features of incisors to the role they perform.</div>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Exercise 2.2</div>
+      <div class="sub-question">1. Describe features that allow cows and goats to be classified as ruminants.</div>
+      <div class="sub-question">2. How can you differentiate the stomach of a cow from that of a human being?</div>
+      <div class="sub-question">3. Human beings cannot eat grass whereas cows can. Support the statement.</div>
+      <div class="sub-question">4. Explain the adaptive features of the ruminant's digestive system.</div>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Revision Exercise 2 — Selected Questions</div>
+      <div class="sub-question">1. Differentiate between food and nutrient, kwashiorkor and marasmus, macronutrients and micronutrients.</div>
+      <div class="sub-question">2. What are the primary dietary and lifestyle modifications that can help prevent and control flatulence? How do these measures impact the digestive process?</div>
+      <div class="sub-question">3. Explain the consequences of having the following eating habits: (a) Eating foods with a lot of sugar; (b) Taking meals with no or little fibre; (c) Eating foods with too much fats, oils or too much spices; (d) Not drinking adequate amount of water and fluids; (e) Wearing very tight clothes that put pressure on the stomach.</div>
+      <div class="sub-question">4. How does the structure of the small intestine facilitate the absorption of nutrients, and what might happen if this structure were compromised?</div>
+    </div>
+
+
+    <!-- ====================================================================
+         CHAPTER 3: TRANSPORT OF MATERIALS IN LIVING ORGANISMS
+         ==================================================================== -->
+    <div class="exam-section-title">CHAPTER THREE: TRANSPORT OF MATERIALS IN LIVING ORGANISMS</div>
+
+    <div class="svg-container">
+      <!-- Vector SVG Diagram for Diffusion Process -->
+      <svg width="340" height="110" viewBox="0 0 340 110" xmlns="http://www.w3.org/2000/svg">
+        <rect width="340" height="110" fill="#f8fafc" rx="6" stroke="#cbd5e1"/>
+        <!-- High concentration side -->
+        <rect x="30" y="20" width="110" height="70" fill="#e0f2fe" stroke="#0284c7" rx="4"/>
+        <circle cx="50" cy="40" r="4" fill="#0284c7"/><circle cx="70" cy="50" r="4" fill="#0284c7"/><circle cx="60" cy="70" r="4" fill="#0284c7"/><circle cx="90" cy="45" r="4" fill="#0284c7"/><circle cx="100" cy="70" r="4" fill="#0284c7"/><circle cx="80" cy="60" r="4" fill="#0284c7"/>
+        <text x="85" y="102" font-family="Times New Roman" font-size="10" font-weight="bold" text-anchor="middle">High Concentration</text>
+        <!-- Arrow -->
+        <line x1="145" y1="55" x2="195" y2="55" stroke="#0f172a" stroke-width="2.5" marker-end="url(#arrow)"/>
+        <!-- Low concentration side -->
+        <rect x="200" y="20" width="110" height="70" fill="#fef08a" stroke="#ca8a04" rx="4"/>
+        <circle cx="230" cy="45" r="4" fill="#ca8a04"/><circle cx="270" cy="65" r="4" fill="#ca8a04"/><circle cx="280" cy="40" r="4" fill="#ca8a04"/>
+        <text x="255" y="102" font-family="Times New Roman" font-size="10" font-weight="bold" text-anchor="middle">Low Concentration</text>
+      </svg>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Exercise 3.1</div>
+      <div class="sub-question">1. Explain the importance of transport of materials in the human body.</div>
+      <div class="sub-question">2. Why are isotonic solutions ideal for treating dehydration?</div>
+      <div class="sub-question">3. Explain the effects of osmosis in animal cells.</div>
+      <div class="sub-question">4. Differentiate a hypotonic solution from a hypertonic solution.</div>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Revision Exercise 3 — Selected Questions</div>
+      <div class="sub-question">1. Differentiate between: (a) Osmosis and diffusion; (b) Hypotonic solution and hypertonic solution; (c) Plasmolysis and haemolysis; (d) Passive transport and active transport; (e) Osmosis and mass flow.</div>
+      <div class="sub-question">2. Describe what would happen to the rate of oxygen diffusion into the cell if the thickness of the cell membrane changes from 15 nm to 20 nm.</div>
+      <div class="sub-question">3. Explain how unicellular organisms like amoeba avoid bursting as a result of excessive absorption of water by osmosis.</div>
+      <div class="sub-question">4. How does osmosis affect the health of plant cells? What might happen to a plant if it is watered with saltwater instead of fresh water?</div>
+    </div>
+
+
+    <!-- ====================================================================
+         CHAPTER 4: TRANSPORT OF MATERIALS IN FLOWERING PLANTS
+         ==================================================================== -->
+    <div class="exam-section-title">CHAPTER FOUR: TRANSPORT OF MATERIALS IN FLOWERING PLANTS</div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Exercise 4.1</div>
+      <div class="sub-question">1. The diagram represents a transverse section of a young stem and root. Explain the functions of the parts labeled A, B, and C. Describe three differences between the sections.</div>
+      <div class="sub-question">2. Describe how xylem vessels are adapted to their functions.</div>
+      <div class="sub-question">3. Explain the meaning and importance of translocation.</div>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Exercise 4.2</div>
+      <div class="sub-question">1. Describe adaptations of root hairs to their function.</div>
+      <div class="sub-question">2. Explain the difference between root pressure and transpiration pull.</div>
+      <div class="sub-question">3. Describe the transpiration process.</div>
+      <div class="sub-question">4. Differentiate guttation from transpiration.</div>
+      <div class="sub-question">5. Explain the importance of stomata in a leaf.</div>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Revision Exercise 4 — Selected Questions</div>
+      <div class="sub-question">1. Briefly explain: (a) capillarity; (b) sieve tube elements; (c) root hair; and (d) transpiration stream.</div>
+      <div class="sub-question">2. Describe the movement of water through the root cells to the xylem and the structure of a phloem tissue.</div>
+      <div class="sub-question">3. Explain four plant features and four environmental factors that affect the rate of transpiration, and state the significance of transpiration in plants.</div>
+    </div>
+
+
+    <!-- ====================================================================
+         CHAPTER 5: TRANSPORT OF MATERIALS IN MAMMALS
+         ==================================================================== -->
+    <div class="exam-section-title">CHAPTER FIVE: TRANSPORT OF MATERIALS IN MAMMALS</div>
+
+    <div class="svg-container">
+      <!-- Vector SVG Diagram for Mammalian Heart Chambers -->
+      <svg width="260" height="220" viewBox="0 0 260 220" xmlns="http://www.w3.org/2000/svg">
+        <rect width="260" height="220" fill="#f8fafc" rx="6" stroke="#cbd5e1"/>
+        <!-- Heart outline -->
+        <path d="M 130 30 Q 180 10 210 50 Q 230 110 130 190 Q 30 110 50 50 Q 80 10 130 30 Z" fill="#fef2f2" stroke="#ef4444" stroke-width="3"/>
+        <!-- Septum -->
+        <line x1="130" y1="50" x2="130" y2="180" stroke="#0f172a" stroke-width="2" stroke-dasharray="4"/>
+        <!-- Labels -->
+        <text x="85" y="75" font-family="Times New Roman" font-size="11" font-weight="bold" fill="#1e3a8a">Right Atrium</text>
+        <text x="165" y="75" font-family="Times New Roman" font-size="11" font-weight="bold" fill="#ef4444">Left Atrium</text>
+        <text x="80" y="145" font-family="Times New Roman" font-size="11" font-weight="bold" fill="#1e3a8a">Right Ventricle</text>
+        <text x="160" y="145" font-family="Times New Roman" font-size="11" font-weight="bold" fill="#ef4444">Left Ventricle</text>
+        <text x="130" y="210" font-family="Times New Roman" font-size="11" font-weight="bold" text-anchor="middle">Figure 5.1: Mammalian Heart Chambers</text>
+      </svg>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Exercise 5.1</div>
+      <div class="sub-question">1. There would be no life for a mammal without the heart. Explain.</div>
+      <div class="sub-question">2. What distinguishes the bicuspid valve from other heart valves?</div>
+      <div class="sub-question">3. Differentiate between the pulmonary artery and pulmonary vein.</div>
+      <div class="sub-question">4. What would happen if the aorta were blocked?</div>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Exercise 5.2</div>
+      <div class="sub-question">1. What are the differences between arteries and veins?</div>
+      <div class="sub-question">2. Explain the role of red blood cells in the body.</div>
+      <div class="sub-question">3. Explain the importance of blood circulation.</div>
+      <div class="sub-question">4. Describe what will happen to the flow of blood in the left side of the heart if the bicuspid valve stops to function effectively.</div>
+      <div class="sub-question">5. Briefly explain the effects of HIV on white blood cells.</div>
+      <div class="sub-question">6. Why is the human circulatory system referred to as a double circulatory system?</div>
+      <div class="sub-question">7. Explain the symptoms and control measures for three common disorders of the human circulatory system.</div>
+    </div>
+
+
+    <!-- ====================================================================
+         CHAPTER 6: GAS EXCHANGE AND RESPIRATION
+         ==================================================================== -->
+    <div class="exam-section-title">CHAPTER SIX: GAS EXCHANGE AND RESPIRATION</div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Exercise 6.1</div>
+      <div class="sub-question">1. Describe the functions of each of the labeled parts in relation to gas exchange in mammals.</div>
+      <div class="sub-question">2. Explain why (a) the rate of breathing increases during physical exercise; and (b) your breathing rate does not go back to normal as soon as you stop exercising.</div>
+      <div class="sub-question">3. Answer briefly: (a) Why is it better to breathe through the nose than through the mouth? (b) What would happen if the epiglottis was removed from the human body? (c) Explain how breathing takes place in human beings.</div>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Exercise 6.2</div>
+      <div class="sub-question">1. Explain clearly how each of the following parts of the leaf facilitates gas exchange: (a) Lamina; (b) Lower epidermis; (c) Spongy mesophyll.</div>
+      <div class="sub-question">2. Describe the magnified side view of a leaf.</div>
+      <div class="sub-question">3. Describe the effect of opening and closing of the stomata on the rate of gas exchange between the leaf and the external environment.</div>
+      <div class="sub-question">4. Leaves of plants in tropical forests usually have a very large surface area and are dark green. Explain how these features help these plants to survive.</div>
+      <div class="sub-question">5. Briefly explain the mechanism of gas exchange in plants through: (a) leaves, (b) lenticels, (c) breathing roots.</div>
+      <div class="sub-question">6. Why is gas exchange important in plants?</div>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Exercise 6.3</div>
+      <div class="sub-question">1. Briefly describe the mechanism of respiration in mammals.</div>
+      <div class="sub-question">2. Explain clearly adaptations which enable the mammalian respiratory organ to perform its function.</div>
+      <div class="sub-question">3. Why is anaerobic respiration important to humans?</div>
+      <div class="sub-question">4. Differentiate obligate anaerobe from facultative anaerobe.</div>
+      <div class="sub-question">5. The absence of oxygen debt could impair metabolism in humans. Giving a reason, support this statement.</div>
+    </div>
+
+    <!-- On-Screen Document Footer -->
+    <div class="page-footer">
+      <span>For more visit: <a href="https://elimika.online" target="_blank" rel="noopener noreferrer" class="elimika-link">elimika.online</a></span>
+    </div>
+
+  </div>
+
+</body>
+</html>

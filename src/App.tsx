@@ -3,7 +3,6 @@ import { AnimatePresence, motion } from 'motion/react';
 import { jsPDF } from 'jspdf';
 import {
   ArrowLeft,
-  Award,
   BarChart3,
   BookOpen,
   Camera,
@@ -15,7 +14,6 @@ import {
   GraduationCap,
   Home,
   Mic,
-  Monitor,
   Moon,
   Printer,
   RefreshCw,
@@ -24,7 +22,6 @@ import {
   Sparkles,
   Sun,
   Trash2,
-  User,
   Volume2,
   X,
 } from 'lucide-react';
@@ -58,10 +55,9 @@ import {
   UserProfileData,
 } from './data/curriculumData';
 import { DiagramPreset, InteractiveDiagramLab } from './components/InteractiveDiagramLab';
-import { GetElimikaAppSection, OfflineIndicator, PWAInstallButton } from './components/PWAInstallButton';
+import { OfflineIndicator, PWAInstallButton } from './components/PWAInstallButton';
 import { StemArenaGame } from './components/StemArenaGame';
 import { ElimikaPlayHub, PlayGameRoute } from './components/ElimikaPlayHub';
-import { TopicMasteryPlanner } from './components/TopicMasteryPlanner';
 import { VirtualScienceLab } from './components/VirtualScienceLab';
 import {
   MathText,
@@ -317,6 +313,7 @@ function processParsedRows(rows: string[][]): PaperRecord[] {
   const records: PaperRecord[] = [];
   const seenBooks = new Set<string>();
   const seenSyllabuses = new Set<string>();
+  const deduplicatedMap = new Map<string, PaperRecord>();
 
   if (Array.isArray(rows) && rows.length >= 2) {
     for (let i = 1; i < rows.length; i++) {
@@ -371,7 +368,7 @@ function processParsedRows(rows: string[][]): PaperRecord[] {
         seenSyllabuses.add(`${form.toLowerCase()}__${subject.toLowerCase()}`);
       }
 
-      records.push({
+      const item: PaperRecord = {
         id: `sheet-${i}`,
         title: rawTitle || `${form} ${subject} (${year})`,
         form,
@@ -382,7 +379,15 @@ function processParsedRows(rows: string[][]): PaperRecord[] {
         answersUrl,
         isBook,
         isSyllabus,
-      });
+      };
+      const dedupKey = `${item.form}|${item.subject}|${item.year}|${item.title}`.toLowerCase();
+      const existing = deduplicatedMap.get(dedupKey);
+      if (!existing || (!existing.paperUrl && item.paperUrl) || (!existing.answersUrl && item.answersUrl)) {
+        deduplicatedMap.set(dedupKey, item);
+      }
+    }
+    for (const r of deduplicatedMap.values()) {
+      records.push(r);
     }
   }
 
@@ -663,7 +668,7 @@ export default function App() {
 
   // Navigation & View Mode
   const [activePage, setActivePage] = useState<
-    'papers' | 'books' | 'syllabus' | 'daily_quiz' | 'mastery_planner' | 'virtual_lab' | 'moha' | 'game'
+    'papers' | 'books' | 'syllabus' | 'daily_quiz' | 'virtual_lab' | 'moha' | 'game'
   >('papers');
   const [playRoute, setPlayRoute] = useState<PlayGameRoute>('hub');
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -689,6 +694,7 @@ export default function App() {
 
   // Saved Class & Recent Papers
   const [savedClass, setSavedClass] = useState<string>('');
+  const [classTierFilter, setClassTierFilter] = useState<'ALL' | 'Secondary' | 'Primary'>('ALL');
   const [recentPapers, setRecentPapers] = useState<
     Array<{ id: string; title: string; form: string; subject: string; year: string }>
   >([]);
@@ -718,7 +724,7 @@ export default function App() {
 
   // Moha AI Full-Page Site State
   const [mohaOpen, setMohaOpen] = useState<boolean>(false);
-  const [mohaViewMode, setMohaViewMode] = useState<'chat' | 'studio' | 'quiz' | 'diagram' | 'profile'>('chat');
+  const [mohaViewMode, setMohaViewMode] = useState<'chat' | 'studio' | 'quiz' | 'diagram'>('chat');
   const [activeDiagramPreset, setActiveDiagramPreset] = useState<DiagramPreset>('physics_ohm');
   const [mohaActiveClass, setMohaActiveClass] = useState<string>(() => {
     try {
@@ -1285,6 +1291,8 @@ export default function App() {
   // Quiz, Challenge a Friend & Revision Flashcards Lab inside Moha AI
   const [quizLoading, setQuizLoading] = useState<boolean>(false);
   const [quizItems, setQuizItems] = useState<QuizItem[]>([]);
+  const [quizPageIndex, setQuizPageIndex] = useState<number>(0);
+  const [quizShowAll, setQuizShowAll] = useState<boolean>(false);
   const [quizSelectedAnswers, setQuizSelectedAnswers] = useState<Record<number, number>>({});
   const [quizResultSaved, setQuizResultSaved] = useState<boolean>(false);
   const [selectedQuizTopic, setSelectedQuizTopic] = useState<string>('ALL');
@@ -1464,9 +1472,7 @@ export default function App() {
     setMohaActiveClass(targetCls);
     setMohaActiveSubject(targetSub);
     setSelectedQuizTopic(targetTopic);
-    setMohaOpen(true);
-    setActivePage('moha');
-    setMohaViewMode('quiz');
+    setActivePage('daily_quiz');
     setQuizLoading(true);
     setQuizSelectedAnswers({});
     setQuizResultSaved(false);
@@ -2157,77 +2163,6 @@ export default function App() {
     );
   }, [allPapers, mohaActiveClass, mohaActiveSubject, mohaFocusedResource]);
 
-  // Compute Mastery Progress Statistics for the User Profile View
-  const masteryProgressData = React.useMemo(() => {
-    const targetCls = userProfile.targetClass || mohaActiveClass || 'Form 4';
-    const subjectsList = TIE_CURRICULUM_SUBJECTS[targetCls] || [
-      'Basic Mathematics',
-      'Biology',
-      'Chemistry',
-      'Physics',
-      'Geography',
-      'History',
-      'English Language',
-      'Kiswahili',
-      'Civics',
-    ];
-
-    const subjectBreakdown = subjectsList.slice(0, 8).map((sub) => {
-      const totalCompetences = Math.max(4, getSyllabusTopicsForClassSubject(targetCls, sub).length);
-      const subLower = sub.toLowerCase();
-
-      const learnedForSub = learnedMemory.filter(
-        (m) => m.subject.toLowerCase().includes(subLower) || subLower.includes(m.subject.toLowerCase())
-      );
-      const quizzesForSub = quizHistory.filter(
-        (q) =>
-          (q.subject.toLowerCase().includes(subLower) || subLower.includes(q.subject.toLowerCase())) &&
-          q.score > 0
-      );
-
-      // Unique topics mastered from quizzes + learned notes
-      const uniqueMasteredTopics = new Set<string>();
-      learnedForSub.forEach((l) => uniqueMasteredTopics.add(l.topic.toLowerCase()));
-      quizzesForSub.forEach((q) => uniqueMasteredTopics.add(q.topic.toLowerCase()));
-
-      const masteredCount = uniqueMasteredTopics.size;
-      const percentage = Math.min(100, Math.round((masteredCount / totalCompetences) * 100));
-
-      return {
-        subject: sub,
-        icon: getSubjectIcon(sub),
-        masteredCount,
-        quizTopicsCount: quizzesForSub.length,
-        learnedNotesCount: learnedForSub.length,
-        totalCompetences,
-        percentage,
-      };
-    });
-
-    const allMasteredSet = new Set<string>();
-    learnedMemory.forEach((l) => allMasteredSet.add(`${l.subject}:${l.topic}`.toLowerCase()));
-    quizHistory
-      .filter((q) => q.score > 0)
-      .forEach((q) => allMasteredSet.add(`${q.subject}:${q.topic}`.toLowerCase()));
-
-    const totalMasteredTopics = allMasteredSet.size;
-    const totalQuizzesCompleted = quizHistory.length;
-    const totalLearnedNotes = learnedMemory.length;
-    const totalCorrectAnswers = quizHistory.reduce((acc, q) => acc + q.score, 0);
-    const totalQuizQuestions = quizHistory.reduce((acc, q) => acc + q.total, 0);
-    const avgQuizAccuracy =
-      totalQuizQuestions > 0 ? Math.round((totalCorrectAnswers / totalQuizQuestions) * 100) : 0;
-
-    return {
-      targetCls,
-      subjectBreakdown,
-      totalMasteredTopics,
-      totalQuizzesCompleted,
-      totalLearnedNotes,
-      avgQuizAccuracy,
-    };
-  }, [userProfile.targetClass, mohaActiveClass, learnedMemory, quizHistory]);
-
   function mergePapersWithAttached(sheetItems: PaperRecord[], customItems: PaperRecord[]): PaperRecord[] {
     const sanitizeRecord = (item: PaperRecord): PaperRecord => ({
       ...item,
@@ -2482,38 +2417,10 @@ export default function App() {
     startAiQuiz(cls, sub, firstTopic, firstSubTopic, src, true);
   }
 
-  function openMasteryPlannerPage(customClass?: string, customSubject?: string) {
-    if (customClass) setMohaActiveClass(customClass);
-    if (customSubject) setMohaActiveSubject(customSubject);
-    setActivePage('mastery_planner');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
   function openVirtualLabPage(customClass?: string) {
     if (customClass) setMohaActiveClass(customClass);
     setActivePage('virtual_lab');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  function handleLogManualTopicPractice(cls: string, subject: string, topic: string, scoreOutOf20: number) {
-    const today = new Date().toISOString().split('T')[0];
-    const newRecord: QuizHistoryRecord = {
-      id: `manual-${Date.now()}`,
-      cls,
-      subject,
-      topic,
-      score: Math.max(0, Math.min(20, scoreOutOf20)),
-      total: 20,
-      timestamp: today,
-    };
-    const updatedHistory = [newRecord, ...quizHistory].slice(0, 200);
-    setQuizHistory(updatedHistory);
-    try {
-      localStorage.setItem('elimika_quiz_history_v1', JSON.stringify(updatedHistory));
-    } catch {
-      // ignore
-    }
-    showToast(`✅ Recorded ${scoreOutOf20}/20 for ${cls} ${subject} (${topic}) in Mastery Heatmap!`);
   }
 
   useEffect(() => {
@@ -2661,11 +2568,15 @@ export default function App() {
   function openMwalimuModal(
     cls?: string,
     sub?: string,
-    initialView: 'chat' | 'studio' | 'quiz' | 'diagram' | 'profile' = 'chat',
+    initialView: 'chat' | 'studio' | 'quiz' | 'diagram' = 'chat',
     focusedDoc?: PaperRecord
   ) {
     const targetCls = focusedDoc?.form || cls || selectedClass || 'Form 3';
     const targetSub = focusedDoc?.subject || sub || selectedSubject || 'Basic Mathematics';
+    if (initialView === 'quiz') {
+      openDailyQuizPage(targetCls, targetSub);
+      return;
+    }
     setMohaActiveClass(targetCls);
     setMohaActiveSubject(targetSub);
     setTsClass(targetCls);
@@ -2757,19 +2668,7 @@ export default function App() {
 
   function markFlashcardTopicMastered(card: FlashcardItem) {
     saveMohaLearnedItem(card.topic, `${card.front} — ${card.back} (${card.formulaOrKeyPoint})`);
-    showToast(`✅ Mastered "${card.topic}"! Added to your Profile Mastery Chart.`);
-  }
-
-  function saveUserProfileChanges(updated: UserProfileData) {
-    setUserProfile(updated);
-    if (updated.school) setTsSchool(updated.school);
-    if (updated.name) setTsTeacher(updated.name);
-    try {
-      localStorage.setItem('elimika_user_profile_v1', JSON.stringify(updated));
-      showToast('Profile saved and linked to Teacher Studio!');
-    } catch {
-      // ignore
-    }
+    showToast(`✅ Mastered "${card.topic}"! Saved to Moha AI Memory.`);
   }
 
   function saveMohaLearnedItem(topic: string, content: string) {
@@ -3262,8 +3161,10 @@ export default function App() {
     customSubTopic?: string,
     customSourceFilter?: 'ALL' | 'textbook' | 'past_paper',
     stayOnDailyQuizPage?: boolean,
-    explicitFocusedDoc?: PaperRecord | null
+    explicitFocusedDoc?: PaperRecord | null,
+    batchLimit = 20
   ) {
+    const safeBatchLimit = typeof batchLimit === 'number' && batchLimit > 0 ? batchLimit : 20;
     const safeCustomClass = typeof customClass === 'string' ? customClass : undefined;
     const safeCustomSubject = typeof customSubject === 'string' ? customSubject : undefined;
     const safeCustomTopic = typeof customTopic === 'string' ? customTopic : undefined;
@@ -3300,6 +3201,8 @@ export default function App() {
       setMohaViewMode('quiz');
     }
     setQuizLoading(true);
+    setQuizPageIndex(0);
+    setQuizShowAll(batchLimit > 20);
     setQuizSelectedAnswers({});
     setQuizResultSaved(false);
     setScoreSubmittedToChallenge(false);
@@ -3329,15 +3232,15 @@ export default function App() {
     );
 
     if (storedForSubject.length > 0) {
-      const immediateBatch = filterAndPrioritizeUnseenQuizItems(
+      const fullTopicBatch = filterAndPrioritizeUnseenQuizItems(
         targetCls,
         targetSub,
         targetTopic,
         fallbackPool,
-        20
+        Math.max(200, storedForSubject.length, safeBatchLimit)
       );
-      markQuestionsBatchAsSeenByStudent(targetCls, targetSub, immediateBatch);
-      setQuizItems(immediateBatch);
+      markQuestionsBatchAsSeenByStudent(targetCls, targetSub, fullTopicBatch.slice(0, 20));
+      setQuizItems(fullTopicBatch);
       setQuizLoading(false);
       return;
     }
@@ -3406,9 +3309,9 @@ export default function App() {
       targetSub,
       targetTopic,
       fallbackPool,
-      20
+      Math.max(200, fallbackPool.length, safeBatchLimit)
     );
-    markQuestionsBatchAsSeenByStudent(targetCls, targetSub, finalFallbackBatch);
+    markQuestionsBatchAsSeenByStudent(targetCls, targetSub, finalFallbackBatch.slice(0, 20));
     setQuizItems(finalFallbackBatch);
     setQuizLoading(false);
   }
@@ -4248,9 +4151,17 @@ export default function App() {
               e.preventDefault();
               resetToStep1();
             }}
-            className="text-sm sm:text-xl font-black tracking-tight text-slate-900 whitespace-nowrap shrink-0 flex items-center gap-1 sm:gap-2"
+            className="text-sm sm:text-xl font-black tracking-tight text-slate-900 whitespace-nowrap shrink-0 flex items-center gap-1.5 sm:gap-2"
           >
-            <GraduationCap className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 shrink-0" />
+            <img
+              src="/assets/aistudio/Golden_Graduation_Cap_Emblem_on_Indigo_Gradient_c53b7e46.png"
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = '/pwa-192x192.png';
+              }}
+              alt="Elimika Logo"
+              className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg shadow-xs shrink-0 object-cover"
+            />
             <span>
               ELIMIKA<span className="text-blue-600">.</span>
             </span>
@@ -4268,18 +4179,12 @@ export default function App() {
             <button
               onClick={() => openBooksPage()}
               className={`hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                activePage === 'books' ? 'text-emerald-700 font-bold underline underline-offset-4' : ''
+                activePage === 'books' || activePage === 'syllabus'
+                  ? 'text-emerald-700 font-bold underline underline-offset-4'
+                  : ''
               }`}
             >
-              📚 TIE Books
-            </button>
-            <button
-              onClick={() => openSyllabusPage()}
-              className={`hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                activePage === 'syllabus' ? 'text-amber-700 font-bold underline underline-offset-4' : ''
-              }`}
-            >
-              📜 Syllabus
+              📚 TIE Books &amp; Syllabus
             </button>
             <button
               onClick={() => openDailyQuizPage()}
@@ -4287,23 +4192,7 @@ export default function App() {
                 activePage === 'daily_quiz' ? 'text-violet-700 font-bold underline underline-offset-4' : ''
               }`}
             >
-              <span>🎯 Daily Solving Quiz</span>
-            </button>
-            <button
-              onClick={() => openMasteryPlannerPage()}
-              className={`hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 cursor-pointer flex items-center gap-1 ${
-                activePage === 'mastery_planner' ? 'text-indigo-700 font-bold underline underline-offset-4' : ''
-              }`}
-            >
-              <span>📊 Mastery Heatmap</span>
-            </button>
-            <button
-              onClick={() => openVirtualLabPage()}
-              className={`hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 cursor-pointer flex items-center gap-1 ${
-                activePage === 'virtual_lab' ? 'text-teal-700 font-bold underline underline-offset-4' : ''
-              }`}
-            >
-              <span>🧪 Virtual Practicals</span>
+              <span>🎯 Daily Quiz</span>
             </button>
             <button
               onClick={() => {
@@ -4318,7 +4207,7 @@ export default function App() {
             </button>
           </nav>
 
-          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <PWAInstallButton />
 
             <button
@@ -4329,65 +4218,40 @@ export default function App() {
               <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current shrink-0" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824zm-3.423-14.416c-6.627 0-12 5.373-12 12 0 2.625.846 5.059 2.284 7.033l-1.494 5.457 5.586-1.466c1.911 1.251 4.187 1.976 6.624 1.976 6.627 0 12-5.373 12-12s-5.373-12-12-12z"/>
               </svg>
-              <span className="hidden sm:inline">WhatsApp</span>
+              <span className="hidden md:inline">WhatsApp</span>
             </button>
 
-            <div
-              role="group"
-              aria-label="Theme Selector"
-              className="inline-flex items-center p-0.5 rounded-xl bg-slate-100 border border-slate-300 shrink-0"
+            {/* Instant 1-Tap Dark / Light Theme Button (Visible on all screens) */}
+            <button
+              type="button"
+              onClick={() => selectThemeMode(darkMode ? 'light' : 'dark')}
+              aria-label={darkMode ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
+              title={darkMode ? 'Currently Dark Mode — Click for Light Mode' : 'Currently Light Mode — Click for Dark Mode'}
+              className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl font-bold text-[11px] sm:text-xs flex items-center gap-1.5 border shadow-xs transition-all cursor-pointer shrink-0 ${
+                darkMode
+                  ? 'bg-amber-400 text-slate-950 border-amber-300'
+                  : 'bg-slate-900 text-white border-slate-700 hover:bg-slate-800'
+              }`}
             >
-              <button
-                type="button"
-                onClick={() => selectThemeMode('light')}
-                aria-label="Light Mode"
-                title="Light Mode (Midnight Plum & Soft White)"
-                className={`px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg font-bold text-[11px] flex items-center gap-1 transition-colors cursor-pointer ${
-                  themeMode === 'light'
-                    ? 'bg-blue-600 text-white shadow-2xs'
-                    : 'text-slate-700 hover:text-slate-900'
-                }`}
-              >
-                <Sun className="w-3.5 h-3.5 shrink-0" />
-                <span className="hidden xl:inline">Light</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => selectThemeMode('dark')}
-                aria-label="Dark Mode"
-                title="Dark Mode (Deep Night Plum)"
-                className={`px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg font-bold text-[11px] flex items-center gap-1 transition-colors cursor-pointer ${
-                  themeMode === 'dark'
-                    ? 'bg-blue-600 text-white shadow-2xs'
-                    : 'text-slate-700 hover:text-slate-900'
-                }`}
-              >
-                <Moon className="w-3.5 h-3.5 shrink-0" />
-                <span className="hidden xl:inline">Dark</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => selectThemeMode('system')}
-                aria-label="System Default Theme"
-                title="System Default (Follow OS Light/Dark Preference)"
-                className={`px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg font-bold text-[11px] flex items-center gap-1 transition-colors cursor-pointer ${
-                  themeMode === 'system'
-                    ? 'bg-blue-600 text-white shadow-2xs'
-                    : 'text-slate-700 hover:text-slate-900'
-                }`}
-              >
-                <Monitor className="w-3.5 h-3.5 shrink-0" />
-                <span className="hidden xl:inline">System</span>
-              </button>
-            </div>
+              {darkMode ? (
+                <>
+                  <Sun className="w-3.5 h-3.5 shrink-0" />
+                  <span>Light</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="w-3.5 h-3.5 shrink-0" />
+                  <span>Dark</span>
+                </>
+              )}
+            </button>
 
             <button
               onClick={() => openMwalimuModal()}
-              className="px-2 sm:px-4 py-1.5 sm:py-2 rounded-xl font-bold text-[11px] sm:text-xs flex items-center gap-1 shadow-sm transition-colors whitespace-nowrap shrink-0 cursor-pointer bg-violet-600 hover:bg-violet-700 text-white"
+              className="hidden sm:flex px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl font-bold text-[11px] sm:text-xs items-center gap-1 shadow-sm transition-colors whitespace-nowrap shrink-0 cursor-pointer bg-violet-600 hover:bg-violet-700 text-white"
             >
               <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-              <span className="sm:hidden">Moha AI</span>
-              <span className="hidden sm:inline">Open Moha AI Site</span>
+              <span>Moha AI</span>
             </button>
           </div>
         </div>
@@ -4539,20 +4403,13 @@ export default function App() {
                   onClick={() => openBooksPage()}
                   className="px-4 py-2 rounded-xl font-bold text-xs sm:text-sm bg-white hover:bg-emerald-50 text-slate-900 border border-slate-200/80 transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
                 >
-                  <span>📚 TIE Books</span>
+                  <span>📚 TIE Books &amp; Syllabus</span>
                 </button>
                 <button
-                  onClick={() => openSyllabusPage()}
-                  className="px-4 py-2 rounded-xl font-bold text-xs sm:text-sm bg-white hover:bg-amber-50 text-slate-900 border border-slate-200/80 transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
+                  onClick={() => openDailyQuizPage()}
+                  className="px-4 py-2 rounded-xl font-bold text-xs sm:text-sm bg-white hover:bg-violet-50 text-slate-900 border border-slate-200/80 transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
                 >
-                  <span>📜 Syllabus</span>
-                </button>
-                <button
-                  onClick={() => openMwalimuModal()}
-                  className="px-4 py-2 rounded-xl font-bold text-xs sm:text-sm bg-violet-600 hover:bg-violet-700 text-white shadow-xs transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  <span>Moha AI Tutor &amp; Studio</span>
+                  <span>🎯 Daily Quiz</span>
                 </button>
               </div>
             </div>
@@ -4650,22 +4507,42 @@ export default function App() {
                   )}
 
                   {/* 1. PRIMARY FOCUS: CHOOSE YOUR CLASS LEVEL */}
-                  <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-6">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3.5">
+                  <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
                       <div>
                         <h2 className="text-base sm:text-lg font-black text-slate-900">
                           01. Select Your Class Level
                         </h2>
                         <p className="text-xs text-slate-500">
-                          Choose a class to browse Past Papers, Marking Schemes, Official TIE Textbooks, and Syllabuses.
+                          Choose a class to browse Past Papers, Marking Schemes, Official TIE Textbooks, Syllabuses &amp; Daily Quiz.
                         </p>
                       </div>
-                      <span className="text-xs font-semibold text-slate-500 tabular-nums">
-                        13 Official Classes · TIE &amp; NECTA Aligned
-                      </span>
+
+                      {/* Segmented Class Tier Filter Toggle */}
+                      <div className="inline-flex items-center p-1 rounded-xl bg-slate-100 border border-slate-200 self-start sm:self-auto shrink-0">
+                        {[
+                          { id: 'ALL' as const, label: 'All (13)' },
+                          { id: 'Secondary' as const, label: '🎓 Secondary (F1–F6)' },
+                          { id: 'Primary' as const, label: '🎒 Primary (Std 1–7)' },
+                        ].map((tab) => (
+                          <button
+                            key={tab.id}
+                            type="button"
+                            onClick={() => setClassTierFilter(tab.id)}
+                            className={`px-2.5 sm:px-3 py-1.5 rounded-lg font-bold text-[11px] sm:text-xs transition-all cursor-pointer whitespace-nowrap ${
+                              classTierFilter === tab.id
+                                ? 'bg-blue-600 text-white shadow-2xs'
+                                : 'text-slate-700 hover:text-slate-900'
+                            }`}
+                          >
+                            {tab.label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
 
                     {/* Secondary School (Form 1-6) */}
+                    {(classTierFilter === 'ALL' || classTierFilter === 'Secondary') && (
                     <div className="space-y-2.5">
                       <div className="flex items-center justify-between text-xs font-bold text-slate-600">
                         <span>Secondary School (Ordinary &amp; Advanced Level · Form 1 – Form 6)</span>
@@ -4709,9 +4586,11 @@ export default function App() {
                         })}
                       </div>
                     </div>
+                    )}
 
                     {/* Primary School (Standard 1-7) */}
-                    <div className="space-y-2.5 pt-2 border-t border-slate-100">
+                    {(classTierFilter === 'ALL' || classTierFilter === 'Primary') && (
+                    <div className={`space-y-2.5 ${classTierFilter === 'ALL' ? 'pt-2 border-t border-slate-100' : ''}`}>
                       <div className="flex items-center justify-between text-xs font-bold text-slate-600">
                         <span>Primary School (Standard 1 – Standard 7)</span>
                         <span className="text-slate-400">SFNA &amp; PSLE</span>
@@ -4752,147 +4631,42 @@ export default function App() {
                         })}
                       </div>
                     </div>
+                    )}
                   </div>
 
-                  {/* 2. PROFESSIONAL 2x2 ACADEMIC STUDY, AI COMPREHENSION & PRACTICALS HUB */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between px-1">
-                      <h2 className="text-base sm:text-lg font-black text-slate-900">
-                        02. Interactive Study, AI Textbook Tutor &amp; Science Labs
+                  {/* 2. COMPACT SINGLE-ROW STUDY TOOLS & LABS STRIP */}
+                  <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <h2 className="text-sm sm:text-base font-black text-slate-900">
+                        02. Interactive Study Tools &amp; Labs
                       </h2>
-                      <span className="text-xs font-medium text-slate-500">
-                        TIE Textbooks · Past Papers · Paper 2 Practicals
-                      </span>
+                      <p className="text-xs text-slate-500">
+                        AI Textbook Tutor, Teacher Studio (Lesson Plans &amp; Schemes), Science Practicals &amp; Mastery Tracker.
+                      </p>
                     </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Card 1: Daily Solving Quiz */}
-                      <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-violet-950 to-slate-900 text-white border border-slate-800 shadow-xs flex flex-col justify-between gap-4">
-                        <div className="space-y-2">
-                          <div className="text-xs font-bold text-amber-400 tracking-wide">
-                            Daily Problem-Solving Quiz · 20 Questions
-                          </div>
-                          <h3 className="text-base sm:text-lg font-black text-white">
-                            TIE Textbook &amp; Past Paper Workout Quiz
-                          </h3>
-                          <p className="text-xs text-slate-300 leading-relaxed">
-                            Choose your Class, Subject, Main Topic, and Sub-Topic to solve step-by-step problems with NECTA Marking Schemes.
-                          </p>
-                          <div className="pt-1.5 flex flex-wrap items-center gap-1.5">
-                            {[
-                              { cls: 'Form 4', sub: 'Basic Mathematics', label: 'Mathematics' },
-                              { cls: 'Form 4', sub: 'Physics', label: 'Physics' },
-                              { cls: 'Form 4', sub: 'Chemistry', label: 'Chemistry' },
-                              { cls: 'Form 4', sub: 'Biology', label: 'Biology' },
-                              { cls: 'Form 4', sub: 'Geography', label: 'Geography' },
-                            ].map((item) => (
-                              <button
-                                key={item.sub}
-                                onClick={() => openDailyQuizPage(item.cls, item.sub)}
-                                className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white font-semibold text-[11px] border border-white/15 cursor-pointer transition-colors"
-                              >
-                                {item.label}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => openDailyQuizPage()}
-                          className="w-full py-2.5 px-4 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs cursor-pointer flex items-center justify-center gap-1.5"
-                        >
-                          <span>Open Daily Solving Quiz →</span>
-                        </button>
-                      </div>
-
-                      {/* Card 2: Moha AI Textbook Reading Comprehension & Teacher Studio */}
-                      <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs flex flex-col justify-between gap-4">
-                        <div className="space-y-2">
-                          <div className="text-xs font-bold text-violet-700 tracking-wide">
-                            Moha AI Tutor &amp; Teacher Studio
-                          </div>
-                          <h3 className="text-base sm:text-lg font-black text-slate-900">
-                            TIE Textbook Reading Comprehension &amp; Q&amp;A
-                          </h3>
-                          <p className="text-xs text-slate-600 leading-relaxed">
-                            Pin any uploaded TIE Textbook or Past Paper for direct reading comprehension, step-by-step question answering, Lesson Plans, Schemes of Work, and Lesson Notes.
-                          </p>
-                          <div className="pt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
-                            <span>📌 Pin TIE Books</span>
-                            <span aria-hidden="true">·</span>
-                            <span>📐 MathJax Solutions</span>
-                            <span aria-hidden="true">·</span>
-                            <span>📋 PO-RALG Lesson Plans</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => openMwalimuModal()}
-                            className="flex-1 py-2.5 px-4 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs sm:text-sm cursor-pointer flex items-center justify-center gap-1.5"
-                          >
-                            <Sparkles className="w-4 h-4" />
-                            <span>Ask Moha AI</span>
-                          </button>
-                          <button
-                            onClick={() => openMwalimuModal(selectedClass || 'Form 4', 'Basic Mathematics', 'studio')}
-                            className="py-2.5 px-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs cursor-pointer shrink-0"
-                          >
-                            Teacher Studio
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Card 3: Virtual Science Practicals Lab (Paper 2) */}
-                      <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs flex flex-col justify-between gap-4">
-                        <div className="space-y-2">
-                          <div className="text-xs font-bold text-teal-700 tracking-wide">
-                            NECTA Paper 2 · Virtual Science Practicals
-                          </div>
-                          <h3 className="text-base sm:text-lg font-black text-slate-900">
-                            Physics, Chemistry &amp; Biology Lab Simulations
-                          </h3>
-                          <p className="text-xs text-slate-600 leading-relaxed">
-                            Conduct interactive Volumetric Analysis (Titration), Qualitative Salt Analysis, Food Tests, Simple Pendulum, and Ohm&apos;s Law experiments.
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => openVirtualLabPage()}
-                          className="w-full py-2.5 px-4 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs sm:text-sm cursor-pointer flex items-center justify-center gap-1.5"
-                        >
-                          <span>Launch Virtual Science Lab →</span>
-                        </button>
-                      </div>
-
-                      {/* Card 4: Topic Mastery Heatmap & Elimika Play */}
-                      <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs flex flex-col justify-between gap-4">
-                        <div className="space-y-2">
-                          <div className="text-xs font-bold text-indigo-700 tracking-wide">
-                            Syllabus Mastery &amp; Educational Games
-                          </div>
-                          <h3 className="text-base sm:text-lg font-black text-slate-900">
-                            Mastery Heatmap, Revision Planner &amp; Elimika Play
-                          </h3>
-                          <p className="text-xs text-slate-600 leading-relaxed">
-                            Track your competence mastery across every TIE chapter, generate a weak-topic timetable, or play NECTA Treasure Hunt &amp; STEM Arena.
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => openMasteryPlannerPage()}
-                            className="flex-1 py-2.5 px-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm cursor-pointer text-center"
-                          >
-                            Mastery Heatmap
-                          </button>
-                          <button
-                            onClick={() => {
-                              setPlayRoute('hub');
-                              setActivePage('game');
-                            }}
-                            className="flex-1 py-2.5 px-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-300 font-bold text-xs sm:text-sm cursor-pointer text-center"
-                          >
-                            🎮 Elimika Play
-                          </button>
-                        </div>
-                      </div>
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => openMwalimuModal()}
+                        className="px-3.5 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Moha AI &amp; Studio</span>
+                      </button>
+                      <button
+                        onClick={() => openVirtualLabPage()}
+                        className="px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                      >
+                        <span>🧪 Virtual Science Lab</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setPlayRoute('hub');
+                          setActivePage('game');
+                        }}
+                        className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-300 font-bold text-xs cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                      >
+                        <span>🎮 Elimika Play</span>
+                      </button>
                     </div>
                   </div>
 
@@ -4928,17 +4702,9 @@ export default function App() {
               {step === 2 && (
                 <section className="space-y-5">
                   <div className="bg-white p-4 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div>
-                      <button
-                        onClick={handleGoBack}
-                        className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 mb-1 cursor-pointer"
-                      >
-                        <ArrowLeft className="w-3.5 h-3.5" /> Back to Classes
-                      </button>
-                      <h2 className="text-lg sm:text-xl font-bold text-slate-900">
-                        Select Subject — <span className="text-blue-600">{selectedClass}</span>
-                      </h2>
-                    </div>
+                    <h2 className="text-lg sm:text-xl font-bold text-slate-900">
+                      Select Subject — <span className="text-blue-600">{selectedClass}</span>
+                    </h2>
 
                     <div className="flex flex-wrap items-center gap-1.5">
                       <button
@@ -4947,19 +4713,13 @@ export default function App() {
                         className="px-3 py-2 rounded-xl font-bold text-xs border border-blue-300 bg-blue-50 text-blue-900 hover:bg-blue-100 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
                         title="Copy direct shareable link for this class"
                       >
-                        🔗 Share Class Link
+                        📲 Share Class
                       </button>
                       <button
                         onClick={() => openBooksPage(selectedClass)}
                         className="px-3 py-2 rounded-xl font-bold text-xs border border-emerald-500 bg-emerald-100 text-emerald-950 hover:bg-emerald-200 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
                       >
-                        TIE Books ↗
-                      </button>
-                      <button
-                        onClick={() => openSyllabusPage()}
-                        className="px-3 py-2 rounded-xl font-bold text-xs border border-amber-400 bg-amber-100 text-amber-950 hover:bg-amber-200 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
-                      >
-                        Syllabus ↗
+                        📚 Books &amp; Syllabus ↗
                       </button>
                     </div>
                   </div>
@@ -4995,70 +4755,77 @@ export default function App() {
                   <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <div>
-                        <button
-                          onClick={handleGoBack}
-                          className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 mb-1 cursor-pointer"
-                        >
-                          <ArrowLeft className="w-3.5 h-3.5" />{' '}
-                          {searchQuery.trim().length > 0 ? 'Back to Previous Page' : 'Back to Subjects'}
-                        </button>
                         <h2 className="text-lg sm:text-xl font-bold text-slate-900">
                           {searchQuery.trim().length > 0
                             ? `Search Results for "${searchQuery}"`
-                            : `${selectedClass} · ${selectedSubject} (Past Papers)`}
+                            : `${selectedClass} · ${selectedSubject} (${filteredPapers.length})`}
                         </h2>
-                        <div className="text-xs font-medium text-slate-500 tabular-nums">
-                          Found {filteredPapers.length} {filteredPapers.length === 1 ? 'item' : 'items'}
-                        </div>
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2">
                         {selectedClass && selectedSubject && (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => copyShareableSubjectLink(selectedClass, selectedSubject)}
-                              className="px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-300 font-bold text-xs whitespace-nowrap shrink-0 cursor-pointer"
-                              title="Copy direct deep link to this Class & Subject"
-                            >
-                              🔗 Copy Subject Link
-                            </button>
-                            <a
-                              href={`https://wa.me/?text=${encodeURIComponent(
-                                `📚 *${selectedClass} — ${selectedSubject} Past Papers & Marking Schemes* on Elimika Tanzania:\n👉 ${buildShareableSubjectUrl(selectedClass, selectedSubject)}`
-                              )}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs whitespace-nowrap shrink-0"
-                            >
-                              📲 Share on WhatsApp
-                            </a>
-                          </>
+                          <button
+                            type="button"
+                            onClick={() => copyShareableSubjectLink(selectedClass, selectedSubject)}
+                            className="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-300 font-bold text-xs whitespace-nowrap shrink-0 cursor-pointer"
+                            title="Copy direct link to share this Class & Subject"
+                          >
+                            📲 Share Subject
+                          </button>
                         )}
                         <a
                           href={getRequestPaperWhatsAppUrl(selectedClass, selectedSubject)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="px-3 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-950 border border-amber-300 font-bold text-xs whitespace-nowrap shrink-0"
-                          title="Request a missing past paper or report a broken link via WhatsApp"
+                          className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-950 border border-amber-300 font-bold text-xs whitespace-nowrap shrink-0"
+                          title="Request a missing past paper via WhatsApp"
                         >
-                          📩 Request Missing Paper
+                          📩 Request Paper
                         </a>
-                        <button
-                          onClick={() => openBooksPage(selectedClass, selectedSubject)}
-                          className="px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold text-xs whitespace-nowrap shrink-0 cursor-pointer"
-                        >
-                          Open TIE Books Page ↗
-                        </button>
                       </div>
                     </div>
 
-                    {/* 1. Select Year */}
-                    <div className="space-y-1.5 pt-2 border-t border-slate-100">
-                      <div className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
-                        1. Select Year
+                    {/* UNIFIED SUBJECT HUB BAR: Instant 1-Tap Switcher for this exact Class & Subject */}
+                    {selectedClass && selectedSubject && !searchQuery.trim() && (
+                      <div className="p-2 rounded-xl bg-slate-100 border border-slate-200 flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-600 px-1.5">
+                          ⚡ {selectedClass} · {selectedSubject}:
+                        </span>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="px-3 py-1.5 rounded-lg bg-blue-600 text-white font-bold text-xs flex items-center gap-1 shadow-2xs">
+                            📄 Past Papers ({filteredPapers.length})
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => openBooksPage(selectedClass, selectedSubject)}
+                            className="px-3 py-1.5 rounded-lg bg-white hover:bg-emerald-50 text-slate-900 border border-slate-300 font-bold text-xs cursor-pointer transition-colors"
+                          >
+                            📚 TIE Textbook &amp; Syllabus
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openDailyQuizPage(selectedClass, selectedSubject)}
+                            className="px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs cursor-pointer transition-colors"
+                          >
+                            🎯 Daily Quiz
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openMwalimuModal(selectedClass, selectedSubject, 'chat')}
+                            className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs cursor-pointer transition-colors"
+                          >
+                            ✨ Ask Moha AI
+                          </button>
+                        </div>
                       </div>
+                    )}
+
+                    {/* Compact Single-Row Filter Bar: Year + Paper Type */}
+                    <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
                       <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 mr-1">
+                          Year:
+                        </span>
                         {['ALL', ...availableYears].map((yr) => (
                           <button
                             key={yr}
@@ -5066,38 +4833,35 @@ export default function App() {
                               setSelectedYear(yr);
                               setPage(1);
                             }}
-                            className={`px-3 py-1.5 text-xs font-bold rounded-xl tabular-nums whitespace-nowrap shrink-0 cursor-pointer ${
+                            className={`px-2.5 py-1 text-xs font-bold rounded-lg tabular-nums whitespace-nowrap shrink-0 cursor-pointer ${
                               selectedYear === yr
                                 ? 'bg-slate-900 text-white'
                                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                             }`}
                           >
-                            {yr === 'ALL' ? 'All Years' : yr}
+                            {yr === 'ALL' ? 'All' : yr}
                           </button>
                         ))}
                       </div>
-                    </div>
 
-                    {/* 2. Select Type of Paper (Annual, Mock, Midterm, NECTA, Pre-NECTA) */}
-                    <div className="space-y-1.5 pt-2 border-t border-slate-100">
-                      <div className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
-                        2. Select Type of Paper (Annual, Mock, Midterm, NECTA or Pre-NECTA)
-                      </div>
                       <div className="flex flex-wrap items-center gap-1.5">
-                        {['ALL', 'Annual', 'Mock', 'Midterm', 'NECTA', 'Pre-NECTA'].map((cat) => (
+                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 mr-1">
+                          Type:
+                        </span>
+                        {['ALL', 'NECTA', 'Pre-NECTA', 'Mock', 'Annual', 'Midterm'].map((cat) => (
                           <button
                             key={cat}
                             onClick={() => {
                               setSelectedCategory(cat);
                               setPage(1);
                             }}
-                            className={`px-3.5 py-2 text-xs font-bold rounded-xl transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                            className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                               selectedCategory === cat
                                 ? 'bg-blue-600 text-white'
                                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                             }`}
                           >
-                            {cat === 'ALL' ? 'All Types' : cat}
+                            {cat === 'ALL' ? 'All' : cat}
                           </button>
                         ))}
                       </div>
@@ -5175,7 +4939,7 @@ export default function App() {
                                 <Download className="w-3.5 h-3.5" />
                                 <span>Download</span>
                               </button>
-                              {hasAnswers ? (
+                              {hasAnswers && (
                                 <button
                                   onClick={() =>
                                     triggerDirectDownloadUrl(p.answersUrl, `${p.title} - Solution.pdf`)
@@ -5184,13 +4948,6 @@ export default function App() {
                                 >
                                   <CheckCircle2 className="w-3.5 h-3.5" />
                                   <span>Solution</span>
-                                </button>
-                              ) : (
-                                <button
-                                  disabled
-                                  className="flex-1 px-3.5 py-2 bg-slate-100 text-slate-400 border border-slate-200 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 whitespace-nowrap cursor-not-allowed"
-                                >
-                                  <span>Pending</span>
                                 </button>
                               )}
                             </div>
@@ -5244,25 +5001,35 @@ export default function App() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="space-y-1">
                   <div className="text-xs font-bold uppercase tracking-wider text-emerald-100">
-                    Official TIE Textbooks Page
+                    Unified TIE Curriculum Library
                   </div>
                   <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-                    TIE Textbooks (Standard 1–7 &amp; Form 1–6)
+                    TIE Textbooks &amp; Official Syllabuses
                   </h1>
                   <p className="text-xs sm:text-sm font-medium text-emerald-50">
-                    Select your Class and Subject to read or download official TIE Books directly from Google Drive
+                    Standard 1–7 &amp; Form 1–6 — Switch between Textbooks and Syllabuses below
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 shrink-0">
-                  <button
-                    onClick={() => openSyllabusPage()}
-                    className="px-3.5 py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs rounded-xl shadow-sm flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
-                  >
-                    <span>Syllabus Page</span>
-                  </button>
+                  <div className="inline-flex items-center p-1 rounded-xl bg-slate-950/30 border border-white/20">
+                    <button
+                      type="button"
+                      onClick={() => openBooksPage()}
+                      className="px-3 py-1.5 rounded-lg bg-white text-emerald-950 font-black text-xs cursor-pointer shadow-xs"
+                    >
+                      📘 Textbooks ({availableUploadedBooks.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openSyllabusPage()}
+                      className="px-3 py-1.5 rounded-lg text-white hover:bg-white/15 font-bold text-xs cursor-pointer"
+                    >
+                      📜 Syllabuses ({availableUploadedSyllabuses.length})
+                    </button>
+                  </div>
                   <button
                     onClick={handleGoBack}
-                    className="px-4 py-2.5 bg-slate-950 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
+                    className="px-4 py-2 bg-slate-950 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
                   >
                     <ArrowLeft className="w-4 h-4" />
                     <span>Back</span>
@@ -5488,19 +5255,35 @@ export default function App() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="space-y-1">
                   <div className="text-xs font-bold uppercase tracking-wider text-slate-900">
-                    Official TIE Syllabus Page
+                    Unified TIE Curriculum Library
                   </div>
                   <h1 className="text-2xl sm:text-3xl font-black text-slate-950 tracking-tight">
-                    Official TIE Syllabuses
+                    Official TIE Syllabuses &amp; Textbooks
                   </h1>
                   <p className="text-xs sm:text-sm font-medium text-slate-900">
                     Primary (Std 1–7), Ordinary Secondary (Form 1–4) &amp; Advanced Level (Form 5–6) — Direct PDF Download
                   </p>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                  <div className="inline-flex items-center p-1 rounded-xl bg-slate-950/15 border border-slate-900/20">
+                    <button
+                      type="button"
+                      onClick={() => openBooksPage()}
+                      className="px-3 py-1.5 rounded-lg text-slate-950 hover:bg-white/50 font-bold text-xs cursor-pointer"
+                    >
+                      📘 Textbooks ({availableUploadedBooks.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openSyllabusPage()}
+                      className="px-3 py-1.5 rounded-lg bg-slate-950 text-amber-300 font-black text-xs cursor-pointer shadow-xs"
+                    >
+                      📜 Syllabuses ({availableUploadedSyllabuses.length})
+                    </button>
+                  </div>
                   <button
                     onClick={handleGoBack}
-                    className="px-4 py-2.5 bg-slate-950 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
+                    className="px-4 py-2 bg-slate-950 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
                   >
                     <ArrowLeft className="w-4 h-4" />
                     <span>Back</span>
@@ -5696,11 +5479,6 @@ export default function App() {
         ];
         const availableSubjectsForDaily =
           TIE_CURRICULUM_SUBJECTS[mohaActiveClass] || TIE_CURRICULUM_SUBJECTS['Form 4'] || ['Basic Mathematics'];
-        const activeTopicForSubtopics =
-          selectedQuizTopic && selectedQuizTopic !== 'ALL'
-            ? selectedQuizTopic
-            : activeSyllabusTopics[0]?.replace(/^\d+\.\d+\s*/, '') || 'Core Topic';
-        const availableSubTopics = getSubTopicsForMainTopic(mohaActiveSubject, activeTopicForSubtopics);
 
         return (
           <motion.div
@@ -5731,12 +5509,6 @@ export default function App() {
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 shrink-0">
-                  <button
-                    onClick={() => openMwalimuModal(mohaActiveClass, mohaActiveSubject, 'quiz')}
-                    className="px-3.5 py-2 bg-violet-600 hover:bg-violet-500 text-white font-bold text-xs rounded-xl cursor-pointer"
-                  >
-                    🏆 Leaderboard &amp; Friend Challenge
-                  </button>
                   <button
                     onClick={handleGoBack}
                     className="px-3.5 py-2 bg-white/15 hover:bg-white/25 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer"
@@ -5797,41 +5569,18 @@ export default function App() {
                 </div>
               )}
 
-              {/* Student Selection Card: Class -> Subject -> Topic -> Sub-Topic -> Question Source */}
-              <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
-                  <div>
-                    <h2 className="text-sm font-black text-slate-900">
-                      1. Configure Your Solving Quiz (Subject · Topic · Sub-Topic · Source)
-                    </h2>
-                    <p className="text-xs text-slate-500">
-                      Every generated quiz question requires solving a real problem from the TIE Student&apos;s Book or NECTA Past Examination Papers.
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 font-bold text-xs">
-                      ✓ Non-Repeating Bank Active (
-                      {getQuestionBankStats(mohaActiveClass, mohaActiveSubject).seenByStudentCount} Solved)
-                    </span>
-                    <button
-                      onClick={() =>
-                        startAiQuiz(
-                          mohaActiveClass,
-                          mohaActiveSubject,
-                          selectedQuizTopic,
-                          selectedQuizSubTopic,
-                          selectedQuizSourceFilter,
-                          true
-                        )
-                      }
-                      className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs rounded-xl cursor-pointer shrink-0"
-                    >
-                      🔄 Generate New Non-Repeating Set
-                    </button>
-                  </div>
+              {/* Simplified Student Selection Card: Class -> Subject -> Topic -> Question Source */}
+              <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h2 className="text-sm font-black text-slate-900">
+                    Select Class, Subject &amp; Topic
+                  </h2>
+                  <span className="px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 font-bold text-[11px]">
+                    ✓ Non-Repeating Bank ({getQuestionBankStats(mohaActiveClass, mohaActiveSubject).seenByStudentCount} Solved)
+                  </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
                   {/* 1. Class Level */}
                   <div>
                     <label className="font-bold text-slate-700 block mb-1">1. Class Level</label>
@@ -5945,36 +5694,9 @@ export default function App() {
                     </select>
                   </div>
 
-                  {/* 4. Sub-Topic */}
+                  {/* 4. Question Source (Textbook vs Past Papers) */}
                   <div>
-                    <label className="font-bold text-slate-700 block mb-1">4. Sub-Topic</label>
-                    <select
-                      value={selectedQuizSubTopic}
-                      onChange={(e) => {
-                        const nextSubT = e.target.value;
-                        startAiQuiz(
-                          mohaActiveClass,
-                          mohaActiveSubject,
-                          selectedQuizTopic,
-                          nextSubT,
-                          selectedQuizSourceFilter,
-                          true
-                        );
-                      }}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold bg-white text-slate-900"
-                    >
-                      <option value="ALL">All Sub-Topics</option>
-                      {availableSubTopics.map((st) => (
-                        <option key={st} value={st}>
-                          {st}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* 5. Question Source (Textbook vs Past Papers) */}
-                  <div>
-                    <label className="font-bold text-slate-700 block mb-1">5. Question Source</label>
+                    <label className="font-bold text-slate-700 block mb-1">4. Question Source</label>
                     <select
                       value={selectedQuizSourceFilter}
                       onChange={(e) => {
@@ -5990,8 +5712,8 @@ export default function App() {
                       }}
                       className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold bg-white text-slate-900"
                     >
-                      <option value="ALL">📚 Both (TIE Textbook + Past Papers)</option>
-                      <option value="textbook">📘 TIE Textbook Exercises Only</option>
+                      <option value="ALL">📚 Both (Textbook + Past Papers)</option>
+                      <option value="textbook">📘 TIE Textbook Only</option>
                       <option value="past_paper">📄 NECTA Past Papers Only</option>
                     </select>
                   </div>
@@ -6019,8 +5741,46 @@ export default function App() {
                   </div>
 
                   {totalQuestions > 0 && (
-                    <div className="px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-black tabular-nums">
-                      Score: {correctCount} / {totalQuestions} ({completionPercentage}% Solved)
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          startAiQuiz(
+                            mohaActiveClass,
+                            mohaActiveSubject,
+                            selectedQuizTopic,
+                            selectedQuizSubTopic,
+                            selectedQuizSourceFilter,
+                            true,
+                            null,
+                            20
+                          )
+                        }
+                        className="px-3 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-black cursor-pointer transition-colors"
+                      >
+                        🔄 Next 20 Unseen Qns
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          startAiQuiz(
+                            mohaActiveClass,
+                            mohaActiveSubject,
+                            selectedQuizTopic,
+                            selectedQuizSubTopic,
+                            selectedQuizSourceFilter,
+                            true,
+                            null,
+                            200
+                          )
+                        }
+                        className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-black cursor-pointer transition-colors"
+                      >
+                        📚 Show All Chapter/Bank Qns
+                      </button>
+                      <div className="px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-black tabular-nums">
+                        Score: {correctCount} / {totalQuestions} ({completionPercentage}% Solved)
+                      </div>
                     </div>
                   )}
                 </div>
@@ -6033,11 +5793,22 @@ export default function App() {
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {quizItems.map((q, qIdx) => {
-                      const selectedIdx = quizSelectedAnswers[qIdx];
-                      const hasAnswered = selectedIdx !== undefined;
-                      const isPastPaperSource =
+                  (() => {
+                    const quizSliceStart = quizShowAll ? 0 : quizPageIndex * 20;
+                    const quizSliceEnd = quizShowAll
+                      ? quizItems.length
+                      : Math.min(quizItems.length, (quizPageIndex + 1) * 20);
+                    const visibleQuizItems = quizItems.slice(quizSliceStart, quizSliceEnd);
+                    const remainingCount = Math.max(0, quizItems.length - quizSliceEnd);
+                    const nextBatchEnd = Math.min(quizItems.length, quizSliceEnd + 20);
+
+                    return (
+                      <div className="space-y-4">
+                        {visibleQuizItems.map((q, localIdx) => {
+                          const qIdx = quizSliceStart + localIdx;
+                          const selectedIdx = quizSelectedAnswers[qIdx];
+                          const hasAnswered = selectedIdx !== undefined;
+                          const isPastPaperSource =
                         (q.sourceRef || '').toLowerCase().includes('necta') ||
                         (q.sourceRef || '').toLowerCase().includes('paper');
                       const diagramSpec = getQuestionDiagramSvg(
@@ -6050,6 +5821,14 @@ export default function App() {
                         Array.isArray(q.options) && q.options[q.correctIndex]
                           ? q.options[q.correctIndex]
                           : '';
+                      const showMcqOptions = Boolean(
+                        Array.isArray(q.options) &&
+                          q.options.length > 0 &&
+                          (q.isMultipleChoice ||
+                            /\b(choose the most|multiple choice|write true|write t for|true or false|match each item)\b/i.test(
+                              q.question
+                            ))
+                      );
 
                       return (
                         <div
@@ -6110,6 +5889,52 @@ export default function App() {
                             </div>
                           )}
 
+                          {showMcqOptions && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                              {q.options.map((optText, oIdx) => {
+                                const optLetter = String.fromCharCode(65 + oIdx);
+                                const isSelected = selectedIdx === oIdx;
+                                const isCorrectOpt = oIdx === q.correctIndex;
+                                let optStyle =
+                                  'bg-white hover:bg-violet-50 border-slate-200 text-slate-800';
+                                if (hasAnswered) {
+                                  if (isCorrectOpt) {
+                                    optStyle =
+                                      'bg-emerald-50 border-emerald-500 text-emerald-950 ring-1 ring-emerald-400';
+                                  } else if (isSelected) {
+                                    optStyle =
+                                      'bg-rose-50 border-rose-400 text-rose-900 ring-1 ring-rose-300';
+                                  } else {
+                                    optStyle = 'bg-slate-50 border-slate-200 text-slate-500 opacity-85';
+                                  }
+                                }
+                                return (
+                                  <button
+                                    key={oIdx}
+                                    type="button"
+                                    onClick={() => handleSelectQuizOption(qIdx, oIdx)}
+                                    className={`text-left p-2.5 rounded-xl border font-semibold text-xs transition-all cursor-pointer flex items-start gap-2.5 ${optStyle}`}
+                                  >
+                                    <span
+                                      className={`w-6 h-6 rounded-lg flex items-center justify-center font-black text-[11px] shrink-0 ${
+                                        hasAnswered && isCorrectOpt
+                                          ? 'bg-emerald-600 text-white'
+                                          : hasAnswered && isSelected
+                                          ? 'bg-rose-600 text-white'
+                                          : 'bg-violet-100 text-violet-900'
+                                      }`}
+                                    >
+                                      {optLetter}
+                                    </span>
+                                    <span className="leading-snug flex-1 pt-0.5">
+                                      <MathText text={optText} />
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+
                           <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
                             <button
                               onClick={() => handleToggleQuizSolution(qIdx)}
@@ -6157,75 +5982,77 @@ export default function App() {
                         </div>
                       );
                     })}
-                  </div>
+
+                        {/* Bottom Next / Remaining Questions Navigation Bar */}
+                        {quizItems.length > 0 && (
+                          <div className="p-4 rounded-2xl bg-violet-50 border border-violet-200 flex flex-wrap items-center justify-between gap-3">
+                            <div className="text-xs font-bold text-slate-800">
+                              <span>
+                                Showing Questions {quizSliceStart + 1}–{quizSliceEnd} of {quizItems.length}
+                              </span>
+                              {remainingCount > 0 && !quizShowAll && (
+                                <span className="ml-2 px-2 py-0.5 rounded-md bg-violet-600 text-white font-black">
+                                  {remainingCount} Remaining {remainingCount === 1 ? 'Question' : 'Questions'}
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-2">
+                              {!quizShowAll && quizPageIndex > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setQuizPageIndex((p) => Math.max(0, p - 1));
+                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                  }}
+                                  className="px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 font-black text-xs cursor-pointer transition-all"
+                                >
+                                  ← Previous Questions ({Math.max(1, (quizPageIndex - 1) * 20 + 1)}–{quizPageIndex * 20})
+                                </button>
+                              )}
+
+                              {!quizShowAll && remainingCount > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const nextPage = quizPageIndex + 1;
+                                    const nextSlice = quizItems.slice(nextPage * 20, (nextPage + 1) * 20);
+                                    markQuestionsBatchAsSeenByStudent(mohaActiveClass, mohaActiveSubject, nextSlice);
+                                    setQuizPageIndex(nextPage);
+                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                  }}
+                                  className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-black text-xs cursor-pointer shadow-sm transition-all"
+                                >
+                                  Next Remaining Questions ({quizSliceEnd + 1}–{nextBatchEnd}) →
+                                </button>
+                              )}
+
+                              {quizItems.length > 20 && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setQuizShowAll((prev) => !prev);
+                                    setQuizPageIndex(0);
+                                  }}
+                                  className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-black text-xs cursor-pointer transition-all"
+                                >
+                                  {quizShowAll
+                                    ? '📄 Show 20 Per Page'
+                                    : `📚 Show All ${quizItems.length} Questions`}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()
                 )}
               </div>
             </div>
           </motion.div>
         );
       })()}
-
-      {/* DEDICATED TOPIC MASTERY HEATMAP & WEAK-TOPIC REVISION PLANNER PAGE */}
-      {activePage === 'mastery_planner' && (
-        <motion.div
-          key="view-mastery-planner"
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -6 }}
-          transition={{ duration: 0.22, ease: 'easeOut' }}
-          className="flex-grow py-6 pb-24 bg-slate-50"
-        >
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-4">
-            <div className="flex items-center justify-between gap-2">
-              <button
-                onClick={handleGoBack}
-                className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-2xs"
-              >
-                <ArrowLeft className="w-4 h-4" /> Back
-              </button>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => openDailyQuizPage(mohaActiveClass, mohaActiveSubject)}
-                  className="px-3.5 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs cursor-pointer"
-                >
-                  🎯 Open 20-Question Solving Quiz
-                </button>
-                <button
-                  onClick={() => openVirtualLabPage(mohaActiveClass)}
-                  className="px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs cursor-pointer"
-                >
-                  🧪 Virtual Science Practicals
-                </button>
-              </div>
-            </div>
-
-            <TopicMasteryPlanner
-              activeClass={selectedClass || savedClass || mohaActiveClass || 'Form 4'}
-              activeSubject={selectedSubject || mohaActiveSubject || 'Basic Mathematics'}
-              quizHistory={quizHistory.map((q) => ({
-                id: q.id,
-                cls: q.cls,
-                subject: q.subject,
-                topic: q.topic,
-                score: q.score,
-                total: q.total,
-                date: q.timestamp,
-              }))}
-              onLaunchTopicQuiz={(cls, subject, topic) => {
-                openDailyQuizPage(cls, subject, topic, 'ALL', 'ALL');
-              }}
-              onOpenTopicNotes={(cls, subject, topic) => {
-                setTsClass(cls);
-                setTsSubject(subject);
-                setTsTopic(topic);
-                setTsSubTopic(topic);
-                openMwalimuModal(cls, subject, 'studio');
-              }}
-              onLogManualPractice={handleLogManualTopicPractice}
-            />
-          </div>
-        </motion.div>
-      )}
 
       {/* DEDICATED VIRTUAL SCIENCE PRACTICALS LAB (NECTA PAPER 2) PAGE */}
       {activePage === 'virtual_lab' && (
@@ -6247,16 +6074,10 @@ export default function App() {
               </button>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => openMasteryPlannerPage(mohaActiveClass, mohaActiveSubject)}
-                  className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs cursor-pointer"
-                >
-                  📊 Syllabus Mastery Heatmap
-                </button>
-                <button
                   onClick={() => openDailyQuizPage(mohaActiveClass, mohaActiveSubject)}
                   className="px-3.5 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs cursor-pointer"
                 >
-                  🎯 20-Question Practical Quiz
+                  🎯 Daily Quiz
                 </button>
               </div>
             </div>
@@ -6272,24 +6093,76 @@ export default function App() {
       )}
       </AnimatePresence>
 
-      {/* STICKY MOBILE BOTTOM BAR */}
-      {activePage === 'papers' && step > 1 && (
-        <div className="fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200 px-4 py-2.5 flex items-center justify-between gap-3 sm:hidden">
+      {/* PERSISTENT 5-TAB MOBILE BOTTOM NAVIGATION BAR */}
+      {activePage !== 'game' && (
+        <nav
+          aria-label="Mobile Primary Navigation"
+          className="fixed bottom-0 inset-x-0 z-30 bg-[var(--bg-surface-glass)] backdrop-blur-md border-t border-[var(--border-subtle)] px-2 py-1.5 flex items-center justify-around gap-1 lg:hidden shadow-lg"
+        >
           <button
-            onClick={handleGoBack}
-            className="flex-1 py-2.5 px-3 bg-slate-100 active:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5"
+            type="button"
+            onClick={() => resetToStep1()}
+            className={`flex-1 py-1.5 px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold cursor-pointer transition-colors ${
+              activePage === 'papers'
+                ? 'bg-blue-600 text-white'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
           >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Go Back</span>
+            <FileText className="w-4 h-4" />
+            <span>Papers</span>
           </button>
           <button
-            onClick={resetToStep1}
-            className="flex-1 py-2.5 px-3 bg-blue-600 active:bg-blue-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5"
+            type="button"
+            onClick={() => openBooksPage()}
+            className={`flex-1 py-1.5 px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold cursor-pointer transition-colors ${
+              activePage === 'books' || activePage === 'syllabus'
+                ? 'bg-emerald-600 text-white'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
           >
-            <Home className="w-4 h-4" />
-            <span>Home</span>
+            <span>📚</span>
+            <span>Books &amp; Syllabus</span>
           </button>
-        </div>
+          <button
+            type="button"
+            onClick={() => openDailyQuizPage()}
+            className={`flex-1 py-1.5 px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold cursor-pointer transition-colors ${
+              activePage === 'daily_quiz'
+                ? 'bg-violet-600 text-white'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <span>🎯</span>
+            <span>Daily Quiz</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => openMwalimuModal()}
+            className={`flex-1 py-1.5 px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold cursor-pointer transition-colors ${
+              activePage === 'moha'
+                ? 'bg-violet-600 text-white'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>Moha AI</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setPlayRoute('hub');
+              setActivePage('game');
+            }}
+            className={`flex-1 py-1.5 px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold cursor-pointer transition-colors ${
+              (activePage as string) === 'game'
+                ? 'bg-amber-500 text-slate-950'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <span>🎮</span>
+            <span>Play</span>
+          </button>
+        </nav>
       )}
 
       {/* PRINT BASKET FLOATING BAR */}
@@ -6636,26 +6509,18 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Row 2 on Mobile / Right on Desktop: Workspace Tab Switcher + Teach AI */}
+              {/* Row 2 on Mobile / Right on Desktop: Workspace Tab Switcher + Daily Quiz + Teach AI + Dark Mode */}
               <div className="flex items-center gap-1 overflow-x-auto no-scrollbar shrink-0">
                 {[
                   { id: 'chat' as const, label: '💬 Chat' },
                   { id: 'studio' as const, label: '📘 Studio & Docs' },
-                  { id: 'quiz' as const, label: '🎯 Quiz' },
                   { id: 'diagram' as const, label: '📐 Diagrams' },
-                  { id: 'profile' as const, label: '👤 Profile' },
                 ].map((tab) => {
                   const active = mohaViewMode === tab.id;
                   return (
                     <button
                       key={tab.id}
-                      onClick={() => {
-                        if (tab.id === 'quiz' && quizItems.length === 0) {
-                          startAiQuiz();
-                          return;
-                        }
-                        setMohaViewMode(tab.id);
-                      }}
+                      onClick={() => setMohaViewMode(tab.id)}
                       className={`px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                         active
                           ? 'bg-violet-600 text-white shadow-2xs'
@@ -6666,6 +6531,14 @@ export default function App() {
                     </button>
                   );
                 })}
+                <button
+                  type="button"
+                  onClick={() => openDailyQuizPage(mohaActiveClass, mohaActiveSubject)}
+                  className="px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-bold whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs cursor-pointer shrink-0"
+                  title="Open unified Daily Solving Quiz for this Class & Subject"
+                >
+                  🎯 Daily Quiz
+                </button>
                 <button
                   type="button"
                   onClick={() => setMohaLearnPanelOpen(true)}
@@ -6681,60 +6554,17 @@ export default function App() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setWhatsappModalOpen(true)}
-                  className="px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-bold whitespace-nowrap bg-[#25D366] hover:bg-[#1ebe5d] text-white shadow-2xs cursor-pointer flex items-center gap-1 shrink-0"
-                  title="Elimika WhatsApp Channel & Community"
+                  onClick={() => selectThemeMode(darkMode ? 'light' : 'dark')}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 cursor-pointer shrink-0 ${
+                    darkMode
+                      ? 'bg-amber-400 text-slate-950'
+                      : 'bg-slate-900 text-white'
+                  }`}
+                  title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
                 >
-                  <svg className="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824zm-3.423-14.416c-6.627 0-12 5.373-12 12 0 2.625.846 5.059 2.284 7.033l-1.494 5.457 5.586-1.466c1.911 1.251 4.187 1.976 6.624 1.976 6.627 0 12-5.373 12-12s-5.373-12-12-12z"/>
-                  </svg>
-                  <span>WhatsApp</span>
+                  {darkMode ? <Sun className="w-3.5 h-3.5 shrink-0" /> : <Moon className="w-3.5 h-3.5 shrink-0" />}
+                  <span>{darkMode ? 'Light' : 'Dark'}</span>
                 </button>
-                <div
-                  role="group"
-                  aria-label="Theme Selector"
-                  className="inline-flex items-center p-0.5 rounded-lg bg-slate-100 border border-slate-300 shrink-0"
-                >
-                  <button
-                    type="button"
-                    onClick={() => selectThemeMode('light')}
-                    className={`px-2 py-1 rounded-md text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors ${
-                      themeMode === 'light'
-                        ? 'bg-violet-600 text-white shadow-2xs'
-                        : 'text-slate-700 hover:text-slate-900'
-                    }`}
-                    title="Light Mode"
-                  >
-                    <Sun className="w-3 h-3 shrink-0" />
-                    <span className="hidden md:inline">Light</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => selectThemeMode('dark')}
-                    className={`px-2 py-1 rounded-md text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors ${
-                      themeMode === 'dark'
-                        ? 'bg-violet-600 text-white shadow-2xs'
-                        : 'text-slate-700 hover:text-slate-900'
-                    }`}
-                    title="Dark Mode"
-                  >
-                    <Moon className="w-3 h-3 shrink-0" />
-                    <span className="hidden md:inline">Dark</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => selectThemeMode('system')}
-                    className={`px-2 py-1 rounded-md text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors ${
-                      themeMode === 'system'
-                        ? 'bg-violet-600 text-white shadow-2xs'
-                        : 'text-slate-700 hover:text-slate-900'
-                    }`}
-                    title="System Default"
-                  >
-                    <Monitor className="w-3 h-3 shrink-0" />
-                    <span className="hidden md:inline">System</span>
-                  </button>
-                </div>
               </div>
             </div>
           </div>
@@ -6745,59 +6575,6 @@ export default function App() {
               {/* Minimal Single-Row Quick Actions */}
               <div className="shrink-0 px-3 sm:px-5 py-1.5 bg-slate-100/80 border-b border-slate-200 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar text-xs">
                 <div className="flex items-center gap-1.5 whitespace-nowrap">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const activeChap =
-                        selectedQuizTopic && selectedQuizTopic !== 'ALL'
-                          ? selectedQuizTopic
-                          : activeSyllabusTopics[0]?.replace(/^\d+\.\d+\s*/, '').trim() || 'Core Topic';
-                      setTsClass(mohaActiveClass);
-                      setTsSubject(mohaActiveSubject);
-                      setTsTopic(activeChap);
-                      setTsSubTopic(activeChap);
-                      setMohaViewMode('studio');
-                      submitTeacherStudioDoc('lessonplan');
-                    }}
-                    className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] cursor-pointer"
-                  >
-                    📋 4-Stage Lesson Plan
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const activeChap =
-                        selectedQuizTopic && selectedQuizTopic !== 'ALL'
-                          ? selectedQuizTopic
-                          : activeSyllabusTopics[0]?.replace(/^\d+\.\d+\s*/, '').trim() || 'Core Topic';
-                      setTsClass(mohaActiveClass);
-                      setTsSubject(mohaActiveSubject);
-                      setTsTopic(activeChap);
-                      setTsSubTopic(activeChap);
-                      setMohaViewMode('studio');
-                      submitTeacherStudioDoc('schemeofwork');
-                    }}
-                    className="px-2.5 py-1 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-[11px] cursor-pointer"
-                  >
-                    📅 12-Col Scheme of Work
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const activeChap =
-                        selectedQuizTopic && selectedQuizTopic !== 'ALL'
-                          ? selectedQuizTopic
-                          : activeSyllabusTopics[0]?.replace(/^\d+\.\d+\s*/, '').trim() || 'Core Topic';
-                      setTsClass(mohaActiveClass);
-                      setTsSubject(mohaActiveSubject);
-                      setTsTopic(activeChap);
-                      setTsSubTopic(activeChap);
-                      submitTeacherStudioDoc('lessonnotes');
-                    }}
-                    className="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] cursor-pointer"
-                  >
-                    📘 Notes + Diagram
-                  </button>
                   <button
                     type="button"
                     onClick={() => {
@@ -6969,728 +6746,6 @@ export default function App() {
               </div>
             </div>
           )}
-
-          {/* ==================== VIEW 2: NECTA QUIZ, 'CHALLENGE A FRIEND' & LEADERBOARD ==================== */}
-          {mohaViewMode === 'quiz' && (() => {
-            const totalQuestions = quizItems.length;
-            const answeredCount = quizItems.reduce(
-              (acc, _, idx) => acc + (quizSelectedAnswers[idx] !== undefined ? 1 : 0),
-              0
-            );
-            const correctCount = quizItems.reduce(
-              (acc, item, idx) => acc + (quizSelectedAnswers[idx] === item.correctIndex ? 1 : 0),
-              0
-            );
-            const completionPercentage =
-              totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0;
-            const isQuizComplete = totalQuestions > 0 && answeredCount === totalQuestions;
-
-            return (
-            <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-6">
-              <div className="max-w-6xl mx-auto space-y-5">
-                {/* Quiz Session Completion Progress Bar at Top of Quiz View */}
-                {totalQuestions > 0 && (
-                  <div
-                    role="progressbar"
-                    aria-valuenow={completionPercentage}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-label="Quiz completion progress"
-                    className="sticky top-0 z-20 bg-white/95 backdrop-blur-md p-3.5 sm:px-5 sm:py-3.5 rounded-2xl border border-slate-200 shadow-xs space-y-2"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`px-2.5 py-0.5 rounded-md font-black uppercase tracking-wider text-[11px] ${
-                            isQuizComplete
-                              ? 'bg-emerald-100 text-emerald-900'
-                              : 'bg-violet-100 text-violet-900'
-                          }`}
-                        >
-                          {isQuizComplete ? '✅ Quiz Completed' : '📊 Quiz Progress'}
-                        </span>
-                        <span className="font-bold text-slate-800 tabular-nums">
-                          {answeredCount} of {totalQuestions} Questions Answered
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-3 tabular-nums">
-                        <span className="text-slate-600 font-semibold">
-                          Correct:{' '}
-                          <strong className="text-emerald-700">
-                            {correctCount}/{totalQuestions}
-                          </strong>
-                        </span>
-                        <span
-                          className={`text-sm font-black ${
-                            isQuizComplete ? 'text-emerald-700' : 'text-violet-700'
-                          }`}
-                        >
-                          {completionPercentage}%
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Smooth Animated Progress Bar Track */}
-                    <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/80">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${completionPercentage}%` }}
-                        transition={{ duration: 0.3, ease: 'easeOut' }}
-                        className={`h-full rounded-full ${
-                          isQuizComplete
-                            ? 'bg-gradient-to-r from-emerald-500 to-teal-500'
-                            : 'bg-gradient-to-r from-violet-600 to-blue-600'
-                        }`}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Simple, Clean Quiz & Friend Challenge Control Card */}
-                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
-                  {/* Row 1: Topic + Sub-Topic + Source Filter + Player Name + New Quiz */}
-                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 text-xs items-end">
-                    <div className="sm:col-span-4">
-                      <label className="font-bold text-slate-700 block mb-1">
-                        1. Topic ({mohaActiveClass} {mohaActiveSubject})
-                      </label>
-                      <select
-                        value={selectedQuizTopic}
-                        onChange={(e) => {
-                          const nextTopic = e.target.value;
-                          const nextSubTopics = getSubTopicsForMainTopic(
-                            mohaActiveSubject,
-                            nextTopic === 'ALL' ? activeSyllabusTopics[0] || '' : nextTopic
-                          );
-                          const firstSubT = nextSubTopics[0] || 'ALL';
-                          setSelectedQuizTopic(nextTopic);
-                          setSelectedQuizSubTopic(firstSubT);
-                          startAiQuiz(
-                            mohaActiveClass,
-                            mohaActiveSubject,
-                            nextTopic,
-                            firstSubT,
-                            selectedQuizSourceFilter
-                          );
-                        }}
-                        className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold bg-white text-slate-900"
-                      >
-                        <option value="ALL">All Syllabus Topics ({mohaActiveSubject})</option>
-                        <optgroup label="📜 Official TIE Syllabus Topics">
-                          {activeSyllabusTopics.map((t) => {
-                            const cleanT = t.replace(/^\d+\.\d+\s*/, '');
-                            return (
-                              <option key={t} value={cleanT}>
-                                {t}
-                              </option>
-                            );
-                          })}
-                        </optgroup>
-                        {(activeSiteResources.books.length > 0 || activeSiteResources.papers.length > 0) && (
-                          <optgroup label="📚 Website TIE Books & Past Papers">
-                            {activeSiteResources.books.map((b, idx) => (
-                              <option key={`book-${idx}`} value={b.title}>
-                                📘 {b.title} ({b.form})
-                              </option>
-                            ))}
-                            {activeSiteResources.papers.slice(0, 6).map((p, idx) => (
-                              <option key={`paper-${idx}`} value={`${p.title} (${p.year})`}>
-                                📄 {p.title} ({p.year})
-                              </option>
-                            ))}
-                          </optgroup>
-                        )}
-                      </select>
-                    </div>
-
-                    <div className="sm:col-span-3">
-                      <label className="font-bold text-slate-700 block mb-1">2. Sub-Topic</label>
-                      <select
-                        value={selectedQuizSubTopic}
-                        onChange={(e) => {
-                          const nextSubT = e.target.value;
-                          setSelectedQuizSubTopic(nextSubT);
-                          startAiQuiz(
-                            mohaActiveClass,
-                            mohaActiveSubject,
-                            selectedQuizTopic,
-                            nextSubT,
-                            selectedQuizSourceFilter
-                          );
-                        }}
-                        className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold bg-white text-slate-900"
-                      >
-                        <option value="ALL">All Sub-Topics</option>
-                        {getSubTopicsForMainTopic(
-                          mohaActiveSubject,
-                          selectedQuizTopic === 'ALL' ? activeSyllabusTopics[0] || '' : selectedQuizTopic
-                        ).map((st) => (
-                          <option key={st} value={st}>
-                            {st}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="sm:col-span-2">
-                      <label className="font-bold text-slate-700 block mb-1">3. Question Source</label>
-                      <select
-                        value={selectedQuizSourceFilter}
-                        onChange={(e) => {
-                          const nextSrc = e.target.value as 'ALL' | 'textbook' | 'past_paper';
-                          setSelectedQuizSourceFilter(nextSrc);
-                          startAiQuiz(
-                            mohaActiveClass,
-                            mohaActiveSubject,
-                            selectedQuizTopic,
-                            selectedQuizSubTopic,
-                            nextSrc
-                          );
-                        }}
-                        className="w-full px-2.5 py-2 rounded-xl border border-slate-300 font-bold bg-white text-slate-900"
-                      >
-                        <option value="ALL">📚 Book + Past Papers</option>
-                        <option value="textbook">📘 TIE Book Only</option>
-                        <option value="past_paper">📄 Past Papers Only</option>
-                      </select>
-                    </div>
-
-                    <div className="sm:col-span-3 flex items-center gap-1.5">
-                      <input
-                        type="text"
-                        value={challengePlayerName}
-                        onChange={(e) => setChallengePlayerName(e.target.value)}
-                        placeholder={userProfile.name || 'Your Name'}
-                        className="w-28 px-2.5 py-2 rounded-xl border border-slate-300 font-semibold bg-white"
-                      />
-                      <button
-                        onClick={() =>
-                          startAiQuiz(
-                            mohaActiveClass,
-                            mohaActiveSubject,
-                            selectedQuizTopic,
-                            selectedQuizSubTopic,
-                            selectedQuizSourceFilter
-                          )
-                        }
-                        className="flex-1 px-2.5 py-2 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-xl cursor-pointer whitespace-nowrap"
-                      >
-                        🔄 Solve
-                      </button>
-                      <button
-                        onClick={() => setShowFlashcardsSection((v) => !v)}
-                        className="px-2.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold cursor-pointer shrink-0"
-                        title="Toggle Revision Flashcards"
-                      >
-                        {showFlashcardsSection ? 'Hide' : '🗂️'}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Row 2: Simple One-Line Friend Challenge Bar */}
-                  <div className="pt-2.5 border-t border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-2.5 text-xs">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-black text-slate-800">🤝 Challenge a Friend:</span>
-                      {activeChallenge?.id && (
-                        <span className="px-2.5 py-1 rounded-lg bg-amber-300 text-slate-950 font-black tracking-wider">
-                          CODE: {activeChallenge.id}
-                        </span>
-                      )}
-                      <button
-                        onClick={() => createFriendChallenge()}
-                        disabled={challengeCreating}
-                        className="px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white font-bold cursor-pointer disabled:opacity-50"
-                      >
-                        {challengeCreating ? 'Creating...' : '📋 Copy Challenge Link'}
-                      </button>
-                      <a
-                        href={getChallengeWhatsAppUrl()}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
-                      >
-                        📲 WhatsApp Friend
-                      </a>
-                      <button
-                        onClick={() => startFriendTurnSameDevice()}
-                        className="px-3 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300 font-bold cursor-pointer"
-                      >
-                        👥 Friend&apos;s Turn
-                      </button>
-                    </div>
-
-                    <div className="flex items-center gap-1.5">
-                      <input
-                        type="text"
-                        value={joinChallengeCode}
-                        onChange={(e) => setJoinChallengeCode(e.target.value.toUpperCase())}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && joinChallengeCode.trim()) {
-                            loadSharedChallengeFromUrl(joinChallengeCode);
-                          }
-                        }}
-                        placeholder="Friend Code (e.g. MATH-301)"
-                        className="px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-300 font-bold uppercase text-slate-900 w-44 focus:outline-none focus:border-violet-600"
-                      />
-                      <button
-                        onClick={() => loadSharedChallengeFromUrl(joinChallengeCode)}
-                        disabled={joiningChallengeByCode || !joinChallengeCode.trim()}
-                        className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white font-bold cursor-pointer shrink-0"
-                      >
-                        {joiningChallengeByCode ? '...' : 'Join'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Collapsible Revision Flashcards Deck */}
-                {showFlashcardsSection && flashcards.length > 0 && (
-                  <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <h3 className="text-sm font-black text-slate-900">
-                        🗂️ Revision Flashcards ({mohaActiveClass} · {mohaActiveSubject})
-                      </h3>
-                      <button
-                        onClick={() => loadAiFlashcards()}
-                        disabled={flashcardLoading}
-                        className="px-3 py-1 bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold rounded-lg cursor-pointer"
-                      >
-                        {flashcardLoading ? 'Generating...' : '✨ New Cards'}
-                      </button>
-                    </div>
-                    {(() => {
-                      const card = flashcards[activeFlashcardIdx] || flashcards[0];
-                      return (
-                        <div
-                          onClick={() => setFlashcardFlipped((f) => !f)}
-                          className={`p-5 rounded-xl border-2 transition-all cursor-pointer ${
-                            flashcardFlipped
-                              ? 'bg-emerald-50 border-emerald-400 text-emerald-950'
-                              : 'bg-violet-50/70 border-violet-300 text-slate-900'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between text-[11px] font-bold uppercase">
-                            <span>
-                              {flashcardFlipped ? '✅ MODEL ANSWER' : '❓ QUESTION PROMPT'} ({activeFlashcardIdx + 1}/
-                              {flashcards.length})
-                            </span>
-                            <span>{card.topic}</span>
-                          </div>
-                          <div className="text-sm font-bold my-2.5">
-                            <MathText text={flashcardFlipped ? card.back : card.front} />
-                          </div>
-                          <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-200/70">
-                            <span>
-                              Key Point: <MathText text={card.formulaOrKeyPoint} />
-                            </span>
-                            <span className="font-bold underline">Click to flip ↻</span>
-                          </div>
-                        </div>
-                      );
-                    })()}
-                    <div className="flex items-center justify-between text-xs">
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => {
-                            setFlashcardFlipped(false);
-                            setActiveFlashcardIdx((i) => (i - 1 + flashcards.length) % flashcards.length);
-                          }}
-                          className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 font-bold cursor-pointer"
-                        >
-                          ← Prev
-                        </button>
-                        <button
-                          onClick={() => {
-                            setFlashcardFlipped(false);
-                            setActiveFlashcardIdx((i) => (i + 1) % flashcards.length);
-                          }}
-                          className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 font-bold cursor-pointer"
-                        >
-                          Next →
-                        </button>
-                      </div>
-                      <button
-                        onClick={() => markFlashcardTopicMastered(flashcards[activeFlashcardIdx] || flashcards[0])}
-                        className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-bold cursor-pointer"
-                      >
-                        ✓ Mark Mastered
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Main Quiz Questions (Left 7 cols) + Live NECTA Leaderboard (Right 5 cols) */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-                  {/* Left: NECTA Topic Questions */}
-                  <div className="lg:col-span-7 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
-                      <div>
-                        <span className="text-xs font-black uppercase tracking-wider text-violet-700">
-                          {selectedQuizTopic === 'ALL' ? 'All Syllabus Topics' : selectedQuizTopic}
-                        </span>
-                        <h3 className="text-sm font-black text-slate-900">
-                          {mohaActiveClass} {mohaActiveSubject} — NECTA Practice Questions
-                        </h3>
-                      </div>
-                      {totalQuestions > 0 && (
-                        <div className="flex items-center gap-2">
-                          <span className="px-2.5 py-1 rounded-lg bg-violet-50 border border-violet-200 text-violet-900 text-xs font-bold tabular-nums">
-                            {completionPercentage}% Done
-                          </span>
-                          <div className="px-3 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-bold tabular-nums">
-                            Score: {correctCount} / {totalQuestions}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Quick Integrated Website Content Pills for Quiz */}
-                    {(activeSiteResources.books.length > 0 || activeSiteResources.papers.length > 0) && (
-                      <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5 text-xs">
-                        <div className="font-bold text-slate-600 text-[11px] flex items-center justify-between">
-                          <span>📚 Integrated Website Content (Click to Quiz on a Specific Book or Past Paper):</span>
-                        </div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {activeSiteResources.books.slice(0, 2).map((b, i) => (
-                            <button
-                              key={`qbook-${i}`}
-                              onClick={() => startAiQuiz(mohaActiveClass, mohaActiveSubject, b.title)}
-                              className={`px-2.5 py-1 rounded-lg font-bold text-[11px] border cursor-pointer transition-colors ${
-                                selectedQuizTopic === b.title
-                                  ? 'bg-emerald-600 text-white border-emerald-600'
-                                  : 'bg-white hover:bg-emerald-50 text-emerald-900 border-emerald-200'
-                              }`}
-                            >
-                              📘 {b.title}
-                            </button>
-                          ))}
-                          {activeSiteResources.papers.slice(0, 3).map((p, i) => {
-                            const label = `${p.title} (${p.year})`;
-                            return (
-                              <button
-                                key={`qpaper-${i}`}
-                                onClick={() => startAiQuiz(mohaActiveClass, mohaActiveSubject, label)}
-                                className={`px-2.5 py-1 rounded-lg font-bold text-[11px] border cursor-pointer transition-colors ${
-                                  selectedQuizTopic === label
-                                    ? 'bg-blue-600 text-white border-blue-600'
-                                    : 'bg-white hover:bg-blue-50 text-blue-900 border-blue-200'
-                                }`}
-                              >
-                                📄 {p.title} ({p.year})
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                    {quizLoading ? (
-                      <div className="p-8 bg-slate-50 rounded-xl border border-slate-200 flex flex-col items-center justify-center gap-2">
-                        <div className="w-6 h-6 border-2 border-violet-600 border-t-transparent rounded-full animate-spin" />
-                        <p className="text-xs font-bold text-slate-600">
-                          Preparing NECTA-aligned questions for {selectedQuizTopic}...
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {quizItems.map((q, qIdx) => {
-                          const selectedIdx = quizSelectedAnswers[qIdx];
-                          const hasAnswered = selectedIdx !== undefined;
-                          const diagramSpec = getQuestionDiagramSvg(
-                            q.question,
-                            q.topic,
-                            q.subTopic,
-                            mohaActiveSubject
-                          );
-                          const finalAnswerText =
-                            Array.isArray(q.options) && q.options[q.correctIndex]
-                              ? q.options[q.correctIndex]
-                              : '';
-
-                          return (
-                            <div
-                              key={qIdx}
-                              className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2.5"
-                            >
-                              <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500">
-                                <div className="flex flex-wrap items-center gap-1.5">
-                                  <span className="font-bold text-slate-800">
-                                    Question {qIdx + 1} of {quizItems.length}
-                                  </span>
-                                  {q.sourceRef && (
-                                    <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-900 border border-blue-200 font-semibold">
-                                      {q.sourceRef}
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="flex flex-wrap items-center gap-1.5">
-                                  {q.topic && <span className="font-bold text-violet-700">{q.topic}</span>}
-                                  {q.subTopic && (
-                                    <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-950 font-bold">
-                                      {q.subTopic}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-
-                              <div className="font-bold text-xs sm:text-sm text-slate-900 leading-relaxed bg-white p-3 rounded-lg border border-slate-200">
-                                <MathText as="div" text={q.question} className="space-y-1" />
-                              </div>
-
-                              {diagramSpec && (
-                                <div className="p-2.5 rounded-lg bg-white border border-slate-200 space-y-1">
-                                  <div className="text-[10px] font-black text-slate-700 flex items-center justify-between">
-                                    <span>📐 {diagramSpec.title}</span>
-                                    <span className="text-[10px] text-slate-500">SVG Figure</span>
-                                  </div>
-                                  <div
-                                    className="w-full overflow-x-auto"
-                                    dangerouslySetInnerHTML={{ __html: diagramSpec.svgHtml }}
-                                  />
-                                  {diagramSpec.caption && (
-                                    <p className="text-[10px] text-slate-500 text-center font-medium">
-                                      {diagramSpec.caption}
-                                    </p>
-                                  )}
-                                </div>
-                              )}
-
-                              <div className="flex items-center justify-between gap-2 pt-0.5">
-                                <button
-                                  onClick={() => handleToggleQuizSolution(qIdx)}
-                                  className={`px-3.5 py-1.5 rounded-lg font-black text-xs transition-all cursor-pointer flex items-center gap-1.5 ${
-                                    hasAnswered
-                                      ? 'bg-slate-800 hover:bg-slate-900 text-white'
-                                      : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                                  }`}
-                                >
-                                  <span>{hasAnswered ? '🙈 Hide Solution' : '💡 Show Solution'}</span>
-                                </button>
-                              </div>
-
-                              {hasAnswered && (
-                                <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-xs font-medium text-emerald-950 space-y-2">
-                                  {finalAnswerText && (
-                                    <div className="p-2 rounded bg-white border border-emerald-300 flex flex-wrap items-center gap-2">
-                                      <span className="px-2 py-0.5 rounded bg-emerald-600 text-white font-black text-[10px]">
-                                        Final Answer
-                                      </span>
-                                      <MathText
-                                        text={finalAnswerText}
-                                        className="font-black text-emerald-950 text-xs"
-                                      />
-                                    </div>
-                                  )}
-                                  <div>
-                                    <strong className="block mb-1 text-emerald-900">
-                                      ✅ Worked Step-by-Step Solution:
-                                    </strong>
-                                    <MathText as="div" text={q.explanation} className="leading-relaxed" />
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-
-                        {/* Manual / Instant Submit to Leaderboard CTA */}
-                        {quizItems.length > 0 && Object.keys(quizSelectedAnswers).length > 0 && (
-                          <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 flex flex-wrap items-center justify-between gap-2 text-xs">
-                            <div className="font-bold text-amber-950">
-                              {scoreSubmittedToChallenge
-                                ? '✅ Your score is live on the Leaderboard! Share the Challenge Link so friends can try to beat it.'
-                                : 'Finished answering? Post your score to the Topic Leaderboard or challenge a friend!'}
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2">
-                              <button
-                                onClick={() => {
-                                  const correctCount = quizItems.reduce(
-                                    (acc, item, idx) =>
-                                      acc + (quizSelectedAnswers[idx] === item.correctIndex ? 1 : 0),
-                                    0
-                                  );
-                                  submitChallengeScore(correctCount, quizItems.length);
-                                }}
-                                className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold cursor-pointer"
-                              >
-                                🏆 Update Leaderboard Score
-                              </button>
-                              <button
-                                onClick={() => startFriendTurnSameDevice()}
-                                className="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold cursor-pointer"
-                              >
-                                👥 Let Friend Play Next
-                              </button>
-                              <button
-                                onClick={() => createFriendChallenge()}
-                                className="px-3.5 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white font-bold cursor-pointer"
-                              >
-                                🤝 Share Challenge Link
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Right: Live NECTA Topic Leaderboard */}
-                  <div className="lg:col-span-5 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-                    <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
-                      <div>
-                        <h3 className="text-sm font-black text-slate-900 flex items-center gap-1.5">
-                          <span>🏆 NECTA Topic Leaderboard</span>
-                        </h3>
-                        <p className="text-[11px] text-slate-500">
-                          Highest scores on shared NECTA topic challenges
-                        </p>
-                      </div>
-                      <button
-                        onClick={fetchAllChallenges}
-                        className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer"
-                      >
-                        Refresh
-                      </button>
-                    </div>
-
-                    {/* Active Topic Challenge Switcher */}
-                    {allChallenges.length > 0 && (
-                      <div className="space-y-1.5">
-                        <div className="text-[11px] font-bold text-slate-500 uppercase">
-                          Select Topic Challenge Board:
-                        </div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {allChallenges.slice(0, 6).map((ch) => {
-                            const isCurrent = activeChallenge?.id === ch.id;
-                            return (
-                              <button
-                                key={ch.id}
-                                onClick={() => {
-                                  setActiveChallenge(ch);
-                                  const link = buildPublicChallengeLink(
-                                    ch.id,
-                                    ch.cls,
-                                    ch.subject,
-                                    ch.topic,
-                                    ch.createdBy
-                                  );
-                                  setChallengeShareUrl(link);
-                                }}
-                                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer transition-all ${
-                                  isCurrent
-                                    ? 'bg-violet-600 text-white'
-                                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                                }`}
-                              >
-                                [{ch.id}] {ch.subject}: {ch.topic}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Current Challenge Details & Leaderboard Table */}
-                    {activeChallenge ? (
-                      <div className="space-y-3">
-                        <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-2 text-xs">
-                          <div>
-                            <div className="font-black text-slate-900">
-                              {activeChallenge.cls} · {activeChallenge.subject}
-                            </div>
-                            <div className="text-violet-700 font-bold">Topic: {activeChallenge.topic}</div>
-                          </div>
-                          <button
-                            onClick={() => {
-                              setMohaActiveClass(activeChallenge.cls);
-                              setMohaActiveSubject(activeChallenge.subject);
-                              setSelectedQuizTopic(activeChallenge.topic);
-                              if (activeChallenge.questions && activeChallenge.questions.length > 0) {
-                                const fallbackFifteen = buildContentIntegratedQuizQuestions(
-                                  activeChallenge.cls,
-                                  activeChallenge.subject,
-                                  activeChallenge.topic
-                                );
-                                const merged = [...activeChallenge.questions];
-                                for (const fq of fallbackFifteen) {
-                                  if (merged.length >= 15) break;
-                                  if (!merged.some((q) => q.question === fq.question)) {
-                                    merged.push(fq);
-                                  }
-                                }
-                                setQuizItems(merged.slice(0, 15));
-                                setQuizSelectedAnswers({});
-                                setQuizResultSaved(false);
-                                setQuizStartTime(Date.now());
-                                showToast(`🎯 Loaded 15 "${activeChallenge.topic}" challenge questions!`);
-                              } else {
-                                startAiQuiz(activeChallenge.cls, activeChallenge.subject, activeChallenge.topic);
-                              }
-                            }}
-                            className="px-3 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs cursor-pointer shrink-0"
-                          >
-                            Play This Topic
-                          </button>
-                        </div>
-
-                        <div className="overflow-x-auto border border-slate-200 rounded-xl">
-                          <table className="w-full text-left border-collapse text-xs">
-                            <thead>
-                              <tr className="bg-slate-100 text-slate-700 border-b border-slate-200">
-                                <th className="py-2 px-2.5 font-bold">Rank</th>
-                                <th className="py-2 px-2.5 font-bold">Student / Teacher</th>
-                                <th className="py-2 px-2.5 font-bold">Score</th>
-                                <th className="py-2 px-2.5 font-bold">Time</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-200">
-                              {activeChallenge.leaderboard.length === 0 ? (
-                                <tr>
-                                  <td colSpan={4} className="py-6 text-center text-slate-500 font-medium">
-                                    No scores submitted yet for this topic. Complete the quiz on the left to claim #1!
-                                  </td>
-                                </tr>
-                              ) : (
-                                activeChallenge.leaderboard.map((entry, idx) => {
-                                  const medal = idx === 0 ? '🥇 1' : idx === 1 ? '🥈 2' : idx === 2 ? '🥉 3' : `#${idx + 1}`;
-                                  return (
-                                    <tr
-                                      key={entry.id}
-                                      className={idx === 0 ? 'bg-amber-50/70 font-bold' : 'bg-white'}
-                                    >
-                                      <td className="py-2 px-2.5 font-black text-slate-900 whitespace-nowrap">
-                                        {medal}
-                                      </td>
-                                      <td className="py-2 px-2.5">
-                                        <div className="font-bold text-slate-900">{entry.playerName}</div>
-                                        <div className="text-[10px] text-slate-500">{entry.school}</div>
-                                      </td>
-                                      <td className="py-2 px-2.5 font-black text-emerald-700 tabular-nums whitespace-nowrap">
-                                        {entry.score}/{entry.total} ({entry.percentage}%)
-                                      </td>
-                                      <td className="py-2 px-2.5 text-slate-600 tabular-nums whitespace-nowrap">
-                                        {entry.timeSeconds}s
-                                      </td>
-                                    </tr>
-                                  );
-                                })
-                              )}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="p-6 text-center text-xs text-slate-500 bg-slate-50 rounded-xl border border-slate-200">
-                        Click &ldquo;Challenge a Friend&rdquo; above to create a topic leaderboard!
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-            );
-          })()}
 
           {/* ==================== VIEW 3: NOTES & TEACHER STUDIO (SINGLE-ROW TOOLBAR + MAXIMIZED EDITABLE WORKSPACE) ==================== */}
           {mohaViewMode === 'studio' && (
@@ -7959,7 +7014,26 @@ export default function App() {
           {/* ==================== VIEW 4: INTERACTIVE DIAGRAM LAB ==================== */}
           {mohaViewMode === 'diagram' && (
             <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-6">
-              <div className="max-w-5xl mx-auto">
+              <div className="max-w-5xl mx-auto space-y-4">
+                <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
+                  <div>
+                    <span className="font-black text-slate-900">
+                      🧪 NECTA Paper 2 Virtual Science Practicals Lab
+                    </span>
+                    <span className="text-slate-500 block sm:inline sm:ml-2">
+                      Run Titration, Salt Analysis, Food Tests, Pendulum &amp; Ohm&apos;s Law simulations.
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      openVirtualLabPage(mohaActiveClass);
+                    }}
+                    className="px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs cursor-pointer shrink-0"
+                  >
+                    Launch Virtual Science Lab →
+                  </button>
+                </div>
                 <InteractiveDiagramLab
                   initialPreset={activeDiagramPreset}
                   activeClass={mohaActiveClass}
@@ -7969,278 +7043,6 @@ export default function App() {
             </div>
           )}
 
-          {/* ==================== VIEW 6: USER PROFILE & MASTERY CHART ==================== */}
-          {mohaViewMode === 'profile' && (
-            <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-6">
-              <div className="max-w-5xl mx-auto space-y-5">
-                {/* Editable User Profile Settings */}
-                <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 space-y-3 text-xs">
-                  <div className="font-bold text-slate-800">
-                    Profile Details (Synced with Leaderboard &amp; Teacher Studio)
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
-                    <div>
-                      <label className="font-semibold text-slate-600 block mb-0.5">Full Name</label>
-                      <input
-                        type="text"
-                        value={userProfile.name}
-                        onChange={(e) => {
-                          setUserProfile({ ...userProfile, name: e.target.value });
-                          setChallengePlayerName(e.target.value);
-                        }}
-                        className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-semibold"
-                      />
-                    </div>
-                    <div>
-                      <label className="font-semibold text-slate-600 block mb-0.5">School Name</label>
-                      <input
-                        type="text"
-                        value={userProfile.school}
-                        onChange={(e) => {
-                          setUserProfile({ ...userProfile, school: e.target.value });
-                          setChallengePlayerSchool(e.target.value);
-                        }}
-                        className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-semibold"
-                      />
-                    </div>
-                    <div>
-                      <label className="font-semibold text-slate-600 block mb-0.5">Role</label>
-                      <select
-                        value={userProfile.role}
-                        onChange={(e) =>
-                          setUserProfile({ ...userProfile, role: e.target.value as 'Teacher' | 'Student' })
-                        }
-                        className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-semibold bg-white"
-                      >
-                        <option value="Teacher">Teacher</option>
-                        <option value="Student">Student</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="font-semibold text-slate-600 block mb-0.5">Target Class</label>
-                      <div className="flex items-center gap-1.5">
-                        <select
-                          value={userProfile.targetClass}
-                          onChange={(e) => setUserProfile({ ...userProfile, targetClass: e.target.value })}
-                          className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-semibold bg-white"
-                        >
-                          {Object.keys(TIE_CURRICULUM_SUBJECTS).map((c) => (
-                            <option key={c} value={c}>
-                              {c}
-                            </option>
-                          ))}
-                        </select>
-                        <button
-                          onClick={() => saveUserProfileChanges(userProfile)}
-                          className="px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-lg shrink-0 cursor-pointer"
-                        >
-                          Save
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Appearance & Theme Selector (Midnight Plum Light / Dark / System Default) */}
-                <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 space-y-3 text-xs">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div>
-                      <div className="font-bold text-slate-900 text-sm">
-                        Appearance &amp; Theme Preference (Midnight Plum Edition)
-                      </div>
-                      <p className="text-slate-500 text-xs mt-0.5">
-                        Choose between Light Mode, Dark Mode, or System Default. Changes apply immediately and persist across sessions.
-                      </p>
-                    </div>
-                    <span className="px-2.5 py-1 rounded-lg bg-amber-400 text-white font-black text-[11px]">
-                      Active: {themeMode === 'system' ? `System Default (${darkMode ? 'Dark' : 'Light'})` : themeMode === 'dark' ? 'Dark Mode' : 'Light Mode'}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                    <button
-                      type="button"
-                      onClick={() => selectThemeMode('light')}
-                      className={`p-3.5 rounded-xl border text-left flex items-center justify-between gap-3 cursor-pointer transition-all ${
-                        themeMode === 'light'
-                          ? 'bg-violet-600 text-white border-violet-600 shadow-sm'
-                          : 'bg-slate-50 hover:bg-slate-100 text-slate-800 border-slate-200'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <Sun className="w-4 h-4 shrink-0" />
-                        <div>
-                          <div className="font-black text-xs">Light Mode</div>
-                          <div className={`text-[11px] ${themeMode === 'light' ? 'opacity-90' : 'text-slate-500'}`}>
-                            Soft White &amp; Royal Violet
-                          </div>
-                        </div>
-                      </div>
-                      {themeMode === 'light' && <CheckCircle2 className="w-4 h-4 shrink-0" />}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => selectThemeMode('dark')}
-                      className={`p-3.5 rounded-xl border text-left flex items-center justify-between gap-3 cursor-pointer transition-all ${
-                        themeMode === 'dark'
-                          ? 'bg-violet-600 text-white border-violet-600 shadow-sm'
-                          : 'bg-slate-50 hover:bg-slate-100 text-slate-800 border-slate-200'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <Moon className="w-4 h-4 shrink-0" />
-                        <div>
-                          <div className="font-black text-xs">Dark Mode</div>
-                          <div className={`text-[11px] ${themeMode === 'dark' ? 'opacity-90' : 'text-slate-500'}`}>
-                            Deep Night Plum &amp; Lavender
-                          </div>
-                        </div>
-                      </div>
-                      {themeMode === 'dark' && <CheckCircle2 className="w-4 h-4 shrink-0" />}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => selectThemeMode('system')}
-                      className={`p-3.5 rounded-xl border text-left flex items-center justify-between gap-3 cursor-pointer transition-all ${
-                        themeMode === 'system'
-                          ? 'bg-violet-600 text-white border-violet-600 shadow-sm'
-                          : 'bg-slate-50 hover:bg-slate-100 text-slate-800 border-slate-200'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <Monitor className="w-4 h-4 shrink-0" />
-                        <div>
-                          <div className="font-black text-xs">System Default</div>
-                          <div className={`text-[11px] ${themeMode === 'system' ? 'opacity-90' : 'text-slate-500'}`}>
-                            Follows Device ({systemPrefersDark ? 'Dark' : 'Light'})
-                          </div>
-                        </div>
-                      </div>
-                      {themeMode === 'system' && <CheckCircle2 className="w-4 h-4 shrink-0" />}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Summary KPI Strip */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 tabular-nums">
-                  <div className="bg-white p-4 rounded-2xl border border-slate-200">
-                    <div className="text-xs font-semibold text-slate-500">Total Topics Mastered</div>
-                    <div className="text-2xl font-black text-violet-700 mt-1">
-                      {masteryProgressData.totalMasteredTopics}
-                    </div>
-                  </div>
-                  <div className="bg-white p-4 rounded-2xl border border-slate-200">
-                    <div className="text-xs font-semibold text-slate-500">Quizzes Completed</div>
-                    <div className="text-2xl font-black text-emerald-700 mt-1">
-                      {masteryProgressData.totalQuizzesCompleted}
-                    </div>
-                  </div>
-                  <div className="bg-white p-4 rounded-2xl border border-slate-200">
-                    <div className="text-xs font-semibold text-slate-500">Learned Notes</div>
-                    <div className="text-2xl font-black text-blue-700 mt-1">
-                      {masteryProgressData.totalLearnedNotes}
-                    </div>
-                  </div>
-                  <div className="bg-white p-4 rounded-2xl border border-slate-200">
-                    <div className="text-xs font-semibold text-slate-500">Quiz Accuracy</div>
-                    <div className="text-2xl font-black text-amber-700 mt-1">
-                      {masteryProgressData.avgQuizAccuracy}%
-                    </div>
-                  </div>
-                </div>
-
-                {/* VISUAL PROGRESS CHART: Topics Mastered by Subject */}
-                <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <div>
-                      <h5 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                        <Award className="w-4 h-4 text-violet-600" />
-                        <span>Topics Mastered Progress Chart ({masteryProgressData.targetCls})</span>
-                      </h5>
-                    </div>
-                    <div className="flex items-center gap-3 text-xs font-semibold">
-                      <span className="flex items-center gap-1.5 text-emerald-800">
-                        <span className="w-3 h-3 rounded-xs bg-emerald-500 inline-block" /> Quiz Mastery
-                      </span>
-                      <span className="flex items-center gap-1.5 text-violet-800">
-                        <span className="w-3 h-3 rounded-xs bg-violet-600 inline-block" /> Learned Notes
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="pt-4 pb-2 px-2 bg-slate-50 rounded-xl border border-slate-200">
-                    <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 sm:gap-3 items-end h-40 pt-4 px-2">
-                      {masteryProgressData.subjectBreakdown.map((item) => {
-                        const quizPct = Math.min(
-                          100,
-                          Math.round((item.quizTopicsCount / item.totalCompetences) * 100)
-                        );
-                        const learnPct = Math.min(
-                          100 - quizPct,
-                          Math.round((item.learnedNotesCount / item.totalCompetences) * 100)
-                        );
-                        const totalBarPct = Math.max(8, quizPct + learnPct);
-                        return (
-                          <div
-                            key={item.subject}
-                            className="flex flex-col items-center h-full justify-end group cursor-pointer"
-                            onClick={() => startAiQuiz(masteryProgressData.targetCls, item.subject)}
-                          >
-                            <div className="text-[10px] font-bold text-slate-700 mb-1 tabular-nums">
-                              {item.masteredCount}/{item.totalCompetences}
-                            </div>
-                            <div className="w-full max-w-[36px] bg-slate-200 rounded-t-lg h-24 flex flex-col justify-end overflow-hidden border border-slate-300/80">
-                              {learnPct > 0 && (
-                                <div style={{ height: `${learnPct}%` }} className="w-full bg-violet-600" />
-                              )}
-                              {quizPct > 0 && (
-                                <div style={{ height: `${quizPct}%` }} className="w-full bg-emerald-500" />
-                              )}
-                              {quizPct === 0 && learnPct === 0 && (
-                                <div style={{ height: `${totalBarPct}%` }} className="w-full bg-slate-300" />
-                              )}
-                            </div>
-                            <div className="text-[10px] font-bold text-slate-700 mt-1.5 truncate w-full text-center">
-                              {item.subject.split(' ')[0]}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Integrated Topic Mastery Heatmap & Smart Weak-Topic Revision Timetable inside Profile View */}
-                <TopicMasteryPlanner
-                  activeClass={masteryProgressData.targetCls}
-                  activeSubject={mohaActiveSubject}
-                  quizHistory={quizHistory.map((q) => ({
-                    id: q.id,
-                    cls: q.cls,
-                    subject: q.subject,
-                    topic: q.topic,
-                    score: q.score,
-                    total: q.total,
-                    date: q.timestamp,
-                  }))}
-                  onLaunchTopicQuiz={(cls, subject, topic) => {
-                    startAiQuiz(cls, subject, topic, 'ALL', 'ALL');
-                  }}
-                  onOpenTopicNotes={(cls, subject, topic) => {
-                    setTsClass(cls);
-                    setTsSubject(subject);
-                    setTsTopic(topic);
-                    setTsSubTopic(topic);
-                    setMohaViewMode('studio');
-                    submitTeacherStudioDoc('lessonnotes');
-                  }}
-                  onLogManualPractice={handleLogManualTopicPractice}
-                />
-              </div>
-            </div>
-          )}
         </motion.div>
       )}
       </AnimatePresence>
@@ -8520,7 +7322,7 @@ export default function App() {
                     <strong>TIE Curriculum Materials:</strong> Official textbooks and national syllabuses are the property of the <strong>Tanzania Institute of Education (TIE)</strong> under the Ministry of Education, Science and Technology, provided here strictly for free non-commercial classroom and home study.
                   </li>
                   <li>
-                    <strong>Inquiries &amp; Attribution:</strong> For any copyright or attribution inquiries, contact our editorial desk at <code>support@elimika.online</code>.
+                    <strong>Inquiries &amp; Attribution:</strong> For any copyright or attribution inquiries, contact our editorial desk via WhatsApp at <code>+255689511868</code>.
                   </li>
                 </ul>
               </div>
@@ -8537,7 +7339,6 @@ export default function App() {
                 <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
                   <div className="font-bold text-slate-900">📬 Official Contact &amp; Editorial Desk</div>
                   <div><strong>Location:</strong> Dar es Salaam, United Republic of Tanzania</div>
-                  <div><strong>Official Email:</strong> <code>support@elimika.online</code> / <code>support@elimika.ac.tz</code></div>
                   <div><strong>Phone &amp; WhatsApp Support:</strong> <code>+255689511868</code></div>
                 </div>
               </div>
@@ -8900,6 +7701,18 @@ export default function App() {
                       </div>
 
                       <div className="pt-1 flex flex-wrap justify-center sm:justify-start gap-2">
+                        <a
+                          href="/assets/aistudio/Golden_Graduation_Cap_Emblem_on_Indigo_Gradient_c53b7e46.png"
+                          download="elimika-app-icon.png"
+                          className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-sm cursor-pointer inline-flex items-center gap-1.5"
+                        >
+                          <img
+                            src="/assets/aistudio/Golden_Graduation_Cap_Emblem_on_Indigo_Gradient_c53b7e46.png"
+                            alt=""
+                            className="w-4 h-4 rounded-sm object-cover"
+                          />
+                          <span>⬇️ Download Official Golden Cap App Icon</span>
+                        </a>
                         <button
                           type="button"
                           onClick={() => downloadElimikaProfilePicPng(profileLogoTheme)}
@@ -9312,68 +8125,42 @@ export default function App() {
         );
       })()}
 
-      {/* COOKIE & GOOGLE ADSENSE PRIVACY CONSENT BANNER */}
+      {/* SLIM 1-LINE COOKIE & PRIVACY BAR */}
       {!cookieConsentAccepted && (
-        <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-5 sm:max-w-md z-40 bg-white border border-slate-300 rounded-2xl shadow-2xl p-4">
-          <div className="space-y-2.5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-black text-slate-900">🍪 Privacy &amp; Google AdSense Notice</span>
-              <button
-                type="button"
-                onClick={() => {
-                  try {
-                    localStorage.setItem('elimika_cookie_consent', 'accepted');
-                  } catch {
-                    // ignore
-                  }
-                  setCookieConsentAccepted(true);
-                }}
-                className="text-xs text-slate-400 font-bold cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
-            <p className="text-[11px] text-slate-600 leading-relaxed">
-              We use cookies and Google AdSense to keep Elimika Tanzania 100% free for students and teachers, and to remember your Light/Dark theme preferences. Read our{' '}
+        <div className="fixed bottom-14 lg:bottom-0 inset-x-0 z-40 bg-slate-900/95 backdrop-blur-xs border-t border-slate-700 px-4 py-2 text-white">
+          <div className="max-w-5xl mx-auto flex items-center justify-between gap-3 text-xs">
+            <p className="text-[11px] text-slate-200 truncate">
+              🍪 We use cookies to save your theme &amp; study preferences.{' '}
               <button
                 type="button"
                 onClick={() => setLegalModalType('privacy')}
-                className="text-blue-600 font-bold underline cursor-pointer"
+                className="text-amber-300 font-bold underline cursor-pointer ml-1"
               >
                 Privacy Policy
-              </button>{' '}
-              for details.
+              </button>
             </p>
-            <div className="flex items-center gap-2 pt-1">
-              <button
-                type="button"
-                onClick={() => {
-                  try {
-                    localStorage.setItem('elimika_cookie_consent', 'accepted');
-                  } catch {
-                    // ignore
-                  }
-                  setCookieConsentAccepted(true);
-                }}
-                className="flex-1 py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs cursor-pointer"
-              >
-                Accept &amp; Continue
-              </button>
-              <button
-                type="button"
-                onClick={() => setLegalModalType('privacy')}
-                className="py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
-              >
-                Learn More
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => {
+                try {
+                  localStorage.setItem('elimika_cookie_consent', 'accepted');
+                } catch {
+                  // ignore
+                }
+                setCookieConsentAccepted(true);
+              }}
+              className="px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs cursor-pointer shrink-0"
+            >
+              Accept
+            </button>
           </div>
         </div>
       )}
 
-      {/* GET ELIMIKA APP INSTALLATION SECTION, EDITORIAL STUDY GUIDES & FOOTER */}
+      {/* EDITORIAL STUDY GUIDES (SHOWN ONLY ON HOME STEP 1) & FOOTER */}
       {activePage !== 'moha' && activePage !== 'game' && (
         <>
+          {activePage === 'papers' && step === 1 && (
           <section id="editorial-curriculum-guide" className="py-10 bg-white border-t border-slate-200">
             <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-6">
               <div className="text-center max-w-3xl mx-auto space-y-2">
@@ -9413,56 +8200,35 @@ export default function App() {
               </div>
             </div>
           </section>
+          )}
 
-          <GetElimikaAppSection />
           <footer className="bg-slate-900 text-slate-400 py-8 border-t border-slate-800 text-xs text-center mt-auto">
             <div className="max-w-5xl mx-auto px-4 space-y-4">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-                <div className="text-left">
-                  <div className="font-black text-white text-sm tracking-tight">ELIMIKA TANZANIA</div>
-                  <p className="text-slate-400 text-xs">
-                    Past Papers, Marking Schemes, TIE Books, Official Syllabuses &amp; Moha AI Teacher Studio.
-                  </p>
+                <div className="flex items-center gap-3 text-left">
+                  <img
+                    src="/assets/aistudio/Golden_Graduation_Cap_Emblem_on_Indigo_Gradient_c53b7e46.png"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = '/pwa-192x192.png';
+                    }}
+                    alt="Elimika Tanzania Icon"
+                    className="w-10 h-10 rounded-xl shadow-md shrink-0 object-cover"
+                  />
+                  <div>
+                    <div className="font-black text-white text-sm tracking-tight">ELIMIKA TANZANIA</div>
+                    <p className="text-slate-400 text-xs">
+                      Past Papers, Marking Schemes, TIE Books, Official Syllabuses &amp; Moha AI Teacher Studio.
+                    </p>
+                  </div>
                 </div>
                 <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-bold text-slate-300">
                   <button
                     type="button"
-                    onClick={() => {
-                      const el = document.getElementById('get-elimika-app-section');
-                      el?.scrollIntoView({ behavior: 'smooth' });
-                    }}
-                    className="text-amber-400 hover:text-amber-300 underline underline-offset-4 cursor-pointer"
-                  >
-                    📲 Get Elimika App
-                  </button>
-                  <a
-                    href={whatsappConfig.mainChannelUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-emerald-400 hover:text-emerald-300 underline underline-offset-4"
-                  >
-                    🔔 Follow Elimika Online Channel
-                  </a>
-                  <button
-                    type="button"
                     onClick={() => setWhatsappModalOpen(true)}
-                    className="text-sky-400 hover:text-sky-300 underline underline-offset-4 cursor-pointer"
+                    className="text-emerald-400 hover:text-emerald-300 underline underline-offset-4 cursor-pointer"
                   >
                     💬 WhatsApp Channel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => openBooksPage()}
-                    className="hover:text-white underline underline-offset-4 cursor-pointer"
-                  >
-                    📚 TIE Books
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => openSyllabusPage()}
-                    className="hover:text-white underline underline-offset-4 cursor-pointer"
-                  >
-                    📜 Syllabus
                   </button>
                   <button
                     type="button"

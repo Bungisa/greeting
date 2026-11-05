@@ -349,13 +349,17 @@ export const TextbookQuestionExtractorModal: React.FC<TextbookQuestionExtractorM
           </button>
         </div>
 
-        {/* Quick Presets for Form 1-4 Mathematics & Additional Mathematics */}
+        {/* Quick Presets for Uploaded TIE Question Banks */}
         <div className="space-y-1.5">
           <div className="text-[11px] font-black uppercase tracking-wider text-amber-300">
-            ⚡ Quick Select: Mathematics &amp; Additional Mathematics
+            ⚡ Quick Select: Uploaded TIE Textbook Question Banks
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {[
+              { cls: 'Form 2', sub: 'Biology', label: '🧬 Form 2 Biology' },
+              { cls: 'Form 2', sub: 'Chemistry', label: '🧪 Form 2 Chemistry' },
+              { cls: 'Form 2', sub: 'Geography', label: '🌍 Form 2 Geography' },
+              { cls: 'Form 1', sub: 'Computer Science', label: '💻 Form 1 Computer Science' },
               { cls: 'Form 1', sub: 'Basic Mathematics', label: '📘 Form 1 Basic Mathematics' },
               { cls: 'Form 1', sub: 'Additional Mathematics', label: '📐 Form 1 Additional Mathematics' },
               { cls: 'Form 2', sub: 'Basic Mathematics', label: '📘 Form 2 Basic Math' },

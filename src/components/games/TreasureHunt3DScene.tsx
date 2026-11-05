@@ -317,13 +317,22 @@ export const TreasureHunt3DScene: React.FC<TreasureHunt3DSceneProps> = ({
     scene.environment = envTex;
     pmrem.dispose();
 
-    const camera = new THREE.PerspectiveCamera(
-      52,
-      container.clientWidth / Math.max(1, container.clientHeight),
-      0.1,
-      120
+    const initialAspect = container.clientWidth / Math.max(1, container.clientHeight);
+    const initialFov =
+      initialAspect < 1
+        ? Math.min(68, Math.round(52 / Math.max(0.56, Math.sqrt(initialAspect))))
+        : 52;
+    const initialZoomOut =
+      initialAspect < 1
+        ? THREE.MathUtils.clamp(1 / Math.max(0.45, initialAspect * 0.88), 1.18, 2.05)
+        : 1.0;
+
+    const camera = new THREE.PerspectiveCamera(initialFov, initialAspect, 0.1, 160);
+    camera.position.set(
+      -7.5 * (initialAspect < 1 ? 0.65 : 1),
+      6.8 * (1 + (initialZoomOut - 1) * 0.7),
+      11.2 * initialZoomOut
     );
-    camera.position.set(-7.5, 6.8, 11.2);
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
@@ -331,7 +340,7 @@ export const TreasureHunt3DScene: React.FC<TreasureHunt3DSceneProps> = ({
     controls.maxPolarAngle = Math.PI / 2 - 0.05;
     controls.minPolarAngle = 0.2;
     controls.minDistance = 4;
-    controls.maxDistance = 26;
+    controls.maxDistance = 44;
     controls.target.set(-4, 0.5, 1);
 
     // ==================== LIGHTING ====================
@@ -1086,14 +1095,17 @@ export const TreasureHunt3DScene: React.FC<TreasureHunt3DSceneProps> = ({
           data.sonarRingMesh.visible = false;
         }
 
-        // Bobbing sign & pulsing base ring
+        // Bobbing sign & pulsing base ring (scaled down on narrow mobile screens to avoid crowding)
+        const curAspect = camera.aspect || 1;
+        const mobileSignScale = curAspect < 0.65 ? 0.66 : curAspect < 1 ? 0.8 : 1.0;
         const bob = isRecommended
           ? Math.sin(elapsed * 4.5) * 0.24
           : Math.sin(elapsed * 2 + idx) * 0.06;
         data.signSprite.position.y = data.baseSignY + bob;
-        const scalePulse = isRecommended
-          ? 1.05 + Math.sin(elapsed * 5) * 0.1 + proximityFactor * 0.08
-          : 0.85 + proximityFactor * 0.12;
+        const scalePulse =
+          (isRecommended
+            ? 1.05 + Math.sin(elapsed * 5) * 0.1 + proximityFactor * 0.08
+            : 0.85 + proximityFactor * 0.12) * mobileSignScale;
         data.signSprite.scale.set(2.85 * scalePulse, 1.22 * scalePulse, 1);
 
         if (isDone) {
@@ -1142,6 +1154,9 @@ export const TreasureHunt3DScene: React.FC<TreasureHunt3DSceneProps> = ({
         vis.sonarRingMesh.scale.setScalar(1.0 + sonarPhase * (0.9 + digProx * 0.5));
         vis.sonarRingMat.opacity = (1 - sonarPhase) * (0.35 + digProx * 0.45);
 
+        const curAspectDig = camera.aspect || 1;
+        const digSignScale = curAspectDig < 0.65 ? 0.68 : curAspectDig < 1 ? 0.82 : 1.0;
+        vis.signSprite.scale.set(1.85 * digSignScale, 0.82 * digSignScale, 1);
         vis.signSprite.position.y = 1.85 + Math.sin(elapsed * 3.5) * 0.12;
       });
 
@@ -1346,24 +1361,35 @@ export const TreasureHunt3DScene: React.FC<TreasureHunt3DSceneProps> = ({
         });
       }
 
-      // Camera Choreography
+      // Camera Choreography (with automatic portrait zoom-out compensation for mobile phones)
       const cMode = cameraModeRef.current;
+      const curAspect = camera.aspect || 1;
+      const portraitZoomOut =
+        curAspect < 1
+          ? THREE.MathUtils.clamp(1 / Math.max(0.45, curAspect * 0.88), 1.18, 2.05)
+          : 1.0;
+
       if (cMode === 'chase') {
         tempDesiredCam.set(
-          explorerGroup.position.x * 0.85,
-          6.2,
-          explorerGroup.position.z + 6.4
+          explorerGroup.position.x * (curAspect < 1 ? 0.55 : 0.85),
+          6.2 * (1 + (portraitZoomOut - 1) * 0.72),
+          explorerGroup.position.z + 6.4 * portraitZoomOut
         );
         camera.position.lerp(tempDesiredCam, dt * 4.5);
         tempLookTarget.set(
-          explorerGroup.position.x,
+          explorerGroup.position.x * (curAspect < 1 ? 0.72 : 1.0),
           1.1,
           explorerGroup.position.z - 1.2
         );
         controls.target.lerp(tempLookTarget, dt * 6);
         controls.update();
       } else if (cMode === 'overview') {
-        camera.position.lerp(overviewCamPos, dt * 4);
+        tempDesiredCam.set(
+          overviewCamPos.x,
+          overviewCamPos.y * (1 + (portraitZoomOut - 1) * 0.75),
+          overviewCamPos.z * portraitZoomOut
+        );
+        camera.position.lerp(tempDesiredCam, dt * 4);
         controls.target.lerp(overviewLookTarget, dt * 5);
         controls.update();
       } else {
@@ -1378,15 +1404,26 @@ export const TreasureHunt3DScene: React.FC<TreasureHunt3DSceneProps> = ({
 
     const handleResize = () => {
       if (!container) return;
-      camera.aspect = container.clientWidth / Math.max(1, container.clientHeight);
+      const w = Math.max(1, container.clientWidth);
+      const h = Math.max(1, container.clientHeight);
+      const nextAspect = w / h;
+      camera.aspect = nextAspect;
+      camera.fov =
+        nextAspect < 1
+          ? Math.min(68, Math.round(52 / Math.max(0.56, Math.sqrt(nextAspect))))
+          : 52;
       camera.updateProjectionMatrix();
-      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.setSize(w, h);
     };
+    const resizeObserver =
+      typeof ResizeObserver !== 'undefined' ? new ResizeObserver(handleResize) : null;
+    resizeObserver?.observe(container);
     window.addEventListener('resize', handleResize);
 
     return () => {
       disposed = true;
       cancelAnimationFrame(rafId);
+      resizeObserver?.disconnect();
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);

@@ -1,11 +1,10 @@
-import React, { Suspense, lazy, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ArrowLeft,
   Award,
   Compass,
   Crown,
   Gamepad2,
-  Hammer,
   Key,
   Lock,
   Sparkles,
@@ -19,8 +18,6 @@ import {
 } from '../games/gameDataAndStorage';
 
 import { PaperRecord } from '../data/curriculumData';
-
-const StemBuilderGame = lazy(() => import('../games/stemBuilder/StemBuilderGame'));
 
 export type PlayGameRoute =
   | 'hub'
@@ -47,7 +44,9 @@ export const ElimikaPlayHub: React.FC<ElimikaPlayHubProps> = ({
   allPapers,
   onExitPlay,
 }) => {
-  const [activeRoute, setActiveRoute] = useState<PlayGameRoute>(initialRoute);
+  const [activeRoute, setActiveRoute] = useState<PlayGameRoute>(
+    initialRoute === 'stem_builder' ? 'hub' : initialRoute
+  );
   const [progress, setProgress] = useState<ElimikaPlayProgress>(() => loadPlayProgress());
   const [selectedLaunchClass, setSelectedLaunchClass] = useState<string>(initialClass || 'Form 1');
   const [selectedLaunchSubject, setSelectedLaunchSubject] = useState<string>(
@@ -55,44 +54,24 @@ export const ElimikaPlayHub: React.FC<ElimikaPlayHubProps> = ({
   );
 
   useEffect(() => {
-    setActiveRoute(initialRoute);
+    setActiveRoute(initialRoute === 'stem_builder' ? 'hub' : initialRoute);
   }, [initialRoute]);
 
   const navigateToGame = (route: PlayGameRoute) => {
-    setActiveRoute(route);
+    const resolvedRoute = route === 'stem_builder' ? 'hub' : route;
+    setActiveRoute(resolvedRoute);
     if (typeof window !== 'undefined') {
       const hashMap: Record<PlayGameRoute, string> = {
         hub: '#play',
-        stem_builder: '#stem-builder',
+        stem_builder: '#play',
         treasure_hunt: '#treasure-hunt',
         treasure_hunt_live: '#treasure-hunt-live',
         escape_classroom: '#escape-classroom',
         stem_arena: '#stem-arena',
       };
-      window.history.replaceState(null, '', hashMap[route]);
+      window.history.replaceState(null, '', hashMap[resolvedRoute]);
     }
   };
-
-  if (activeRoute === 'stem_builder') {
-    return (
-      <Suspense
-        fallback={
-          <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-6">
-            <div className="text-center space-y-2">
-              <div className="text-sm font-black text-amber-400 uppercase tracking-wider">
-                Loading 3D STEM Engineering Engine...
-              </div>
-              <div className="text-xs text-slate-400">
-                Initializing Three.js WebGL Viewport &amp; Forms 1–6 Curriculum Library
-              </div>
-            </div>
-          </div>
-        }
-      >
-        <StemBuilderGame onBack={() => navigateToGame('hub')} />
-      </Suspense>
-    );
-  }
 
   if (activeRoute === 'stem_arena') {
     return <StemArenaGame onExitGame={() => navigateToGame('hub')} />;
@@ -191,42 +170,6 @@ export const ElimikaPlayHub: React.FC<ElimikaPlayHubProps> = ({
           </div>
         </section>
 
-        {/* FEATURED NEW GAME: STEM BUILDER: BUILD THE BRIDGE (3D) */}
-        <section className="bg-gradient-to-br from-slate-900 via-slate-900 to-amber-950/40 border border-amber-500/50 rounded-2xl p-6 sm:p-7 flex flex-col lg:flex-row lg:items-center justify-between gap-6 shadow-xl">
-          <div className="space-y-3 max-w-3xl">
-            <div className="flex flex-wrap items-center gap-2 text-xs font-black">
-              <span className="px-2.5 py-0.5 rounded-full bg-amber-500 text-slate-950 uppercase tracking-wider">
-                New 3D Engineering &amp; Virtual Lab
-              </span>
-              <span className="px-2.5 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-300">
-                Forms 1–6 · 15 Bridge Missions · 6 STEM Subjects
-              </span>
-            </div>
-            <h2 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
-              <Hammer className="w-6 h-6 text-amber-400" />
-              <span>STEM Builder: Build the Bridge</span>
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              Configure your STEM session by Subject, Form (Forms 1–6), Topic, and Difficulty. Construct 3D truss, arch, and suspension bridges across Tanzanian rivers with real-time stress heatmaps and vehicle load testing, or launch adaptive Chemistry, Biology, ICT, Physics, and Geography virtual labs.
-            </p>
-            <div className="flex flex-wrap gap-3 text-xs text-slate-400 pt-1">
-              <span>• Interactive 3D WebGL Bridge Construction &amp; Vehicle Physics</span>
-              <span>• 5-Step &ldquo;Choose Your STEM Challenge&rdquo; Curriculum Selector</span>
-              <span>• 100-Point Engineering Rubric, Stars, XP &amp; Worked Solutions</span>
-            </div>
-          </div>
-
-          <div className="shrink-0 flex flex-col sm:flex-row lg:flex-col gap-3 min-w-[230px]">
-            <button
-              onClick={() => navigateToGame('stem_builder')}
-              className="w-full py-3.5 px-5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-400 hover:from-amber-400 hover:to-orange-300 text-slate-950 font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 cursor-pointer"
-            >
-              <Hammer className="w-4 h-4" />
-              <span>Launch STEM Builder 3D →</span>
-            </button>
-          </div>
-        </section>
-
         {/* 3 Independent Game Cards */}
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
           {/* GAME 1: NECTA TREASURE HUNT */}
@@ -248,6 +191,8 @@ export const ElimikaPlayHub: React.FC<ElimikaPlayHubProps> = ({
                   { cls: 'Form 1', sub: 'Basic Mathematics', label: 'Form 1 Math' },
                   { cls: 'Form 1', sub: 'Additional Mathematics', label: 'Form 1 Add. Math' },
                   { cls: 'Form 1', sub: 'Computer Science', label: 'Form 1 ICS / Computer' },
+                  { cls: 'Form 2', sub: 'Chemistry', label: 'Form 2 Chemistry' },
+                  { cls: 'Form 2', sub: 'Geography', label: 'Form 2 Geography' },
                   { cls: 'Form 2', sub: 'Basic Mathematics', label: 'Form 2 Math' },
                   { cls: 'Form 2', sub: 'Additional Mathematics', label: 'Form 2 Add. Math' },
                   { cls: 'Form 3', sub: 'Basic Mathematics', label: 'Form 3 Math' },
@@ -313,6 +258,8 @@ export const ElimikaPlayHub: React.FC<ElimikaPlayHubProps> = ({
                   { cls: 'Form 1', sub: 'Basic Mathematics', label: 'Form 1 Math' },
                   { cls: 'Form 1', sub: 'Additional Mathematics', label: 'Form 1 Add. Math' },
                   { cls: 'Form 1', sub: 'Computer Science', label: 'Form 1 ICS / Computer' },
+                  { cls: 'Form 2', sub: 'Chemistry', label: 'Form 2 Chemistry' },
+                  { cls: 'Form 2', sub: 'Geography', label: 'Form 2 Geography' },
                   { cls: 'Form 2', sub: 'Basic Mathematics', label: 'Form 2 Math' },
                   { cls: 'Form 2', sub: 'Additional Mathematics', label: 'Form 2 Add. Math' },
                   { cls: 'Form 3', sub: 'Basic Mathematics', label: 'Form 3 Math' },

@@ -106,6 +106,7 @@ export interface QuizItem {
   topic?: string;
   subTopic?: string;
   sourceRef?: string;
+  isMultipleChoice?: boolean;
 }
 
 export const CONFIG = {
@@ -211,10 +212,10 @@ export const TIE_CURRICULUM_SUBJECTS: Record<string, string[]> = {
   'Standard 5': ['Kiswahili', 'English Language', 'Hisabati (Mathematics)', 'Sayansi na Teknolojia', 'Maarifa ya Jamii', 'Uraia na Maadili', 'Stadi za Kazi'],
   'Standard 6': ['Kiswahili', 'English Language', 'Hisabati (Mathematics)', 'Sayansi na Teknolojia', 'Maarifa ya Jamii', 'Uraia na Maadili', 'Stadi za Kazi'],
   'Standard 7': ['Kiswahili', 'English Language', 'Hisabati (Mathematics)', 'Sayansi na Teknolojia', 'Maarifa ya Jamii', 'Uraia na Maadili', 'Stadi za Kazi'],
-  'Form 1': ['Basic Mathematics', 'Additional Mathematics', 'English Language', 'Kiswahili', 'Biology', 'Physics', 'Chemistry', 'Geography', 'History', 'Historia ya Tanzania na Maadili', 'Business Studies', 'Civics', 'Book-Keeping', 'Commerce', 'Computer Science', 'Agriculture', 'Home Economics'],
-  'Form 2': ['Basic Mathematics', 'Additional Mathematics', 'English Language', 'Kiswahili', 'Biology', 'Physics', 'Chemistry', 'Geography', 'History', 'Historia ya Tanzania na Maadili', 'Business Studies', 'Civics', 'Book-Keeping', 'Commerce', 'Computer Science', 'Agriculture', 'Home Economics'],
-  'Form 3': ['Basic Mathematics', 'Additional Mathematics', 'English Language', 'Kiswahili', 'Biology', 'Physics', 'Chemistry', 'Geography', 'History', 'Historia ya Tanzania na Maadili', 'Business Studies', 'Civics', 'Book-Keeping', 'Commerce', 'Computer Science', 'Agriculture', 'Home Economics', 'Literature in English'],
-  'Form 4': ['Basic Mathematics', 'Additional Mathematics', 'English Language', 'Kiswahili', 'Biology', 'Physics', 'Chemistry', 'Geography', 'History', 'Historia ya Tanzania na Maadili', 'Business Studies', 'Civics', 'Book-Keeping', 'Commerce', 'Computer Science', 'Agriculture', 'Home Economics', 'Literature in English'],
+  'Form 1': ['Basic Mathematics', 'Additional Mathematics', 'English Language', 'Kiswahili', 'Biology', 'Physics', 'Chemistry', 'Geography', 'History', 'Historia ya Tanzania na Maadili', 'Business Studies', 'Civics', 'Book-Keeping', 'Commerce', 'Information and Computer Studies (ICS)', 'Computer Science', 'Agriculture', 'Home Economics'],
+  'Form 2': ['Basic Mathematics', 'Additional Mathematics', 'English Language', 'Kiswahili', 'Biology', 'Physics', 'Chemistry', 'Geography', 'History', 'Historia ya Tanzania na Maadili', 'Business Studies', 'Civics', 'Book-Keeping', 'Commerce', 'Information and Computer Studies (ICS)', 'Computer Science', 'Agriculture', 'Home Economics'],
+  'Form 3': ['Basic Mathematics', 'Additional Mathematics', 'English Language', 'Kiswahili', 'Biology', 'Physics', 'Chemistry', 'Geography', 'History', 'Historia ya Tanzania na Maadili', 'Business Studies', 'Civics', 'Book-Keeping', 'Commerce', 'Information and Computer Studies (ICS)', 'Computer Science', 'Agriculture', 'Home Economics', 'Literature in English'],
+  'Form 4': ['Basic Mathematics', 'Additional Mathematics', 'English Language', 'Kiswahili', 'Biology', 'Physics', 'Chemistry', 'Geography', 'History', 'Historia ya Tanzania na Maadili', 'Business Studies', 'Civics', 'Book-Keeping', 'Commerce', 'Information and Computer Studies (ICS)', 'Computer Science', 'Agriculture', 'Home Economics', 'Literature in English'],
   'Form 5': ['General Studies', 'Academic Communication', 'Advanced Mathematics', 'Basic Applied Mathematics (BAM)', 'Physics', 'Chemistry', 'Biology', 'Geography', 'History', 'Historia ya Tanzania na Maadili', 'Economics', 'Business Studies', 'Accountancy', 'Commerce', 'Agriculture', 'English Language', 'Literature in English', 'Kiswahili', 'Computer Science'],
   'Form 6': ['General Studies', 'Academic Communication', 'Advanced Mathematics', 'Basic Applied Mathematics (BAM)', 'Physics', 'Chemistry', 'Biology', 'Geography', 'History', 'Historia ya Tanzania na Maadili', 'Economics', 'Business Studies', 'Accountancy', 'Commerce', 'Agriculture', 'English Language', 'Literature in English', 'Kiswahili', 'Computer Science'],
 };
@@ -354,12 +355,11 @@ export const TIE_SYLLABUS_COMPETENCES: Record<string, Record<string, string[]>> 
       'Chapter 7: Air, Combustion, Firefighting, and Rusting (Composition of Air, Combustion, Classes of Fire, Fire Extinguishers & Conditions/Prevention of Rusting)',
     ],
     'Form 2': [
-      'Chapter 1: Atomic Structure (Concept of Atomic Structure, Dalton Atomic Theory, Sub-Atomic Particles, Electronic Arrangement, Atomic Number Z, Mass Number A, Nuclide Notation, Isotopes & Relative Atomic Mass)',
-      'Chapter 2: Periodic Classification (Development of the Periodic Table, Modern Periodic Table, Electronic Configuration & Trends in Physical and Chemical Properties Across Periods and Down Groups)',
-      'Chapter 3: Chemical Bonding, Formula and Nomenclature (Formation of Ions, Electrovalent/Ionic Bonding, Covalent Bonding, Valency, Radicals, Oxidation State, Empirical/Molecular Formulas & IUPAC Nomenclature)',
-      'Chapter 4: Chemical Reactions (Concept of Chemical Reactions, Balancing Chemical Equations, Types of Chemical Reactions & Ionic Equations)',
-      'Chapter 5: Acids, Bases, and Salts (Properties & Strengths of Acids and Bases, Basicity of an Acid, Acidity of a Base, Neutralisation Reaction, Acid-Base Indicators, pH Scale, Preparation, Properties & Uses of Salts)',
-      'Chapter 6: Oxygen, Hydrogen, Water and Fuels (Laboratory Preparation & Properties of Oxygen and Hydrogen, Water Treatment & Fuels and Energy)',
+      'Chapter 1: Atomic Structure (Sub-Atomic Particles, Electronic Arrangement, Atomic & Mass Numbers, Isotopes)',
+      'Chapter 2: Periodic Classification (Periodic Law, Electronic Configuration & Trends Across Periods and Down Groups)',
+      'Chapter 3: Chemical Bonding, Formula and Nomenclature (Ionic & Covalent Bonding, Oxidation Numbers, Empirical/Molecular Formulas & IUPAC Names)',
+      'Chapter 4: Chemical Reactions (Balancing Equations, Net Ionic Equations, Redox & Types of Chemical Reactions)',
+      'Chapter 5: Acids, Bases, and Salts (Strengths of Acids & Bases, Indicators, pH Scale, Classification, Preparation & Properties of Salts)',
     ],
     'Form 3': [
       'Chapter 1: Chemical Equations (Balancing Molecular Equations, State Symbols, Total & Net Ionic Equations)',
@@ -527,6 +527,33 @@ export const TIE_SYLLABUS_COMPETENCES: Record<string, Record<string, string[]>> 
       'Chapter 4: International Business, Trade Finance and Economic Integration',
     ],
   },
+  'Information and Computer Studies (ICS)': {
+    'Form 1': [
+      'Chapter 1: Introduction to Information and Computer Studies (Concept of ICS & Relationship of ICS with Other Subjects)',
+      'Chapter 2: Data and Information (Concept of Data and Information, Information Dissemination, Modern Ways of Disseminating Information & Communication Media)',
+      'Chapter 3: Computer Evolution (Early Computer Development: Abacus, Napier Bones, Pascaline, Analytical Engine & Computer Generations 1st to 5th)',
+      'Chapter 4: Computer Hardware and Software (Input Devices, CPU/Processor, Primary & Secondary Memory, Output Devices; System Software/Operating Systems & Application Software)',
+      'Chapter 5: Classification and Significance of Computers (Classification by Size, Purpose & Data Handled; Significance of Computers in Education, Health, Banking & Industry)',
+      'Chapter 6: Computer Handling (Concept of Computer Handling, Power Management/UPS, Utility Programs, Data Backup & Computer Security)',
+    ],
+    'Form 2': [
+      'Chapter 1: Word Processing (Concept of Word Processing, Creating, Editing, Formatting Tables & Printing Documents)',
+      'Chapter 2: Spreadsheet (Concept of Spreadsheet, Workbook, Formulas, Functions, Charts & Data Manipulation)',
+      'Chapter 3: Computer Networks and Communications (Concept of Networking, Network Devices, Topologies & Types of Networks LAN, MAN, WAN)',
+      'Chapter 4: The Internet (Concept of the Internet, Search Engines, Electronic Mail/E-Mail & E-Learning)',
+    ],
+    'Form 3': [
+      'Chapter 1: Impact of Information and Communication Technology (ICT) on Society (E-Commerce, E-Government, Employment, Health, Culture & Cyber Ethics)',
+      'Chapter 2: Web Development (Concept of Webpage & Website, HTML Structure, Tags, Lists, Tables, Hyperlinks & Publishing)',
+      'Chapter 3: Database as Information Systems (Concept of Database, Manual vs Electronic Databases, Relational Database Design, Tables, Queries, Forms & Reports)',
+    ],
+    'Form 4': [
+      'Chapter 1: Management of Database Information Systems (Advanced Queries, Relationships, Data Integrity & Security)',
+      'Chapter 2: Presentation (Concept of Electronic Presentation, Creating Slides, Animations, Transitions & Delivering Presentations)',
+      'Chapter 3: Desktop Publishing (Concept of DTP, Publication Design, Page Layout, Typography & Printing Publications)',
+      'Chapter 4: Multimedia (Concept of Multimedia, Elements: Text, Audio, Image, Video, Animation & Multimedia Authoring)',
+    ],
+  },
   'Computer Science': {
     'Form 1': [
       'Chapter 1: Introduction to Information and Computer Studies / Computer Science (Concept of ICS/Computer Science & Relationship with Other Subjects)',
@@ -577,15 +604,14 @@ export const TIE_SYLLABUS_COMPETENCES: Record<string, Record<string, string[]>> 
       'Chapter 5: Map Work (Concept of a Map, Components/Essentials of a Map, Types of Maps, Map Scale, Measuring Distances & Areas, Compass Bearing, Direction & Grid References)',
     ],
     'Form 2': [
-      'Chapter 1: Human Activities (Concept and Major Types of Human Activities: Primary, Secondary, Tertiary, Quaternary & Quinary)',
-      'Chapter 2: Agriculture (Small-Scale Subsistence vs Large-Scale Commercial/Plantation Farming, Major Cash Crops in Tanzania & Livestock Keeping)',
-      'Chapter 3: Water Management for Economic Development (Uses of Water, River Basin Development Projects: Rufiji/JNHPP, Tennessee Valley Authority, Water Conservation)',
-      'Chapter 4: Sustainable Use of Forest Resources (Types of Forests, Importance of Forests, Deforestation & Forest Conservation in Tanzania)',
-      'Chapter 5: Sustainable Mining (Types of Minerals, Methods of Mining: Open Cast, Underground, Alluvial; Contribution & Environmental Impact of Mining in Tanzania)',
-      'Chapter 6: Tourism (Concept, Domestic & International Tourism, Tourist Attractions in Tanzania: Serengeti, Ngorongoro, Kilimanjaro, Zanzibar & Sustainable Eco-Tourism)',
-      'Chapter 7: Manufacturing Industry (Types of Industries, Factors for Location of Industries, Focal Studies & Challenges of Industrialisation in Tanzania)',
-      'Chapter 8: Sustainable Use of Power and Energy Resources (Renewable & Non-Renewable Energy: Hydroelectric, Natural Gas, Solar, Wind, Geothermal, Coal & Biogas)',
-      'Chapter 9: Transport (Land, Railway, Water, Air & Pipeline Transport in East Africa, Importance & Challenges)',
+      'Chapter 1: The Internal Structure of the Earth (Crust/Lithosphere, Mantle/Asthenosphere, Outer & Inner Core; Folding, Faulting, Rocks, Vulcanicity & Earthquakes)',
+      'Chapter 2: The External Structure of the Earth (Layers of the Atmosphere, Weathering, Mass Wasting, Action of Running Water/Rivers, Drainage Systems, Wind Action in Deserts & Coral Reefs/Wave Action)',
+      'Chapter 3: Map Reading and Interpretation (Types of Maps: Road/Railway, Political, Thematic & Urban Planning Maps; Relief Representation: Contours, Spot Heights, Hachures, Layer Tinting; Relief Features, Intervisibility, Cross-Sections, Vertical Exaggeration VE & Gradient Calculations)',
+      'Chapter 4: Photograph Reading and Interpretation (Horizontal/Ground, Oblique & Vertical Aerial Photographs; Foreground, Middleground, Background; Scale, Time of Day, Season & Human Activities)',
+      'Chapter 5: Human Activities & Agriculture (Primary to Quinary Activities; Small-Scale Subsistence vs Large-Scale Plantation Farming & Livestock Keeping)',
+      'Chapter 6: Water Management & Sustainable Use of Forest Resources (Uses of Water, River Basin Projects: Rufiji/JNHPP, Forest Types & Conservation)',
+      'Chapter 7: Sustainable Mining & Tourism (Mineral Types, Mining Methods, Tourist Attractions in Tanzania & Eco-Tourism)',
+      'Chapter 8: Manufacturing Industry, Power/Energy Resources & Transport (Industrial Location, Renewable/Non-Renewable Energy & Transport Networks in East Africa)',
     ],
     'Form 3': [
       'Chapter 1: Structure of the Earth (Concentric Zones: Crust/Lithosphere, Mantle/Mesosphere, Core/Barysphere; Igneous, Sedimentary & Metamorphic Rocks and Rock Cycle)',
@@ -1130,7 +1156,8 @@ export const OFFICIAL_ATTACHED_TIE_BOOKS: PaperRecord[] = [
   { id: 'tie-drive-book-65', title: 'Auto Electric', form: 'Form 2', subject: 'General Studies', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1dbahC6Tbzba1T7FuDGCmhX0SMCRK7gL0/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-66', title: 'Leather Goods and Footwears F2', form: 'Form 2', subject: 'General Studies', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/158395mpowtwNNYAjuDUxEcJgJyOFkdgq/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-67', title: 'Arts & Design', form: 'Form 2', subject: 'General Studies', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/16fgdixfMmRJnmYfhIq_msCFoH4xiXkqc/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
-  { id: 'tie-drive-book-68', title: 'BIOLOGY FORM 2 TIE NEW SYLLABUS', form: 'Form 2', subject: 'Biology', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1A0voCf2A83VvMEEaQONtnyQhuNGBXrX2/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
+  { id: 'tie-drive-book-68', title: "Biology for Secondary Schools — Student's Book Form Two (TIE Comprehensive Question Bank)", form: 'Form 2', subject: 'Biology', year: '2025', category: 'TIE Book', paperUrl: '/assets/aistudio/question_bank_bios_f2_b5ea2aa5.html', answersUrl: null, isBook: true, isSyllabus: false },
+  { id: 'tie-drive-book-68-pdf', title: 'BIOLOGY FORM 2 TIE NEW SYLLABUS', form: 'Form 2', subject: 'Biology', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1A0voCf2A83VvMEEaQONtnyQhuNGBXrX2/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-69', title: 'Geography F2', form: 'Form 2', subject: 'Geography', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1IloB7ZSJzZ1BxkzibrC7uCzaiEsRgC0s/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-70', title: 'Acting F2', form: 'Form 2', subject: 'General Studies', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1uR6zEY6mryLyA8AIwSbYxIT0dotA3aC5/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-71', title: "Additional Mathematics Form Two (TIE 2023 Student's Book)", form: 'Form 2', subject: 'Additional Mathematics', year: '2023', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1GlOxsR4aMBoQBPxDpqWQ0H4aRwlbn_I1/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
@@ -1138,7 +1165,8 @@ export const OFFICIAL_ATTACHED_TIE_BOOKS: PaperRecord[] = [
   { id: 'tie-drive-book-73', title: 'Agromechanics', form: 'Form 2', subject: 'Agriculture', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1n58bAzDBkMX6EM3VrAQQj_eHfh3uwpft/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-74', title: 'Animal Health and Production', form: 'Form 2', subject: 'Agriculture', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1xGo30_Jwid5C1x2SfK_7FXIQ6igs2xz4/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-75', title: 'Book-Keeping Form Two', form: 'Form 2', subject: 'Book-Keeping', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1NFbIZfc0e1UvH8qAipB5Um7B5wGvI4AT/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
-  { id: 'tie-drive-book-76', title: 'Chemistry F2 TIE', form: 'Form 2', subject: 'Chemistry', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1h26uIRH4UD5_UrD6CMsfDrQ800OtJlj3/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
+  { id: 'tie-drive-book-76', title: "Chemistry for Secondary Schools — Student's Book Form Two (TIE Comprehensive Question Bank)", form: 'Form 2', subject: 'Chemistry', year: '2025', category: 'TIE Book', paperUrl: '/assets/aistudio/question_bank_chem_f2_4c234b42.html', answersUrl: null, isBook: true, isSyllabus: false },
+  { id: 'tie-drive-book-76-pdf', title: 'Chemistry F2 TIE', form: 'Form 2', subject: 'Chemistry', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1h26uIRH4UD5_UrD6CMsfDrQ800OtJlj3/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-77', title: 'Chinese', form: 'Form 2', subject: 'General Studies', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1IlPUOuHFWIPj0IT9kSqoRBCcq_91_3Kj/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-78', title: 'computer science 2', form: 'Form 2', subject: 'Computer Science', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1YWevhyTnKHWCNagX4gpGhI5229L642BC/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-79', title: 'ENGLISH FORM TWO-NEW BOOK', form: 'Form 2', subject: 'English Language', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1rZpMHLdlmDyXPFwyBBr54HWOj_2F5Vvi/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
@@ -1292,6 +1320,40 @@ export function normalizeClassName(rawForm: string): string {
   return f || 'Form 4';
 }
 
+export function classifySingleSubjectString(raw: string): string | null {
+  const s = (raw || '').trim();
+  if (!s) return null;
+  const lower = s.toLowerCase().replace(/\s+/g, ' ');
+
+  // Primary School Subjects (check first so they are never misclassified or dropped)
+  if (lower.includes('uraia na maadili') || lower.includes('civic and moral')) return 'Uraia na Maadili';
+  if (lower.includes('sayansi na teknolojia') || lower.includes('science and technology')) return 'Sayansi na Teknolojia';
+  if (lower.includes('maarifa ya jamii') || lower.includes('social studies')) return 'Maarifa ya Jamii';
+  if (lower.includes('stadi za kazi') || lower.includes('vocational skills')) return 'Stadi za Kazi';
+  if (lower.includes('jiografia na mazingira')) return 'Jiografia na Mazingira';
+  if (lower.includes('afya na mazingira')) return 'Afya na Mazingira';
+  if (lower.includes('michezo na sanaa')) return 'Michezo na Sanaa';
+  if (lower.includes('sanaa na michezo')) return 'Sanaa na Michezo';
+  if (lower === 'kusoma' || /\bkusoma\b/i.test(lower)) return 'Kusoma';
+  if (lower === 'kuandika' || /\bkuandika\b/i.test(lower)) return 'Kuandika';
+  if (lower === 'kuhesabu' || /\bkuhesabu\b/i.test(lower)) return 'Kuhesabu';
+  if (lower === 'hisabati' || lower === 'hisabati (mathematics)' || lower.includes('hisabati')) return 'Hisabati (Mathematics)';
+  if (lower === 'sayansi' || lower === 'sayansi (science)') return 'Sayansi (Science)';
+
+  // Custom / Religious / Technical Subjects
+  if (lower === 'edk' || /\bedk\b/i.test(lower) || lower.includes('elimu ya dini ya kiislamu') || lower.includes('islamic knowledge')) {
+    return 'Elimu ya Dini ya Kiislamu (EDK)';
+  }
+  if (lower.includes('bible knowledge') || lower.includes('divinity')) return 'Bible Knowledge';
+  if (lower === 'arabic' || lower.includes('arabic')) return 'Arabic';
+  if (lower === 'french' || lower.includes('french')) return 'French';
+  if (lower === 'chinese' || lower.includes('chinese')) return 'Chinese';
+  if (lower === 'fine art' || lower.includes('fine art')) return 'Fine Art';
+  if (lower.includes('engineering science')) return 'Engineering Science';
+
+  return null;
+}
+
 export function normalizeSubjectName(rawSubject: string, rawTitle = ''): string {
   const s = (rawSubject || '').trim();
   const rawLower = s.toLowerCase().replace(/\s+/g, ' ');
@@ -1311,6 +1373,14 @@ export function normalizeSubjectName(rawSubject: string, rawTitle = ''): string 
     !lower.includes('historia')
   ) {
     return 'History';
+  }
+
+  // Primary & Custom/Religious Subject Classification (priority check)
+  const primaryOrCustomFromSubject = classifySingleSubjectString(lower ? s : '');
+  if (primaryOrCustomFromSubject) return primaryOrCustomFromSubject;
+  const primaryOrCustomFromTitle = classifySingleSubjectString(rawTitle);
+  if (primaryOrCustomFromTitle && (!lower || lower === 'general' || lower === 'general studies')) {
+    return primaryOrCustomFromTitle;
   }
 
   // 1. Historia ya Tanzania na Maadili
@@ -1527,12 +1597,22 @@ export function matchesSubjectQuery(recordSubject: string, targetSubject: string
   const normA = normalizeSubjectName(recordSubject, recordTitle).toLowerCase();
   const normB = normalizeSubjectName(targetSubject).toLowerCase();
   if (normA === normB) return true;
+  if (
+    (normA === 'hisabati (mathematics)' && normB === 'basic mathematics') ||
+    (normB === 'hisabati (mathematics)' && normA === 'basic mathematics')
+  ) {
+    return true;
+  }
   if (normA.includes(normB) || normB.includes(normA)) {
     if (
       normA.includes('additional') !== normB.includes('additional') ||
       normA.includes('advanced') !== normB.includes('advanced') ||
       normA.includes('applied') !== normB.includes('applied') ||
       normA.includes('maadili') !== normB.includes('maadili') ||
+      normA.includes('teknolojia') !== normB.includes('teknolojia') ||
+      normA.includes('mazingira') !== normB.includes('mazingira') ||
+      normA.includes('jamii') !== normB.includes('jamii') ||
+      normA.includes('stadi') !== normB.includes('stadi') ||
       normA.includes('home') !== normB.includes('home') ||
       normA.includes('literature') !== normB.includes('literature') ||
       normA.includes('computer') !== normB.includes('computer') ||
@@ -4227,130 +4307,9 @@ export function buildContentIntegratedQuizQuestions(
       ];
     }
 
-    if (subLower.includes('chemistry')) {
-      return [
-        {
-          question: `[${cls} • ${focusTopic} — ${subT(1)}] Calculate the volume occupied at STP by $8.8\\text{ g}$ of carbon dioxide ($\text{CO}_2$) gas [Given: $\text{C} = 12, \text{O} = 16$, Molar Volume at STP $= 22.4\\text{ dm}^3$ ]`,
-          options: ['$4.48\\text{ dm}^3$', '$2.24\\text{ dm}^3$', '$11.20\\text{ dm}^3$', '$8.96\\text{ dm}^3$'],
-          correctIndex: 0,
-          explanation: `Step 1: Molar mass of $\\text{CO}_2 = 12 + 2(16) = 44\\text{ g/mol}$. Step 2: Moles $n = \\frac{8.8}{44} = 0.20\\text{ mol}$. Step 3: Volume at STP $= 0.20 \\times 22.4 = 4.48\\text{ dm}^3$.`,
-        },
-        {
-          question: `[${cls} • ${focusTopic} — ${subT(2)}] Determine the oxidation state (number) of Chromium ($\text{Cr}$) in the dichromate ion $\\text{Cr}_2\\text{O}_7^{2-}$`,
-          options: ['$+6$', '$+3$', '$+7$', '$+12$'],
-          correctIndex: 0,
-          explanation: `Step 1: Let oxidation state of $\\text{Cr}$ be $x$, and $\\text{O} = -2$. Step 2: $2x + 7(-2) = -2 \\Rightarrow 2x - 14 = -2 \\Rightarrow 2x = +12 \\Rightarrow x = +6$.`,
-        },
-        {
-          question: `[${cls} • ${focusTopic} — ${subT(3)}] In the Haber process $\\text{N}_2(g) + 3\\text{H}_2(g) \\rightleftharpoons 2\\text{NH}_3(g)\\text{ }(\\Delta H = -92\\text{ kJ/mol})$, which conditions favour maximum equilibrium yield of ammonia according to Le Chatelier's Principle?`,
-          options: [
-            'High pressure ($200\\text{ atm}$), moderate temperature ($450^\\circ\\text{C}$), and finely divided iron catalyst',
-            'Low pressure ($1\\text{ atm}$) and very high temperature ($1000^\\circ\\text{C}$)',
-            'High temperature ($800^\\circ\\text{C}$) and vanadium(V) oxide catalyst',
-            'Atmospheric pressure and room temperature without catalyst',
-          ],
-          correctIndex: 0,
-          explanation: `Step 1: Forward reaction reduces gas moles ($4\\text{ mol} \\to 2\\text{ mol}$), so high pressure shifts equilibrium to the right. Step 2: Forward reaction is exothermic, so moderate temperature ($450^\\circ\\text{C}$) with an iron ($\text{Fe}$) catalyst gives optimal rate and yield.`,
-        },
-        {
-          question: `[${cls} • ${focusTopic} — ${subT(0)}] Which chemical reagent is used in the laboratory to distinguish between ethene (an alkene) and ethane (an alkane)?`,
-          options: [
-            'Bromine water (or acidified $\\text{KMnO}_4$), which is decolourized by ethene but not ethane',
-            'Universal indicator solution',
-            'Limewater ($\\text{Ca(OH)}_2$), which turns milky with ethane',
-            'Anhydrous copper(II) sulphate powder',
-          ],
-          correctIndex: 0,
-          explanation: `Step 1: Ethene ($\\text{C}_2\\text{H}_4$) has a $\\text{C}=\\text{C}$ double bond (unsaturated) and undergoes addition reaction to decolourize reddish-brown bromine water. Step 2: Ethane ($\\text{C}_2\\text{H}_6$) is saturated and does not react in the dark.`,
-        },
-        {
-          question: `[${cls} • ${focusTopic} — ${subT(1)}] Calculate the percentage composition by mass of Nitrogen in ammonium nitrate ($\text{NH}_4\text{NO}_3$) [Given: $\text{N} = 14, \text{H} = 1, \text{O} = 16$]`,
-          options: ['$35.0\\%$', '$17.5\\%$', '$28.0\\%$', '$42.0\\%$'],
-          correctIndex: 0,
-          explanation: `Step 1: Molar mass of $\\text{NH}_4\\text{NO}_3 = 14 + 4(1) + 14 + 3(16) = 80\\text{ g/mol}$. Step 2: Total mass of Nitrogen $= 2 \\times 14 = 28\\text{ g}$. Step 3: $\\%\\text{ N} = \\frac{28}{80} \\times 100\\% = 35.0\\%$.`,
-        },
-        {
-          question: `[${cls} • ${focusTopic} — ${subT(2)}] When aqueous barium chloride ($\text{BaCl}_2$) is added to a solution followed by dilute hydrochloric acid, a thick white precipitate insoluble in dilute $\text{HCl}$ is formed. Which anion is confirmed?`,
-          options: [
-            'Sulphate ion ($\\text{SO}_4^{2-}$)',
-            'Carbonate ion ($\\text{CO}_3^{2-}$)',
-            'Sulphite ion ($\\text{SO}_3^{2-}$)',
-            'Nitrate ion ($\\text{NO}_3^-$)',
-          ],
-          correctIndex: 0,
-          explanation: `Step 1: $\\text{Ba}^{2+}(aq) + \\text{SO}_4^{2-}(aq) \\to \\text{BaSO}_4(s)$ (white precipitate). Step 2: Unlike $\\text{BaCO}_3$ or $\\text{BaSO}_3$, barium sulphate ($\\text{BaSO}_4$) is insoluble in dilute $\\text{HCl}$.`,
-        },
-        {
-          question: `[${cls} • ${focusTopic} — ${subT(3)}] If $50\\text{ cm}^3$ of $2.0\\text{ M}$ $\\text{H}_2\\text{SO}_4$ stock solution is diluted with distilled water to make $500\\text{ cm}^3$ of solution, calculate the molarity of the diluted solution`,
-          options: ['$0.20\\text{ M}$', '$0.40\\text{ M}$', '$0.10\\text{ M}$', '$0.50\\text{ M}$'],
-          correctIndex: 0,
-          explanation: `Step 1: Apply the dilution law $M_1 V_1 = M_2 V_2$. Step 2: $2.0 \\times 50 = M_2 \\times 500 \\Rightarrow M_2 = \\frac{100}{500} = 0.20\\text{ M}$.`,
-        },
-        {
-          question: `[${cls} • ${focusTopic} — ${subT(0)}] Which method is used to remove permanent hardness of water caused by dissolved $\\text{CaSO}_4$ and $\\text{MgSO}_4$?`,
-          options: [
-            'Addition of washing soda ($\\text{Na}_2\\text{CO}_3$) or use of an ion-exchange resin',
-            'Simple boiling of the water only',
-            'Filtration through sand and gravel',
-            'Chlorination of the water supply',
-          ],
-          correctIndex: 0,
-          explanation: `Step 1: Permanent hardness is caused by $\\text{Ca}^{2+}$ and $\\text{Mg}^{2+}$ sulphates/chlorides and cannot be removed by boiling. Step 2: Adding washing soda precipitates insoluble carbonates: $\\text{CaSO}_4 + \\text{Na}_2\\text{CO}_3 \\to \\text{CaCO}_3(s) + \\text{Na}_2\\text{SO}_4$.`,
-        },
-        {
-          question: `[${cls} • ${focusTopic} — ${subT(1)}] In the extraction of iron in the Blast Furnace, what is the primary role of limestone ($\text{CaCO}_3$)?`,
-          options: [
-            'It decomposes to $\\text{CaO}$, which reacts with sandy silica ($\\text{SiO}_2$) impurities to form molten calcium silicate slag ($\\text{CaSiO}_3$)',
-            'It oxidizes iron(II) to iron(III)',
-            'It acts as a catalyst to lower the melting point of iron',
-            'It cools the bottom of the blast furnace',
-          ],
-          correctIndex: 0,
-          explanation: `Step 1: $\\text{CaCO}_3(s) \\to \\text{CaO}(s) + \\text{CO}_2(g)$. Step 2: Basic $\\text{CaO}$ neutralizes acidic impurity $\\text{SiO}_2$: $\\text{CaO} + \\text{SiO}_2 \\to \\text{CaSiO}_3(l)$ (slag).`,
-        },
-        {
-          question: `[${cls} • ${focusTopic} — ${subT(2)}] Two isotopes of Chlorine are $^{35}_{17}\\text{Cl}$ ($75\\%$ abundance) and $^{37}_{17}\\text{Cl}$ ($25\\%$ abundance). Calculate the Relative Atomic Mass ($RAM$) of Chlorine`,
-          options: ['$35.5$', '$36.0$', '$35.2$', '$36.5$'],
-          correctIndex: 0,
-          explanation: `Step 1: $RAM = \\frac{(35 \\times 75) + (37 \\times 25)}{100}$. Step 2: $RAM = \\frac{2625 + 925}{100} = \\frac{3550}{100} = 35.5$.`,
-        },
-        {
-          question: `[${cls} • ${focusTopic} — ${subT(3)}] What is the pH of a $0.001\\text{ M}$ ($1.0 \\times 10^{-3}\\text{ M}$) aqueous solution of hydrochloric acid ($\text{HCl}$)?`,
-          options: ['$\\text{pH} = 3$', '$\\text{pH} = 1$', '$\\text{pH} = 11$', '$\\text{pH} = 4$'],
-          correctIndex: 0,
-          explanation: `Step 1: $\\text{HCl}$ is a strong monobasic acid that ionizes completely, so $[\\text{H}^+] = 1.0 \\times 10^{-3}\\text{ M}$. Step 2: $\\text{pH} = -\\log_{10}[\\text{H}^+] = -\\log_{10}(10^{-3}) = 3$.`,
-        },
-        {
-          question: `[${cls} • ${focusTopic} — ${subT(0)}] In a NECTA Chemistry Paper 2 titration, $25.0\\text{ cm}^3$ of $0.10\\text{ M }\\text{Na}_2\\text{CO}_3$ required $20.0\\text{ cm}^3$ of $\\text{HCl}$ for complete neutralization ($\\text{Na}_2\\text{CO}_3 + 2\\text{HCl} \\to 2\\text{NaCl} + \\text{H}_2\\text{O} + \\text{CO}_2$). Calculate the molarity of $\\text{HCl}$`,
-          options: ['$0.25\\text{ M}$', '$0.125\\text{ M}$', '$0.20\\text{ M}$', '$0.50\\text{ M}$'],
-          correctIndex: 0,
-          explanation: `Step 1: Use $\\frac{M_A V_A}{M_B V_B} = \\frac{n_A}{n_B}$ where $n_A = 2, n_B = 1$. Step 2: $\\frac{M_A \\times 20.0}{0.10 \\times 25.0} = \\frac{2}{1} \\Rightarrow M_A = \\frac{2 \\times 2.5}{20.0} = 0.25\\text{ M}$.`,
-        },
-        {
-          question: `[${cls} • ${focusTopic} — ${subT(1)}] According to Faraday's First Law of Electrolysis, what mass of Copper ($\\text{Cu} = 63.5$) is deposited at the cathode when a current of $2.0\\text{ A}$ flows through aqueous $\\text{CuSO}_4$ for $1,930\\text{ seconds}$? ($1\\text{ F} = 96,500\\text{ C/mol}$)`,
-          options: ['$1.27\\text{ g}$', '$2.54\\text{ g}$', '$0.635\\text{ g}$', '$3.81\\text{ g}$'],
-          correctIndex: 0,
-          explanation: `Step 1: Charge $Q = I t = 2.0 \\times 1930 = 3,860\\text{ C}$. Step 2: Since $\\text{Cu}^{2+} + 2e^- \\to \\text{Cu}$, $z = 2$. Mass $m = \\frac{Q \\times M}{z \\times F} = \\frac{3860 \\times 63.5}{2 \\times 96500} = 1.27\\text{ g}$.`,
-        },
-        {
-          question: `[${cls} • ${focusTopic} — ${subT(2)}] An organic compound contains $52.2\\%$ Carbon, $13.0\\%$ Hydrogen, and $34.8\\%$ Oxygen by mass. Determine its empirical formula [$\\text{C}=12, \\text{H}=1, \\text{O}=16$]`,
-          options: ['$\\text{C}_2\\text{H}_6\\text{O}$', '$\\text{CH}_2\\text{O}$', '$\\text{C}_2\\text{H}_4\\text{O}_2$', '$\\text{C}_3\\text{H}_8\\text{O}$'],
-          correctIndex: 0,
-          explanation: `Step 1: Mole ratios: $\\text{C} = \\frac{52.2}{12} = 4.35$; $\\text{H} = \\frac{13.0}{1} = 13.0$; $\\text{O} = \\frac{34.8}{16} = 2.175$. Step 2: Divide by smallest ($2.175$): $\\text{C}=2, \\text{H}=6, \\text{O}=1 \\Rightarrow \\text{C}_2\\text{H}_6\\text{O}$.`,
-        },
-        {
-          question: `[${cls} • ${focusTopic} — ${subT(3)}] In Qualitative Analysis, when aqueous sodium hydroxide ($\\text{NaOH}$) is added dropwise and then in excess to a salt solution, a pale blue precipitate forms which is insoluble in excess $\\text{NaOH}$. Which cation is present?`,
-          options: ['Copper(II) ion ($\\text{Cu}^{2+}$)', 'Zinc(II) ion ($\\text{Zn}^{2+}$)', 'Iron(III) ion ($\\text{Fe}^{3+}$)', 'Calcium(II) ion ($\\text{Ca}^{2+}$)'],
-          correctIndex: 0,
-          explanation: `Step 1: $\\text{Cu}^{2+}(aq) + 2\\text{OH}^-(aq) \\to \\text{Cu(OH)}_2(s)$, which is a characteristic pale blue precipitate insoluble in excess $\\text{NaOH}$ (but soluble in excess aqueous ammonia to form deep blue $[\\text{Cu(NH}_3)_4]^{2+}$).`,
-        },
-        {
-          question: `[${cls} • ${focusTopic} — ${subT(0)}] Which indicator is suitable for the titration of a strong acid ($\\text{HCl}$) against a weak base ($\\text{Na}_2\\text{CO}_3$ or $\\text{NH}_3(aq)$)?`,
-          options: ['Methyl Orange (M.O.)', 'Phenolphthalein (P.O.P.)', 'Universal Indicator Paper', 'Starch Indicator'],
-          correctIndex: 0,
-          explanation: `Step 1: A strong acid vs weak base titration has its equivalence point in the acidic pH range ($\\text{pH } 3.1\\text{–}4.4$), where Methyl Orange changes sharply from yellow to orange-pink.`,
-        },
-      ];
+    // Chemistry uses its uploaded textbook question bank exclusively — no autogenerated fallback questions
+    if (subLower.includes('chemistry') || subLower.includes('kemia')) {
+      return [];
     }
 
     if (subLower.includes('biology') || subLower.includes('sayansi')) {
@@ -5713,16 +5672,20 @@ export function buildContentIntegratedQuizQuestions(
 
   const buildTopicPureMathPad = (): Array<Omit<QuizItem, 'topic' | 'subTopic' | 'sourceRef'> & { subTopic?: string }> => {
     const isAddMath = subLower.includes('additional');
-    const exactLevelAndSubjectBank = FULL_EXTRACTED_TEXTBOOK_BANK.filter((seed) => {
-      if (seed.cls.toLowerCase() !== cls.toLowerCase()) return false;
+    const allMathSubjectBank = FULL_EXTRACTED_TEXTBOOK_BANK.filter((seed) => {
       const seedIsAdd = seed.subject.toLowerCase().includes('additional');
       if (isAddMath !== seedIsAdd) return false;
       return seed.subject.toLowerCase().includes('math');
     });
+    const exactLevelAndSubjectBank = allMathSubjectBank.filter(
+      (seed) => seed.cls.toLowerCase() === cls.toLowerCase()
+    );
+    const activeMathBank =
+      exactLevelAndSubjectBank.length > 0 ? exactLevelAndSubjectBank : allMathSubjectBank;
 
-    if (exactLevelAndSubjectBank.length > 0) {
+    if (activeMathBank.length > 0) {
       if (topic && topic !== 'ALL') {
-        const topicMatched = exactLevelAndSubjectBank.filter((seed) =>
+        const topicMatched = activeMathBank.filter((seed) =>
           doesMathTopicMatchStrict(seed.topic, seed.subTopic, focusTopic)
         );
         if (topicMatched.length > 0) {
@@ -5732,32 +5695,33 @@ export function buildContentIntegratedQuizQuestions(
             options: [...seed.options],
             correctIndex: seed.correctIndex,
             explanation: seed.explanation,
+            isMultipleChoice: seed.isMultipleChoice,
           }));
         }
-      } else {
-        // Interleave across chapters of this exact Form & Subject so 'ALL' covers the whole level evenly
-        const byChap = new Map<string, typeof exactLevelAndSubjectBank>();
-        for (const s of exactLevelAndSubjectBank) {
-          const arr = byChap.get(s.topic) || [];
-          arr.push(s);
-          byChap.set(s.topic, arr);
-        }
-        const buckets = Array.from(byChap.values());
-        const interleaved: typeof exactLevelAndSubjectBank = [];
-        const maxLen = buckets.reduce((m, b) => Math.max(m, b.length), 0);
-        for (let i = 0; i < maxLen && interleaved.length < 25; i++) {
-          for (const b of buckets) {
-            if (i < b.length) interleaved.push(b[i]);
-          }
-        }
-        return interleaved.map((seed) => ({
-          subTopic: seed.subTopic,
-          question: `[${cls} • ${seed.topic}] [${seed.exerciseRef}] ${seed.question}`,
-          options: [...seed.options],
-          correctIndex: seed.correctIndex,
-          explanation: seed.explanation,
-        }));
       }
+      // Interleave across chapters of this Form & Subject so all uploaded textbook questions are returned
+      const byChap = new Map<string, typeof activeMathBank>();
+      for (const s of activeMathBank) {
+        const arr = byChap.get(s.topic) || [];
+        arr.push(s);
+        byChap.set(s.topic, arr);
+      }
+      const buckets = Array.from(byChap.values());
+      const interleaved: typeof activeMathBank = [];
+      const maxLen = buckets.reduce((m, b) => Math.max(m, b.length), 0);
+      for (let i = 0; i < maxLen; i++) {
+        for (const b of buckets) {
+          if (i < b.length) interleaved.push(b[i]);
+        }
+      }
+      return interleaved.map((seed) => ({
+        subTopic: seed.subTopic,
+        question: `[${cls} • ${seed.topic}] [${seed.exerciseRef}] ${seed.question}`,
+        options: [...seed.options],
+        correctIndex: seed.correctIndex,
+        explanation: seed.explanation,
+        isMultipleChoice: seed.isMultipleChoice,
+      }));
     }
 
     const dynamicTopicItems: Array<Omit<QuizItem, 'topic' | 'subTopic' | 'sourceRef'> & { subTopic?: string }> = [];
@@ -5927,14 +5891,18 @@ export function buildContentIntegratedQuizQuestions(
   const attachMetadata = (items: RawQuizDraft[]): QuizItem[] => {
     const sources = [src1, src2, src3, src4];
     const isMathSub = subLower.includes('math') || subLower.includes('hisabati') || subLower.includes('kuhesabu');
-    const topicPad: RawQuizDraft[] = isMathSub ? buildTopicPureMathPad() : [];
-    // Never pad a specific math topic with buildAdditionalSubjectQuestions() (which mixes Form 1-4 topics);
-    // only use buildAdditionalSubjectQuestions() for non-math subjects or when topicPad is empty and topic === 'ALL'
+    const isIcsSub =
+      subLower.includes('computer') ||
+      /\b(ics|ict|tehama)\b/i.test(subLower);
+    const isGeoSub = subLower.includes('geography') || subLower.includes('jiografia');
+    const isChemSub = subLower.includes('chemistry') || subLower.includes('kemia');
+    // Never pad any uploaded subject (Mathematics, ICS, Geography, Chemistry) with autogenerated fallback questions
     const fallbackPool: RawQuizDraft[] =
-      isMathSub && (topicPad.length >= 16 || (topic && topic !== 'ALL'))
-        ? topicPad
-        : [...topicPad, ...buildAdditionalSubjectQuestions()];
+      isMathSub || isIcsSub || isGeoSub || isChemSub
+        ? []
+        : buildAdditionalSubjectQuestions();
 
+    const maxQuizItems = Math.max(20, items.length);
     const deduplicated: RawQuizDraft[] = [];
     const seenDraftKeys = new Set<string>();
     for (const candidate of [...items, ...fallbackPool]) {
@@ -5943,10 +5911,10 @@ export function buildContentIntegratedQuizQuestions(
       if (!key || seenDraftKeys.has(key)) continue;
       seenDraftKeys.add(key);
       deduplicated.push(candidate);
-      if (deduplicated.length >= 20) break;
+      if (deduplicated.length >= maxQuizItems) break;
     }
 
-    let combined: RawQuizDraft[] = deduplicated.slice(0, 20);
+    let combined: RawQuizDraft[] = deduplicated.slice(0, maxQuizItems);
 
     // If a specific subTopic was requested and items carry subTopic tags, sort matching subTopic items first
     if (subTopic && subTopic !== 'ALL' && items.some((it) => it.subTopic)) {
@@ -5977,14 +5945,84 @@ export function buildContentIntegratedQuizQuestions(
         topic: focusTopic,
         subTopic: item.subTopic ? item.subTopic : idx < items.length ? focusSubTopic : itemSubTopic,
         sourceRef: sources[idx % sources.length],
+        isMultipleChoice: item.isMultipleChoice,
       };
     });
   };
 
   // ============================================================================
-  // 1. MATHEMATICS / HISABATI / BAM / ADVANCED MATH — TOPIC- & CLASS-SPECIFIC BANK
+  // 0. INFORMATION AND COMPUTER STUDIES (ICS) / COMPUTER SCIENCE — TEXTBOOK BANK
+  // ============================================================================
+  if (
+    subLower.includes('computer') ||
+    /\b(ics|ict|tehama)\b/i.test(subLower)
+  ) {
+    const icsBankAll = FULL_EXTRACTED_TEXTBOOK_BANK.filter(
+      (seed) =>
+        (seed.subject.toLowerCase().includes('computer') ||
+          /\b(ics|ict)\b/i.test(seed.subject)) &&
+        seed.id.startsWith('ics-f1-bank-')
+    );
+    const icsExactClass = icsBankAll.filter(
+      (seed) => seed.cls.toLowerCase() === cls.toLowerCase()
+    );
+    const activeIcsPool = icsExactClass.length > 0 ? icsExactClass : icsBankAll;
+
+    if (activeIcsPool.length > 0) {
+      if (topic && topic !== 'ALL') {
+        const topicMatched = activeIcsPool.filter((seed) =>
+          doesMathTopicMatchStrict(seed.topic, seed.subTopic, focusTopic)
+        );
+        if (topicMatched.length > 0) {
+          return attachMetadata(
+            topicMatched.map((seed) => ({
+              subTopic: seed.subTopic,
+              question: `[${cls} • ${shortFocusTopic}] ${seed.question}`,
+              options: [...seed.options],
+              correctIndex: seed.correctIndex,
+              explanation: seed.explanation,
+              isMultipleChoice: seed.isMultipleChoice,
+            }))
+          );
+        }
+      }
+
+      // When topic === 'ALL' (or non-Form 1 general topic), interleave across all 6 ICS chapters
+      const byChap = new Map<string, typeof activeIcsPool>();
+      for (const s of activeIcsPool) {
+        const arr = byChap.get(s.topic) || [];
+        arr.push(s);
+        byChap.set(s.topic, arr);
+      }
+      const buckets = Array.from(byChap.values());
+      const interleaved: typeof activeIcsPool = [];
+      const maxLen = buckets.reduce((m, b) => Math.max(m, b.length), 0);
+      for (let i = 0; i < maxLen; i++) {
+        for (const b of buckets) {
+          if (i < b.length) interleaved.push(b[i]);
+        }
+      }
+      return attachMetadata(
+        interleaved.map((seed) => ({
+          subTopic: seed.subTopic,
+          question: `[${cls} • ${seed.topic}] ${seed.question}`,
+          options: [...seed.options],
+          correctIndex: seed.correctIndex,
+          explanation: seed.explanation,
+          isMultipleChoice: seed.isMultipleChoice,
+        }))
+      );
+    }
+  }
+
+  // ============================================================================
+  // 1. MATHEMATICS / HISABATI / BAM / ADVANCED MATH — UPLOADED TEXTBOOK BANK
   // ============================================================================
   if (subLower.includes('math') || subLower.includes('hisabati') || subLower.includes('kuhesabu')) {
+    const uploadedMathItems = buildTopicPureMathPad();
+    if (uploadedMathItems.length > 0) {
+      return attachMetadata(uploadedMathItems);
+    }
     // 1A-0. CONCEPT OF MATHEMATICS (Form 1 Chapter 1: Meaning, Branches, Relationship Between Mathematics and Other Subjects & Importance)
     if (
       /\b(concept\s+of\s+mathematics|meaning\s+of\s+mathematics|branches\s+of\s+mathematics|relationship\s+between\s+mathematics|relationships\s+between\s+mathematics|mathematics\s+and\s+other\s+subjects|importance\s+of\s+mathematics)\b/i.test(
@@ -7400,168 +7438,174 @@ export function buildContentIntegratedQuizQuestions(
   }
 
   // ============================================================================
-  // 3. CHEMISTRY — TOPIC-SPECIFIC SOLVING PROBLEMS
+  // 3. CHEMISTRY / KEMIA — UPLOADED TEXTBOOK QUESTION BANK
   // ============================================================================
-  if (subLower.includes('chemistry')) {
-    if (topicCombinedLower.includes('organic') || topicCombinedLower.includes('hydrocarbon')) {
-      return attachMetadata([
-        {
-          question: `[${cls} • ${focusTopic}] Determine the molecular formula and homologous series of a hydrocarbon with 4 carbon atoms that decolourizes bromine water (general formula CₙH₂ₙ)`,
-          options: [
-            'C₄H₈ (Butene — Alkene series)',
-            'C₄H₁₀ (Butane — Alkane series)',
-            'C₄H₆ (Butyne — Alkyne series)',
-            'C₄H₉OH (Butanol — Alcohol series)',
-          ],
-          correctIndex: 0,
-          explanation: `Step 1: Decolourization of bromine water confirms an unsaturated hydrocarbon (Alkene, CₙH₂ₙ). Step 2: For n = 4, formula is C₄H₈ (Butene).`,
-        },
-        {
-          question: `[${cls} • ${focusTopic}] An organic compound contains 52.2% Carbon, 13.0% Hydrogen, and 34.8% Oxygen by mass. Find its empirical formula [C = 12, H = 1, O = 16]`,
-          options: ['C₂H₆O', 'CH₂O', 'C₂H₄O₂', 'C₃H₈O'],
-          correctIndex: 0,
-          explanation: `Step 1: Mole ratios: C = 52.2/12 = 4.35; H = 13.0/1 = 13.0; O = 34.8/16 = 2.175. Step 2: Divide by smallest (2.175): C = 2, H = 6, O = 1 → Empirical formula is C₂H₆O.`,
-        },
-        {
-          question: `[${cls} • ${focusTopic}] Which reaction occurs when ethanoic acid (CH₃COOH) is warmed with ethanol (C₂H₅OH) in the presence of concentrated H₂SO₄ catalyst?`,
-          options: [
-            'Esterification forming sweet-smelling ethyl ethanoate (CH₃COOC₂H₅) and water',
-            'Saponification forming soap and glycerol',
-            'Hydrogenation forming ethane',
-            'Fermentation forming carbon dioxide',
-          ],
-          correctIndex: 0,
-          explanation: `Step 1: Carboxylic acid + Alcohol ⇌ Ester + Water (Esterification). Step 2: CH₃COOH + C₂H₅OH → CH₃COOC₂H₅ + H₂O.`,
-        },
-        {
-          question: `[${cls} • ${focusTopic}] Complete combustion of 1 mole of propane (C₃H₈) in excess oxygen produces how many moles of CO₂ and H₂O?`,
-          options: [
-            '3 moles of CO₂ and 4 moles of H₂O',
-            '3 moles of CO₂ and 8 moles of H₂O',
-            '2 moles of CO₂ and 3 moles of H₂O',
-            '4 moles of CO₂ and 3 moles of H₂O',
-          ],
-          correctIndex: 0,
-          explanation: `Step 1: Write balanced combustion equation: C₃H₈ + 5O₂ → 3CO₂ + 4H₂O. Step 2: 1 mole of C₃H₈ yields 3 moles of CO₂ and 4 moles of H₂O.`,
-        },
-      ]);
+  if (subLower.includes('chemistry') || subLower.includes('kemia')) {
+    const chemBankAll = FULL_EXTRACTED_TEXTBOOK_BANK.filter(
+      (seed) =>
+        seed.subject.toLowerCase().includes('chemistry') &&
+        seed.id.startsWith('chem-f2-bank-')
+    );
+    const chemExactClass = chemBankAll.filter(
+      (seed) => seed.cls.toLowerCase() === cls.toLowerCase()
+    );
+    const activeChemPool = chemExactClass.length > 0 ? chemExactClass : chemBankAll;
+
+    if (activeChemPool.length > 0) {
+      if (topic && topic !== 'ALL') {
+        const topicMatched = activeChemPool.filter((seed) =>
+          doesMathTopicMatchStrict(seed.topic, seed.subTopic, focusTopic)
+        );
+        if (topicMatched.length > 0) {
+          return attachMetadata(
+            topicMatched.map((seed) => ({
+              subTopic: seed.subTopic,
+              question: `[${cls} • ${shortFocusTopic}] ${seed.question}`,
+              options: [...seed.options],
+              correctIndex: seed.correctIndex,
+              explanation: seed.explanation,
+              isMultipleChoice: seed.isMultipleChoice,
+            }))
+          );
+        }
+      }
+
+      const byChap = new Map<string, typeof activeChemPool>();
+      for (const s of activeChemPool) {
+        const arr = byChap.get(s.topic) || [];
+        arr.push(s);
+        byChap.set(s.topic, arr);
+      }
+      const buckets = Array.from(byChap.values());
+      const interleaved: typeof activeChemPool = [];
+      const maxLen = buckets.reduce((m, b) => Math.max(m, b.length), 0);
+      for (let i = 0; i < maxLen; i++) {
+        for (const b of buckets) {
+          if (i < b.length) interleaved.push(b[i]);
+        }
+      }
+      return attachMetadata(
+        interleaved.map((seed) => ({
+          subTopic: seed.subTopic,
+          question: `[${cls} • ${seed.topic}] ${seed.question}`,
+          options: [...seed.options],
+          correctIndex: seed.correctIndex,
+          explanation: seed.explanation,
+          isMultipleChoice: seed.isMultipleChoice,
+        }))
+      );
     }
-
-    return attachMetadata([
-      {
-        question: `[${cls} • ${focusTopic}] Calculate the number of moles in 21.2 g of anhydrous sodium carbonate (Na₂CO₃). [Given: Na = 23, C = 12, O = 16]`,
-        options: ['0.20 moles', '0.50 moles', '2.00 moles', '0.10 moles'],
-        correctIndex: 0,
-        explanation: `Step 1: Calculate Molar Mass (Mr) of Na₂CO₃ = (2 × 23) + 12 + (3 × 16) = 46 + 12 + 48 = 106 g/mol. Step 2: Moles n = m / Mr = 21.2 g / 106 g/mol = 0.20 moles.`,
-      },
-      {
-        question: `[${cls} • ${focusTopic}] In a volumetric titration, 25.0 cm³ of 0.10 M NaOH completely neutralized 20.0 cm³ of dilute HCl. Calculate the molarity (Mₐ) of the HCl acid`,
-        options: ['0.125 M', '0.080 M', '0.250 M', '0.100 M'],
-        correctIndex: 0,
-        explanation: `Step 1: Reaction equation HCl + NaOH → NaCl + H₂O (mole ratio nₐ : n_b = 1 : 1). Step 2: Apply (MₐVₐ)/nₐ = (M_bV_b)/n_b → Mₐ × 20.0 = 0.10 × 25.0. Step 3: Mₐ = 2.5 / 20.0 = 0.125 M.`,
-      },
-      {
-        question: `[${cls} • ${focusTopic}] An element X has atomic number Z = 17 and mass number A = 35. Determine its electronic configuration, number of neutrons, and valency`,
-        options: [
-          'Config: 2:8:7, Neutrons: 18, Valency: 1',
-          'Config: 2:8:5, Neutrons: 17, Valency: 3',
-          'Config: 2:8:8, Neutrons: 18, Valency: 0',
-          'Config: 2:7, Neutrons: 18, Valency: 2',
-        ],
-        correctIndex: 0,
-        explanation: `Step 1: Electrons = Z = 17 → Electronic configuration is 2:8:7. Step 2: Neutrons N = A - Z = 35 - 17 = 18. Step 3: Since outermost shell has 7 electrons, it gains 1 electron → Valency = 1.`,
-      },
-      {
-        question: `[${cls} • ${focusTopic}] Calculate the mass of copper deposited at the cathode when a current of 2.0 A is passed through CuSO₄ solution for 1,930 seconds. [Cu = 64, 1 F = 96,500 C]`,
-        options: ['1.28 g', '2.56 g', '0.64 g', '3.20 g'],
-        correctIndex: 0,
-        explanation: `Step 1: Quantity of charge Q = It = 2.0 A × 1,930 s = 3,860 C. Step 2: Cu²⁺ + 2e⁻ → Cu requires 2 Faradays (2 × 96,500 C) for 64 g. Step 3: Mass m = (64 × 3,860) / (2 × 96,500) = 1.28 g.`,
-      },
-    ]);
   }
 
   // ============================================================================
-  // 4. BIOLOGY / SAYANSI — TOPIC-SPECIFIC SOLVING PROBLEMS
+  // 4. BIOLOGY / SAYANSI — UPLOADED TEXTBOOK QUESTION BANK
   // ============================================================================
-  if (subLower.includes('biology') || subLower.includes('sayansi')) {
-    return attachMetadata([
-      {
-        question: `[${cls} • ${focusTopic}] In a Mendelian monohybrid cross, a heterozygous tall pea plant (Tt) is crossed with another heterozygous tall pea plant (Tt). What is the phenotypic ratio and probability of obtaining a dwarf (tt) offspring?`,
-        options: [
-          '3 Tall : 1 Dwarf (25% probability of dwarf tt)',
-          '1 Tall : 1 Dwarf (50% probability of dwarf tt)',
-          'All Tall (0% probability of dwarf tt)',
-          '2 Tall : 2 Dwarf (50% probability of dwarf tt)',
-        ],
-        correctIndex: 0,
-        explanation: `Step 1: Parental genotypes: Tt × Tt. Step 2: Gametes: T and t from each parent. Step 3: Offspring (F₁) genotypes: TT, Tt, Tt, tt (1:2:1). Step 4: Phenotypic ratio = 3 Tall : 1 Dwarf (1/4 = 25% dwarf).`,
-      },
-      {
-        question: `[${cls} • ${focusTopic}] A student observes a plant cell using a light microscope with an eyepiece lens of ×10 and an objective lens of ×40. If the actual length of the cell is 0.05 mm, calculate the total magnification and image size`,
-        options: [
-          'Total Magnification = ×400, Image Size = 20 mm',
-          'Total Magnification = ×50, Image Size = 2.5 mm',
-          'Total Magnification = ×400, Image Size = 2.0 mm',
-          'Total Magnification = ×40, Image Size = 5.0 mm',
-        ],
-        correctIndex: 0,
-        explanation: `Step 1: Total Magnification = Eyepiece × Objective = 10 × 40 = ×400. Step 2: Image Size = Actual Size × Total Magnification = 0.05 mm × 400 = 20 mm.`,
-      },
-      {
-        question: `[${cls} • ${focusTopic}] During aerobic respiration, 1 molecule of glucose (C₆H₁₂O₆) is completely oxidized. Solve the balanced equation to find how many molecules of CO₂, H₂O, and ATP are produced`,
-        options: [
-          '6 CO₂ + 6 H₂O + 38 ATP',
-          '2 CO₂ + 2 H₂O + 2 ATP',
-          '12 CO₂ + 6 H₂O + 18 ATP',
-          '6 CO₂ + 12 H₂O + 2 ATP',
-        ],
-        correctIndex: 0,
-        explanation: `Step 1: Balanced equation: C₆H₁₂O₆ + 6O₂ → 6CO₂ + 6H₂O + 38 ATP (2880 kJ). Step 2: Complete aerobic oxidation yields 6 molecules of carbon dioxide, 6 molecules of water, and 38 ATP molecules.`,
-      },
-      {
-        question: `[${cls} • ${focusTopic}] A food sample tested with Benedict's solution turned from blue to green, yellow, and finally brick-red precipitate upon boiling. Identify the food substance and its digestive enzyme`,
-        options: [
-          'Reducing Sugar (e.g. Glucose/Maltose) — maltose is hydrolysed by maltase in the ileum',
-          'Starch — digested by salivary amylase',
-          'Protein — digested by pepsin in the stomach',
-          'Lipids — emulsified by bile salts',
-        ],
-        correctIndex: 0,
-        explanation: `Step 1: Observation: Blue to brick-red precipitate with Benedict's solution on heating confirms a Reducing Sugar. Step 2: In digestion, pancreatic amylase converts starch to maltose in the duodenum, and maltase converts maltose to glucose.`,
-      },
-    ]);
+  if (subLower.includes('biology') || subLower.includes('biolojia') || subLower.includes('sayansi')) {
+    const bioBankAll = FULL_EXTRACTED_TEXTBOOK_BANK.filter(
+      (seed) =>
+        seed.subject.toLowerCase().includes('biology') &&
+        seed.id.startsWith('bio-f2-bank-')
+    );
+    const bioExactClass = bioBankAll.filter(
+      (seed) => seed.cls.toLowerCase() === cls.toLowerCase()
+    );
+    const bioCandidates = bioExactClass.length > 0 ? bioExactClass : bioBankAll;
+    const topicLower = (focusTopic || topic || '').toLowerCase();
+    const topicFilteredBio = bioCandidates.filter((seed) => {
+      const chLower = seed.topic.toLowerCase();
+      if (topicLower.includes('digest') || topicLower.includes('ruminant') || topicLower.includes('tooth') || topicLower.includes('teeth')) {
+        return chLower.includes('chapter 2') || chLower.includes('digestive');
+      }
+      if (topicLower.includes('nutrition') || topicLower.includes('food test') || topicLower.includes('photosynthesis') || topicLower.includes('diet')) {
+        return chLower.includes('chapter 1') || chLower.includes('nutrition');
+      }
+      if (topicLower.includes('osmosis') || topicLower.includes('diffusion') || topicLower.includes('mass flow')) {
+        return chLower.includes('chapter 3') || chLower.includes('diffusion, osmosis');
+      }
+      if (topicLower.includes('flowering') || topicLower.includes('xylem') || topicLower.includes('phloem') || topicLower.includes('transpiration') || topicLower.includes('guttation')) {
+        return chLower.includes('chapter 4') || chLower.includes('flowering plants');
+      }
+      if (topicLower.includes('mammal') || topicLower.includes('heart') || topicLower.includes('blood') || topicLower.includes('circulat') || topicLower.includes('lymph')) {
+        return chLower.includes('chapter 5') || chLower.includes('mammals');
+      }
+      if (topicLower.includes('gas exchange') || topicLower.includes('gaseous') || topicLower.includes('respiration') || topicLower.includes('breathing')) {
+        return chLower.includes('chapter 6') || chLower.includes('respiration');
+      }
+      return true;
+    });
+    const finalBioSeeds = topicFilteredBio.length > 0 ? topicFilteredBio : bioCandidates;
+    if (finalBioSeeds.length > 0) {
+      return attachMetadata(
+        finalBioSeeds.map((seed) => ({
+          subTopic: seed.subTopic,
+          question: `[${seed.cls} • ${seed.topic}] ${seed.question}`,
+          options: [...seed.options],
+          correctIndex: seed.correctIndex,
+          explanation: seed.explanation,
+          isMultipleChoice: seed.isMultipleChoice,
+        }))
+      );
+    }
   }
 
   // ============================================================================
-  // 5. GEOGRAPHY / JIOGRAFIA — MAP SCALE, TIME, CLIMATE & RESEARCH SOLVING
+  // 5. GEOGRAPHY / JIOGRAFIA — UPLOADED TEXTBOOK QUESTION BANK
   // ============================================================================
   if (subLower.includes('geography') || subLower.includes('jiografia')) {
-    return attachMetadata([
-      {
-        question: `[${cls} • ${focusTopic}] On a topographical map of scale 1:50,000, the map distance measured along a road between two towns is 14 cm. Calculate the actual ground distance in kilometres (km)`,
-        options: ['7.0 km', '14.0 km', '3.5 km', '70.0 km'],
-        correctIndex: 0,
-        explanation: `Step 1: Scale 1:50,000 means 1 cm on map represents 50,000 cm (0.5 km) on the ground. Step 2: Ground distance = 14 cm × 0.5 km/cm = 7.0 km.`,
-      },
-      {
-        question: `[${cls} • ${focusTopic}] If the local time at Dodoma (36°E) is 10:00 AM, calculate the local time at Accra (0° Greenwich Meridian)`,
-        options: ['7:36 AM', '12:24 PM', '8:00 AM', '9:24 AM'],
-        correctIndex: 0,
-        explanation: `Step 1: Difference in longitude = 36° - 0° = 36°. Step 2: Time difference = 36 × 4 minutes = 144 minutes = 2 hours 24 minutes. Step 3: Since Accra (0°) is West of Dodoma (36°E), subtract time → 10:00 AM - 2 hr 24 min = 7:36 AM.`,
-      },
-      {
-        question: `[${cls} • ${focusTopic}] If the temperature at Dar es Salaam (sea level, 0 m) is 30°C, calculate the temperature at the summit of Mount Kilimanjaro (5,895 m) using the normal environmental lapse rate of 0.6°C per 100 m`,
-        options: ['-5.37°C', '+5.37°C', '-15.20°C', '0.00°C'],
-        correctIndex: 0,
-        explanation: `Step 1: Elevation difference = 5,895 m. Step 2: Temperature drop = (5,895 / 100) × 0.6°C = 58.95 × 0.6 = 35.37°C. Step 3: Temperature at summit = 30°C - 35.37°C = -5.37°C.`,
-      },
-      {
-        question: `[${cls} • ${focusTopic}] A regular rectangular farm on a 1:50,000 map measures 6 cm by 4 cm. Calculate the actual area of the farm in square kilometres (km²)`,
-        options: ['6.0 km²', '24.0 km²', '12.0 km²', '3.0 km²'],
-        correctIndex: 0,
-        explanation: `Step 1: Convert map dimensions using 1 cm = 0.5 km → Length = 6 × 0.5 = 3.0 km; Width = 4 × 0.5 = 2.0 km. Step 2: Area = Length × Width = 3.0 km × 2.0 km = 6.0 km².`,
-      },
-    ]);
+    const geoBankAll = FULL_EXTRACTED_TEXTBOOK_BANK.filter(
+      (seed) =>
+        seed.subject.toLowerCase().includes('geography') &&
+        seed.id.startsWith('geo-f2-bank-')
+    );
+    const geoExactClass = geoBankAll.filter(
+      (seed) => seed.cls.toLowerCase() === cls.toLowerCase()
+    );
+    const activeGeoPool = geoExactClass.length > 0 ? geoExactClass : geoBankAll;
+
+    if (activeGeoPool.length > 0) {
+      if (topic && topic !== 'ALL') {
+        const topicMatched = activeGeoPool.filter((seed) =>
+          doesMathTopicMatchStrict(seed.topic, seed.subTopic, focusTopic)
+        );
+        if (topicMatched.length > 0) {
+          return attachMetadata(
+            topicMatched.map((seed) => ({
+              subTopic: seed.subTopic,
+              question: `[${cls} • ${shortFocusTopic}] ${seed.question}`,
+              options: [...seed.options],
+              correctIndex: seed.correctIndex,
+              explanation: seed.explanation,
+              isMultipleChoice: seed.isMultipleChoice,
+            }))
+          );
+        }
+      }
+
+      const byChap = new Map<string, typeof activeGeoPool>();
+      for (const s of activeGeoPool) {
+        const arr = byChap.get(s.topic) || [];
+        arr.push(s);
+        byChap.set(s.topic, arr);
+      }
+      const buckets = Array.from(byChap.values());
+      const interleaved: typeof activeGeoPool = [];
+      const maxLen = buckets.reduce((m, b) => Math.max(m, b.length), 0);
+      for (let i = 0; i < maxLen; i++) {
+        for (const b of buckets) {
+          if (i < b.length) interleaved.push(b[i]);
+        }
+      }
+      return attachMetadata(
+        interleaved.map((seed) => ({
+          subTopic: seed.subTopic,
+          question: `[${cls} • ${seed.topic}] ${seed.question}`,
+          options: [...seed.options],
+          correctIndex: seed.correctIndex,
+          explanation: seed.explanation,
+          isMultipleChoice: seed.isMultipleChoice,
+        }))
+      );
+    }
   }
 
   // ============================================================================

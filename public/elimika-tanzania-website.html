@@ -31,7 +31,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Elimika" />
   <link rel="manifest" href="/manifest.json" />
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="apple-touch-icon" href="/assets/aistudio/Golden_Graduation_Cap_Emblem_on_Indigo_Gradient_c53b7e46.png" />
+  <link rel="icon" type="image/png" href="/assets/aistudio/Golden_Graduation_Cap_Emblem_on_Indigo_Gradient_c53b7e46.png" />
   <link rel="icon" type="image/svg+xml" href="/icon.svg" />
   <script>
     (function () {
@@ -227,9 +228,12 @@
     .mb-3 { margin-bottom: 0.75rem; }
     .mr-1 { margin-right: 0.25rem; }
     .mr-2\.5 { margin-right: 0.625rem; }
-    .h-14 { height: 3.5rem; }
     .h-9 { height: 2.25rem; }
     .h-8 { height: 2rem; }
+    .h-7 { height: 1.75rem; }
+    .h-10 { height: 2.5rem; }
+    .h-12 { height: 3rem; }
+    .h-14 { height: 3.5rem; }
     .h-5 { height: 1.25rem; }
     .h-4 { height: 1rem; }
     .h-3\.5 { height: 0.875rem; }
@@ -237,11 +241,16 @@
     .h-full { height: 100%; }
     .w-9 { width: 2.25rem; }
     .w-8 { width: 2rem; }
+    .w-7 { width: 1.75rem; }
+    .w-10 { width: 2.5rem; }
+    .w-12 { width: 3rem; }
+    .w-14 { width: 3.5rem; }
     .w-5 { width: 1.25rem; }
     .w-4 { width: 1rem; }
     .w-3\.5 { width: 0.875rem; }
     .w-24 { width: 6rem; }
     .h-24 { height: 6rem; }
+    .object-cover { object-fit: cover; }
     .w-\[92\%\] { width: 92%; }
     .min-w-0 { min-width: 0px; }
     .min-w-\[240px\] { min-width: 240px; }
@@ -441,8 +450,8 @@
   <!-- TOP BAR CONTRACT: Brand, Nav Links, Primary Actions (Get App, WhatsApp, Dark Mode) -->
   <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 transition-colors">
     <div class="max-w-5xl mx-auto px-2.5 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2">
-      <a href="#home" onclick="resetToStep1(); return false;" class="text-sm sm:text-xl font-black tracking-tight text-slate-900 whitespace-nowrap shrink-0 flex items-center gap-1.5">
-        <span class="text-blue-600 text-lg sm:text-xl">🎓</span>
+      <a href="#home" onclick="resetToStep1(); return false;" class="text-sm sm:text-xl font-black tracking-tight text-slate-900 whitespace-nowrap shrink-0 flex items-center gap-2">
+        <img src="/assets/aistudio/Golden_Graduation_Cap_Emblem_on_Indigo_Gradient_c53b7e46.png" onerror="this.onerror=null;this.src='/icon.svg';" alt="Elimika Logo" class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg shadow-sm shrink-0 object-cover" />
         <span>ELIMIKA<span class="text-blue-600">.</span></span>
       </a>
 
@@ -468,18 +477,11 @@
           <span class="hidden sm:inline">WhatsApp</span>
         </button>
 
-        <!-- 3-Option Theme Switcher: Light / Dark / System Default -->
-        <div role="group" aria-label="Theme Selector" class="inline-flex items-center p-0.5 rounded-xl bg-slate-100 border border-slate-300 shrink-0">
-          <button type="button" id="themeBtnLight" onclick="selectThemeMode('light')" class="px-2 py-1 rounded-lg font-bold text-[11px] flex items-center gap-1" title="Light Mode (Midnight Plum & Soft White)">
-            <span>☀️</span><span class="hidden sm:inline">Light</span>
-          </button>
-          <button type="button" id="themeBtnDark" onclick="selectThemeMode('dark')" class="px-2 py-1 rounded-lg font-bold text-[11px] flex items-center gap-1" title="Dark Mode (Deep Night Plum)">
-            <span>🌙</span><span class="hidden sm:inline">Dark</span>
-          </button>
-          <button type="button" id="themeBtnSystem" onclick="selectThemeMode('system')" class="px-2 py-1 rounded-lg font-bold text-[11px] flex items-center gap-1" title="System Default (Follow OS Light/Dark Preference)">
-            <span>💻</span><span class="hidden sm:inline">System</span>
-          </button>
-        </div>
+        <!-- Instant 1-Tap Dark / Light Theme Button (Visible on all screens) -->
+        <button type="button" id="quickThemeToggleBtn" onclick="toggleQuickDarkTheme()" class="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl font-bold text-[11px] sm:text-xs flex items-center gap-1 border shadow-sm bg-slate-900 text-white border-slate-700 shrink-0" title="Switch between Dark and Light Theme">
+          <span id="quickThemeIcon">🌙</span>
+          <span id="quickThemeLabel">Dark</span>
+        </button>
       </div>
     </div>
   </header>
@@ -501,15 +503,25 @@
     </section>
   </div>
 
-  <!-- STICKY MOBILE BOTTOM BAR -->
-  <div id="mobileStickyBar" class="fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200 px-4 py-2.5 hidden items-center justify-between gap-3 sm:hidden">
-    <button onclick="handleGoBack()" class="flex-1 py-2.5 px-3 bg-slate-100 text-slate-800 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5">
-      ← Go Back
+  <!-- PERSISTENT MOBILE BOTTOM NAVIGATION BAR -->
+  <nav id="mobileStickyBar" aria-label="Mobile Primary Navigation" class="fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200 px-2 py-1.5 flex items-center justify-around gap-1 lg:hidden shadow-xl">
+    <button onclick="resetToStep1()" class="flex-1 py-1.5 px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold bg-blue-600 text-white" id="mobNavPapers">
+      <span>📄</span>
+      <span>Papers</span>
     </button>
-    <button onclick="resetToStep1()" class="flex-1 py-2.5 px-3 bg-blue-600 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5">
-      🏠 Home
+    <button onclick="openBooksPage()" class="flex-1 py-1.5 px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold text-slate-600" id="mobNavBooks">
+      <span>📚</span>
+      <span>TIE Books</span>
     </button>
-  </div>
+    <button onclick="openSyllabusPage()" class="flex-1 py-1.5 px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold text-slate-600" id="mobNavSyllabus">
+      <span>📜</span>
+      <span>Syllabus</span>
+    </button>
+    <button onclick="openWhatsappModal()" class="flex-1 py-1.5 px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold text-slate-600">
+      <span>💬</span>
+      <span>WhatsApp</span>
+    </button>
+  </nav>
 
   <!-- PRINT BASKET FLOATING BAR -->
   <div id="printBasketBar" class="fixed bottom-16 sm:bottom-5 left-1/2 -translate-x-1/2 z-40 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-2xl border border-slate-700 hidden items-center gap-3 w-[92%] max-w-lg justify-between">
@@ -601,7 +613,10 @@
   <div id="iosInstallModal" class="fixed inset-0 z-50 bg-slate-900/75 backdrop-blur-sm hidden items-center justify-center p-4" onclick="this.classList.add('hidden'); this.classList.remove('flex');">
     <div class="bg-white rounded-3xl max-w-md w-full p-6 border border-slate-200 shadow-2xl space-y-4" onclick="event.stopPropagation()">
       <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-        <h3 class="text-base font-black text-slate-900">📲 Install Elimika on iPhone / iPad</h3>
+        <div class="flex items-center gap-2.5">
+          <img src="/assets/aistudio/Golden_Graduation_Cap_Emblem_on_Indigo_Gradient_c53b7e46.png" onerror="this.onerror=null;this.src='/icon.svg';" alt="Elimika App Icon" class="w-10 h-10 rounded-xl shadow-sm shrink-0 object-cover" />
+          <h3 class="text-base font-black text-slate-900">📲 Install Elimika on iPhone / iPad</h3>
+        </div>
         <button onclick="document.getElementById('iosInstallModal').classList.add('hidden'); document.getElementById('iosInstallModal').classList.remove('flex');" class="px-2.5 py-1 rounded-lg bg-slate-100 text-xs font-bold">✕</button>
       </div>
       <p class="text-xs text-slate-600 leading-relaxed">
@@ -673,7 +688,7 @@
           <ul class="list-disc pl-5 space-y-1.5">
             <li><strong>NECTA Past Examinations:</strong> Past national examination papers and marking schemes referenced on this platform are historical public assessment materials originally administered by the <strong>National Examinations Council of Tanzania (NECTA)</strong>.</li>
             <li><strong>TIE Textbooks &amp; Syllabuses:</strong> Official curriculum textbooks and syllabuses are the intellectual property of the <strong>Tanzania Institute of Education (TIE)</strong> under the Ministry of Education, Science and Technology. They are cataloged here strictly for free educational and non-commercial classroom reference.</li>
-            <li><strong>Copyright Removal / Attribution Requests:</strong> If you are a copyright holder or school administrator and wish to request attribution updates or removal of any specific document link, please contact our editorial desk at <a href="mailto:support@elimika.online" class="text-blue-600 font-bold underline">support@elimika.online</a> and we will respond within 24 hours.</li>
+            <li><strong>Copyright Removal / Attribution Requests:</strong> If you are a copyright holder or school administrator and wish to request attribution updates or removal of any specific document link, please contact our editorial desk via WhatsApp at <a href="https://wa.me/255689511868" target="_blank" rel="noopener noreferrer" class="text-blue-600 font-bold underline">+255689511868</a> and we will respond within 24 hours.</li>
           </ul>
         </div>
 
@@ -687,7 +702,6 @@
             <h3 class="text-sm font-black text-slate-900">📬 Official Contact &amp; Editorial Support Desk</h3>
             <div><strong>Organization:</strong> Elimika Tanzania Educational Portal</div>
             <div><strong>Location:</strong> Dar es Salaam, United Republic of Tanzania</div>
-            <div><strong>Official Support Email:</strong> <a href="mailto:support@elimika.online" class="text-blue-600 font-bold underline">support@elimika.online</a> / <a href="mailto:info@elimika.online" class="text-blue-600 font-bold underline">info@elimika.online</a></div>
             <div><strong>Phone &amp; WhatsApp Support:</strong> <a href="https://wa.me/255689511868" target="_blank" rel="noopener noreferrer" class="text-emerald-600 font-bold underline">+255689511868</a></div>
             <div><strong>Official WhatsApp Channel:</strong> <a href="https://whatsapp.com/channel/0029VbE4Ctl0G0Xbp8kQwu0t" target="_blank" rel="noopener noreferrer" class="text-blue-600 font-bold underline">Elimika Online Tanzania Broadcast</a></div>
           </div>
@@ -821,10 +835,13 @@
   <!-- GET ELIMIKA APP SECTION & FOOTER -->
   <section id="get-elimika-app-section" class="bg-slate-900 text-white py-8 border-t border-slate-800">
     <div class="max-w-5xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-      <div class="space-y-1 text-center sm:text-left">
-        <span class="text-[11px] font-extrabold uppercase tracking-wider text-amber-400">Official Mobile Access · Android &amp; iPhone</span>
-        <h2 class="text-lg sm:text-xl font-black">Get the Elimika Tanzania App on Your Phone</h2>
-        <p class="text-xs text-slate-300">Android users download on Google Play Store · iPhone users install directly from www.elimika.online</p>
+      <div class="flex flex-col sm:flex-row items-center gap-3.5 text-center sm:text-left">
+        <img src="/assets/aistudio/Golden_Graduation_Cap_Emblem_on_Indigo_Gradient_c53b7e46.png" onerror="this.onerror=null;this.src='/icon.svg';" alt="Elimika App Icon" class="w-14 h-14 rounded-2xl shadow-md shrink-0 object-cover" />
+        <div class="space-y-1">
+          <span class="text-[11px] font-extrabold uppercase tracking-wider text-amber-400">Official Mobile Access · Android &amp; iPhone</span>
+          <h2 class="text-lg sm:text-xl font-black">Get the Elimika Tanzania App on Your Phone</h2>
+          <p class="text-xs text-slate-300">Android users download on Google Play Store · iPhone users install directly from www.elimika.online</p>
+        </div>
       </div>
       <div class="flex flex-wrap items-center justify-center gap-2.5 shrink-0">
         <a href="https://play.google.com/store/apps/details?id=online.elimika.twa" target="_blank" rel="noopener noreferrer" class="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs flex items-center gap-1.5">
@@ -840,9 +857,12 @@
   <footer class="bg-slate-950 text-slate-400 py-8 border-t border-slate-800 text-xs text-center mt-auto">
     <div class="max-w-5xl mx-auto px-4 space-y-5">
       <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div class="text-center sm:text-left max-w-md">
-          <div class="font-black text-white text-sm tracking-tight">ELIMIKA TANZANIA (WWW.ELIMIKA.ONLINE)</div>
-          <p class="text-slate-400 text-xs mt-1">Free Tanzanian NECTA Past Examination Papers, Marking Schemes, Official TIE Textbooks, Syllabuses &amp; Competency-Based Study Guides (Standard 1–7 &amp; Form 1–6).</p>
+        <div class="flex flex-col sm:flex-row items-center gap-3 text-center sm:text-left max-w-md">
+          <img src="/assets/aistudio/Golden_Graduation_Cap_Emblem_on_Indigo_Gradient_c53b7e46.png" onerror="this.onerror=null;this.src='/icon.svg';" alt="Elimika Tanzania Icon" class="w-10 h-10 rounded-xl shadow-md shrink-0 object-cover" />
+          <div>
+            <div class="font-black text-white text-sm tracking-tight">ELIMIKA TANZANIA (WWW.ELIMIKA.ONLINE)</div>
+            <p class="text-slate-400 text-xs mt-1">Free Tanzanian NECTA Past Examination Papers, Marking Schemes, Official TIE Textbooks, Syllabuses &amp; Competency-Based Study Guides (Standard 1–7 &amp; Form 1–6).</p>
+          </div>
         </div>
         <div class="flex flex-wrap items-center justify-center gap-4 text-xs font-bold text-slate-300">
           <button onclick="handleGetAppInstall()" class="text-amber-400 underline underline-offset-4">📲 Get Elimika App</button>
@@ -863,7 +883,7 @@
           <a href="/ads.txt" target="_blank" rel="noopener noreferrer" class="hover:text-white underline underline-offset-4">ads.txt</a>
         </div>
         <div class="text-slate-400">
-          Contact: <a href="mailto:support@elimika.online" class="text-slate-200 underline">support@elimika.online</a> · <a href="https://wa.me/255689511868" target="_blank" rel="noopener noreferrer" class="text-slate-200 underline">+255689511868</a> · Dar es Salaam, Tanzania
+          Contact: <a href="https://wa.me/255689511868" target="_blank" rel="noopener noreferrer" class="text-slate-200 underline">+255689511868</a> · Dar es Salaam, Tanzania
         </div>
       </div>
 
@@ -900,6 +920,7 @@
       'Form 5': ['General Studies', 'Academic Communication', 'Advanced Mathematics', 'Basic Applied Mathematics (BAM)', 'Physics', 'Chemistry', 'Biology', 'Geography', 'History', 'Historia ya Tanzania na Maadili', 'Economics', 'Business Studies', 'Accountancy', 'Commerce', 'Agriculture', 'English Language', 'Literature in English', 'Kiswahili', 'Computer Science'],
       'Form 6': ['General Studies', 'Academic Communication', 'Advanced Mathematics', 'Basic Applied Mathematics (BAM)', 'Physics', 'Chemistry', 'Biology', 'Geography', 'History', 'Historia ya Tanzania na Maadili', 'Economics', 'Business Studies', 'Accountancy', 'Commerce', 'Agriculture', 'English Language', 'Literature in English', 'Kiswahili', 'Computer Science']
     };
+    const TIE_SUBJECTS = TIE_CURRICULUM_SUBJECTS;
 
     const OFFICIAL_ATTACHED_TIE_BOOKS = [
       { id: 'tie-drive-book-1', title: 'MAYOMBYA--Form V', form: 'Form 5', subject: 'General Studies', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1JQ_4wOjpYW0hrjgtOzzIjeOMVtBc_V2a/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
@@ -969,7 +990,8 @@
       { id: 'tie-drive-book-65', title: 'Auto Electric', form: 'Form 2', subject: 'General Studies', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1dbahC6Tbzba1T7FuDGCmhX0SMCRK7gL0/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
       { id: 'tie-drive-book-66', title: 'Leather Goods and Footwears F2', form: 'Form 2', subject: 'General Studies', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/158395mpowtwNNYAjuDUxEcJgJyOFkdgq/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
       { id: 'tie-drive-book-67', title: 'Arts & Design', form: 'Form 2', subject: 'General Studies', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/16fgdixfMmRJnmYfhIq_msCFoH4xiXkqc/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
-      { id: 'tie-drive-book-68', title: 'BIOLOGY FORM 2 TIE NEW SYLLABUS', form: 'Form 2', subject: 'Biology', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1A0voCf2A83VvMEEaQONtnyQhuNGBXrX2/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
+      { id: 'tie-drive-book-68', title: "Biology for Secondary Schools — Student's Book Form Two (TIE Comprehensive Question Bank)", form: 'Form 2', subject: 'Biology', year: '2025', category: 'TIE Book', paperUrl: '/assets/aistudio/question_bank_bios_f2_b5ea2aa5.html', answersUrl: null, isBook: true, isSyllabus: false },
+      { id: 'tie-drive-book-68-pdf', title: 'BIOLOGY FORM 2 TIE NEW SYLLABUS', form: 'Form 2', subject: 'Biology', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1A0voCf2A83VvMEEaQONtnyQhuNGBXrX2/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
       { id: 'tie-drive-book-69', title: 'Geography F2', form: 'Form 2', subject: 'Geography', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1IloB7ZSJzZ1BxkzibrC7uCzaiEsRgC0s/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
       { id: 'tie-drive-book-70', title: 'Acting F2', form: 'Form 2', subject: 'General Studies', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1uR6zEY6mryLyA8AIwSbYxIT0dotA3aC5/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
       { id: 'tie-drive-book-71', title: "Additional Mathematics Form Two (TIE 2023 Student's Book)", form: 'Form 2', subject: 'Additional Mathematics', year: '2023', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1GlOxsR4aMBoQBPxDpqWQ0H4aRwlbn_I1/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
@@ -977,7 +999,8 @@
       { id: 'tie-drive-book-73', title: 'Agromechanics', form: 'Form 2', subject: 'Agriculture', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1n58bAzDBkMX6EM3VrAQQj_eHfh3uwpft/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
       { id: 'tie-drive-book-74', title: 'Animal Health and Production', form: 'Form 2', subject: 'Agriculture', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1xGo30_Jwid5C1x2SfK_7FXIQ6igs2xz4/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
       { id: 'tie-drive-book-75', title: 'Book-Keeping Form Two', form: 'Form 2', subject: 'Book-Keeping', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1NFbIZfc0e1UvH8qAipB5Um7B5wGvI4AT/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
-      { id: 'tie-drive-book-76', title: 'Chemistry F2 TIE', form: 'Form 2', subject: 'Chemistry', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1h26uIRH4UD5_UrD6CMsfDrQ800OtJlj3/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
+      { id: 'tie-drive-book-76', title: "Chemistry for Secondary Schools — Student's Book Form Two (TIE Comprehensive Question Bank)", form: 'Form 2', subject: 'Chemistry', year: '2025', category: 'TIE Book', paperUrl: '/assets/aistudio/question_bank_chem_f2_4c234b42.html', answersUrl: null, isBook: true, isSyllabus: false },
+      { id: 'tie-drive-book-76-pdf', title: 'Chemistry F2 TIE', form: 'Form 2', subject: 'Chemistry', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1h26uIRH4UD5_UrD6CMsfDrQ800OtJlj3/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
       { id: 'tie-drive-book-77', title: 'Chinese', form: 'Form 2', subject: 'General Studies', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1IlPUOuHFWIPj0IT9kSqoRBCcq_91_3Kj/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
       { id: 'tie-drive-book-78', title: 'computer science 2', form: 'Form 2', subject: 'Computer Science', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1YWevhyTnKHWCNagX4gpGhI5229L642BC/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
       { id: 'tie-drive-book-79', title: 'ENGLISH FORM TWO-NEW BOOK', form: 'Form 2', subject: 'English Language', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1rZpMHLdlmDyXPFwyBBr54HWOj_2F5Vvi/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
@@ -1076,38 +1099,78 @@
       return f || 'Form 4';
     }
 
+    function classifySingleSubjectString(raw) {
+      const s = String(raw || '').trim();
+      if (!s) return null;
+      const lower = s.toLowerCase().replace(/\s+/g, ' ');
+
+      // Primary School & Custom / Religious Subjects (Check first so they are never misclassified or dropped)
+      if (lower.includes('uraia na maadili') || lower.includes('civic and moral')) return 'Uraia na Maadili';
+      if (lower.includes('sayansi na teknolojia') || lower.includes('science and technology')) return 'Sayansi na Teknolojia';
+      if (lower.includes('maarifa ya jamii') || lower.includes('social studies')) return 'Maarifa ya Jamii';
+      if (lower.includes('stadi za kazi') || lower.includes('vocational skills')) return 'Stadi za Kazi';
+      if (lower.includes('jiografia na mazingira')) return 'Jiografia na Mazingira';
+      if (lower.includes('afya na mazingira')) return 'Afya na Mazingira';
+      if (lower.includes('michezo na sanaa')) return 'Michezo na Sanaa';
+      if (lower.includes('sanaa na michezo')) return 'Sanaa na Michezo';
+      if (lower === 'kusoma' || /\bkusoma\b/i.test(lower)) return 'Kusoma';
+      if (lower === 'kuandika' || /\bkuandika\b/i.test(lower)) return 'Kuandika';
+      if (lower === 'kuhesabu' || /\bkuhesabu\b/i.test(lower)) return 'Kuhesabu';
+      if (lower === 'hisabati' || lower === 'hisabati (mathematics)' || lower.includes('hisabati')) return 'Hisabati (Mathematics)';
+      if (lower === 'sayansi' || lower === 'sayansi (science)') return 'Sayansi (Science)';
+
+      // Custom / Religious / Technical Subjects
+      if (lower === 'edk' || /\bedk\b/i.test(lower) || lower.includes('elimu ya dini ya kiislamu') || lower.includes('islamic knowledge')) return 'Elimu ya Dini ya Kiislamu (EDK)';
+      if (lower.includes('bible knowledge') || lower.includes('divinity')) return 'Bible Knowledge';
+      if (lower === 'arabic' || lower.includes('arabic')) return 'Arabic';
+      if (lower === 'french' || lower.includes('french')) return 'French';
+      if (lower === 'chinese' || lower.includes('chinese')) return 'Chinese';
+      if (lower === 'fine art' || lower.includes('fine art')) return 'Fine Art';
+      if (lower.includes('engineering science')) return 'Engineering Science';
+
+      // Secondary & A-Level Core Subjects
+      if (lower === 'htm' || lower.includes('historia ya tanzania')) return 'Historia ya Tanzania na Maadili';
+      if (lower === 'ict' || lower === 'ics' || lower.includes('computer') || /\b(information and computer|computer science|computer studies|ics|ict)\b/i.test(lower)) return 'Computer Science';
+      if (lower === 'bam' || lower.includes('basic applied math') || /\bbam\b/i.test(lower)) return 'Basic Applied Mathematics (BAM)';
+      if (lower.includes('advanced math') || lower.includes('adv math') || lower.includes('mayombya')) return 'Advanced Mathematics';
+      if (lower.includes('additional math') || lower.includes('aditional math')) return 'Additional Mathematics';
+      if (lower === 'basic mathematics' || lower === 'mathematics' || lower === 'math' || lower === 'maths' || lower.startsWith('basic math')) return 'Basic Mathematics';
+      if (lower.startsWith('physics') || /\bphysics\b/i.test(lower)) return 'Physics';
+      if (lower.startsWith('chemistry') || lower.includes('chemistry')) return 'Chemistry';
+      if (lower.startsWith('biology') || /\bbiology\b/i.test(lower)) return 'Biology';
+      if (lower.includes('geography')) return 'Geography';
+      if (lower === 'literature' || lower.includes('literature in english')) return 'Literature in English';
+      if (lower === 'english' || lower.startsWith('english language')) return 'English Language';
+      if (lower.includes('book-keeping') || lower.includes('book keeping') || lower.includes('bookkeeping') || lower === 'b.keeping') return 'Book-Keeping';
+      if (lower.includes('business studies') || lower.includes('bussiness studies')) return 'Business Studies';
+      if (lower.includes('home economics') || lower.includes('food and human nutrition')) return 'Home Economics';
+      if (lower.includes('economics') || /\b(macroeconomics|microeconomics)\b/i.test(lower)) return 'Economics';
+      if (lower === 'fasihi ya kiswahili' || lower === 'kiswahili' || lower.startsWith('kiswahili')) return 'Kiswahili';
+      if (lower.startsWith('civics')) return 'Civics';
+      if (lower.startsWith('history')) return 'History';
+      if (lower.startsWith('commerce')) return 'Commerce';
+      if (lower.includes('agriculture')) return 'Agriculture';
+      if (lower.includes('accountancy')) return 'Accountancy';
+      if (lower.includes('academic communication')) return 'Academic Communication';
+      if (lower.includes('general studies')) return 'General Studies';
+      return null;
+    }
+
     function normalizeSubjectName(rawSubject, rawTitle = '') {
       const s = (rawSubject || '').trim();
       const rawLower = s.toLowerCase().replace(/\s+/g, ' ');
       const titleLower = (rawTitle || '').toLowerCase().replace(/\s+/g, ' ');
       const isMismatchedComputer = rawLower === 'computer science' && titleLower.length > 0 && !/\b(computer|ics|ict|information\s+and\s+computer)\b/i.test(titleLower);
-      const lower = isMismatchedComputer ? '' : rawLower;
+      const effectiveSubject = isMismatchedComputer ? '' : s;
 
-      if (/^history\s+form\s+(five|six|5|6|one|two|three|four|1|2|3|4)\b/i.test(titleLower) && !lower.includes('historia')) return 'History';
-      if (lower === 'htm' || lower.includes('historia ya tanzania') || titleLower.includes('historia ya tanzania na maadil')) return 'Historia ya Tanzania na Maadili';
-      if (lower === 'ict' || lower === 'ics' || lower.includes('computer') || /\b(information and computer|computer science|computer studies|ics|ict)\b/i.test(lower) || (!lower && /\b(ics|ict|computer science|information and computer)\b/i.test(titleLower))) return 'Computer Science';
-      if (lower === 'bam' || lower.includes('basic applied math') || titleLower.includes('basic applied math') || /\bbam\b/i.test(titleLower)) return 'Basic Applied Mathematics (BAM)';
-      if (lower.includes('advanced math') || lower.includes('adv math') || titleLower.includes('advanced math') || titleLower.includes('mayombya')) return 'Advanced Mathematics';
-      if (lower.includes('additional math') || lower.includes('aditional math') || titleLower.includes('additional math')) return 'Additional Mathematics';
-      if (lower === 'basic mathematics' || lower === 'mathematics' || lower === 'math' || lower === 'maths' || lower.startsWith('basic math') || (!lower && /\b(basic mathematics|mathematics)\b/i.test(titleLower))) return 'Basic Mathematics';
-      if (lower.startsWith('physics') || (!lower && /\bphysics\b/i.test(titleLower))) return 'Physics';
-      if (lower.startsWith('chemistry') || lower.includes('chemistry') || (!lower && /\bchemistry\b/i.test(titleLower))) return 'Chemistry';
-      if (lower.startsWith('biology') || (!lower && /\bbiology\b/i.test(titleLower))) return 'Biology';
-      if (lower.includes('geography') || (!lower && /\bgeography\b/i.test(titleLower))) return 'Geography';
-      if (lower === 'literature' || lower.includes('literature in english') || (!lower && /\bliterature\b/i.test(titleLower))) return 'Literature in English';
-      if (lower === 'english' || lower.startsWith('english language') || (!lower && /\benglish\b/i.test(titleLower))) return 'English Language';
-      if (lower.includes('book-keeping') || lower.includes('book keeping') || lower.includes('bookkeeping') || titleLower.includes('book-keeping') || titleLower.includes('book keeping')) return 'Book-Keeping';
-      if (lower.includes('business studies') || lower.includes('bussiness studies') || titleLower.includes('business studies')) return 'Business Studies';
-      if (lower.includes('home economics') || lower.includes('food and human nutrition')) return 'Home Economics';
-      if (lower.includes('economics') || (!lower && /\b(economics|macroeconomics|microeconomics)\b/i.test(titleLower))) return 'Economics';
-      if (lower === 'fasihi ya kiswahili' || lower === 'kiswahili' || (!lower && /\bkiswahili\b/i.test(titleLower))) return 'Kiswahili';
-      if (lower.startsWith('civics') || (!lower && /\bcivics\b/i.test(titleLower))) return 'Civics';
-      if (lower.startsWith('history') || (!lower && /\bhistory\b/i.test(titleLower))) return 'History';
-      if (lower.startsWith('commerce') || (!lower && /\bcommerce\b/i.test(titleLower))) return 'Commerce';
-      if (lower.includes('agriculture') || (!lower && /\bagriculture\b/i.test(titleLower))) return 'Agriculture';
-      if (lower.includes('accountancy') || (!lower && /\baccountancy\b/i.test(titleLower))) return 'Accountancy';
-      if (lower.includes('academic communication')) return 'Academic Communication';
-      if (lower.includes('general studies')) return 'General Studies';
+      if (/^history\s+form\s+(five|six|5|6|one|two|three|four|1|2|3|4)\b/i.test(titleLower) && !rawLower.includes('historia')) return 'History';
+
+      const fromSubject = classifySingleSubjectString(effectiveSubject);
+      if (fromSubject) return fromSubject;
+
+      const fromTitle = classifySingleSubjectString(rawTitle);
+      if (fromTitle) return fromTitle;
+
       return s || 'General';
     }
 
@@ -1115,12 +1178,18 @@
       const normA = normalizeSubjectName(recordSubject, recordTitle).toLowerCase();
       const normB = normalizeSubjectName(targetSubject).toLowerCase();
       if (normA === normB) return true;
+      // Primary & Secondary math/science equivalence for Standard 3–7 when searching or matching
+      if ((normA === 'hisabati (mathematics)' && normB === 'basic mathematics') || (normB === 'hisabati (mathematics)' && normA === 'basic mathematics')) return true;
       if (normA.includes(normB) || normB.includes(normA)) {
         if (
           normA.includes('additional') !== normB.includes('additional') ||
           normA.includes('advanced') !== normB.includes('advanced') ||
           normA.includes('applied') !== normB.includes('applied') ||
           normA.includes('maadili') !== normB.includes('maadili') ||
+          normA.includes('teknolojia') !== normB.includes('teknolojia') ||
+          normA.includes('mazingira') !== normB.includes('mazingira') ||
+          normA.includes('jamii') !== normB.includes('jamii') ||
+          normA.includes('stadi') !== normB.includes('stadi') ||
           normA.includes('home') !== normB.includes('home') ||
           normA.includes('literature') !== normB.includes('literature') ||
           normA.includes('computer') !== normB.includes('computer') ||
@@ -1230,6 +1299,7 @@
       const records = [];
       const seenBooks = new Set();
       const seenSyllabuses = new Set();
+      const deduplicatedMap = new Map();
 
       if (Array.isArray(rows) && rows.length >= 2) {
         for (let i = 1; i < rows.length; i++) {
@@ -1264,13 +1334,21 @@
           if (isBook) seenBooks.add(`${form.toLowerCase()}__${subject.toLowerCase()}`);
           if (isSyllabus) seenSyllabuses.add(`${form.toLowerCase()}__${subject.toLowerCase()}`);
 
-          records.push({
+          const p = {
             id: `sheet-${i}`,
             title: rawTitle || `${form} ${subject} (${year})`,
             form, subject, year,
             category: isSyllabus ? 'TIE Syllabus' : isBook ? 'TIE Book' : normalizedExamCat,
             paperUrl, answersUrl, isBook, isSyllabus
-          });
+          };
+          const dedupKey = `${p.form}|${p.subject}|${p.year}|${p.title}`.toLowerCase();
+          const existing = deduplicatedMap.get(dedupKey);
+          if (!existing || (!existing.paperUrl && p.paperUrl) || (!existing.answersUrl && p.answersUrl)) {
+            deduplicatedMap.set(dedupKey, p);
+          }
+        }
+        for (const item of deduplicatedMap.values()) {
+          records.push(item);
         }
       }
 
@@ -1505,6 +1583,55 @@
       page = 1;
       if (val.trim().length > 0) { activePage = 'papers'; step = 3; }
       else { step = selectedClass ? 2 : 1; }
+
+      const mainInput = document.getElementById('mainSearchInput');
+      if (mainInput && mainInput.value !== val) {
+        mainInput.value = val;
+      }
+      const clearBtn = document.getElementById('mainSearchClearBtn');
+      if (clearBtn) {
+        if (val.trim().length > 0) clearBtn.classList.remove('hidden');
+        else clearBtn.classList.add('hidden');
+      }
+
+      const dynamicPapersEl = document.getElementById('papersDynamicContent');
+      const mobileBar = document.getElementById('mobileStickyBar');
+      if (mobileBar) {
+        if (activePage === 'papers' && step > 1) {
+          mobileBar.classList.remove('hidden');
+          mobileBar.classList.add('flex');
+        } else {
+          mobileBar.classList.add('hidden');
+          mobileBar.classList.remove('flex');
+        }
+      }
+
+      // If the Past Papers view is already mounted, update ONLY the dynamic results area
+      // so #mainSearchInput is never destroyed or blurred while typing!
+      if (activePage === 'papers' && dynamicPapersEl) {
+        dynamicPapersEl.innerHTML = renderPapersDynamicInner();
+        return;
+      }
+
+      renderApp();
+    }
+
+    function handleBooksSearchInput(val) {
+      booksSearchQuery = val;
+      const booksInput = document.getElementById('booksSearchInput');
+      if (booksInput && booksInput.value !== val) {
+        booksInput.value = val;
+      }
+      const clearBtn = document.getElementById('booksSearchClearBtn');
+      if (clearBtn) {
+        if (val.trim().length > 0) clearBtn.classList.remove('hidden');
+        else clearBtn.classList.add('hidden');
+      }
+      const dynamicBooksEl = document.getElementById('booksDynamicContent');
+      if (activePage === 'books' && dynamicBooksEl) {
+        dynamicBooksEl.innerHTML = renderBooksDynamicInner();
+        return;
+      }
       renderApp();
     }
 
@@ -1653,20 +1780,20 @@
       }
       root.setAttribute('data-theme-mode', themeMode);
 
-      const modes = [
-        { id: 'themeBtnLight', key: 'light' },
-        { id: 'themeBtnDark', key: 'dark' },
-        { id: 'themeBtnSystem', key: 'system' }
-      ];
-      modes.forEach(m => {
-        const btn = document.getElementById(m.id);
-        if (!btn) return;
-        if (themeMode === m.key) {
-          btn.className = 'px-2 py-1 rounded-lg font-bold text-[11px] flex items-center gap-1 bg-blue-600 text-white shadow-sm';
+      const quickBtn = document.getElementById('quickThemeToggleBtn');
+      const quickIcon = document.getElementById('quickThemeIcon');
+      const quickLabel = document.getElementById('quickThemeLabel');
+      if (quickBtn && quickIcon && quickLabel) {
+        if (isDark) {
+          quickBtn.className = 'px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl font-bold text-[11px] sm:text-xs flex items-center gap-1 border shadow-sm bg-amber-400 text-slate-950 border-amber-300 shrink-0';
+          quickIcon.textContent = '☀️';
+          quickLabel.textContent = 'Light';
         } else {
-          btn.className = 'px-2 py-1 rounded-lg font-bold text-[11px] flex items-center gap-1 text-slate-700';
+          quickBtn.className = 'px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl font-bold text-[11px] sm:text-xs flex items-center gap-1 border shadow-sm bg-slate-900 text-white border-slate-700 shrink-0';
+          quickIcon.textContent = '🌙';
+          quickLabel.textContent = 'Dark';
         }
-      });
+      }
     }
 
     function selectThemeMode(nextMode) {
@@ -1678,6 +1805,11 @@
         localStorage.setItem('elimika_dark_mode', String(isDark));
       } catch (e) {}
       applyThemeModeUI();
+    }
+
+    function toggleQuickDarkTheme() {
+      const isCurrentlyDark = document.documentElement.classList.contains('dark');
+      selectThemeMode(isCurrentlyDark ? 'light' : 'dark');
     }
 
     if (window.matchMedia) {
@@ -1697,29 +1829,121 @@
     applyThemeModeUI();
 
     // ==================== RENDER ENGINE ====================
+    function renderBooksDynamicInner() {
+      const q = booksSearchQuery.trim();
+      const dedicatedBooks = allPapers.filter(p => {
+        if (!p.isBook) return false;
+        if (!matchesSyllabusTier(p.form, booksPageLevel)) return false;
+        if (booksPageSelectedClass !== 'ALL' && p.form.toLowerCase() !== booksPageSelectedClass.toLowerCase()) return false;
+        if (q && !matchesSmartSearchTokens(q, `${p.title} ${p.subject} ${p.form} ${p.year}`)) return false;
+        return true;
+      });
+      const availableUploadedBooks = dedicatedBooks.filter(b => Boolean(b.paperUrl));
+      const upcomingPlaceholderBooks = dedicatedBooks.filter(b => !b.paperUrl);
+
+      return `
+        <div class="bg-white p-4 sm:p-5 rounded-3xl border border-emerald-300 shadow-sm">
+          <div class="flex flex-wrap items-center justify-between gap-2 text-xs font-medium text-slate-500">
+            <span class="font-bold text-emerald-800">✅ Showing ${availableUploadedBooks.length} Available TIE Books Ready for Instant Read &amp; PDF Download</span>
+            ${upcomingPlaceholderBooks.length > 0 ? `
+              <button onclick="showUpcomingBooks=!showUpcomingBooks; renderApp();" class="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs">
+                ${showUpcomingBooks ? `🙈 Hide Coming Soon Placeholders (${upcomingPlaceholderBooks.length})` : `⏳ Show Coming Soon / Request Books (${upcomingPlaceholderBooks.length})`}
+              </button>
+            ` : ''}
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          ${availableUploadedBooks.map(p => `
+            <article class="bg-white p-5 rounded-2xl border border-emerald-400 shadow-sm flex flex-col justify-between gap-4">
+              <div>
+                <div class="flex items-center justify-between gap-2 text-xs text-slate-500 mb-1.5">
+                  <div>
+                    <span class="font-bold text-emerald-700">${escapeHtml(p.category)}</span> ·
+                    <span class="font-semibold text-slate-700">${escapeHtml(p.form)}</span> ·
+                    <span>${escapeHtml(p.subject)}</span>
+                  </div>
+                  <span class="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-[10px]">PDF Ready ✓</span>
+                </div>
+                <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <span>${getSubjectIcon(p.subject)}</span>
+                  <span>${escapeHtml(p.title)}</span>
+                </h3>
+              </div>
+              <div class="pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2">
+                <button onclick="openViewer('${p.id}', 'paper')" class="flex-1 px-3.5 py-2 bg-blue-600 text-white text-xs font-bold rounded-xl">📖 Read</button>
+                <a href="${getDirectDownloadUrl(p.paperUrl)}" target="_blank" rel="noopener noreferrer" class="flex-1 px-3.5 py-2 bg-slate-900 text-white text-xs font-bold rounded-xl text-center">⬇️ Download</a>
+              </div>
+            </article>
+          `).join('')}
+        </div>
+
+        ${showUpcomingBooks && upcomingPlaceholderBooks.length > 0 ? `
+          <div class="space-y-3 pt-4 border-t border-slate-200">
+            <h3 class="text-sm font-black text-slate-700">⏳ Upcoming TIE Curriculum Books — Coming Soon (${upcomingPlaceholderBooks.length})</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              ${upcomingPlaceholderBooks.map(p => `
+                <article class="bg-white p-4 rounded-2xl border border-slate-200 flex items-center justify-between gap-3">
+                  <div class="min-w-0">
+                    <div class="text-[11px] font-semibold text-slate-500">${escapeHtml(p.form)} · ${escapeHtml(p.subject)}</div>
+                    <h4 class="text-xs sm:text-sm font-bold text-slate-800 truncate">${getSubjectIcon(p.subject)} ${escapeHtml(p.title)}</h4>
+                  </div>
+                  <a href="${getRequestPaperWhatsAppUrl(p.form, p.subject, p.title)}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-xl bg-amber-50 text-amber-900 border border-amber-300 font-bold text-[11px] whitespace-nowrap shrink-0">📩 Request Book</a>
+                </article>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+      `;
+    }
+
+    function renderPapersDynamicInner() {
+      const stepHtml = step === 1 ? renderStep1() : step === 2 ? renderStep2() : renderStep3();
+      return `
+        <div class="flex items-center justify-between gap-2">
+          <nav class="flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-500 overflow-x-auto pb-1">
+            <button onclick="step=1; syncHashFromState(); renderApp();" class="px-3 py-1.5 rounded-xl whitespace-nowrap shrink-0 ${step === 1 ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-800'}">1. Class Level</button>
+            <span>›</span>
+            <button onclick="if(selectedClass){step=2; syncHashFromState(); renderApp();}" ${step < 2 ? 'disabled' : ''} class="px-3 py-1.5 rounded-xl whitespace-nowrap shrink-0 ${step === 2 ? 'bg-blue-600 text-white' : step > 2 ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-400'}">2. ${escapeHtml(selectedClass || 'Subject')}</button>
+            <span>›</span>
+            <button disabled class="px-3 py-1.5 rounded-xl whitespace-nowrap shrink-0 ${step === 3 ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}">3. ${escapeHtml(selectedSubject || 'Past Papers')}</button>
+          </nav>
+          ${step > 1 ? `<button onclick="handleGoBack()" class="px-3 py-1.5 rounded-xl bg-white border border-slate-300 text-slate-800 font-bold text-xs shrink-0">← Back</button>` : ''}
+        </div>
+
+        ${stepHtml}
+      `;
+    }
+
     function renderApp() {
+      // Preserve active search input focus & cursor position across full renders
+      const activeEl = document.activeElement;
+      const activeId = activeEl && activeEl.id ? activeEl.id : null;
+      const selStart = activeEl && typeof activeEl.selectionStart === 'number' ? activeEl.selectionStart : null;
+      const selEnd = activeEl && typeof activeEl.selectionEnd === 'number' ? activeEl.selectionEnd : null;
+
+      function restoreInputFocusIfNeeded() {
+        if (!activeId) return;
+        const restoredEl = document.getElementById(activeId);
+        if (restoredEl && typeof restoredEl.focus === 'function') {
+          restoredEl.focus({ preventScroll: true });
+          if (selStart !== null && selEnd !== null && typeof restoredEl.setSelectionRange === 'function') {
+            try { restoredEl.setSelectionRange(selStart, selEnd); } catch (e) {}
+          }
+        }
+      }
+
       const container = document.getElementById('mainViewContainer');
-      const mobileBar = document.getElementById('mobileStickyBar');
-      if (activePage === 'papers' && step > 1) {
-        mobileBar.classList.remove('hidden');
-        mobileBar.classList.add('flex');
-      } else {
-        mobileBar.classList.add('hidden');
-        mobileBar.classList.remove('flex');
+      const mobPapers = document.getElementById('mobNavPapers');
+      const mobBooks = document.getElementById('mobNavBooks');
+      const mobSyllabus = document.getElementById('mobNavSyllabus');
+      if (mobPapers && mobBooks && mobSyllabus) {
+        mobPapers.className = `flex-1 py-1.5 px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold ${activePage === 'papers' ? 'bg-blue-600 text-white' : 'text-slate-600'}`;
+        mobBooks.className = `flex-1 py-1.5 px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold ${activePage === 'books' ? 'bg-emerald-600 text-white' : 'text-slate-600'}`;
+        mobSyllabus.className = `flex-1 py-1.5 px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold ${activePage === 'syllabus' ? 'bg-amber-400 text-slate-950' : 'text-slate-600'}`;
       }
 
       if (activePage === 'books') {
-        const q = booksSearchQuery.trim();
-        const dedicatedBooks = allPapers.filter(p => {
-          if (!p.isBook) return false;
-          if (!matchesSyllabusTier(p.form, booksPageLevel)) return false;
-          if (booksPageSelectedClass !== 'ALL' && p.form.toLowerCase() !== booksPageSelectedClass.toLowerCase()) return false;
-          if (q && !matchesSmartSearchTokens(q, `${p.title} ${p.subject} ${p.form} ${p.year}`)) return false;
-          return true;
-        });
-        const availableUploadedBooks = dedicatedBooks.filter(b => Boolean(b.paperUrl));
-        const upcomingPlaceholderBooks = dedicatedBooks.filter(b => !b.paperUrl);
-
         const levelClasses =
           booksPageLevel === 'Primary' ? ['Standard 1', 'Standard 2', 'Standard 3', 'Standard 4', 'Standard 5', 'Standard 6', 'Standard 7'] :
           booksPageLevel === 'Secondary' ? ['Form 1', 'Form 2', 'Form 3', 'Form 4'] :
@@ -1752,9 +1976,22 @@
                       </button>
                     `).join('')}
                   </div>
-                  <div class="relative min-w-[240px]">
-                    <input type="text" value="${escapeHtml(booksSearchQuery)}" oninput="booksSearchQuery=this.value; renderApp();" placeholder="Search textbook (e.g. F2 Math, Physics)..." class="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-medium bg-slate-50" />
-                    <span class="absolute left-3 top-3 text-xs">🔍</span>
+                  <div class="relative min-w-[240px] flex items-center">
+                    <span class="absolute left-3 text-xs pointer-events-none">🔍</span>
+                    <input
+                      id="booksSearchInput"
+                      type="text"
+                      value="${escapeHtml(booksSearchQuery)}"
+                      oninput="handleBooksSearchInput(this.value)"
+                      placeholder="Search textbook (e.g. F2 Math, Physics)..."
+                      class="w-full pl-9 pr-8 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-medium bg-slate-50 focus:outline-none focus:border-emerald-500"
+                    />
+                    <button
+                      id="booksSearchClearBtn"
+                      onclick="handleBooksSearchInput('')"
+                      class="absolute right-2.5 text-slate-400 text-xs p-1 ${booksSearchQuery.trim() ? '' : 'hidden'}"
+                      title="Clear search"
+                    >✕</button>
                   </div>
                 </div>
 
@@ -1765,61 +2002,15 @@
                     </button>
                   `).join('')}
                 </div>
-
-                <div class="flex flex-wrap items-center justify-between gap-2 text-xs font-medium text-slate-500 pt-2 border-t border-slate-100">
-                  <span class="font-bold text-emerald-800">✅ Showing ${availableUploadedBooks.length} Available TIE Books Ready for Instant Read &amp; PDF Download</span>
-                  ${upcomingPlaceholderBooks.length > 0 ? `
-                    <button onclick="showUpcomingBooks=!showUpcomingBooks; renderApp();" class="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs">
-                      ${showUpcomingBooks ? `🙈 Hide Coming Soon Placeholders (${upcomingPlaceholderBooks.length})` : `⏳ Show Coming Soon / Request Books (${upcomingPlaceholderBooks.length})`}
-                    </button>
-                  ` : ''}
-                </div>
               </div>
 
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                ${availableUploadedBooks.map(p => `
-                  <article class="bg-white p-5 rounded-2xl border border-emerald-400 shadow-sm flex flex-col justify-between gap-4">
-                    <div>
-                      <div class="flex items-center justify-between gap-2 text-xs text-slate-500 mb-1.5">
-                        <div>
-                          <span class="font-bold text-emerald-700">${escapeHtml(p.category)}</span> ·
-                          <span class="font-semibold text-slate-700">${escapeHtml(p.form)}</span> ·
-                          <span>${escapeHtml(p.subject)}</span>
-                        </div>
-                        <span class="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-[10px]">PDF Ready ✓</span>
-                      </div>
-                      <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
-                        <span>${getSubjectIcon(p.subject)}</span>
-                        <span>${escapeHtml(p.title)}</span>
-                      </h3>
-                    </div>
-                    <div class="pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2">
-                      <button onclick="openViewer('${p.id}', 'paper')" class="flex-1 px-3.5 py-2 bg-blue-600 text-white text-xs font-bold rounded-xl">📖 Read</button>
-                      <a href="${getDirectDownloadUrl(p.paperUrl)}" target="_blank" rel="noopener noreferrer" class="flex-1 px-3.5 py-2 bg-slate-900 text-white text-xs font-bold rounded-xl text-center">⬇️ Download</a>
-                    </div>
-                  </article>
-                `).join('')}
+              <div id="booksDynamicContent" class="space-y-6">
+                ${renderBooksDynamicInner()}
               </div>
-
-              ${showUpcomingBooks && upcomingPlaceholderBooks.length > 0 ? `
-                <div class="space-y-3 pt-4 border-t border-slate-200">
-                  <h3 class="text-sm font-black text-slate-700">⏳ Upcoming TIE Curriculum Books — Coming Soon (${upcomingPlaceholderBooks.length})</h3>
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    ${upcomingPlaceholderBooks.map(p => `
-                      <article class="bg-white p-4 rounded-2xl border border-slate-200 flex items-center justify-between gap-3">
-                        <div class="min-w-0">
-                          <div class="text-[11px] font-semibold text-slate-500">${escapeHtml(p.form)} · ${escapeHtml(p.subject)}</div>
-                          <h4 class="text-xs sm:text-sm font-bold text-slate-800 truncate">${getSubjectIcon(p.subject)} ${escapeHtml(p.title)}</h4>
-                        </div>
-                        <a href="${getRequestPaperWhatsAppUrl(p.form, p.subject, p.title)}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-xl bg-amber-50 text-amber-900 border border-amber-300 font-bold text-[11px] whitespace-nowrap shrink-0">📩 Request Book</a>
-                      </article>
-                    `).join('')}
-                  </div>
-                </div>
-              ` : ''}
             </div>
           </div>
         `;
+        restoreInputFocusIfNeeded();
         return;
       }
 
@@ -1875,256 +2066,11 @@
             </div>
           </div>
         `;
+        restoreInputFocusIfNeeded();
         return;
       }
 
       // MAIN PAST PAPERS VIEW (STEP 1, 2, 3)
-      let stepHtml = '';
-      if (step === 1) {
-        const secClasses = [
-          { cls: 'Form 1', sub: 'Ordinary Secondary · TIE Books' },
-          { cls: 'Form 2', sub: 'FTNA National Assessment' },
-          { cls: 'Form 3', sub: 'Ordinary Secondary · TIE Books' },
-          { cls: 'Form 4', sub: 'CSEE National Examination' },
-          { cls: 'Form 5', sub: 'Advanced Level · Combinations' },
-          { cls: 'Form 6', sub: 'ACSEE National Examination' }
-        ];
-        const priClasses = [
-          { cls: 'Standard 1', label: 'Standard 1', sub: 'Primary TIE' },
-          { cls: 'Standard 2', label: 'Standard 2', sub: 'Primary TIE' },
-          { cls: 'Standard 3', label: 'Standard 3', sub: 'Primary TIE' },
-          { cls: 'Standard 4', label: 'Standard 4 (SFNA)', sub: 'National Assessment' },
-          { cls: 'Standard 5', label: 'Standard 5', sub: 'Primary TIE' },
-          { cls: 'Standard 6', label: 'Standard 6', sub: 'Primary TIE' },
-          { cls: 'Standard 7', label: 'Standard 7 (PSLE)', sub: 'Primary Leaving Exam' }
-        ];
-
-        stepHtml = `
-          <section class="space-y-8">
-            ${savedClass ? `
-              <div class="p-3.5 sm:p-4 bg-emerald-50 border border-emerald-300 rounded-2xl flex items-center justify-between gap-3">
-                <div class="min-w-0">
-                  <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-700 block">Last Selected Class</span>
-                  <span class="text-sm sm:text-base font-bold text-emerald-950 truncate block">Continue with ${escapeHtml(savedClass)} Past Papers &amp; TIE Books</span>
-                </div>
-                <button onclick="selectClass('${escapeHtml(savedClass)}')" class="px-4 py-2 bg-emerald-600 text-white font-bold text-xs rounded-xl shrink-0">Open ${escapeHtml(savedClass)} →</button>
-              </div>
-            ` : ''}
-
-            <div class="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
-              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3.5">
-                <div>
-                  <h2 class="text-base sm:text-lg font-black text-slate-900">01. Select Your Class Level</h2>
-                  <p class="text-xs text-slate-500">Choose a class to browse Past Papers, Marking Schemes, Official TIE Textbooks, and Syllabuses.</p>
-                </div>
-                <span class="text-xs font-semibold text-slate-500">13 Official Classes · TIE &amp; NECTA Aligned</span>
-              </div>
-
-              <div class="space-y-2.5">
-                <div class="flex items-center justify-between text-xs font-bold text-slate-600">
-                  <span>Secondary School (Ordinary &amp; Advanced Level · Form 1 – Form 6)</span>
-                  <span class="text-slate-400">O-Level &amp; A-Level</span>
-                </div>
-                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  ${secClasses.map(({ cls, sub }) => `
-                    <button onclick="selectClass('${cls}')" class="p-4 rounded-xl text-left flex items-center justify-between border ${cls === 'Form 2' || cls === 'Form 4' || cls === 'Form 6' ? 'bg-blue-50/70 border-blue-300' : 'bg-slate-50/70 border-slate-200'} hover:border-blue-500">
-                      <div class="min-w-0 pr-2">
-                        <span class="block text-base font-black text-slate-900">${cls}</span>
-                        <span class="block text-[11px] font-medium text-slate-500 truncate mt-0.5">${sub}</span>
-                      </div>
-                      <span class="text-blue-600 font-bold">›</span>
-                    </button>
-                  `).join('')}
-                </div>
-              </div>
-
-              <div class="space-y-2.5 pt-2 border-t border-slate-100">
-                <div class="flex items-center justify-between text-xs font-bold text-slate-600">
-                  <span>Primary School (Standard 1 – Standard 7)</span>
-                  <span class="text-slate-400">SFNA &amp; PSLE</span>
-                </div>
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                  ${priClasses.map(({ cls, label, sub }) => `
-                    <button onclick="selectClass('${cls}')" class="p-3.5 rounded-xl text-left flex items-center justify-between border ${cls === 'Standard 7' ? 'col-span-2 bg-blue-50/70 border-blue-300' : cls === 'Standard 4' ? 'bg-amber-50/70 border-amber-300' : 'bg-slate-50/70 border-slate-200'} hover:border-blue-500">
-                      <div class="min-w-0 pr-1">
-                        <span class="block text-sm font-bold text-slate-900 truncate">${label}</span>
-                        <span class="block text-[11px] text-slate-500 truncate">${sub}</span>
-                      </div>
-                      <span class="text-slate-400 font-bold">›</span>
-                    </button>
-                  `).join('')}
-                </div>
-              </div>
-            </div>
-
-            ${recentPapers.length > 0 ? `
-              <div class="bg-white p-5 rounded-2xl border border-slate-200 space-y-3">
-                <div class="text-xs font-bold uppercase tracking-wider text-slate-500">Recently Opened Papers &amp; Books</div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  ${recentPapers.map(item => `
-                    <button onclick="openViewer('${item.id}', 'paper')" class="p-3 rounded-xl bg-slate-50 hover:bg-blue-50 border border-slate-200 text-left flex items-center justify-between gap-2">
-                      <div class="min-w-0">
-                        <div class="text-xs font-bold text-slate-900 truncate">${escapeHtml(item.title)}</div>
-                        <div class="text-[11px] font-medium text-slate-500">${escapeHtml(item.form)} · ${escapeHtml(item.subject)} · ${escapeHtml(item.year)}</div>
-                      </div>
-                      <span class="text-xs font-bold text-blue-600 shrink-0">Open →</span>
-                    </button>
-                  `).join('')}
-                </div>
-              </div>
-            ` : ''}
-          </section>
-        `;
-      } else if (step === 2) {
-        const classItems = allPapers.filter(p => !p.isSyllabus && !p.isBook && normalizeClassName(p.form).toLowerCase() === selectedClass.toLowerCase());
-        const counts = {};
-        const officialSubs = TIE_CURRICULUM_SUBJECTS[selectedClass] || [];
-        officialSubs.forEach(s => { counts[s] = 0; });
-        classItems.forEach(p => {
-          const normSub = normalizeSubjectName(p.subject, p.title);
-          const matched = officialSubs.find(s => matchesSubjectQuery(normSub, s));
-          const key = matched || normSub;
-          counts[key] = (counts[key] || 0) + 1;
-        });
-        const subjectsList = Object.entries(counts).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-
-        stepHtml = `
-          <section class="space-y-5">
-            <div class="bg-white p-4 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <button onclick="handleGoBack()" class="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 mb-1">← Back to Classes</button>
-                <h2 class="text-lg sm:text-xl font-bold text-slate-900">Select Subject — <span class="text-blue-600">${escapeHtml(selectedClass)}</span></h2>
-              </div>
-              <div class="flex flex-wrap items-center gap-1.5">
-                <button onclick="copyShareableSubjectLink('${escapeHtml(selectedClass)}')" class="px-3 py-2 rounded-xl font-bold text-xs border border-blue-300 bg-blue-50 text-blue-900">🔗 Share Class Link</button>
-                <button onclick="openBooksPage('${escapeHtml(selectedClass)}')" class="px-3 py-2 rounded-xl font-bold text-xs border border-emerald-500 bg-emerald-100 text-emerald-950">TIE Books ↗</button>
-                <button onclick="openSyllabusPage()" class="px-3 py-2 rounded-xl font-bold text-xs border border-amber-400 bg-amber-100 text-amber-950">Syllabus ↗</button>
-              </div>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              ${subjectsList.map(([name, count]) => `
-                <button onclick="selectSubject('${escapeHtml(name)}')" class="p-4 bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-500 rounded-2xl text-left shadow-sm flex items-center justify-between">
-                  <div class="flex items-center gap-3">
-                    <span class="text-2xl">${getSubjectIcon(name)}</span>
-                    <div>
-                      <span class="block text-base font-bold text-slate-900">${escapeHtml(name)}</span>
-                      <span class="text-xs font-medium text-slate-500 tabular-nums">${count} ${count === 1 ? 'paper' : 'papers'} · Read, Download &amp; Solution</span>
-                    </div>
-                  </div>
-                  <span class="text-slate-400 font-bold">›</span>
-                </button>
-              `).join('')}
-            </div>
-          </section>
-        `;
-      } else {
-        // STEP 3: PAPERS LIST
-        let baseMatches = [];
-        if (searchQuery.trim().length > 0) {
-          baseMatches = allPapers.filter(p => !p.isSyllabus && !p.isBook && matchesSmartSearchTokens(searchQuery, `${p.title} ${p.subject} ${p.form} ${p.year} ${p.category}`));
-        } else {
-          baseMatches = allPapers.filter(p => !p.isSyllabus && !p.isBook && normalizeClassName(p.form).toLowerCase() === selectedClass.toLowerCase() && matchesSubjectQuery(p.subject, selectedSubject, p.title));
-        }
-
-        const dataYears = baseMatches.map(p => p.year).filter(y => y && y !== 'N/A');
-        const availableYears = Array.from(new Set([...dataYears, '2026', '2025', '2024', '2023', '2022'])).sort((a, b) => b.localeCompare(a));
-
-        const filteredPapers = baseMatches.filter(p => {
-          const matchYr = selectedYear === 'ALL' || p.year === selectedYear;
-          const matchCat =
-            selectedCategory === 'ALL' ||
-            p.category.toLowerCase() === selectedCategory.toLowerCase() ||
-            (selectedCategory === 'Annual' && /annual|terminal/i.test(p.category)) ||
-            (selectedCategory === 'Midterm' && /mid[- ]?term/i.test(`${p.category} ${p.title}`));
-          return matchYr && matchCat;
-        }).sort((a, b) => (b.year || '').localeCompare(a.year || ''));
-
-        const shareWaUrl = `https://wa.me/?text=${encodeURIComponent(`📚 *${selectedClass} — ${selectedSubject} Past Papers & Marking Schemes* on Elimika Tanzania:\n👉 ${buildShareableSubjectUrl(selectedClass, selectedSubject)}`)}`;
-
-        stepHtml = `
-          <section class="space-y-4">
-            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <button onclick="handleGoBack()" class="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 mb-1">← Back to Subjects</button>
-                  <h2 class="text-lg sm:text-xl font-bold text-slate-900">
-                    ${searchQuery.trim() ? `Search Results for "${escapeHtml(searchQuery)}"` : `${escapeHtml(selectedClass)} · ${escapeHtml(selectedSubject)} (Past Papers)`}
-                  </h2>
-                  <div class="text-xs font-medium text-slate-500 tabular-nums">Found ${filteredPapers.length} ${filteredPapers.length === 1 ? 'item' : 'items'}</div>
-                </div>
-                <div class="flex flex-wrap items-center gap-2">
-                  ${selectedClass && selectedSubject ? `
-                    <button onclick="copyShareableSubjectLink('${escapeHtml(selectedClass)}', '${escapeHtml(selectedSubject)}')" class="px-3 py-2 rounded-xl bg-blue-50 text-blue-900 border border-blue-300 font-bold text-xs">🔗 Copy Subject Link</button>
-                    <a href="${shareWaUrl}" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs">📲 Share on WhatsApp</a>
-                  ` : ''}
-                  <a href="${getRequestPaperWhatsAppUrl(selectedClass, selectedSubject)}" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-amber-50 text-amber-950 border border-amber-300 font-bold text-xs">📩 Request Missing Paper</a>
-                  <button onclick="openBooksPage('${escapeHtml(selectedClass)}', '${escapeHtml(selectedSubject)}')" class="px-3 py-2 rounded-xl bg-emerald-50 text-emerald-900 border border-emerald-300 font-bold text-xs">Open TIE Books Page ↗</button>
-                </div>
-              </div>
-
-              <div class="space-y-1.5 pt-2 border-t border-slate-100">
-                <div class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">1. Select Year</div>
-                <div class="flex flex-wrap items-center gap-1.5">
-                  ${['ALL', ...availableYears].map(yr => `
-                    <button onclick="selectedYear='${yr}'; renderApp();" class="px-3 py-1.5 text-xs font-bold rounded-xl ${selectedYear === yr ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'}">
-                      ${yr === 'ALL' ? 'All Years' : yr}
-                    </button>
-                  `).join('')}
-                </div>
-              </div>
-
-              <div class="space-y-1.5 pt-2 border-t border-slate-100">
-                <div class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">2. Select Type of Paper (Annual, Mock, Midterm, NECTA or Pre-NECTA)</div>
-                <div class="flex flex-wrap items-center gap-1.5">
-                  ${['ALL', 'Annual', 'Mock', 'Midterm', 'NECTA', 'Pre-NECTA'].map(cat => `
-                    <button onclick="selectedCategory='${cat}'; renderApp();" class="px-3.5 py-2 text-xs font-bold rounded-xl ${selectedCategory === cat ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700'}">
-                      ${cat === 'ALL' ? 'All Types' : cat}
-                    </button>
-                  `).join('')}
-                </div>
-              </div>
-            </div>
-
-            ${filteredPapers.length === 0 ? `
-              <div class="py-10 text-center bg-white rounded-2xl border border-slate-200 p-6 space-y-3">
-                <h4 class="font-bold text-slate-800">No papers found for this selection yet.</h4>
-                <p class="text-xs text-slate-500 max-w-md mx-auto">Have a paper to contribute or need a specific exam uploaded? Request it directly via WhatsApp below.</p>
-                <div class="flex flex-wrap justify-center gap-2">
-                  <button onclick="selectedCategory='ALL'; selectedYear='ALL'; renderApp();" class="px-4 py-2 bg-blue-600 text-white font-bold text-xs rounded-xl">Show All Years &amp; Paper Types</button>
-                  <a href="${getRequestPaperWhatsAppUrl(selectedClass, selectedSubject, searchQuery.trim() || (selectedClass + ' ' + selectedSubject))}" target="_blank" rel="noopener noreferrer" class="px-4 py-2 bg-emerald-600 text-white font-bold text-xs rounded-xl">📩 Request Missing Paper on WhatsApp</a>
-                </div>
-              </div>
-            ` : `
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                ${filteredPapers.map(p => `
-                  <article class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 hover:border-blue-400 shadow-sm flex flex-col justify-between gap-3">
-                    <div>
-                      <div class="flex flex-wrap items-center gap-1.5 text-xs text-slate-500 mb-1 tabular-nums">
-                        <span class="font-bold text-blue-700">${escapeHtml(p.category)}</span> ·
-                        <span class="font-semibold text-slate-700">${escapeHtml(p.year)}</span> ·
-                        <span>${escapeHtml(p.form)}</span> ·
-                        <span>${escapeHtml(p.subject)}</span>
-                      </div>
-                      <h3 class="text-base font-bold text-slate-900">${escapeHtml(p.title)}</h3>
-                    </div>
-                    <div class="flex flex-wrap items-center gap-2 pt-2.5 border-t border-slate-100">
-                      <button onclick="openViewer('${p.id}', 'paper')" class="flex-1 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl">📖 Read</button>
-                      <a href="${getDirectDownloadUrl(p.paperUrl)}" target="_blank" rel="noopener noreferrer" class="flex-1 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl text-center">⬇️ Download</a>
-                      ${p.answersUrl ? `
-                        <a href="${getDirectDownloadUrl(p.answersUrl)}" target="_blank" rel="noopener noreferrer" class="flex-1 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl text-center">✅ Solution</a>
-                      ` : `
-                        <button disabled class="flex-1 px-3.5 py-2 bg-slate-100 text-slate-400 border border-slate-200 text-xs font-bold rounded-xl">Pending</button>
-                      `}
-                    </div>
-                  </article>
-                `).join('')}
-              </div>
-            `}
-          </section>
-        `;
-      }
-
       container.innerHTML = `
         <section class="pt-5 pb-6 bg-gradient-hero border-b border-slate-200">
           <div class="max-w-4xl mx-auto px-4 sm:px-6 text-center space-y-4">
@@ -2143,10 +2089,15 @@
                   type="text"
                   value="${escapeHtml(searchQuery)}"
                   oninput="handleSearchInput(this.value)"
-                  placeholder="Smart Search (e.g. F4 Maths 2025, Std 7 Sayansi, Form 2 Physics Book)..."
+                  placeholder="Smart Search (e.g. Form 4 Civics 2025, F4 Math, Std 7 Sayansi)..."
                   class="w-full text-sm sm:text-base font-medium bg-transparent text-slate-800 focus:outline-none"
                 />
-                ${searchQuery.trim() ? `<button onclick="handleSearchInput('')" class="text-slate-400 p-1.5 mr-1">✕</button>` : ''}
+                <button
+                  id="mainSearchClearBtn"
+                  onclick="handleSearchInput('')"
+                  class="text-slate-400 p-1.5 mr-1 ${searchQuery.trim() ? '' : 'hidden'}"
+                  title="Clear search"
+                >✕</button>
                 <button onclick="startVoiceSearch()" class="p-2 rounded-xl bg-blue-50 text-blue-700 font-bold text-xs shrink-0" title="Voice Search">🎤</button>
               </div>
             </div>
@@ -2160,26 +2111,300 @@
         </section>
 
         <main class="flex-grow py-6 pb-24">
-          <div class="max-w-4xl mx-auto px-4 sm:px-6 space-y-6">
-            <div class="flex items-center justify-between gap-2">
-              <nav class="flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-500 overflow-x-auto pb-1">
-                <button onclick="step=1; syncHashFromState(); renderApp();" class="px-3 py-1.5 rounded-xl whitespace-nowrap shrink-0 ${step === 1 ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-800'}">1. Class Level</button>
-                <span>›</span>
-                <button onclick="if(selectedClass){step=2; syncHashFromState(); renderApp();}" ${step < 2 ? 'disabled' : ''} class="px-3 py-1.5 rounded-xl whitespace-nowrap shrink-0 ${step === 2 ? 'bg-blue-600 text-white' : step > 2 ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-400'}">2. ${escapeHtml(selectedClass || 'Subject')}</button>
-                <span>›</span>
-                <button disabled class="px-3 py-1.5 rounded-xl whitespace-nowrap shrink-0 ${step === 3 ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}">3. ${escapeHtml(selectedSubject || 'Past Papers')}</button>
-              </nav>
-              ${step > 1 ? `<button onclick="handleGoBack()" class="px-3 py-1.5 rounded-xl bg-white border border-slate-300 text-slate-800 font-bold text-xs shrink-0">← Back</button>` : ''}
-            </div>
-
-            ${stepHtml}
+          <div id="papersDynamicContent" class="max-w-4xl mx-auto px-4 sm:px-6 space-y-6">
+            ${renderPapersDynamicInner()}
           </div>
         </main>
       `;
+      restoreInputFocusIfNeeded();
     }
 
-    // ==================== GOOGLE SHEET FETCH & INIT ====================
-    async function fetchSheetData() {
+    let classTierFilter = 'ALL';
+
+    function renderStep1() {
+      const secClasses = [
+        { cls: 'Form 1', sub: 'Ordinary Secondary · TIE Books' },
+        { cls: 'Form 2', sub: 'FTNA National Assessment' },
+        { cls: 'Form 3', sub: 'Ordinary Secondary · TIE Books' },
+        { cls: 'Form 4', sub: 'CSEE National Examination' },
+        { cls: 'Form 5', sub: 'Advanced Level · Combinations' },
+        { cls: 'Form 6', sub: 'ACSEE National Examination' }
+      ];
+      const priClasses = [
+        { cls: 'Standard 1', label: 'Standard 1', sub: 'Primary TIE' },
+        { cls: 'Standard 2', label: 'Standard 2', sub: 'Primary TIE' },
+        { cls: 'Standard 3', label: 'Standard 3', sub: 'Primary TIE' },
+        { cls: 'Standard 4', label: 'Standard 4 (SFNA)', sub: 'National Assessment' },
+        { cls: 'Standard 5', label: 'Standard 5', sub: 'Primary TIE' },
+        { cls: 'Standard 6', label: 'Standard 6', sub: 'Primary TIE' },
+        { cls: 'Standard 7', label: 'Standard 7 (PSLE)', sub: 'Primary Leaving Exam' }
+      ];
+
+      return `
+        <section class="space-y-8">
+          ${savedClass ? `
+            <div class="p-3.5 sm:p-4 bg-emerald-50 border border-emerald-300 rounded-2xl flex items-center justify-between gap-3">
+              <div class="min-w-0">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-700 block">Last Selected Class</span>
+                <span class="text-sm sm:text-base font-bold text-emerald-950 truncate block">Continue with ${escapeHtml(savedClass)} Past Papers &amp; TIE Books</span>
+              </div>
+              <button onclick="selectClass('${escapeHtml(savedClass)}')" class="px-4 py-2 bg-emerald-600 text-white font-bold text-xs rounded-xl shrink-0">Open ${escapeHtml(savedClass)} →</button>
+            </div>
+          ` : ''}
+
+          <div class="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3.5">
+              <div>
+                <h2 class="text-base sm:text-lg font-black text-slate-900">01. Select Your Class Level</h2>
+                <p class="text-xs text-slate-500">Choose a class to browse Past Papers, Marking Schemes, Official TIE Textbooks, and Syllabuses.</p>
+              </div>
+              <div class="inline-flex items-center p-1 rounded-xl bg-slate-100 border border-slate-200 shrink-0">
+                ${[
+                  { id: 'ALL', label: 'All (13)' },
+                  { id: 'Secondary', label: '🎓 Secondary (F1–F6)' },
+                  { id: 'Primary', label: '🎒 Primary (Std 1–7)' }
+                ].map(t => `
+                  <button onclick="classTierFilter='${t.id}'; renderApp();" class="px-2.5 py-1.5 rounded-lg font-bold text-xs ${classTierFilter === t.id ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-700'}">${t.label}</button>
+                `).join('')}
+              </div>
+            </div>
+
+            ${classTierFilter === 'ALL' || classTierFilter === 'Secondary' ? `
+              <div class="space-y-2.5">
+                <div class="flex items-center justify-between text-xs font-bold text-slate-600">
+                  <span>Secondary School (Ordinary &amp; Advanced Level · Form 1 – Form 6)</span>
+                  <span class="text-slate-400">O-Level &amp; A-Level</span>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  ${secClasses.map(({ cls, sub }) => `
+                    <button onclick="selectClass('${cls}')" class="p-4 rounded-xl text-left flex items-center justify-between border ${cls === 'Form 2' || cls === 'Form 4' || cls === 'Form 6' ? 'bg-blue-50/70 border-blue-300' : 'bg-slate-50/70 border-slate-200'} hover:border-blue-500">
+                      <div class="min-w-0 pr-2">
+                        <span class="block text-base font-black text-slate-900">${cls}</span>
+                        <span class="block text-[11px] font-medium text-slate-500 truncate mt-0.5">${sub}</span>
+                      </div>
+                      <span class="text-blue-600 font-bold">›</span>
+                    </button>
+                  `).join('')}
+                </div>
+              </div>
+            ` : ''}
+
+            ${classTierFilter === 'ALL' || classTierFilter === 'Primary' ? `
+              <div class="space-y-2.5 ${classTierFilter === 'ALL' ? 'pt-2 border-t border-slate-100' : ''}">
+                <div class="flex items-center justify-between text-xs font-bold text-slate-600">
+                  <span>Primary School (Standard 1 – Standard 7)</span>
+                  <span class="text-slate-400">SFNA &amp; PSLE</span>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  ${priClasses.map(({ cls, label, sub }) => `
+                    <button onclick="selectClass('${cls}')" class="p-3.5 rounded-xl text-left flex items-center justify-between border ${cls === 'Standard 7' ? 'col-span-2 bg-blue-50/70 border-blue-300' : cls === 'Standard 4' ? 'bg-amber-50/70 border-amber-300' : 'bg-slate-50/70 border-slate-200'} hover:border-blue-500">
+                      <div class="min-w-0 pr-1">
+                        <span class="block text-sm font-bold text-slate-900 truncate">${label}</span>
+                        <span class="block text-[11px] text-slate-500 truncate">${sub}</span>
+                      </div>
+                      <span class="text-slate-400 font-bold">›</span>
+                    </button>
+                  `).join('')}
+                </div>
+              </div>
+            ` : ''}
+          </div>
+
+          ${recentPapers.length > 0 ? `
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 space-y-3">
+              <div class="text-xs font-bold uppercase tracking-wider text-slate-500">Recently Opened Papers &amp; Books</div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                ${recentPapers.map(item => `
+                  <button onclick="openViewer('${item.id}', 'paper')" class="p-3 rounded-xl bg-slate-50 hover:bg-blue-50 border border-slate-200 text-left flex items-center justify-between gap-2">
+                    <div class="min-w-0">
+                      <div class="text-xs font-bold text-slate-900 truncate">${escapeHtml(item.title)}</div>
+                      <div class="text-[11px] font-medium text-slate-500">${escapeHtml(item.form)} · ${escapeHtml(item.subject)} · ${escapeHtml(item.year)}</div>
+                    </div>
+                    <span class="text-xs font-bold text-blue-600 shrink-0">Open →</span>
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
+        </section>
+      `;
+    }
+
+    function renderStep2() {
+      const classItems = allPapers.filter(p => !p.isSyllabus && !p.isBook && normalizeClassName(p.form).toLowerCase() === selectedClass.toLowerCase());
+      const counts = {};
+      const officialSubs = [...(TIE_SUBJECTS[selectedClass] || [])];
+      officialSubs.forEach(s => { counts[s] = 0; });
+
+      // Dynamically merge any new or custom subjects found in allPapers for this class
+      classItems.forEach(p => {
+        const normSub = normalizeSubjectName(p.subject, p.title);
+        if (!normSub || normSub === 'General') return;
+        const matched = officialSubs.find(s => matchesSubjectQuery(normSub, s));
+        const key = matched || normSub;
+        if (!officialSubs.includes(key)) {
+          officialSubs.push(key);
+        }
+        counts[key] = (counts[key] || 0) + 1;
+      });
+      const subjectsList = Object.entries(counts).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+
+      return `
+        <section class="space-y-5">
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <button onclick="handleGoBack()" class="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 mb-1">← Back to Classes</button>
+              <h2 class="text-lg sm:text-xl font-bold text-slate-900">Select Subject — <span class="text-blue-600">${escapeHtml(selectedClass)}</span></h2>
+            </div>
+            <div class="flex flex-wrap items-center gap-1.5">
+              <button onclick="copyShareableSubjectLink('${escapeHtml(selectedClass)}')" class="px-3 py-2 rounded-xl font-bold text-xs border border-blue-300 bg-blue-50 text-blue-900">🔗 Share Class Link</button>
+              <button onclick="openBooksPage('${escapeHtml(selectedClass)}')" class="px-3 py-2 rounded-xl font-bold text-xs border border-emerald-500 bg-emerald-100 text-emerald-950">TIE Books ↗</button>
+              <button onclick="openSyllabusPage()" class="px-3 py-2 rounded-xl font-bold text-xs border border-amber-400 bg-amber-100 text-amber-950">Syllabus ↗</button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            ${subjectsList.map(([name, count]) => `
+              <button onclick="selectSubject('${escapeHtml(name)}')" class="p-4 bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-500 rounded-2xl text-left shadow-sm flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <span class="text-2xl">${getSubjectIcon(name)}</span>
+                  <div>
+                    <span class="block text-base font-bold text-slate-900">${escapeHtml(name)}</span>
+                    <span class="text-xs font-medium text-slate-500 tabular-nums">${count} ${count === 1 ? 'paper' : 'papers'} · Read, Download &amp; Solution</span>
+                  </div>
+                </div>
+                <span class="text-slate-400 font-bold">›</span>
+              </button>
+            `).join('')}
+          </div>
+        </section>
+      `;
+    }
+
+    function renderStep3() {
+      let baseMatches = [];
+      if (searchQuery.trim().length > 0) {
+        // Multi-word tokenized smart search: splits query into tokens and requires all tokens to match
+        baseMatches = allPapers.filter(p => !p.isSyllabus && !p.isBook && matchesSmartSearchTokens(searchQuery, `${p.title} ${p.subject} ${p.form} ${p.year} ${p.category}`));
+      } else {
+        baseMatches = allPapers.filter(p => !p.isSyllabus && !p.isBook && normalizeClassName(p.form).toLowerCase() === selectedClass.toLowerCase() && matchesSubjectQuery(p.subject, selectedSubject, p.title));
+      }
+
+      const dataYears = baseMatches.map(p => p.year).filter(y => y && y !== 'N/A');
+      const availableYears = Array.from(new Set([...dataYears, '2026', '2025', '2024', '2023', '2022'])).sort((a, b) => (parseInt(b, 10) || 0) - (parseInt(a, 10) || 0) || b.localeCompare(a));
+
+      const filteredPapers = baseMatches.filter(p => {
+        const matchYr = selectedYear === 'ALL' || p.year === selectedYear;
+        const matchCat =
+          selectedCategory === 'ALL' ||
+          p.category.toLowerCase() === selectedCategory.toLowerCase() ||
+          (selectedCategory === 'Annual' && /annual|terminal/i.test(p.category)) ||
+          (selectedCategory === 'Midterm' && /mid[- ]?term/i.test(`${p.category} ${p.title}`));
+        return matchYr && matchCat;
+      }).sort((a, b) => (parseInt(b.year, 10) || 0) - (parseInt(a.year, 10) || 0) || String(b.year || '').localeCompare(String(a.year || '')));
+
+      const shareWaUrl = `https://wa.me/?text=${encodeURIComponent(`📚 *${selectedClass} — ${selectedSubject} Past Papers & Marking Schemes* on Elimika Tanzania:\n👉 ${buildShareableSubjectUrl(selectedClass, selectedSubject)}`)}`;
+
+      return `
+        <section class="space-y-4">
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <button onclick="handleGoBack()" class="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 mb-1">← Back to Subjects</button>
+                <h2 class="text-lg sm:text-xl font-bold text-slate-900">
+                  ${searchQuery.trim() ? `Search Results for "${escapeHtml(searchQuery)}"` : `${escapeHtml(selectedClass)} · ${escapeHtml(selectedSubject)} (Past Papers)`}
+                </h2>
+                <div class="text-xs font-medium text-slate-500 tabular-nums">Found ${filteredPapers.length} ${filteredPapers.length === 1 ? 'item' : 'items'} · Sorted Newest Year First</div>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                ${selectedClass && selectedSubject ? `
+                  <button onclick="copyShareableSubjectLink('${escapeHtml(selectedClass)}', '${escapeHtml(selectedSubject)}')" class="px-3 py-2 rounded-xl bg-blue-50 text-blue-900 border border-blue-300 font-bold text-xs">🔗 Copy Subject Link</button>
+                  <a href="${shareWaUrl}" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs">📲 Share on WhatsApp</a>
+                ` : ''}
+                <a href="${getRequestPaperWhatsAppUrl(selectedClass, selectedSubject)}" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-amber-50 text-amber-950 border border-amber-300 font-bold text-xs">📩 Request Missing Paper</a>
+              </div>
+            </div>
+
+            ${selectedClass && selectedSubject && !searchQuery.trim() ? `
+              <div class="p-2 rounded-xl bg-slate-100 border border-slate-200 flex flex-wrap items-center justify-between gap-2">
+                <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-600 px-1.5">⚡ ${escapeHtml(selectedClass)} · ${escapeHtml(selectedSubject)} Hub:</span>
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <span class="px-3 py-1.5 rounded-lg bg-blue-600 text-white font-bold text-xs">📄 Past Papers (${filteredPapers.length})</span>
+                  <button onclick="openBooksPage('${escapeHtml(selectedClass)}', '${escapeHtml(selectedSubject)}')" class="px-3 py-1.5 rounded-lg bg-white text-slate-900 border border-slate-300 font-bold text-xs">📚 TIE Textbook</button>
+                  <button onclick="syllabusSearchQuery='${escapeHtml(selectedClass)} ${escapeHtml(selectedSubject)}'; openSyllabusPage();" class="px-3 py-1.5 rounded-lg bg-white text-slate-900 border border-slate-300 font-bold text-xs">📜 Syllabus</button>
+                </div>
+              </div>
+            ` : ''}
+
+            <div class="space-y-1.5 pt-2 border-t border-slate-100">
+              <div class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">1. Select Year</div>
+              <div class="flex flex-wrap items-center gap-1.5">
+                ${['ALL', ...availableYears].map(yr => `
+                  <button onclick="selectedYear='${yr}'; renderApp();" class="px-3 py-1.5 text-xs font-bold rounded-xl ${selectedYear === yr ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'}">
+                    ${yr === 'ALL' ? 'All Years' : yr}
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+
+            <div class="space-y-1.5 pt-2 border-t border-slate-100">
+              <div class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">2. Select Type of Paper (Annual, Mock, Midterm, NECTA or Pre-NECTA)</div>
+              <div class="flex flex-wrap items-center gap-1.5">
+                ${['ALL', 'Annual', 'Mock', 'Midterm', 'NECTA', 'Pre-NECTA'].map(cat => `
+                  <button onclick="selectedCategory='${cat}'; renderApp();" class="px-3.5 py-2 text-xs font-bold rounded-xl ${selectedCategory === cat ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700'}">
+                    ${cat === 'ALL' ? 'All Types' : cat}
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+
+          ${filteredPapers.length === 0 ? `
+            <div class="py-10 text-center bg-white rounded-2xl border border-slate-200 p-6 space-y-3">
+              <h4 class="font-bold text-slate-800">No papers found for this selection yet.</h4>
+              <p class="text-xs text-slate-500 max-w-md mx-auto">Have a paper to contribute or need a specific exam uploaded? Request it directly via WhatsApp below.</p>
+              <div class="flex flex-wrap justify-center gap-2">
+                <button onclick="selectedCategory='ALL'; selectedYear='ALL'; renderApp();" class="px-4 py-2 bg-blue-600 text-white font-bold text-xs rounded-xl">Show All Years &amp; Paper Types</button>
+                <a href="${getRequestPaperWhatsAppUrl(selectedClass, selectedSubject, searchQuery.trim() || (selectedClass + ' ' + selectedSubject))}" target="_blank" rel="noopener noreferrer" class="px-4 py-2 bg-emerald-600 text-white font-bold text-xs rounded-xl">📩 Request Missing Paper on WhatsApp</a>
+              </div>
+            </div>
+          ` : `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+              ${filteredPapers.map(p => `
+                <article class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 hover:border-blue-400 shadow-sm flex flex-col justify-between gap-3">
+                  <div>
+                    <div class="flex flex-wrap items-center gap-1.5 text-xs text-slate-500 mb-1 tabular-nums">
+                      <span class="font-bold text-blue-700">${escapeHtml(p.category)}</span> ·
+                      <span class="font-semibold text-slate-700">${escapeHtml(p.year)}</span> ·
+                      <span>${escapeHtml(p.form)}</span> ·
+                      <span>${escapeHtml(p.subject)}</span>
+                    </div>
+                    <h3 class="text-base font-bold text-slate-900">${escapeHtml(p.title)}</h3>
+                  </div>
+                  <div class="flex flex-wrap items-center gap-2 pt-2.5 border-t border-slate-100">
+                    ${p.paperUrl ? `
+                      <button onclick="openViewer('${p.id}', 'paper')" class="flex-1 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl">📖 Read</button>
+                      <a href="${getDirectDownloadUrl(p.paperUrl)}" target="_blank" rel="noopener noreferrer" class="flex-1 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl text-center">⬇️ Download</a>
+                    ` : `
+                      <button disabled class="flex-1 px-3.5 py-2 bg-slate-100 text-slate-400 border border-slate-200 text-xs font-bold rounded-xl cursor-not-allowed">⏳ Pending Upload</button>
+                      <button disabled class="flex-1 px-3.5 py-2 bg-slate-100 text-slate-400 border border-slate-200 text-xs font-bold rounded-xl cursor-not-allowed">⬇️ Pending Upload</button>
+                    `}
+                    ${p.answersUrl ? `
+                      <a href="${getDirectDownloadUrl(p.answersUrl)}" target="_blank" rel="noopener noreferrer" class="flex-1 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl text-center">✅ Solution</a>
+                    ` : `
+                      <button disabled class="flex-1 px-3.5 py-2 bg-slate-100 text-slate-400 border border-slate-200 text-xs font-bold rounded-xl cursor-not-allowed">Pending</button>
+                    `}
+                  </div>
+                </article>
+              `).join('')}
+            </div>
+          `}
+        </section>
+      `;
+    }
+
+    // ==================== GOOGLE SHEET SYNC & DEDUPLICATION ====================
+    async function syncGoogleSheet() {
       try {
         const cached = localStorage.getItem('elimika_papers_cache_v5');
         if (cached) {
@@ -2204,8 +2429,18 @@
             if (text && !text.includes('<!DOCTYPE html>') && text.length > 20) {
               const raw = parseCSV(text);
               const processed = processParsedRows(raw);
-              allPapers = processed;
-              try { localStorage.setItem('elimika_papers_cache_v5', JSON.stringify(processed)); } catch (e) {}
+              const dedupMap = new Map();
+              processed.forEach(p => {
+                const key = p.isBook || p.isSyllabus
+                  ? `${p.id}|${p.form}|${p.subject}|${p.title}`
+                  : `${p.form}|${p.subject}|${p.year}|${p.title}`;
+                const existing = dedupMap.get(key);
+                if (!existing || (!existing.paperUrl && p.paperUrl) || (!existing.answersUrl && p.answersUrl)) {
+                  dedupMap.set(key, p);
+                }
+              });
+              allPapers = Array.from(dedupMap.values());
+              try { localStorage.setItem('elimika_papers_cache_v5', JSON.stringify(allPapers)); } catch (e) {}
               renderApp();
               return;
             }
@@ -2213,6 +2448,7 @@
         } catch (e) {}
       }
     }
+    const fetchSheetData = syncGoogleSheet;
 
     // ==================== GOOGLE ADSENSE LEGAL MODAL & COOKIE CONSENT ====================
     function openLegalModal(tab) {
@@ -2273,12 +2509,21 @@
       if (applyDeepLinkFromHash()) renderApp();
     });
 
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeViewer();
+        closeWhatsappModal();
+        closeLegalModal();
+        closeGetAppModal();
+      }
+    });
+
     if (isAndroid()) document.getElementById('headerGetAppLabel').textContent = 'Play Store';
     else if (isIOS()) document.getElementById('headerGetAppLabel').textContent = 'iPhone App';
 
     applyDeepLinkFromHash();
     renderApp();
-    fetchSheetData();
+    syncGoogleSheet();
     initCookieConsent();
 
     (function checkInitialLegalHash() {

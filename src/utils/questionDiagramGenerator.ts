@@ -59,6 +59,7 @@ export function getQuestionDiagramSvg(
   // Strip leading "[Form X • Chapter Y: ...]" or "[Exercise X.Y QZ]" metadata tag before analyzing
   const body = questionText.replace(/^\s*(\[[^\]]+\]\s*)+/g, '').trim();
   const qLower = body.toLowerCase();
+  const subLower = (_subject || '').toLowerCase();
 
   // ============================================================================
   // 1. ELECTRICAL SWITCHING NETWORK (Only when question asks about switches/terminals)
@@ -843,5 +844,582 @@ export function getQuestionDiagramSvg(
     };
   }
 
+  // ============================================================================
+  // 12. ICS CHAPTER 3 — FIGURE 3.1: ABACUS MODEL (Early Calculating Device)
+  // ============================================================================
+  if (/\babacus\b/i.test(body) || /figure\s*3\.1/i.test(body)) {
+    return {
+      title: 'Figure 3.1: Abacus Model (Early Mechanical Calculating Frame)',
+      caption: 'Upper Deck (Heaven Beads = 5 units each), Dividing Beam, and Lower Deck (Earth Beads = 1 unit each) on Place-Value Rods',
+      svgHtml: `<svg viewBox="0 0 420 210" class="w-full max-w-[400px] h-auto mx-auto" xmlns="http://www.w3.org/2000/svg">
+        <rect width="420" height="210" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+        <!-- Outer Wooden Frame -->
+        <rect x="35" y="18" width="260" height="162" rx="6" fill="#fef3c7" stroke="#78350f" stroke-width="7"/>
+        <!-- Horizontal Dividing Beam -->
+        <line x1="35" y1="74" x2="295" y2="74" stroke="#78350f" stroke-width="6"/>
+        <!-- Vertical Place-Value Rods -->
+        <line x1="80" y1="18" x2="80" y2="180" stroke="#92400e" stroke-width="3"/>
+        <line x1="135" y1="18" x2="135" y2="180" stroke="#92400e" stroke-width="3"/>
+        <line x1="190" y1="18" x2="190" y2="180" stroke="#92400e" stroke-width="3"/>
+        <line x1="245" y1="18" x2="245" y2="180" stroke="#92400e" stroke-width="3"/>
+        <!-- Upper Deck Beads (Value = 5) -->
+        <ellipse cx="80" cy="40" rx="16" ry="8" fill="#1e3a8a" stroke="#0f172a" stroke-width="1.2"/>
+        <ellipse cx="135" cy="56" rx="16" ry="8" fill="#1e3a8a" stroke="#0f172a" stroke-width="1.2"/>
+        <ellipse cx="190" cy="40" rx="16" ry="8" fill="#1e3a8a" stroke="#0f172a" stroke-width="1.2"/>
+        <ellipse cx="245" cy="56" rx="16" ry="8" fill="#1e3a8a" stroke="#0f172a" stroke-width="1.2"/>
+        <!-- Lower Deck Beads (Value = 1) -->
+        <ellipse cx="80" cy="96" rx="16" ry="8" fill="#2563eb" stroke="#0f172a" stroke-width="1.2"/>
+        <ellipse cx="80" cy="116" rx="16" ry="8" fill="#2563eb" stroke="#0f172a" stroke-width="1.2"/>
+        <ellipse cx="80" cy="156" rx="16" ry="8" fill="#93c5fd" stroke="#1e3a8a" stroke-width="1.2"/>
+        <ellipse cx="135" cy="96" rx="16" ry="8" fill="#2563eb" stroke="#0f172a" stroke-width="1.2"/>
+        <ellipse cx="135" cy="138" rx="16" ry="8" fill="#93c5fd" stroke="#1e3a8a" stroke-width="1.2"/>
+        <ellipse cx="135" cy="158" rx="16" ry="8" fill="#93c5fd" stroke="#1e3a8a" stroke-width="1.2"/>
+        <ellipse cx="190" cy="96" rx="16" ry="8" fill="#2563eb" stroke="#0f172a" stroke-width="1.2"/>
+        <ellipse cx="190" cy="116" rx="16" ry="8" fill="#2563eb" stroke="#0f172a" stroke-width="1.2"/>
+        <ellipse cx="190" cy="136" rx="16" ry="8" fill="#2563eb" stroke="#0f172a" stroke-width="1.2"/>
+        <ellipse cx="245" cy="138" rx="16" ry="8" fill="#93c5fd" stroke="#1e3a8a" stroke-width="1.2"/>
+        <ellipse cx="245" cy="158" rx="16" ry="8" fill="#93c5fd" stroke="#1e3a8a" stroke-width="1.2"/>
+        <!-- Place-Value Rod Labels -->
+        <text x="80" y="196" text-anchor="middle" font-size="9.5" font-weight="800" fill="#334155">10³ (Th)</text>
+        <text x="135" y="196" text-anchor="middle" font-size="9.5" font-weight="800" fill="#334155">10² (H)</text>
+        <text x="190" y="196" text-anchor="middle" font-size="9.5" font-weight="800" fill="#334155">10¹ (T)</text>
+        <text x="245" y="196" text-anchor="middle" font-size="9.5" font-weight="800" fill="#334155">10⁰ (O)</text>
+        <!-- Callout Labels on Right -->
+        <text x="308" y="45" font-size="9.5" font-weight="800" fill="#1e3a8a">Upper Deck</text>
+        <text x="308" y="57" font-size="8.5" font-weight="700" fill="#475569">(Bead = 5)</text>
+        <text x="308" y="77" font-size="9.5" font-weight="800" fill="#78350f">Dividing Beam</text>
+        <text x="308" y="122" font-size="9.5" font-weight="800" fill="#2563eb">Lower Deck</text>
+        <text x="308" y="134" font-size="8.5" font-weight="700" fill="#475569">(Bead = 1)</text>
+      </svg>`,
+    };
+  }
+
+  // ============================================================================
+  // 13. ICS CHAPTER 3 — EXERCISE 3.1 Q1: COMPUTER GENERATIONS MATCHING TABLE
+  // ============================================================================
+  if (qLower.includes('column a') && qLower.includes('column b') && qLower.includes('generation')) {
+    return {
+      title: 'Exercise 3.1 Q1: Computer Generations Matching Table',
+      caption: 'Match each computer generation in Column A with its core electronic technology in Column B',
+      svgHtml: `<svg viewBox="0 0 460 198" class="w-full max-w-[450px] h-auto mx-auto" xmlns="http://www.w3.org/2000/svg">
+        <rect width="460" height="198" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+        <!-- Table Header -->
+        <rect x="10" y="10" width="220" height="28" fill="#24132F" stroke="#493751" stroke-width="1.2"/>
+        <rect x="230" y="10" width="220" height="28" fill="#24132F" stroke="#493751" stroke-width="1.2"/>
+        <text x="20" y="28" font-size="11" font-weight="800" fill="#ffffff">Column A (Computer Generation)</text>
+        <text x="240" y="28" font-size="11" font-weight="800" fill="#ffffff">Column B (Core Technology)</text>
+        <!-- Row 1 -->
+        <rect x="10" y="38" width="220" height="29" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
+        <rect x="230" y="38" width="220" height="29" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
+        <text x="18" y="57" font-size="10.5" font-weight="700" fill="#0f172a">(i) Second generation computers</text>
+        <text x="238" y="57" font-size="10.5" font-weight="700" fill="#1e3a8a">(a) Very Large Scale Integration (VLSI)</text>
+        <!-- Row 2 -->
+        <rect x="10" y="67" width="220" height="29" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+        <rect x="230" y="67" width="220" height="29" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+        <text x="18" y="86" font-size="10.5" font-weight="700" fill="#0f172a">(ii) Fifth generation computers</text>
+        <text x="238" y="86" font-size="10.5" font-weight="700" fill="#1e3a8a">(b) Vacuum tubes</text>
+        <!-- Row 3 -->
+        <rect x="10" y="96" width="220" height="29" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
+        <rect x="230" y="96" width="220" height="29" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
+        <text x="18" y="115" font-size="10.5" font-weight="700" fill="#0f172a">(iii) Fourth generation computers</text>
+        <text x="238" y="115" font-size="10.5" font-weight="700" fill="#1e3a8a">(c) Transistors</text>
+        <!-- Row 4 -->
+        <rect x="10" y="125" width="220" height="29" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+        <rect x="230" y="125" width="220" height="29" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+        <text x="18" y="144" font-size="10.5" font-weight="700" fill="#0f172a">(iv) First generation computers</text>
+        <text x="238" y="144" font-size="10.5" font-weight="700" fill="#1e3a8a">(d) Artificial intelligence (AI)</text>
+        <!-- Row 5 -->
+        <rect x="10" y="154" width="220" height="32" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
+        <rect x="230" y="154" width="220" height="32" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
+        <text x="18" y="174" font-size="10.5" font-weight="700" fill="#0f172a">(v) Third generation computers</text>
+        <text x="238" y="174" font-size="10.5" font-weight="700" fill="#1e3a8a">(e) Semiconductor technology (ICs)</text>
+      </svg>`,
+    };
+  }
+
+  // ============================================================================
+  // 14. ICS CHAPTER 4 — EXERCISE 4.1 Q2: MOTHERBOARD BACK PANEL PORTS (Labeled A–F)
+  // ============================================================================
+  if (
+    /ports\s+labeled\s+a\s*[–-]\s*f/i.test(body) ||
+    (qLower.includes('motherboard') && qLower.includes('port'))
+  ) {
+    return {
+      title: 'Exercise 4.1 Q2: Motherboard Back Panel I/O Ports (Labeled A–F)',
+      caption: 'Identify Ports A, B, C, D, E, and F and the peripheral devices that connect to each port',
+      svgHtml: `<svg viewBox="0 0 460 215" class="w-full max-w-[450px] h-auto mx-auto" xmlns="http://www.w3.org/2000/svg">
+        <rect width="460" height="215" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+        <!-- Metallic I/O Shield Backplate -->
+        <rect x="16" y="24" width="428" height="125" rx="8" fill="#f1f5f9" stroke="#475569" stroke-width="2.5"/>
+        <!-- Port A: PS/2 Keyboard (Purple) & Mouse (Green) -->
+        <circle cx="50" cy="58" r="15" fill="#7e22ce" stroke="#0f172a" stroke-width="1.8"/>
+        <circle cx="50" cy="100" r="15" fill="#16a34a" stroke="#0f172a" stroke-width="1.8"/>
+        <circle cx="50" cy="58" r="4" fill="#ffffff"/>
+        <circle cx="50" cy="100" r="4" fill="#ffffff"/>
+        <rect x="36" y="124" width="28" height="18" rx="4" fill="#24132F"/>
+        <text x="50" y="137" text-anchor="middle" font-size="11" font-weight="900" fill="#ffffff">A</text>
+        <!-- Port B: Parallel / Serial Port -->
+        <rect x="88" y="45" width="58" height="26" rx="5" fill="#db2777" stroke="#0f172a" stroke-width="1.8"/>
+        <rect x="94" y="84" width="46" height="24" rx="5" fill="#0d9488" stroke="#0f172a" stroke-width="1.8"/>
+        <rect x="103" y="124" width="28" height="18" rx="4" fill="#24132F"/>
+        <text x="117" y="137" text-anchor="middle" font-size="11" font-weight="900" fill="#ffffff">B</text>
+        <!-- Port C: VGA / HDMI Video Port -->
+        <rect x="164" y="45" width="56" height="28" rx="5" fill="#1d4ed8" stroke="#0f172a" stroke-width="1.8"/>
+        <rect x="172" y="85" width="40" height="18" rx="3" fill="#1e293b" stroke="#0f172a" stroke-width="1.8"/>
+        <rect x="178" y="124" width="28" height="18" rx="4" fill="#24132F"/>
+        <text x="192" y="137" text-anchor="middle" font-size="11" font-weight="900" fill="#ffffff">C</text>
+        <!-- Port D: Dual USB Ports Stack -->
+        <rect x="240" y="43" width="48" height="30" rx="3" fill="#0284c7" stroke="#0f172a" stroke-width="1.8"/>
+        <rect x="246" y="50" width="36" height="6" fill="#e0f2fe"/>
+        <rect x="240" y="82" width="48" height="30" rx="3" fill="#0284c7" stroke="#0f172a" stroke-width="1.8"/>
+        <rect x="246" y="89" width="36" height="6" fill="#e0f2fe"/>
+        <rect x="250" y="124" width="28" height="18" rx="4" fill="#24132F"/>
+        <text x="264" y="137" text-anchor="middle" font-size="11" font-weight="900" fill="#ffffff">D</text>
+        <!-- Port E: RJ-45 Ethernet LAN Port -->
+        <rect x="310" y="52" width="48" height="46" rx="4" fill="#f59e0b" stroke="#0f172a" stroke-width="1.8"/>
+        <rect x="318" y="62" width="32" height="26" rx="2" fill="#1e293b"/>
+        <rect x="320" y="124" width="28" height="18" rx="4" fill="#24132F"/>
+        <text x="334" y="137" text-anchor="middle" font-size="11" font-weight="900" fill="#ffffff">E</text>
+        <!-- Port F: 3.5mm Audio Jacks (Mic / Line-Out / Line-In) -->
+        <circle cx="400" cy="46" r="11" fill="#ec4899" stroke="#0f172a" stroke-width="1.6"/>
+        <circle cx="400" cy="74" r="11" fill="#22c55e" stroke="#0f172a" stroke-width="1.6"/>
+        <circle cx="400" cy="102" r="11" fill="#38bdf8" stroke="#0f172a" stroke-width="1.6"/>
+        <rect x="386" y="124" width="28" height="18" rx="4" fill="#24132F"/>
+        <text x="400" y="137" text-anchor="middle" font-size="11" font-weight="900" fill="#ffffff">F</text>
+        <!-- Legend Summary Below -->
+        <text x="230" y="168" text-anchor="middle" font-size="9.5" font-weight="800" fill="#1e293b">A: PS/2 (Mouse/KB) • B: Parallel/Serial • C: VGA/HDMI (Monitor)</text>
+        <text x="230" y="185" text-anchor="middle" font-size="9.5" font-weight="800" fill="#1e293b">D: USB Ports • E: RJ-45 Network (LAN) • F: Audio Jacks (Speaker/Mic)</text>
+      </svg>`,
+    };
+  }
+
+  // ============================================================================
+  // 15. ICS CHAPTER 4 — COMPUTER SYSTEM IPO CYCLE BLOCK DIAGRAM (INPUT -> CPU -> OUTPUT)
+  // ============================================================================
+  if (
+    qLower.includes('ipo cycle') ||
+    qLower.includes('input -> process') ||
+    qLower.includes('block diagram of a computer') ||
+    qLower.includes('functional components of the cpu') ||
+    qLower.includes('function of the central processing unit')
+  ) {
+    return {
+      title: 'Computer System Block Diagram (IPO Cycle: Input → Process → Output)',
+      caption: 'Data Flow & Control Signals between Input Unit, CPU (CU, ALU, Registers), Memory/Storage, and Output Unit',
+      svgHtml: `<svg viewBox="0 0 460 210" class="w-full max-w-[450px] h-auto mx-auto" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="icsArrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#1e293b" />
+          </marker>
+        </defs>
+        <rect width="460" height="210" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+        <!-- INPUT UNIT -->
+        <rect x="16" y="55" width="95" height="62" rx="8" fill="#dbeafe" stroke="#1e40af" stroke-width="2"/>
+        <text x="63" y="82" text-anchor="middle" font-size="11" font-weight="900" fill="#1e3a8a">INPUT UNIT</text>
+        <text x="63" y="98" text-anchor="middle" font-size="8.5" font-weight="700" fill="#334155">(Keyboard, Mouse)</text>
+        <!-- Arrow Input -> CPU -->
+        <line x1="111" y1="86" x2="148" y2="86" stroke="#1e293b" stroke-width="2.2" marker-end="url(#icsArrow)"/>
+        <!-- CPU BOX -->
+        <rect x="152" y="18" width="156" height="116" rx="8" fill="#f3e8ff" stroke="#6b21a8" stroke-width="2.2"/>
+        <text x="230" y="34" text-anchor="middle" font-size="10.5" font-weight="900" fill="#581c87">PROCESS — CPU</text>
+        <rect x="164" y="42" width="132" height="24" rx="4" fill="#ffffff" stroke="#7e22ce" stroke-width="1.2"/>
+        <text x="230" y="58" text-anchor="middle" font-size="9.5" font-weight="800" fill="#3b0764">Control Unit (CU)</text>
+        <rect x="164" y="72" width="132" height="24" rx="4" fill="#ffffff" stroke="#7e22ce" stroke-width="1.2"/>
+        <text x="230" y="88" text-anchor="middle" font-size="9.5" font-weight="800" fill="#3b0764">Arithmetic Logic Unit (ALU)</text>
+        <rect x="164" y="102" width="132" height="22" rx="4" fill="#ffffff" stroke="#7e22ce" stroke-width="1.2"/>
+        <text x="230" y="117" text-anchor="middle" font-size="9.5" font-weight="800" fill="#3b0764">Registers / Cache</text>
+        <!-- Arrow CPU -> Output -->
+        <line x1="308" y1="86" x2="345" y2="86" stroke="#1e293b" stroke-width="2.2" marker-end="url(#icsArrow)"/>
+        <!-- OUTPUT UNIT -->
+        <rect x="349" y="55" width="95" height="62" rx="8" fill="#dcfce7" stroke="#15803d" stroke-width="2"/>
+        <text x="396" y="82" text-anchor="middle" font-size="11" font-weight="900" fill="#14532d">OUTPUT UNIT</text>
+        <text x="396" y="98" text-anchor="middle" font-size="8.5" font-weight="700" fill="#334155">(Monitor, Printer)</text>
+        <!-- Bidirectional Arrows CPU <-> Storage -->
+        <line x1="215" y1="134" x2="215" y2="154" stroke="#1e293b" stroke-width="2" marker-end="url(#icsArrow)"/>
+        <line x1="245" y1="154" x2="245" y2="134" stroke="#1e293b" stroke-width="2" marker-end="url(#icsArrow)"/>
+        <!-- MEMORY & STORAGE UNIT -->
+        <rect x="135" y="156" width="190" height="42" rx="8" fill="#fef3c7" stroke="#b45309" stroke-width="2"/>
+        <text x="230" y="174" text-anchor="middle" font-size="10" font-weight="900" fill="#78350f">MAIN MEMORY &amp; STORAGE</text>
+        <text x="230" y="189" text-anchor="middle" font-size="8.5" font-weight="700" fill="#92400e">(RAM, ROM, HDD / SSD / Flash)</text>
+      </svg>`,
+    };
+  }
+
+  // ============================================================================
+  // 16. ICS CHAPTER 6 — UPS / SURGE PROTECTION SETUP DIAGRAM
+  // ============================================================================
+  if (
+    /\bups\b/i.test(body) ||
+    qLower.includes('uninterruptible power supply') ||
+    qLower.includes('surge protector') ||
+    qLower.includes('power fluctuations')
+  ) {
+    return {
+      title: 'Chapter 6: UPS & Surge Protection Power Connection Setup',
+      caption: 'Wall Mains Socket (240V AC) → UPS Unit (Battery Backup & Surge Suppression) → Computer System Unit & Monitor',
+      svgHtml: `<svg viewBox="0 0 460 155" class="w-full max-w-[450px] h-auto mx-auto" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="pwrArrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#059669" />
+          </marker>
+        </defs>
+        <rect width="460" height="155" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+        <!-- Wall Socket -->
+        <rect x="18" y="38" width="90" height="75" rx="8" fill="#f8fafc" stroke="#475569" stroke-width="2"/>
+        <rect x="55" y="54" width="16" height="10" rx="2" fill="#334155"/>
+        <rect x="43" y="72" width="12" height="8" rx="2" fill="#334155"/>
+        <rect x="71" y="72" width="12" height="8" rx="2" fill="#334155"/>
+        <text x="63" y="102" text-anchor="middle" font-size="10" font-weight="900" fill="#0f172a">WALL SOCKET</text>
+        <text x="63" y="132" text-anchor="middle" font-size="8.5" font-weight="700" fill="#64748b">220–240V AC Mains</text>
+        <!-- Arrow Socket -> UPS -->
+        <line x1="108" y1="75" x2="152" y2="75" stroke="#059669" stroke-width="2.6" marker-end="url(#pwrArrow)"/>
+        <!-- UPS Unit -->
+        <rect x="156" y="28" width="132" height="94" rx="8" fill="#fef2f2" stroke="#dc2626" stroke-width="2.2"/>
+        <text x="222" y="54" text-anchor="middle" font-size="11.5" font-weight="900" fill="#991b1b">UPS UNIT</text>
+        <text x="222" y="72" text-anchor="middle" font-size="9.5" font-weight="800" fill="#b91c1c">(Battery Backup &amp;</text>
+        <text x="222" y="86" text-anchor="middle" font-size="9.5" font-weight="800" fill="#b91c1c">Surge Protection)</text>
+        <circle cx="202" cy="104" r="5" fill="#22c55e"/>
+        <text x="228" y="108" font-size="8.5" font-weight="800" fill="#15803d">ONLINE</text>
+        <!-- Arrow UPS -> Computer -->
+        <line x1="288" y1="75" x2="328" y2="75" stroke="#059669" stroke-width="2.6" marker-end="url(#pwrArrow)"/>
+        <!-- Computer System Unit & Monitor -->
+        <rect x="332" y="30" width="112" height="90" rx="8" fill="#eff6ff" stroke="#1d4ed8" stroke-width="2"/>
+        <rect x="344" y="42" width="52" height="38" rx="4" fill="#dbeafe" stroke="#1e40af" stroke-width="1.6"/>
+        <rect x="362" y="80" width="16" height="6" fill="#1e40af"/>
+        <rect x="404" y="40" width="28" height="46" rx="3" fill="#1e293b"/>
+        <circle cx="418" cy="76" r="3" fill="#38bdf8"/>
+        <text x="388" y="106" text-anchor="middle" font-size="9.5" font-weight="900" fill="#1e3a8a">SYSTEM UNIT &amp; MONITOR</text>
+      </svg>`,
+    };
+  }
+
+  // ============================================================================
+  // 17. GEOGRAPHY FORM TWO CHAPTER 1 — FIGURE 1.1: LAYERS OF THE EARTH (INTERNAL STRUCTURE)
+  // ============================================================================
+  if (
+    qLower.includes('figure 1.1') ||
+    qLower.includes('layers of the earth') ||
+    qLower.includes('internal layers') ||
+    (qLower.includes('lithosphere') && qLower.includes('asthenosphere')) ||
+    (qLower.includes('inner core') && qLower.includes('hottest')) ||
+    (qLower.includes('outer core') && qLower.includes('solid'))
+  ) {
+    return {
+      title: 'Figure 1.1: Layers of the Earth (Internal Structure)',
+      caption: 'Concentric Internal Zones: Crust / Lithosphere (0–100 km) • Mantle / Asthenosphere (up to 2,900 km) • Outer & Inner Core (NIFE)',
+      svgHtml: `<svg viewBox="0 0 380 190" class="w-full max-w-[360px] h-auto mx-auto" xmlns="http://www.w3.org/2000/svg">
+        <rect width="380" height="190" fill="#f8fafc" rx="8" stroke="#cbd5e1" stroke-width="1.5"/>
+        <!-- Crust (Outer Green Ring) -->
+        <circle cx="155" cy="92" r="76" fill="#dcfce7" stroke="#16a34a" stroke-width="6"/>
+        <!-- Mantle (Middle Amber Ring) -->
+        <circle cx="155" cy="92" r="62" fill="#fef3c7" stroke="#f59e0b" stroke-width="20"/>
+        <!-- Outer & Inner Core (Central Red Circle) -->
+        <circle cx="155" cy="92" r="32" fill="#dc2626" stroke="#b91c1c" stroke-width="2.5"/>
+        <circle cx="155" cy="92" r="15" fill="#991b1b" stroke="#fef2f2" stroke-width="1.2" stroke-dasharray="2,2"/>
+        <text x="155" y="96" font-family="Times New Roman, serif" font-size="10.5" font-weight="bold" fill="#ffffff" text-anchor="middle">Core</text>
+        <!-- Callout Lines & Labels -->
+        <line x1="202" y1="32" x2="255" y2="26" stroke="#14532d" stroke-width="1.6"/>
+        <text x="260" y="29" font-family="Times New Roman, serif" font-size="11" font-weight="bold" fill="#14532d">Crust (Lithosphere)</text>
+        <line x1="205" y1="68" x2="255" y2="62" stroke="#78350f" stroke-width="1.6"/>
+        <text x="260" y="65" font-family="Times New Roman, serif" font-size="11" font-weight="bold" fill="#78350f">Mantle (Asthenosphere)</text>
+        <line x1="184" y1="102" x2="255" y2="102" stroke="#991b1b" stroke-width="1.6"/>
+        <text x="260" y="105" font-family="Times New Roman, serif" font-size="11" font-weight="bold" fill="#991b1b">Outer &amp; Inner Core</text>
+        <text x="190" y="176" font-family="Times New Roman, serif" font-size="11.5" font-weight="bold" fill="#0f172a" text-anchor="middle">Figure 1.1: Layers of the Earth</text>
+      </svg>`,
+    };
+  }
+
+  // ============================================================================
+  // 18. GEOGRAPHY FORM TWO CHAPTER 2 — VERTICAL STRUCTURE OF THE ATMOSPHERE
+  // ============================================================================
+  if (
+    (qLower.includes('atmosphere') || qLower.includes('atmospheric layer')) &&
+    (qLower.includes('troposphere') ||
+      qLower.includes('stratosphere') ||
+      qLower.includes('mesosphere') ||
+      qLower.includes('thermosphere') ||
+      qLower.includes('ozone layer') ||
+      qLower.includes('ascending order'))
+  ) {
+    return {
+      title: 'Chapter 2: Vertical Structure & Layers of the Earth’s Atmosphere',
+      caption: 'Ascending Order from Surface Outward: Troposphere (0–16 km) → Stratosphere (Ozone Layer, 16–50 km) → Mesosphere (50–80 km) → Thermosphere (>80 km)',
+      svgHtml: `<svg viewBox="0 0 430 205" class="w-full max-w-[420px] h-auto mx-auto" xmlns="http://www.w3.org/2000/svg">
+        <rect width="430" height="205" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+        <!-- 4. Thermosphere -->
+        <rect x="18" y="14" width="394" height="38" rx="4" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.4"/>
+        <text x="28" y="31" font-size="10.5" font-weight="900" fill="#4c1d95">4. THERMOSPHERE (&gt;80 km)</text>
+        <text x="28" y="45" font-size="9" font-weight="700" fill="#5b21b6">Ionosphere, Auroras &amp; Satellites • Temp rises (&gt;1,000°C)</text>
+        <!-- 3. Mesosphere -->
+        <rect x="18" y="56" width="394" height="38" rx="4" fill="#dbeafe" stroke="#2563eb" stroke-width="1.4"/>
+        <text x="28" y="73" font-size="10.5" font-weight="900" fill="#1e3a8a">3. MESOSPHERE (50–80 km)</text>
+        <text x="28" y="87" font-size="9" font-weight="700" fill="#1d4ed8">Meteors burn up • Coldest layer (drops to -90°C at Mesopause)</text>
+        <!-- 2. Stratosphere -->
+        <rect x="18" y="98" width="394" height="42" rx="4" fill="#fef3c7" stroke="#d97706" stroke-width="1.4"/>
+        <text x="28" y="115" font-size="10.5" font-weight="900" fill="#78350f">2. STRATOSPHERE (12/16–50 km)</text>
+        <text x="28" y="131" font-size="9" font-weight="800" fill="#92400e">Contains OZONE LAYER (O₃ absorbs UV rays) • Temp increases</text>
+        <!-- 1. Troposphere -->
+        <rect x="18" y="144" width="394" height="46" rx="4" fill="#dcfce7" stroke="#16a34a" stroke-width="1.6"/>
+        <text x="28" y="162" font-size="10.5" font-weight="900" fill="#14532d">1. TROPOSPHERE (0–12/18 km)</text>
+        <text x="28" y="178" font-size="9" font-weight="800" fill="#166534">Weather events (Rain, Clouds, Storms) &amp; Living Organisms</text>
+      </svg>`,
+    };
+  }
+
+  // ============================================================================
+  // 19. GEOGRAPHY FORM TWO CHAPTER 3 — CONTOUR REPRESENTATION OF A HILL / SLOPES
+  // ============================================================================
+  if (
+    qLower.includes('contour representation of a hill') ||
+    (qLower.includes('contour') &&
+      (qLower.includes('steep') ||
+        qLower.includes('gentle') ||
+        qLower.includes('plateau') ||
+        qLower.includes('escarpment') ||
+        qLower.includes('ridge') ||
+        qLower.includes('spur') ||
+        qLower.includes('cliff') ||
+        qLower.includes('layer tinting') ||
+        qLower.includes('hachure') ||
+        qLower.includes('spot height')))
+  ) {
+    return {
+      title: 'Chapter 3: Contour Representation of a Hill (Steep vs Gentle Slope)',
+      caption: 'Concentric brown contour lines (VI = 100 m): Closely packed contours (Left) = Steep Slope • Widely spaced contours (Right) = Gentle Slope',
+      svgHtml: `<svg viewBox="0 0 380 155" class="w-full max-w-[360px] h-auto mx-auto" xmlns="http://www.w3.org/2000/svg">
+        <rect width="380" height="155" fill="#f8fafc" rx="8" stroke="#cbd5e1" stroke-width="1.5"/>
+        <!-- Concentric contour ellipses shifted slightly left to illustrate steep (left) vs gentle (right) -->
+        <ellipse cx="190" cy="70" rx="145" ry="52" fill="none" stroke="#d97706" stroke-width="1.8"/>
+        <text x="315" y="73" font-family="Times New Roman, serif" font-size="9.5" font-weight="bold" fill="#92400e">100m</text>
+        <ellipse cx="182" cy="70" rx="110" ry="38" fill="none" stroke="#d97706" stroke-width="1.8"/>
+        <text x="274" y="73" font-family="Times New Roman, serif" font-size="9.5" font-weight="bold" fill="#92400e">200m</text>
+        <ellipse cx="172" cy="70" rx="74" ry="25" fill="none" stroke="#d97706" stroke-width="1.8"/>
+        <text x="230" y="73" font-family="Times New Roman, serif" font-size="9.5" font-weight="bold" fill="#92400e">300m</text>
+        <ellipse cx="162" cy="70" rx="36" ry="12" fill="none" stroke="#d97706" stroke-width="1.8"/>
+        <circle cx="158" cy="70" r="3.2" fill="#0f172a"/>
+        <text x="158" y="65" font-family="Times New Roman, serif" font-size="9.5" font-weight="bold" fill="#0f172a" text-anchor="middle">• 420m</text>
+        <!-- Labels for Steep vs Gentle -->
+        <text x="56" y="24" font-size="9.5" font-weight="900" fill="#dc2626">Steep Slope (Close)</text>
+        <text x="285" y="24" font-size="9.5" font-weight="900" fill="#15803d" text-anchor="middle">Gentle Slope (Wide)</text>
+        <text x="190" y="142" font-family="Times New Roman, serif" font-size="11.5" font-weight="bold" fill="#0f172a" text-anchor="middle">Contour Representation of a Hill</text>
+      </svg>`,
+    };
+  }
+
+  // ============================================================================
+  // 20. GEOGRAPHY FORM TWO CHAPTER 3 — CROSS-SECTION, INTERVISIBILITY & VE
+  // ============================================================================
+  if (
+    qLower.includes('intervisibility') ||
+    qLower.includes('vertical exaggeration') ||
+    (qLower.includes('cross-section') && (qLower.includes('vs') || qLower.includes('hs') || qLower.includes('ve')))
+  ) {
+    return {
+      title: 'Chapter 3: Relief Cross-Section, Line of Sight (Intervisibility) & Vertical Exaggeration',
+      caption: 'VE = HS / VS • Points A and B are NOT intervisible when an intervening hill rises above the straight Line of Sight',
+      svgHtml: `<svg viewBox="0 0 420 175" class="w-full max-w-[400px] h-auto mx-auto" xmlns="http://www.w3.org/2000/svg">
+        <rect width="420" height="175" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+        <!-- Axes -->
+        <line x1="48" y1="22" x2="48" y2="142" stroke="#0f172a" stroke-width="2"/>
+        <line x1="48" y1="142" x2="395" y2="142" stroke="#0f172a" stroke-width="2"/>
+        <text x="26" y="32" font-size="9" font-weight="800" fill="#334155">500m</text>
+        <text x="26" y="70" font-size="9" font-weight="800" fill="#334155">300m</text>
+        <text x="26" y="110" font-size="9" font-weight="800" fill="#334155">100m</text>
+        <!-- Relief Profile Curve with Intervening Hill -->
+        <path d="M 48,118 Q 105,130 145,105 Q 205,28 255,95 Q 310,132 375,65 L 375,142 L 48,142 Z" fill="#fef3c7" stroke="#b45309" stroke-width="2.4"/>
+        <!-- Dashed Line of Sight A to B blocked by intervening peak -->
+        <line x1="65" y1="120" x2="375" y2="65" stroke="#dc2626" stroke-width="2" stroke-dasharray="5,4"/>
+        <circle cx="65" cy="120" r="4" fill="#1d4ed8"/>
+        <text x="65" y="110" font-size="10.5" font-weight="900" fill="#1d4ed8" text-anchor="middle">Point A</text>
+        <circle cx="375" cy="65" r="4" fill="#1d4ed8"/>
+        <text x="375" y="54" font-size="10.5" font-weight="900" fill="#1d4ed8" text-anchor="middle">Point B</text>
+        <text x="206" y="45" font-size="9.5" font-weight="900" fill="#dc2626" text-anchor="middle">Intervening Hill (Blocks View)</text>
+        <text x="220" y="162" font-size="10" font-weight="900" fill="#0f172a" text-anchor="middle">Horizontal Baseline (HS) • Line of Sight Obstruction</text>
+      </svg>`,
+    };
+  }
+
+  // ============================================================================
+  // 21. GEOGRAPHY FORM TWO CHAPTER 4 — 9-SECTOR PHOTOGRAPH INTERPRETATION GRID
+  // ============================================================================
+  if (
+    (String(_subject || '').toLowerCase().includes('geography') || qLower.includes('photograph')) &&
+    (qLower.includes('horizontal photograph') ||
+      qLower.includes('oblique') ||
+      qLower.includes('vertical aerial') ||
+      qLower.includes('foreground') ||
+      qLower.includes('photograph interpretation'))
+  ) {
+    return {
+      title: 'Chapter 4: Geographical Photograph 9-Sector Interpretation Divisions',
+      caption: 'Back-to-Front Planes (Background, Middleground, Foreground) × Left-to-Right Columns (Scale diminishes toward Background)',
+      svgHtml: `<svg viewBox="0 0 420 180" class="w-full max-w-[400px] h-auto mx-auto" xmlns="http://www.w3.org/2000/svg">
+        <rect width="420" height="180" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+        <!-- Outer Frame -->
+        <rect x="20" y="15" width="380" height="144" fill="#f8fafc" stroke="#0f172a" stroke-width="2"/>
+        <!-- Row 1: Background -->
+        <rect x="20" y="15" width="380" height="48" fill="#dbeafe" fill-opacity="0.55" stroke="#0f172a" stroke-width="1.2"/>
+        <!-- Row 2: Middleground -->
+        <rect x="20" y="63" width="380" height="48" fill="#dcfce7" fill-opacity="0.55" stroke="#0f172a" stroke-width="1.2"/>
+        <!-- Row 3: Foreground -->
+        <rect x="20" y="111" width="380" height="48" fill="#fef3c7" fill-opacity="0.65" stroke="#0f172a" stroke-width="1.2"/>
+        <!-- Vertical Dividers -->
+        <line x1="146" y1="15" x2="146" y2="159" stroke="#0f172a" stroke-width="1.4" stroke-dasharray="4,3"/>
+        <line x1="273" y1="15" x2="273" y2="159" stroke="#0f172a" stroke-width="1.4" stroke-dasharray="4,3"/>
+        <!-- Labels -->
+        <text x="83" y="43" text-anchor="middle" font-size="9.5" font-weight="900" fill="#1e3a8a">Left Background</text>
+        <text x="210" y="43" text-anchor="middle" font-size="9.5" font-weight="900" fill="#1e3a8a">Middle Background</text>
+        <text x="336" y="43" text-anchor="middle" font-size="9.5" font-weight="900" fill="#1e3a8a">Right Background</text>
+        <text x="83" y="91" text-anchor="middle" font-size="9.5" font-weight="900" fill="#14532d">Left Middleground</text>
+        <text x="210" y="91" text-anchor="middle" font-size="9.5" font-weight="900" fill="#14532d">Centre Middleground</text>
+        <text x="336" y="91" text-anchor="middle" font-size="9.5" font-weight="900" fill="#14532d">Right Middleground</text>
+        <text x="83" y="139" text-anchor="middle" font-size="9.5" font-weight="900" fill="#78350f">Left Foreground</text>
+        <text x="210" y="139" text-anchor="middle" font-size="9.5" font-weight="900" fill="#78350f">Middle Foreground</text>
+        <text x="336" y="139" text-anchor="middle" font-size="9.5" font-weight="900" fill="#78350f">Right Foreground</text>
+      </svg>`,
+    };
+  }
+
+  // ==========================================================================
+  // FORM 2 BIOLOGY DIAGRAMS (Chapters 2, 3, 4 & 5 — TIE Student's Book)
+  // ==========================================================================
+  // 1. Figure 2.1: Human Digestive System
+  if (
+    subLower.includes('biology') &&
+    (qLower.includes('figure 2.1') ||
+      qLower.includes('stomach enzymes') ||
+      (qLower.includes('pepsin') && qLower.includes('fish and milk')))
+  ) {
+    return {
+      title: 'Figure 2.1: The Human Digestive System',
+      caption: 'Alimentary Canal & Accessory Digestive Organs (Oesophagus → Stomach [HCl, Pepsin, Rennin] → Duodenum/Liver/Pancreas → Ileum → Colon)',
+      svgHtml: `<svg viewBox="0 0 260 280" class="w-full max-w-[260px] h-auto mx-auto" xmlns="http://www.w3.org/2000/svg">
+        <rect width="260" height="280" rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+        <!-- Oesophagus -->
+        <path d="M120 15 L120 90" stroke="#dc2626" stroke-width="8" fill="none" stroke-linecap="round"/>
+        <text x="134" y="45" font-size="10" font-weight="800" fill="#0f172a">Oesophagus</text>
+        <!-- Liver -->
+        <polygon points="65,85 115,85 102,125 65,115" fill="#991b1b" opacity="0.88" stroke="#7f1d1d" stroke-width="1.2"/>
+        <text x="26" y="105" font-size="10" font-weight="800" fill="#7f1d1d">Liver</text>
+        <!-- Stomach -->
+        <path d="M120 90 C158 90, 168 135, 130 148 C108 154, 104 128, 120 120" fill="#fca5a5" stroke="#dc2626" stroke-width="2.5"/>
+        <text x="160" y="122" font-size="10" font-weight="900" fill="#991b1b">Stomach</text>
+        <text x="160" y="134" font-size="8.5" font-weight="700" fill="#475569">(Pepsin &amp; Rennin)</text>
+        <!-- Pancreas -->
+        <ellipse cx="132" cy="158" rx="22" ry="6" fill="#fde047" stroke="#ca8a04" stroke-width="1.5"/>
+        <text x="162" y="162" font-size="9.5" font-weight="800" fill="#854d0e">Pancreas</text>
+        <!-- Large Intestine (Colon) -->
+        <rect x="75" y="168" width="95" height="68" rx="10" fill="none" stroke="#15803d" stroke-width="9"/>
+        <text x="178" y="195" font-size="9.5" font-weight="800" fill="#14532d">Colon</text>
+        <!-- Small Intestine (Ileum) -->
+        <path d="M92 184 Q122 174 148 188 T95 206 T148 220" fill="none" stroke="#ea580c" stroke-width="5" stroke-linecap="round"/>
+        <text x="85" y="255" font-size="10" font-weight="800" fill="#9a3412">Small Intestine (Ileum) &amp; Rectum</text>
+      </svg>`,
+    };
+  }
+
+  // 2. Chapter 3: Diffusion Process Across Concentration Gradient
+  if (
+    subLower.includes('biology') &&
+    (qLower.includes('diffusion process diagram') ||
+      (qLower.includes('osmosis and diffusion') && qLower.includes('plasmolysis and haemolysis')))
+  ) {
+    return {
+      title: 'Chapter 3: Diffusion Process Down a Concentration Gradient',
+      caption: 'Net Movement of Solute Particles from High Concentration to Low Concentration Until Dynamic Equilibrium',
+      svgHtml: `<svg viewBox="0 0 360 150" class="w-full max-w-[360px] h-auto mx-auto" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="bioDiffArrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#dc2626"/>
+          </marker>
+        </defs>
+        <rect x="8" y="8" width="344" height="134" rx="8" fill="#eff6ff" stroke="#1d4ed8" stroke-width="2"/>
+        <!-- High Concentration Cluster -->
+        <circle cx="50" cy="40" r="6" fill="#1e40af"/><circle cx="70" cy="35" r="6" fill="#1e40af"/>
+        <circle cx="55" cy="60" r="6" fill="#1e40af"/><circle cx="78" cy="58" r="6" fill="#1e40af"/>
+        <circle cx="45" cy="82" r="6" fill="#1e40af"/><circle cx="68" cy="80" r="6" fill="#1e40af"/>
+        <circle cx="60" cy="100" r="6" fill="#1e40af"/><circle cx="84" cy="95" r="6" fill="#1e40af"/>
+        <text x="30" y="126" font-size="10" font-weight="900" fill="#1e3a8a">High Concentration</text>
+        <!-- Diffusion Arrow -->
+        <line x1="115" y1="70" x2="215" y2="70" stroke="#dc2626" stroke-width="3.5" marker-end="url(#bioDiffArrow)"/>
+        <text x="130" y="56" font-size="10" font-weight="900" fill="#dc2626">Net Diffusion</text>
+        <!-- Low Concentration Cluster -->
+        <circle cx="265" cy="45" r="6" fill="#1e40af"/>
+        <circle cx="305" cy="72" r="6" fill="#1e40af"/>
+        <circle cx="275" cy="98" r="6" fill="#1e40af"/>
+        <text x="242" y="126" font-size="10" font-weight="900" fill="#1e3a8a">Low Concentration</text>
+      </svg>`,
+    };
+  }
+
+  // 3. Chapter 4: Transverse Section of Young Dicot Stem & Root
+  if (
+    subLower.includes('biology') &&
+    qLower.includes('transverse section of a young stem and root')
+  ) {
+    return {
+      title: 'Chapter 4: Transverse Section (TS) of a Young Dicot Stem vs. Dicot Root',
+      caption: 'A = Epidermis / Cortex, B = Phloem (Translocation), C = Xylem (Water & Mineral Conduction)',
+      svgHtml: `<svg viewBox="0 0 380 175" class="w-full max-w-[380px] h-auto mx-auto" xmlns="http://www.w3.org/2000/svg">
+        <rect width="380" height="175" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+        <!-- Young Dicot Stem TS -->
+        <circle cx="100" cy="82" r="60" fill="#ecfdf5" stroke="#047857" stroke-width="2.5"/>
+        <circle cx="100" cy="82" r="42" fill="#ffffff" stroke="#10b981" stroke-width="1.2" stroke-dasharray="3,2"/>
+        <!-- Vascular bundles in ring -->
+        <ellipse cx="100" cy="40" rx="7" ry="10" fill="#fde047" stroke="#b91c1c" stroke-width="1.5"/>
+        <ellipse cx="100" cy="124" rx="7" ry="10" fill="#fde047" stroke="#b91c1c" stroke-width="1.5"/>
+        <ellipse cx="58" cy="82" rx="10" ry="7" fill="#fde047" stroke="#b91c1c" stroke-width="1.5"/>
+        <ellipse cx="142" cy="82" rx="10" ry="7" fill="#fde047" stroke="#b91c1c" stroke-width="1.5"/>
+        <text x="100" y="85" text-anchor="middle" font-size="9" font-weight="800" fill="#065f46">Pith</text>
+        <text x="100" y="160" text-anchor="middle" font-size="10" font-weight="900" fill="#0f172a">Young Dicot Stem TS</text>
+        <!-- Young Dicot Root TS -->
+        <circle cx="280" cy="82" r="56" fill="#fefce8" stroke="#a16207" stroke-width="2.5"/>
+        <circle cx="280" cy="82" r="24" fill="#ffffff" stroke="#ca8a04" stroke-width="1.5"/>
+        <!-- Star-shaped Xylem (C) -->
+        <path d="M280 62 L285 77 L300 82 L285 87 L280 102 L275 87 L260 82 L275 77 Z" fill="#ef4444" stroke="#991b1b" stroke-width="1.2"/>
+        <!-- Phloem patches (B) -->
+        <circle cx="290" cy="72" r="3.5" fill="#2563eb"/><circle cx="290" cy="92" r="3.5" fill="#2563eb"/>
+        <circle cx="270" cy="72" r="3.5" fill="#2563eb"/><circle cx="270" cy="92" r="3.5" fill="#2563eb"/>
+        <text x="280" y="160" text-anchor="middle" font-size="10" font-weight="900" fill="#0f172a">Young Dicot Root TS</text>
+        <!-- Labels A, B, C -->
+        <text x="190" y="32" text-anchor="middle" font-size="9.5" font-weight="900" fill="#047857">A: Epidermis/Cortex</text>
+        <text x="190" y="48" text-anchor="middle" font-size="9.5" font-weight="900" fill="#1d4ed8">B: Phloem</text>
+        <text x="190" y="64" text-anchor="middle" font-size="9.5" font-weight="900" fill="#b91c1c">C: Xylem</text>
+      </svg>`,
+    };
+  }
+
+  // 4. Figure 5.1: Mammalian Heart Chambers
+  if (
+    subLower.includes('biology') &&
+    (qLower.includes('figure 5.1') ||
+      qLower.includes('mammalian heart chambers') ||
+      (qLower.includes('bicuspid valve') && qLower.includes('heart')))
+  ) {
+    return {
+      title: 'Figure 5.1: Simplified Mammalian Heart Chambers (Double Pump)',
+      caption: 'Right Side (Deoxygenated Blood → Lungs) Separated by Septum from Left Side (Oxygenated Blood → Aorta/Body)',
+      svgHtml: `<svg viewBox="0 0 300 220" class="w-full max-w-[300px] h-auto mx-auto" xmlns="http://www.w3.org/2000/svg">
+        <rect width="300" height="220" rx="10" fill="#fff1f2" stroke="#fecdd3" stroke-width="1.5"/>
+        <!-- Heart Outline -->
+        <path d="M150 198 L65 112 C42 68 95 28 150 68 C205 28 258 68 235 112 Z" fill="#fee2e2" stroke="#b91c1c" stroke-width="3"/>
+        <!-- Interventricular Septum -->
+        <line x1="150" y1="68" x2="150" y2="198" stroke="#7f1d1d" stroke-width="4"/>
+        <!-- Atrioventricular Divider (Tricuspid / Bicuspid Valves) -->
+        <line x1="68" y1="112" x2="232" y2="112" stroke="#b91c1c" stroke-width="2.5" stroke-dasharray="5,4"/>
+        <!-- Chamber Labels -->
+        <text x="108" y="94" text-anchor="middle" font-size="10.5" font-weight="900" fill="#1e3a8a">Right Atrium</text>
+        <text x="192" y="94" text-anchor="middle" font-size="10.5" font-weight="900" fill="#991b1b">Left Atrium</text>
+        <text x="110" y="142" text-anchor="middle" font-size="10.5" font-weight="900" fill="#1e3a8a">Right Ventricle</text>
+        <text x="190" y="142" text-anchor="middle" font-size="10.5" font-weight="900" fill="#991b1b">Left Ventricle</text>
+        <!-- Valve Labels -->
+        <text x="105" y="123" text-anchor="middle" font-size="8.5" font-weight="800" fill="#334155">Tricuspid Valve</text>
+        <text x="195" y="123" text-anchor="middle" font-size="8.5" font-weight="800" fill="#b91c1c">Bicuspid Valve</text>
+        <text x="150" y="213" text-anchor="middle" font-size="9" font-weight="800" fill="#7f1d1d">Muscular Septum</text>
+      </svg>`,
+    };
+  }
+
   return null;
 }
+

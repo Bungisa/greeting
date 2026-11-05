@@ -15,13 +15,17 @@ export default defineConfig(() => {
         closeBundle() {
           const dupDir = path.resolve(__dirname, 'dist', 'assets', 'aistudio');
           if (fs.existsSync(dupDir)) {
-            fs.rmSync(dupDir, { recursive: true, force: true });
+            for (const entry of fs.readdirSync(dupDir)) {
+              if (entry !== 'Golden_Graduation_Cap_Emblem_on_Indigo_Gradient_c53b7e46.png') {
+                fs.rmSync(path.join(dupDir, entry), { recursive: true, force: true });
+              }
+            }
           }
         },
       },
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['icon.svg', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png', 'pwa-maskable-512x512.png'],
+        includeAssets: ['icon.svg', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png', 'pwa-maskable-512x512.png', 'assets/aistudio/Golden_Graduation_Cap_Emblem_on_Indigo_Gradient_c53b7e46.png'],
         manifest: {
           id: '/',
           name: 'Elimika Tanzania | Past Papers, TIE Books, Syllabus & Moha AI',

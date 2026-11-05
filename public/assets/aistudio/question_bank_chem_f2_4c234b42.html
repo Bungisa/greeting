@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CHEMISTRY FOR SECONDARY SCHOOLS — FORM TWO COMPREHENSIVE QUESTION BANK (ELIMIKA.ONLINE)</title>
+  
+  <!-- MathJax Configuration & Engine -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        processEscapes: true
+      },
+      svg: {
+        fontCache: 'global'
+      }
+    };
+  </script>
+  <script type="text/javascript" id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js">
+  </script>
+
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 15mm 15mm 28mm 15mm;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      background-color: #f1f5f9;
+      color: #000000;
+      font-family: "Times New Roman", Times, "Liberation Serif", serif;
+      font-size: 12pt;
+      line-height: 1.45;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    body {
+      padding: 20px 10px;
+    }
+
+    .paper-sheet {
+      background: #ffffff;
+      max-width: 210mm;
+      margin: 0 auto 30px auto;
+      padding: 18mm 18mm 25mm 18mm;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      border: 1px solid #cbd5e1;
+      position: relative;
+      overflow: visible;
+    }
+
+    .watermark {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-35deg);
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 5.5rem;
+      font-weight: 800;
+      color: rgba(30, 58, 138, 0.07);
+      letter-spacing: 0.12em;
+      text-transform: lowercase;
+      pointer-events: none;
+      user-select: none;
+      z-index: 1000;
+      white-space: nowrap;
+      display: block;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #000000;
+      padding-bottom: 4pt;
+      margin-bottom: 12pt;
+      font-size: 10.5pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .exam-heading {
+      text-align: center;
+      margin-bottom: 12pt;
+      position: relative;
+      z-index: 2;
+    }
+
+    .exam-heading .code-left {
+      font-size: 14pt;
+      font-weight: bold;
+      float: left;
+    }
+
+    .exam-heading h1 {
+      font-size: 13.5pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      margin: 2pt 0;
+    }
+
+    .exam-heading h2 {
+      font-size: 12.5pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      margin: 2pt 0;
+    }
+
+    .exam-heading h3 {
+      font-size: 13.5pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      margin: 4pt 0 2pt 0;
+    }
+
+    .exam-heading .scheme-title {
+      font-size: 12.5pt;
+      font-weight: bold;
+      color: #1e3a8a;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 4pt;
+    }
+
+    .exam-meta-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 11.5pt;
+      font-weight: bold;
+      border-bottom: 1.5pt solid #000000;
+      border-top: 1.5pt solid #000000;
+      padding: 5pt 0;
+      margin: 10pt 0 14pt 0;
+      clear: both;
+      position: relative;
+      z-index: 2;
+    }
+
+    .exam-section-title {
+      font-size: 12.5pt;
+      font-weight: bold;
+      text-align: center;
+      text-transform: uppercase;
+      margin: 22pt 0 10pt 0;
+      border-top: 1.5pt solid #000000;
+      padding-top: 6pt;
+      position: relative;
+      z-index: 2;
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+
+    .exam-question-block {
+      margin-bottom: 16pt;
+      text-align: justify;
+      position: relative;
+      z-index: 2;
+      font-size: 12pt;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .question-stem {
+      font-weight: bold;
+      font-size: 12pt;
+      margin-bottom: 6pt;
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+
+    .sub-question {
+      margin-left: 15pt;
+      margin-top: 4pt;
+      margin-bottom: 4pt;
+    }
+
+    .svg-container {
+      margin: 12pt 0;
+      text-align: center;
+      page-break-inside: avoid;
+    }
+
+    .exam-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 8pt 0;
+      font-size: 11pt;
+    }
+
+    .exam-table th, 
+    .exam-table td {
+      border: 1pt solid #000000;
+      padding: 5pt 6.5pt;
+      vertical-align: top;
+    }
+
+    .exam-table th {
+      background-color: #f1f5f9;
+      font-weight: bold;
+      text-align: left;
+    }
+
+    a.elimika-link {
+      color: #1e3a8a;
+      text-decoration: underline;
+      font-weight: bold;
+    }
+
+    a.elimika-link:hover {
+      color: #2563eb;
+    }
+
+    .page-footer {
+      border-top: 1.5pt solid #000000;
+      margin-top: 22pt;
+      padding-top: 6pt;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      font-size: 10pt;
+      color: #334155;
+      position: relative;
+      z-index: 2;
+    }
+
+    .running-print-footer {
+      display: none;
+    }
+
+    @media print {
+      html, body {
+        background: #ffffff !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        height: auto !important;
+        font-size: 12pt !important;
+        overflow: visible !important;
+      }
+
+      .paper-sheet {
+        box-shadow: none !important;
+        border: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        max-width: 100% !important;
+        overflow: visible !important;
+      }
+
+      .no-print {
+        display: none !important;
+      }
+
+      .watermark {
+        color: rgba(30, 58, 138, 0.05) !important;
+        position: fixed !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) rotate(-35deg) !important;
+        z-index: 99999 !important;
+        display: block !important;
+      }
+
+      .page-footer {
+        display: none !important;
+      }
+      
+      .running-print-footer {
+        display: flex !important;
+        position: fixed !important;
+        bottom: 0mm !important;
+        left: 0 !important;
+        right: 0 !important;
+        height: 10mm !important;
+        border-top: 1pt solid #000000 !important;
+        background: transparent !important;
+        font-size: 9.5pt !important;
+        color: #000000 !important;
+        justify-content: flex-end !important;
+        align-items: center !important;
+        padding: 0 1mm !important;
+        z-index: 99999 !important;
+      }
+
+      .exam-question-block {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+      }
+
+      p, li, tr, td, th {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+        orphans: 3;
+        widows: 3;
+      }
+
+      h1, h2, h3, .question-stem, .exam-section-title {
+        break-after: avoid !important;
+        page-break-after: avoid !important;
+      }
+    }
+
+    .print-bar {
+      position: fixed;
+      top: 15px;
+      right: 15px;
+      z-index: 1000;
+      background: #0f172a;
+      padding: 8px 14px;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+    }
+
+    .print-btn {
+      background: #1e3a8a;
+      color: #ffffff;
+      border: none;
+      padding: 7px 15px;
+      font-size: 12px;
+      font-weight: bold;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .print-btn:hover {
+      background: #1d4ed8;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Floating Print Control (Hidden in Print) -->
+  <div class="print-bar no-print">
+    <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+  </div>
+
+  <!-- Multi-Page Print Repeating Footer -->
+  <div class="running-print-footer">
+    <span>For more visit: <a href="https://elimika.online" target="_blank" rel="noopener noreferrer" class="elimika-link">elimika.online</a></span>
+  </div>
+
+  <!-- Visible Watermark -->
+  <div class="watermark">elimika.online</div>
+
+  <div class="paper-sheet">
+
+    <!-- Top Bar -->
+    <div class="top-bar">
+      <span>TANZANIA INSTITUTE OF EDUCATION</span>
+      <span>CHEMISTRY FORM TWO QUESTION BANK</span>
+    </div>
+
+    <!-- Council & Assessment Heading -->
+    <div class="exam-heading">
+      <div class="code-left">CHEM-F2</div>
+      <h1>THE UNITED REPUBLIC OF TANZANIA</h1>
+      <h2>CHEMISTRY FOR SECONDARY SCHOOLS</h2>
+      <h3>FORM TWO — COMPREHENSIVE QUESTION BANK (ACTIVITIES, EXERCISES &amp; REVISION)</h3>
+      <div class="scheme-title">EXTRACTED FROM STUDENT'S BOOK FORM TWO</div>
+    </div>
+
+    <!-- Metadata Bar -->
+    <div class="exam-meta-bar">
+      <span>Subject: Chemistry</span>
+      <span>Level: Form Two</span>
+      <span>Publisher: Tanzania Institute of Education (TIE)</span>
+    </div>
+
+    <!-- ====================================================================
+         CHAPTER 1: ATOMIC STRUCTURE
+         ==================================================================== -->
+    <div class="exam-section-title">CHAPTER ONE: ATOMIC STRUCTURE</div>
+
+    <div class="svg-container">
+      <!-- Vector SVG Diagram for Bohr Atomic Model (Sodium Atom) -->
+      <svg width="240" height="240" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+        <rect width="240" height="240" fill="#f8fafc" rx="6" stroke="#cbd5e1"/>
+        <!-- Nucleus -->
+        <circle cx="120" cy="120" r="18" fill="#ef4444" stroke="#b91c1c" stroke-width="1.5"/>
+        <text x="120" y="124" font-family="Times New Roman" font-size="9" font-weight="bold" fill="#fff" text-anchor="middle">11p, 12n</text>
+        <!-- Shell 1 (2 electrons) -->
+        <circle cx="120" cy="120" r="45" fill="none" stroke="#64748b" stroke-width="1.5" stroke-dasharray="3"/>
+        <circle cx="120" cy="75" r="4" fill="#2563eb"/><circle cx="120" cy="165" r="4" fill="#2563eb"/>
+        <!-- Shell 2 (8 electrons) -->
+        <circle cx="120" cy="120" r="75" fill="none" stroke="#64748b" stroke-width="1.5" stroke-dasharray="3"/>
+        <circle cx="120" cy="45" r="4" fill="#2563eb"/><circle cx="158" cy="58" r="4" fill="#2563eb"/><circle cx="195" cy="120" r="4" fill="#2563eb"/><circle cx="158" cy="182" r="4" fill="#2563eb"/>
+        <circle cx="120" cy="195" r="4" fill="#2563eb"/><circle cx="82" cy="182" r="4" fill="#2563eb"/><circle cx="45" cy="120" r="4" fill="#2563eb"/><circle cx="82" cy="58" r="4" fill="#2563eb"/>
+        <!-- Shell 3 (1 electron) -->
+        <circle cx="120" cy="120" r="105" fill="none" stroke="#64748b" stroke-width="1.5" stroke-dasharray="3"/>
+        <circle cx="225" cy="120" r="4" fill="#2563eb"/>
+        <!-- Caption -->
+        <text x="120" y="228" font-family="Times New Roman" font-size="10" font-weight="bold" text-anchor="middle">Sodium Atom (2:8:1)</text>
+      </svg>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Exercise 1.1</div>
+      <div class="sub-question">1. How did the discovery of the nucleus refine earlier atomic models?</div>
+      <div class="sub-question">2. Why are atoms considered electrically neutral under normal conditions?</div>
+      <div class="sub-question">3. Compare the Rutherford atomic model with the Bohr atomic model.</div>
+      <div class="sub-question">4. The atomic number is unique for each element in the periodic table. Explain.</div>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Exercise 1.2</div>
+      <div class="sub-question">1. Complete the table by filling in the number of protons, electrons, and neutrons for Sodium (Z=11, A=23), Oxygen (Z=8, A=16), Beryllium (Z=4, A=9), and Fluorine (Z=9, A=19).</div>
+      <div class="sub-question">2. An atom has 10 electrons: (a) Show how these electrons would be arranged in shells. (b) Why is it important to know electron arrangement around the nucleus?</div>
+      <div class="sub-question">3. Carbon has multiple atomic masses (carbon-12, carbon-13, carbon-14). Why do these forms have different mass numbers and still belong to the same element?</div>
+      <div class="sub-question">4. How are isotopes identified based on their atomic number and mass number?</div>
+      <div class="sub-question">5. Provide two ways in which the knowledge of atomic numbers is useful in chemistry.</div>
+      <div class="sub-question">6. Write the nuclide notation of an atom with 7 protons, 7 neutrons, and 7 electrons and explain its significance.</div>
+      <div class="sub-question">7. Isotopes of an element are chemically identical but physically different. Explain.</div>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Revision Exercise 1 — Selected Questions</div>
+      <div class="sub-question">1. What are nucleons? (a) Neutrons and electrons (b) Neutrons and protons (c) Electrons and protons (d) Protons, neutrons and electrons.</div>
+      <div class="sub-question">2. Which atomic property is the basis for the use of carbon-14 in archaeology for dating ancient objects?</div>
+      <div class="sub-question">3. Which sub-atomic particles are equal in number to protons in a neutral atom? (a) Electrons (b) Neutrons (c) Electrons of its ion (d) Neutrons of its ion.</div>
+      <div class="sub-question">4. The atomic number for an element T is 9. What is its electronic configuration? (a) 2:4:3 (b) 2:5:2 (c) 2:7 (d) 2:6:1.</div>
+      <div class="sub-question">5. In medical diagnosis and treatment, isotopes are used in: (a) detecting malaria parasites (b) using radioactive tracers for imaging and treating cancer (c) treating typhoid infections (d) determining a patient's age.</div>
+    </div>
+
+
+    <!-- ====================================================================
+         CHAPTER 2: PERIODIC CLASSIFICATION
+         ==================================================================== -->
+    <div class="exam-section-title">CHAPTER TWO: PERIODIC CLASSIFICATION</div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Exercise 2.1</div>
+      <div class="sub-question">1. Why were the noble gases not included in Mendeleev's periodic table?</div>
+      <div class="sub-question">2. How does the electronic configuration of nitrogen compare to that of phosphorus?</div>
+      <div class="sub-question">3. Explain the significance of the Law of Octaves in understanding periodic trends.</div>
+      <div class="sub-question">4. Mendeleev left gaps in his periodic table. Predict how these gaps demonstrate his understanding of properties of elements.</div>
+      <div class="sub-question">5. Mendeleev used atomic masses to arrange elements. If you were to use atomic numbers, how would this impact the organisation of the periodic table?</div>
+      <div class="sub-question">6. How did Mendeleev's and Newlands' works contribute to understanding relationships between physical and chemical properties?</div>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Exercise 2.2</div>
+      <div class="sub-question">1. Write the electronic configuration and indicate the group and period for Carbon, Phosphorus, Beryllium, Oxygen, Lithium, Fluorine, and Silicon.</div>
+      <div class="sub-question">2. Argon and sodium are in the same period but behave differently. Use their electronic configurations to justify their differences.</div>
+      <div class="sub-question">3. How does an element's electronic configuration determine its position in the periodic table? Provide examples.</div>
+      <div class="sub-question">4. Why do elements in the same group of the periodic table have similar chemical properties?</div>
+      <div class="sub-question">5. Predict the position of an element with electronic configuration 2:8:3 in the periodic table and justify your answer.</div>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Exercise 2.3</div>
+      <div class="sub-question">1. What happens to atomic size as you move down a group? Explain, giving reasons.</div>
+      <div class="sub-question">2. Predict how the densities of alkali metals change as you move down Group I.</div>
+      <div class="sub-question">3. The reactivity of alkali metals is directly related to their atomic size. Justify.</div>
+      <div class="sub-question">4. Investigate the use of lithium in rechargeable batteries. How do its properties contribute to this application?</div>
+      <div class="sub-question">5. How do electronic configurations of Group I elements determine their reactivity?</div>
+      <div class="sub-question">6. Compare the solubility of Group II hydroxides in water. How does this trend change down the group?</div>
+      <div class="sub-question">7. Calcium is essential in human bones and teeth. How do its chemical properties contribute to this biological role?</div>
+      <div class="sub-question">8. Why are Group II elements less reactive than Group I elements? Use electronic configurations to support your answer.</div>
+      <div class="sub-question">9. Why do reactivities of Group VII elements decrease down the group? Use fluorine and iodine as examples.</div>
+      <div class="sub-question">10. Explore changes in physical states observed across Group VII elements. What trend is observed within the group?</div>
+    </div>
+
+
+    <!-- ====================================================================
+         CHAPTER 3: CHEMICAL BONDING, FORMULA AND NOMENCLATURE
+         ==================================================================== -->
+    <div class="exam-section-title">CHAPTER THREE: CHEMICAL BONDING, FORMULA AND NOMENCLATURE</div>
+
+    <div class="svg-container">
+      <!-- Vector SVG Diagram for Ionic Bonding (Sodium Chloride) -->
+      <svg width="340" height="130" viewBox="0 0 340 130" xmlns="http://www.w3.org/2000/svg">
+        <rect width="340" height="130" fill="#f8fafc" rx="6" stroke="#cbd5e1"/>
+        <!-- Na Atom -->
+        <circle cx="65" cy="65" r="28" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/>
+        <text x="65" y="69" font-family="Times New Roman" font-size="11" font-weight="bold" fill="#1e3a8a" text-anchor="middle">Na (2:8:1)</text>
+        <!-- Arrow -->
+        <line x1="105" y1="65" x2="135" y2="65" stroke="#0f172a" stroke-width="2" marker-end="url(#arrow)"/>
+        <!-- Cl Atom -->
+        <circle cx="175" cy="65" r="28" fill="#fef08a" stroke="#ca8a04" stroke-width="2"/>
+        <text x="175" y="69" font-family="Times New Roman" font-size="11" font-weight="bold" fill="#854d0e" text-anchor="middle">Cl (2:8:7)</text>
+        <!-- Arrow -->
+        <line x1="215" y1="65" x2="245" y2="65" stroke="#0f172a" stroke-width="2" marker-end="url(#arrow)"/>
+        <!-- Na+ and Cl- -->
+        <text x="285" y="60" font-family="Times New Roman" font-size="12" font-weight="bold" fill="#1e3a8a">Na⁺ [2:8]</text>
+        <text x="285" y="80" font-family="Times New Roman" font-size="12" font-weight="bold" fill="#ca8a04">Cl⁻ [2:8:8]</text>
+        <text x="170" y="118" font-family="Times New Roman" font-size="10" font-weight="bold" text-anchor="middle">Electrovalent Bonding in Sodium Chloride</text>
+      </svg>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Exercise 3.1</div>
+      <div class="sub-question">1. Explain why cations are slightly smaller than their neutral atoms, whereas anions are slightly larger than their neutral atoms.</div>
+      <div class="sub-question">2. Magnesium and oxygen atoms combine to form magnesium oxide: (a) What is the charge on the magnesium ion in the oxide? (b) What is the charge on the oxide ion? (c) Illustrate electron transfer.</div>
+      <div class="sub-question">3. Why is NaCl soluble in water but not in cooking oil, and how does chemical bonding explain this?</div>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Exercise 3.2</div>
+      <div class="sub-question">1. Calculate the oxidation number of each underlined element: (a) $\text{Na}_3\underline{\text{PO}}_4$ (b) $\text{SO}_4^{2-}$ (c) $\underline{\text{NO}}_2$.</div>
+      <div class="sub-question">2. Explain why ammonia ($\text{NH}_3$) is a covalent compound, while ammonium chloride ($\text{NH}_4\text{Cl}$) is an ionic compound.</div>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Exercise 3.3</div>
+      <div class="sub-question">1. Write the steps used to arrive at the following chemical formulas: (a) $\text{MgCl}_2$ (b) $\text{Na}_2\text{SO}_4$ (c) $\text{NH}_4\text{NO}_3$.</div>
+      <div class="sub-question">2. Write down the chemical formula of each compound formed by combining: (a) Potassium and chlorine (b) Calcium and sulfur (c) Lithium and fluorine.</div>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Exercise 3.4</div>
+      <div class="sub-question">1. A compound has 1.121 g of nitrogen, 0.161 g of hydrogen, 0.480 g of carbon and 0.640 g of oxygen. Deduce its empirical formula.</div>
+      <div class="sub-question">2. A compound has an empirical formula $\text{CH}$. If it has a relative molecular mass of 78.11, deduce its molecular formula.</div>
+      <div class="sub-question">3. A compound contains 52.17% carbon, 13.04% hydrogen, and 34.78% oxygen. Determine its empirical and molecular formulas if RMM is 46.</div>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Exercise 3.5</div>
+      <div class="sub-question">1. What is the name of $\text{NH}_3$? Why is it an exception in its nomenclature compared to other nitrogen compounds?</div>
+      <div class="sub-question">2. Write the IUPAC names of the following compounds: (a) $\text{FeCl}_2$ (b) $\text{SO}_2$ (c) $\text{P}_4\text{O}_{10}$ (d) $\text{NO}_2$.</div>
+      <div class="sub-question">3. Name the compound formed when zinc combines with oxygen.</div>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Revision Exercise 3 — Selected Questions</div>
+      <div class="sub-question">1. What is the valency of Group I elements? (a) 1 (b) 2 (c) 3 (d) 4.</div>
+      <div class="sub-question">2. What name is given to the force of attraction that holds atoms together to form a molecule? (a) Chemical change (b) Chemical bond (c) Friction (d) Centripetal force.</div>
+      <div class="sub-question">3. Electrovalent bonding occurs between: (a) metals and metals (b) metals and non-metals (c) metals and inert gases (d) non-metals and non-metals.</div>
+      <div class="sub-question">4. Write the chemical formulas of the following compounds: (a) Sodium hydrogen carbonate (b) Silver trioxonitrate(V) (c) Copper(I) oxide (d) Aluminium tetraoxosulfate(VI).</div>
+    </div>
+
+
+    <!-- ====================================================================
+         CHAPTER 4: CHEMICAL REACTIONS
+         ==================================================================== -->
+    <div class="exam-section-title">CHAPTER FOUR: CHEMICAL REACTIONS</div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Exercise 4.1</div>
+      <div class="sub-question">1. Balance the following chemical equations:
+        <br>(a) $\text{Na}(s) + \text{Cl}_2(g) \rightarrow \text{NaCl}(s)$
+        <br>(b) $\text{P}(s) + \text{O}_2(g) \rightarrow \text{P}_2\text{O}_5(s)$
+        <br>(c) $\text{Zn}(s) + \text{CaSO}_4(aq) \rightarrow \text{ZnSO}_4(aq) + \text{Cu}(s)$
+        <br>(d) $\text{C}(s) + \text{CO}_2(g) \rightarrow \text{CO}(g)$
+        <br>(e) $\text{CaCO}_3(s) + \text{HCl}(aq) \rightarrow \text{CaCl}_2(aq) + \text{H}_2\text{O}(l) + \text{CO}_2(g)$
+      </div>
+      <div class="sub-question">2. Balance each of the following chemical equations and write its net ionic equation:
+        <br>(a) $\text{Na}_2\text{CO}_3(aq) + \text{HCl}(aq) \rightarrow \text{NaCl}(aq) + \text{H}_2\text{O}(l) + \text{CO}_2(g)$
+        <br>(b) $\text{H}_2\text{SO}_4(aq) + \text{KOH}(aq) \rightarrow \text{K}_2\text{SO}_4(aq) + \text{H}_2\text{O}(l)$
+        <br>(c) $\text{Ca}(s) + \text{HCl}(aq) \rightarrow \text{CaCl}_2(aq) + \text{H}_2(g)$
+        <br>(d) $\text{Pb(NO}_3)_2(aq) + \text{Na}_2\text{SO}_4(aq) \rightarrow \text{PbSO}_4(s) + \text{NaNO}_3(aq)$
+      </div>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Exercise 4.2</div>
+      <div class="sub-question">1. Differentiate oxidation from reduction in terms of electron transfer and changes in oxidation states.</div>
+      <div class="sub-question">2. Write a balanced chemical equation for each of the following reactions:
+        <br>(a) Zinc reacts with silver nitrate solution to produce zinc nitrate and silver.
+        <br>(b) Aqueous potassium iodide reacts with aqueous solution of lead(II) nitrate to produce potassium nitrate and lead(II) iodide.
+      </div>
+      <div class="sub-question">3. Identify the type of reaction in each of the following chemical equations:
+        <br>(a) $\text{CaO}(s) + \text{H}_2\text{O}(l) \rightarrow \text{Ca(OH)}_2(aq)$
+        <br>(b) $\text{CuCO}_3(s) \rightarrow \text{CuO}(s) + \text{CO}_2(g)$
+        <br>(c) $\text{Zn}(s) + \text{CuSO}_4(aq) \rightarrow \text{ZnSO}_4(aq) + \text{Cu}(s)$
+        <br>(d) $\text{Zn(NO}_3)_2(aq) + 2\text{NaOH}(aq) \rightarrow \text{Zn(OH)}_2(s) + 2\text{NaNO}_3(aq)$
+      </div>
+      <div class="sub-question">4. A student placed a strip of zinc metal in copper(II) sulfate solution. After a while, the blue colour faded and a reddish-brown deposit formed on the zinc strip. (a) Explain observations and identify reaction type. (b) What would happen if a silver plate replaced zinc in the same solution?</div>
+    </div>
+
+
+    <!-- ====================================================================
+         CHAPTER 5: ACIDS, BASES, AND SALTS
+         ==================================================================== -->
+    <div class="exam-section-title">CHAPTER FIVE: ACIDS, BASES, AND SALTS</div>
+
+    <div class="svg-container">
+      <!-- Vector SVG Diagram for pH Scale -->
+      <svg width="360" height="90" viewBox="0 0 360 90" xmlns="http://www.w3.org/2000/svg">
+        <rect width="360" height="90" fill="#f8fafc" rx="6" stroke="#cbd5e1"/>
+        <!-- pH Bar Gradient Simulation -->
+        <defs>
+          <linearGradient id="pHGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#ef4444"/>
+            <stop offset="35%" stop-color="#f97316"/>
+            <stop offset="50%" stop-color="#22c55e"/>
+            <stop offset="70%" stop-color="#3b82f6"/>
+            <stop offset="100%" stop-color="#8b5cf6"/>
+          </linearGradient>
+        </defs>
+        <rect x="30" y="25" width="300" height="25" fill="url(#pHGrad)" rx="4"/>
+        <!-- Markers -->
+        <text x="35" y="65" font-family="Times New Roman" font-size="10" font-weight="bold" text-anchor="middle">0</text>
+        <text x="180" y="65" font-family="Times New Roman" font-size="10" font-weight="bold" text-anchor="middle">7 (Neutral)</text>
+        <text x="325" y="65" font-family="Times New Roman" font-size="10" font-weight="bold" text-anchor="middle">14</text>
+        <text x="180" y="82" font-family="Times New Roman" font-size="11" font-weight="bold" text-anchor="middle">Standard pH Scale</text>
+      </svg>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Exercise 5.1</div>
+      <div class="sub-question">1. Describe how the degree of ionisation leads to differences in acidic strength.</div>
+      <div class="sub-question">2. Should the strength of an acid be the only factor in determining its use in industry, home or laboratory? Explain your answer.</div>
+      <div class="sub-question">3. A particular skincare product contains glycolic acid. Why is it important to know the strength of the acid before using it on the skin?</div>
+      <div class="sub-question">4. Why do the physical properties of acids make them suitable for cleaning products?</div>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Exercise 5.2</div>
+      <div class="sub-question">1. Group the following substances into either acids, bases or neutral solutions: Ash solution, fresh milk, sour milk, liquid soap, chalk solution, tomato juice, lemon juice, sugar solution, table salt solution, and cucumber juice.</div>
+      <div class="sub-question">2. Strong bases, such as sodium hydroxide, are used in industrial cleaning, while weak bases, such as baking soda, are safe for home uses. Why is this difference important in terms of safety and effectiveness?</div>
+      <div class="sub-question">3. A bee stung a gardener while working in the garden. What household material can be used to relieve the pain in the stung area? Explain your answer.</div>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Exercise 5.3</div>
+      <div class="sub-question">1. Explain the importance of using indicators in activities involving acids and bases.</div>
+      <div class="sub-question">2. Explain one advantage and one limitation of using natural indicators.</div>
+      <div class="sub-question">3. How does the pH sensitivity of a synthetic indicator differ from that of a natural indicator, such as hibiscus extract?</div>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Exercise 5.4</div>
+      <div class="sub-question">1. Classify the following substances as neutral, acidic, or basic salts: $\text{NaCl}, \text{NaHSO}_4,$ and $\text{Na}_2\text{CO}_3$. Explain your classification.</div>
+      <div class="sub-question">2. Describe how acidic and basic salts are formed using an example for each.</div>
+      <div class="sub-question">3. Differentiate between a double salt and a neutral salt, giving one example in each.</div>
+      <div class="sub-question">4. A salt is prepared by mixing ammonia solution and hydrochloric acid. Will the resulting salt be acidic, basic, or neutral? Explain your answer.</div>
+      <div class="sub-question">5. Explain the advantages of the following types of salts in real-life applications by providing two examples for each: (a) Deliquescent salts (b) Efflorescent salts (c) Hygroscopic salts.</div>
+    </div>
+
+    <div class="exam-question-block">
+      <div class="question-stem">Revision Exercise 5 — Selected Questions</div>
+      <div class="sub-question">1. Which of the following is a natural acid? (a) Nitric acid (b) Phosphoric acid (c) Citric acid (d) Sulfuric acid.</div>
+      <div class="sub-question">2. What name is given to the process of dissolving sodium chloride in water? (a) Precipitation process (b) Neutralisation reaction (c) Hydration process (d) Dissolution process.</div>
+      <div class="sub-question">3. Which of the following salts is soluble in water? (a) Calcium carbonate (b) Copper carbonate (c) Magnesium carbonate (d) Sodium carbonate.</div>
+      <div class="sub-question">4. What are the thermal behaviours of metal carbonates, nitrates, chlorides, and sulfates when heated? Give an example in each case.</div>
+      <div class="sub-question">5. Write the balanced chemical equations and net ionic equations for the reactions between sodium hydroxide and: (a) sulfuric acid (b) nitric acid.</div>
+    </div>
+
+    <!-- On-Screen Document Footer -->
+    <div class="page-footer">
+      <span>For more visit: <a href="https://elimika.online" target="_blank" rel="noopener noreferrer" class="elimika-link">elimika.online</a></span>
+    </div>
+
+  </div>
+
+</body>
+</html>

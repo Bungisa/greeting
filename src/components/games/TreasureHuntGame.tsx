@@ -519,7 +519,7 @@ export const TreasureHuntGame: React.FC<TreasureHuntGameProps> = ({
   return (
     <div
       ref={rootContainerRef}
-      className="fixed inset-0 z-50 w-screen h-screen bg-slate-950 text-slate-100 overflow-hidden select-none flex flex-col"
+      className="fixed inset-0 z-50 w-full h-[100dvh] bg-slate-950 text-slate-100 overflow-hidden select-none flex flex-col touch-manipulation"
     >
       {/* ==================== FULL-SCREEN 3D ISLAND ARCHIPELAGO ==================== */}
       <div className="relative flex-1 w-full h-full overflow-hidden">
@@ -544,8 +544,8 @@ export const TreasureHuntGame: React.FC<TreasureHuntGameProps> = ({
         />
 
         {/* ==================== TOP FLOATING HUD BAR ==================== */}
-        <header className="absolute top-0 left-0 right-0 z-20 px-3 sm:px-5 py-2.5 flex flex-wrap items-center justify-between gap-2 bg-slate-950/75 backdrop-blur-md border-b border-white/10">
-          <div className="flex items-center gap-2">
+        <header className="absolute top-0 left-0 right-0 z-20 px-2 sm:px-5 py-1.5 sm:py-2.5 flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 bg-slate-950/75 backdrop-blur-md border-b border-white/10">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <button
               onClick={() => {
                 soundEngine.stopBackgroundMusic();
@@ -554,16 +554,16 @@ export const TreasureHuntGame: React.FC<TreasureHuntGameProps> = ({
                 }
                 onExitToHub();
               }}
-              className="px-2.5 py-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center gap-1.5 cursor-pointer border border-white/10"
+              className="px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-200 text-[11px] sm:text-xs font-bold flex items-center gap-1 cursor-pointer border border-white/10"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Exit</span>
             </button>
 
-            <div className="px-2.5 py-1 rounded-xl bg-slate-900/90 border border-amber-500/30 flex items-center gap-2">
-              <Compass className="w-3.5 h-3.5 text-amber-400" />
-              <span className="text-xs sm:text-sm font-black text-amber-400">
-                3D Treasure Hunt
+            <div className="px-2 sm:px-2.5 py-1 rounded-xl bg-slate-900/90 border border-amber-500/30 flex items-center gap-1.5">
+              <Compass className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span className="text-[11px] sm:text-sm font-black text-amber-400 whitespace-nowrap">
+                Treasure Hunt
               </span>
               <span className="text-[11px] font-bold text-slate-300 hidden md:inline">
                 {selectedClass} · {selectedSubject}
@@ -572,15 +572,15 @@ export const TreasureHuntGame: React.FC<TreasureHuntGameProps> = ({
 
             <button
               onClick={() => setPhase('SETUP')}
-              className="px-2.5 py-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-amber-300 text-xs font-bold flex items-center gap-1 cursor-pointer border border-amber-400/30"
+              className="px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-amber-300 text-[11px] sm:text-xs font-bold flex items-center gap-1 cursor-pointer border border-amber-400/30"
               title="Change World, Class, or Subject"
             >
               <Settings className="w-3.5 h-3.5" />
-              <span>World / Subject</span>
+              <span className="hidden xs:inline sm:inline">Setup</span>
             </button>
 
             <div
-              className="px-2.5 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 text-xs font-black flex items-center gap-1.5 border border-emerald-400/40"
+              className="hidden sm:flex px-2.5 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 text-xs font-black items-center gap-1.5 border border-emerald-400/40"
               title="Non-Repeating Textbook Question Bank Active"
             >
               <BookOpen className="w-3.5 h-3.5 text-emerald-400" />
@@ -597,27 +597,27 @@ export const TreasureHuntGame: React.FC<TreasureHuntGameProps> = ({
           {phase === 'EXPLORING' && (
             <button
               onClick={() => commandWalkToCheckpoint(recommendedCheckpointIdx)}
-              className="px-3.5 py-1.5 rounded-2xl bg-gradient-to-r from-amber-400 via-yellow-300 to-emerald-400 hover:brightness-110 text-slate-950 font-black text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-amber-500/30 animate-pulse cursor-pointer"
+              className="px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-amber-400 via-yellow-300 to-emerald-400 hover:brightness-110 text-slate-950 font-black text-[11px] sm:text-sm flex items-center gap-1.5 sm:gap-2 shadow-lg shadow-amber-500/30 cursor-pointer max-w-full"
             >
               <Navigation
-                className="w-4 h-4 fill-slate-950 shrink-0 transition-transform"
+                className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-slate-950 shrink-0 transition-transform"
                 style={{ transform: `rotate(${compassBearing.deg}deg)` }}
               />
-              <span>
+              <span className="truncate max-w-[180px] sm:max-w-none">
                 {completedCheckpoints.length === 0
-                  ? `★ START HERE: STAGE #1 (${recommendedCp.title})`
+                  ? `★ START: STAGE #1 (${recommendedCp.title})`
                   : recommendedCheckpointIdx === 5
-                  ? `★ FINAL VAULT: STAGE #6 (${recommendedCp.title})`
-                  : `★ NEXT SIGN: STAGE #${recommendedCheckpointIdx + 1} (${recommendedCp.title})`}
+                  ? `★ VAULT: STAGE #6 (${recommendedCp.title})`
+                  : `★ NEXT: STAGE #${recommendedCheckpointIdx + 1} (${recommendedCp.title})`}
               </span>
-              <span className="px-2 py-0.5 rounded-lg bg-slate-950 text-amber-300 text-[10px] font-black uppercase">
-                Walk Now
+              <span className="px-1.5 py-0.5 rounded-md bg-slate-950 text-amber-300 text-[9px] sm:text-[10px] font-black uppercase shrink-0">
+                Walk
               </span>
             </button>
           )}
 
           {/* RIGHT STATS, LIGHTING, CAMERA & FULLSCREEN */}
-          <div className="flex items-center gap-1.5 sm:gap-2 text-xs tabular-nums">
+          <div className="flex items-center gap-1 sm:gap-2 text-[11px] sm:text-xs tabular-nums">
             <div className="px-2.5 py-1.5 rounded-xl bg-slate-900/90 border border-emerald-500/40 font-black text-emerald-300">
               🏆 {completedCheckpoints.length}/6
             </div>
@@ -738,25 +738,25 @@ export const TreasureHuntGame: React.FC<TreasureHuntGameProps> = ({
 
         {/* ==================== ON-SCREEN TOUCH / MOUSE WALK PAD (BOTTOM LEFT) ==================== */}
         {phase === 'EXPLORING' && activeCheckpointModalIdx === null && (
-          <div className="absolute bottom-20 left-3 sm:left-5 z-20 flex flex-col items-center gap-1 bg-slate-950/70 backdrop-blur-md p-2 rounded-2xl border border-white/15">
-            <div className="text-[9px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1">
-              <Footprints className="w-3 h-3 text-amber-400" />
-              <span>Move Explorer</span>
+          <div className="absolute bottom-14 sm:bottom-20 left-2 sm:left-5 z-20 flex flex-col items-center gap-0.5 sm:gap-1 bg-slate-950/70 backdrop-blur-md p-1.5 sm:p-2 rounded-2xl border border-white/15">
+            <div className="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1">
+              <Footprints className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-400" />
+              <span className="hidden sm:inline">Move Explorer</span>
             </div>
             <button
               onPointerDown={() => setManualMoveDir({ x: 0, z: -1 })}
               onPointerUp={() => setManualMoveDir({ x: 0, z: 0 })}
               onPointerLeave={() => setManualMoveDir({ x: 0, z: 0 })}
-              className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-amber-400 hover:text-slate-950 text-white font-black text-xs flex items-center justify-center cursor-pointer"
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-slate-800 hover:bg-amber-400 hover:text-slate-950 text-white font-black text-xs flex items-center justify-center cursor-pointer"
             >
               ▲
             </button>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-0.5 sm:gap-1">
               <button
                 onPointerDown={() => setManualMoveDir({ x: -1, z: 0 })}
                 onPointerUp={() => setManualMoveDir({ x: 0, z: 0 })}
                 onPointerLeave={() => setManualMoveDir({ x: 0, z: 0 })}
-                className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-amber-400 hover:text-slate-950 text-white font-black text-xs flex items-center justify-center cursor-pointer"
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-slate-800 hover:bg-amber-400 hover:text-slate-950 text-white font-black text-xs flex items-center justify-center cursor-pointer"
               >
                 ◀
               </button>
@@ -764,7 +764,7 @@ export const TreasureHuntGame: React.FC<TreasureHuntGameProps> = ({
                 onPointerDown={() => setManualMoveDir({ x: 0, z: 1 })}
                 onPointerUp={() => setManualMoveDir({ x: 0, z: 0 })}
                 onPointerLeave={() => setManualMoveDir({ x: 0, z: 0 })}
-                className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-amber-400 hover:text-slate-950 text-white font-black text-xs flex items-center justify-center cursor-pointer"
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-slate-800 hover:bg-amber-400 hover:text-slate-950 text-white font-black text-xs flex items-center justify-center cursor-pointer"
               >
                 ▼
               </button>
@@ -772,7 +772,7 @@ export const TreasureHuntGame: React.FC<TreasureHuntGameProps> = ({
                 onPointerDown={() => setManualMoveDir({ x: 1, z: 0 })}
                 onPointerUp={() => setManualMoveDir({ x: 0, z: 0 })}
                 onPointerLeave={() => setManualMoveDir({ x: 0, z: 0 })}
-                className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-amber-400 hover:text-slate-950 text-white font-black text-xs flex items-center justify-center cursor-pointer"
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-slate-800 hover:bg-amber-400 hover:text-slate-950 text-white font-black text-xs flex items-center justify-center cursor-pointer"
               >
                 ▶
               </button>
@@ -782,7 +782,7 @@ export const TreasureHuntGame: React.FC<TreasureHuntGameProps> = ({
 
         {/* ==================== BOTTOM VISUAL ISLAND STAGE BAR ==================== */}
         {phase === 'EXPLORING' && (
-          <div className="absolute bottom-0 left-0 right-0 z-20 px-3 sm:px-5 py-2.5 bg-slate-950/85 backdrop-blur-md border-t border-white/10 flex flex-wrap items-center justify-between gap-2">
+          <div className="absolute bottom-0 left-0 right-0 z-20 px-2 sm:px-5 py-1.5 sm:py-2.5 bg-slate-950/85 backdrop-blur-md border-t border-white/10 flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 overflow-x-auto max-w-full pb-0.5">
               {activeWorld.checkpoints.map((cp, idx) => {
                 const isDone = completedCheckpoints.includes(cp.id);

@@ -984,26 +984,26 @@ export const StemBuilderGame: React.FC<StemBuilderGameProps> = ({ onBack }) => {
       : null;
 
     return (
-      <div className="fixed inset-0 z-50 w-screen h-screen bg-slate-950 text-white flex flex-col overflow-hidden">
+      <div className="fixed inset-0 z-50 w-full h-[100dvh] bg-slate-950 text-white flex flex-col overflow-hidden touch-manipulation">
         {/* 1. Sleek Floating Top HUD Bar */}
-        <div className="relative z-30 bg-slate-950/85 backdrop-blur-md border-b border-slate-800/80 px-3 sm:px-5 py-2 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2.5">
+        <div className="relative z-30 bg-slate-950/85 backdrop-blur-md border-b border-slate-800/80 px-2.5 sm:px-5 py-1.5 sm:py-2 flex flex-wrap items-center justify-between gap-1.5 sm:gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
             <button
               onClick={() => setSessionMode('none')}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-black border border-slate-700 cursor-pointer"
+              className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-black border border-slate-700 cursor-pointer shrink-0"
             >
-              <ArrowLeft className="w-4 h-4" />
-              Exit Full Screen
+              <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Exit Full Screen</span>
+              <span className="sm:hidden">Exit</span>
             </button>
 
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-1.5">
-                <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-black uppercase">
-                  Mission #{activeMission.missionNumber} • Form{' '}
-                  {activeMission.formLevel}
+                <span className="px-1.5 sm:px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-black uppercase shrink-0">
+                  #{activeMission.missionNumber} • F{activeMission.formLevel}
                 </span>
-                <span className="text-xs font-black text-white truncate max-w-[200px] sm:max-w-none">
-                  {activeMission.title} ({activeMission.spanMeters}m River)
+                <span className="text-[11px] sm:text-xs font-black text-white truncate max-w-[135px] sm:max-w-none">
+                  {activeMission.title} ({activeMission.spanMeters}m)
                 </span>
               </div>
             </div>
@@ -1435,68 +1435,72 @@ export const StemBuilderGame: React.FC<StemBuilderGameProps> = ({ onBack }) => {
           )}
 
           {/* 3. Bottom Floating Action Dock (Direct Question-Build Buttons + GIANT DRIVE Button) */}
-          <div className="absolute bottom-3 left-3 right-3 z-20 flex flex-wrap items-center justify-between gap-2 bg-slate-950/90 backdrop-blur-md border border-slate-800 rounded-2xl px-3 sm:px-4 py-2.5 shadow-2xl">
+          <div className="absolute bottom-2 sm:bottom-3 left-2 sm:left-3 right-2 sm:right-3 z-20 flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 bg-slate-950/90 backdrop-blur-md border border-slate-800 rounded-2xl px-2.5 sm:px-4 py-2 sm:py-2.5 shadow-2xl">
             {/* Direct Build-by-Question Buttons */}
-            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+            <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto max-w-full pb-0.5">
               <button
                 type="button"
                 onClick={() => handleTriggerZoneQuestion('deck')}
                 disabled={isTesting}
-                className={`px-3 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer ${
+                className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-black flex items-center gap-1 whitespace-nowrap transition-all cursor-pointer ${
                   deckBuilt
                     ? 'bg-emerald-500/20 border border-emerald-500/50 text-emerald-300'
                     : 'bg-sky-500 hover:bg-sky-400 text-slate-950 shadow-lg shadow-sky-500/25'
                 }`}
               >
                 <span>{deckBuilt ? '✅' : '🛣️'}</span>
-                <span>Step 1: Road Deck (Qn)</span>
+                <span className="sm:hidden">1: Deck</span>
+                <span className="hidden sm:inline">Step 1: Road Deck (Qn)</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => handleTriggerZoneQuestion('pillars')}
                 disabled={isTesting}
-                className={`px-3 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer ${
+                className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-black flex items-center gap-1 whitespace-nowrap transition-all cursor-pointer ${
                   pillarsBuilt
                     ? 'bg-emerald-500/20 border border-emerald-500/50 text-emerald-300'
                     : 'bg-teal-400 hover:bg-teal-300 text-slate-950 shadow-lg shadow-teal-400/25'
                 }`}
               >
                 <span>{pillarsBuilt ? '✅' : '🏛️'}</span>
-                <span>Step 2: River Pillars (Qn)</span>
+                <span className="sm:hidden">2: Pillars</span>
+                <span className="hidden sm:inline">Step 2: River Pillars (Qn)</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => handleTriggerZoneQuestion('truss')}
                 disabled={isTesting}
-                className={`px-3 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer ${
+                className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-black flex items-center gap-1 whitespace-nowrap transition-all cursor-pointer ${
                   trussBuilt
                     ? 'bg-emerald-500/20 border border-emerald-500/50 text-emerald-300'
                     : 'bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-lg shadow-amber-400/25'
                 }`}
               >
                 <span>{trussBuilt ? '✅' : '🔺'}</span>
-                <span>Step 3: Steel Truss + Nitro (Qn)</span>
+                <span className="sm:hidden">3: Truss</span>
+                <span className="hidden sm:inline">Step 3: Steel Truss + Nitro (Qn)</span>
               </button>
 
               <button
                 type="button"
                 onClick={handleLoadStarterBlueprint}
                 disabled={isTesting}
-                className="px-3 py-2 rounded-xl bg-violet-600/30 hover:bg-violet-600/45 border border-violet-400/50 text-violet-200 text-xs font-black flex items-center gap-1 cursor-pointer"
+                className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-violet-600/30 hover:bg-violet-600/45 border border-violet-400/50 text-violet-200 text-[11px] sm:text-xs font-black flex items-center gap-1 whitespace-nowrap cursor-pointer"
                 title="Instantly build the complete 3-Star Bridge!"
               >
-                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                <span>1-Tap Full Bridge</span>
+                <Sparkles className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                <span className="sm:hidden">Auto</span>
+                <span className="hidden sm:inline">1-Tap Full Bridge</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setShowManualToolsDrawer((v) => !v)}
-                className="px-2.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 text-xs font-bold cursor-pointer"
+                className="px-2 sm:px-2.5 py-1.5 sm:py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 text-[11px] sm:text-xs font-bold whitespace-nowrap cursor-pointer"
               >
-                🛠️ Manual Nodes
+                🛠️ <span className="hidden sm:inline">Manual Nodes</span>
               </button>
 
               {placedPieces.length > 0 && (
@@ -1504,10 +1508,10 @@ export const StemBuilderGame: React.FC<StemBuilderGameProps> = ({ onBack }) => {
                   type="button"
                   onClick={handleResetBridge}
                   disabled={isTesting}
-                  className="p-2 rounded-xl bg-slate-900 hover:bg-rose-950/60 border border-slate-800 text-slate-400 hover:text-rose-300 cursor-pointer"
+                  className="p-1.5 sm:p-2 rounded-xl bg-slate-900 hover:bg-rose-950/60 border border-slate-800 text-slate-400 hover:text-rose-300 cursor-pointer shrink-0"
                   title="Clear Bridge"
                 >
-                  <RotateCcw className="w-4 h-4" />
+                  <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </button>
               )}
             </div>
@@ -1518,9 +1522,9 @@ export const StemBuilderGame: React.FC<StemBuilderGameProps> = ({ onBack }) => {
                 type="button"
                 onClick={handleRunBridgeTest}
                 disabled={isTesting}
-                className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 font-black text-sm shadow-xl shadow-emerald-500/30 flex items-center justify-center gap-2 transition-transform active:scale-95 cursor-pointer"
+                className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 rounded-xl sm:rounded-2xl bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 font-black text-xs sm:text-sm shadow-xl shadow-emerald-500/30 flex items-center justify-center gap-2 transition-transform active:scale-95 cursor-pointer"
               >
-                <Play className="w-4 h-4 fill-current" />
+                <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current" />
                 <span>
                   {isTesting
                     ? '🚐 CROSSING BRIDGE...'

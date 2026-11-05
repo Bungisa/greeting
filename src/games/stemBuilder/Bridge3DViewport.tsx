@@ -164,12 +164,13 @@ export const Bridge3DViewport: React.FC<Bridge3DViewportProps> = ({
     sceneRef.current = scene;
 
     const aspect = width / height;
-    const initialFov = aspect < 1 ? Math.min(68, Math.round(46 / Math.max(0.62, aspect * 0.92))) : 46;
+    const initialFov = aspect < 1 ? Math.min(68, Math.round(48 / Math.max(0.56, Math.sqrt(aspect)))) : 46;
     const camera = new THREE.PerspectiveCamera(initialFov, aspect, 0.5, 250);
     const baseDist = mission.spanMeters <= 12 ? 20 : mission.spanMeters <= 18 ? 25 : 30;
-    const mobileMultiplier = aspect < 0.75 ? 1.28 : aspect < 1 ? 1.12 : 1.0;
-    const camDist = baseDist * mobileMultiplier;
-    camera.position.set(3.5, 6.8, camDist * 0.88);
+    const halfHorizTan = Math.tan(THREE.MathUtils.degToRad(initialFov / 2)) * aspect;
+    const fitDist = ((mission.spanMeters + 10) * 0.52) / Math.max(0.22, halfHorizTan);
+    const camDist = Math.max(baseDist, fitDist);
+    camera.position.set(aspect < 1 ? 1.8 : 3.5, Math.max(6.8, camDist * 0.28), camDist * 0.88);
     cameraRef.current = camera;
 
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -177,7 +178,7 @@ export const Bridge3DViewport: React.FC<Bridge3DViewportProps> = ({
     controls.dampingFactor = 0.08;
     controls.maxPolarAngle = Math.PI / 2 + 0.08;
     controls.minDistance = 7;
-    controls.maxDistance = 75;
+    controls.maxDistance = 110;
     controls.target.set(0, 0.3, 0);
     controlsRef.current = controls;
 
@@ -449,12 +450,13 @@ export const Bridge3DViewport: React.FC<Bridge3DViewportProps> = ({
 
     const handleResize = () => {
       if (!containerRef.current || !rendererRef.current || !cameraRef.current) return;
-      const w = Math.max(300, containerRef.current.clientWidth || window.innerWidth);
-      const h = Math.max(300, containerRef.current.clientHeight || window.innerHeight);
+      const w = Math.max(260, containerRef.current.clientWidth || window.innerWidth);
+      const h = Math.max(260, containerRef.current.clientHeight || window.innerHeight);
       const nextAspect = w / h;
+      const nextFov =
+        nextAspect < 1 ? Math.min(68, Math.round(48 / Math.max(0.56, Math.sqrt(nextAspect)))) : 46;
       cameraRef.current.aspect = nextAspect;
-      cameraRef.current.fov =
-        nextAspect < 1 ? Math.min(68, Math.round(46 / Math.max(0.62, nextAspect * 0.92))) : 46;
+      cameraRef.current.fov = nextFov;
       cameraRef.current.updateProjectionMatrix();
       rendererRef.current.setSize(w, h);
     };
@@ -902,11 +904,12 @@ export const Bridge3DViewport: React.FC<Bridge3DViewportProps> = ({
     if (!camera || !controls) return;
     const aspect = camera.aspect || 1;
     const baseDist = mission.spanMeters <= 12 ? 20 : mission.spanMeters <= 18 ? 25 : 30;
-    const mobileMultiplier = aspect < 0.75 ? 1.28 : aspect < 1 ? 1.12 : 1.0;
-    const camDist = baseDist * mobileMultiplier;
+    const halfHorizTan = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * aspect;
+    const fitDist = ((mission.spanMeters + 10) * 0.52) / Math.max(0.22, halfHorizTan);
+    const camDist = Math.max(baseDist, fitDist);
 
     if (preset === 'perspective') {
-      camera.position.set(3.5, 6.8, camDist * 0.88);
+      camera.position.set(aspect < 1 ? 1.8 : 3.5, Math.max(6.8, camDist * 0.28), camDist * 0.88);
     } else if (preset === 'elevation') {
       camera.position.set(0, 1.5, camDist);
     } else {
@@ -988,11 +991,11 @@ export const Bridge3DViewport: React.FC<Bridge3DViewportProps> = ({
       {onTriggerZoneQuestion && !isTesting && (
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-2">
           {/* Spot 3: Overhead Truss Arch (Above the bridge) */}
-          <div className="pointer-events-auto -translate-y-12 sm:-translate-y-20">
+          <div className="pointer-events-auto -translate-y-8 sm:-translate-y-20">
             <button
               type="button"
               onClick={() => onTriggerZoneQuestion('truss')}
-              className={`group px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-2xl border-2 font-black text-[11px] sm:text-sm shadow-2xl flex items-center gap-1.5 sm:gap-2 transition-all cursor-pointer ${
+              className={`group px-2.5 py-1 sm:px-3.5 sm:py-2 rounded-xl sm:rounded-2xl border-2 font-black text-[10px] sm:text-sm shadow-2xl flex items-center gap-1 sm:gap-2 transition-all cursor-pointer ${
                 trussBuilt
                   ? 'bg-emerald-950/90 border-emerald-400 text-emerald-200 hover:scale-105'
                   : 'bg-amber-500/95 hover:bg-amber-400 border-white text-slate-950 animate-bounce shadow-amber-500/40'
@@ -1000,24 +1003,25 @@ export const Bridge3DViewport: React.FC<Bridge3DViewportProps> = ({
             >
               {trussBuilt ? (
                 <>
-                  <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400 shrink-0" />
+                  <CheckCircle2 className="w-3 h-3 sm:w-4 sm:h-4 text-emerald-400 shrink-0" />
                   <span>🔺 Truss Built! (Tap Qn)</span>
                 </>
               ) : (
                 <>
-                  <HelpCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-950 shrink-0" />
-                  <span>🔺 Step 3: Tap Bridge Arch → Answer Qn &amp; Build Truss!</span>
+                  <HelpCircle className="w-3 h-3 sm:w-4 sm:h-4 text-slate-950 shrink-0" />
+                  <span className="sm:hidden">🔺 Step 3: Build Steel Truss</span>
+                  <span className="hidden sm:inline">🔺 Step 3: Tap Bridge Arch → Answer Qn &amp; Build Truss!</span>
                 </>
               )}
             </button>
           </div>
 
           {/* Spot 1: Main Road Deck (Right across the middle of the river bridge) */}
-          <div className="pointer-events-auto my-1.5 sm:my-2">
+          <div className="pointer-events-auto my-1 sm:my-2">
             <button
               type="button"
               onClick={() => onTriggerZoneQuestion('deck')}
-              className={`group px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-2xl border-2 font-black text-[11px] sm:text-sm shadow-2xl flex items-center gap-1.5 sm:gap-2 transition-all cursor-pointer ${
+              className={`group px-3 py-1.5 sm:px-4 sm:py-2.5 rounded-xl sm:rounded-2xl border-2 font-black text-[10px] sm:text-sm shadow-2xl flex items-center gap-1 sm:gap-2 transition-all cursor-pointer ${
                 deckBuilt
                   ? 'bg-emerald-950/90 border-emerald-400 text-emerald-200 hover:scale-105'
                   : 'bg-sky-400 hover:bg-sky-300 border-white text-slate-950 scale-105 animate-pulse shadow-sky-400/50'
@@ -1025,24 +1029,25 @@ export const Bridge3DViewport: React.FC<Bridge3DViewportProps> = ({
             >
               {deckBuilt ? (
                 <>
-                  <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400 shrink-0" />
+                  <CheckCircle2 className="w-3 h-3 sm:w-4 sm:h-4 text-emerald-400 shrink-0" />
                   <span>🛣️ Road Deck Built! (Tap Qn)</span>
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-950 shrink-0" />
-                  <span>🛣️ Step 1: Tap Bridge → Answer Qn to Build Road Deck!</span>
+                  <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-slate-950 shrink-0" />
+                  <span className="sm:hidden">🛣️ Step 1: Build Road Deck</span>
+                  <span className="hidden sm:inline">🛣️ Step 1: Tap Bridge → Answer Qn to Build Road Deck!</span>
                 </>
               )}
             </button>
           </div>
 
           {/* Spot 2: Riverbed Concrete Pillars (Below the deck in the crocodile river) */}
-          <div className="pointer-events-auto translate-y-10 sm:translate-y-16">
+          <div className="pointer-events-auto translate-y-7 sm:translate-y-16">
             <button
               type="button"
               onClick={() => onTriggerZoneQuestion('pillars')}
-              className={`group px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-2xl border-2 font-black text-[11px] sm:text-sm shadow-2xl flex items-center gap-1.5 sm:gap-2 transition-all cursor-pointer ${
+              className={`group px-2.5 py-1 sm:px-3.5 sm:py-2 rounded-xl sm:rounded-2xl border-2 font-black text-[10px] sm:text-sm shadow-2xl flex items-center gap-1 sm:gap-2 transition-all cursor-pointer ${
                 pillarsBuilt
                   ? 'bg-emerald-950/90 border-emerald-400 text-emerald-200 hover:scale-105'
                   : 'bg-teal-400 hover:bg-teal-300 border-white text-slate-950 animate-bounce shadow-teal-400/50'
@@ -1050,13 +1055,14 @@ export const Bridge3DViewport: React.FC<Bridge3DViewportProps> = ({
             >
               {pillarsBuilt ? (
                 <>
-                  <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400 shrink-0" />
+                  <CheckCircle2 className="w-3 h-3 sm:w-4 sm:h-4 text-emerald-400 shrink-0" />
                   <span>🏛️ Pillars Built! (Tap Qn)</span>
                 </>
               ) : (
                 <>
-                  <HelpCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-950 shrink-0" />
-                  <span>🏛️ Step 2: Tap River → Answer Qn to Drop Pillars! 🐊</span>
+                  <HelpCircle className="w-3 h-3 sm:w-4 sm:h-4 text-slate-950 shrink-0" />
+                  <span className="sm:hidden">🏛️ Step 2: Drop River Pillars 🐊</span>
+                  <span className="hidden sm:inline">🏛️ Step 2: Tap River → Answer Qn to Drop Pillars! 🐊</span>
                 </>
               )}
             </button>

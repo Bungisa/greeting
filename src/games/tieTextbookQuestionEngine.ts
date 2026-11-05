@@ -5,6 +5,7 @@ import {
   getSeenSignaturesForClassSubject,
   getStoredBankQuestionsForClassSubject,
   getVariantOffsetForClassSubject,
+  isUploadedTextbookSubject,
   resetSeenQuestionsForClassSubject,
 } from '../utils/questionBankManager';
 
@@ -1098,54 +1099,59 @@ export function buildLevelAccurateTextbookQuestions(
     });
   });
 
-  // Priority B: Curated level-specific TIE textbook questions (strictly same Form & Topic)
-  exactClassMatches.forEach((seed, idx) => {
-    const bookCitation = `📘 Official TIE ${normCls} ${normSub} Student's Book — ${seed.chapter}`;
-    const rotated = rotateOpts([...seed.options], seed.correctIndex, idx + 1);
-    pushCandidate({
-      id: `tie-tb-${normCls}-${normSub}-${idx}`,
-      cls: normCls,
-      subject: normSub,
-      topic: topic !== 'ALL' ? topic : seed.chapter,
-      difficulty,
-      question: `[${normCls} • ${seed.chapter}] ${seed.question}`,
-      options: rotated.options,
-      correctIndex: rotated.correctIndex,
-      explanation: seed.explanation,
-      hint: seed.hint,
-      xpReward: baseXp + (idx >= 4 ? 15 : 0),
-      sourceLabel: bookCitation,
-      isBossOrSpecial: idx >= 4,
-    });
-  });
+  const hasUploadedBank =
+    storedTextbookQuestions.length > 0 || isUploadedTextbookSubject(normSub);
 
-  // Priority C: Existing curriculum questions if unique and matching exact topic
-  existingQuestions.forEach((eq) => {
-    if (topic && topic !== 'ALL' && !doesQuestionTopicMatchSelectedTopic(eq.topic || '', eq.subTopic || '', topic)) {
-      return;
+  if (!hasUploadedBank) {
+    // Priority B: Curated level-specific TIE textbook questions (only for subjects without an uploaded textbook bank)
+    exactClassMatches.forEach((seed, idx) => {
+      const bookCitation = `📘 Official TIE ${normCls} ${normSub} Student's Book — ${seed.chapter}`;
+      const rotated = rotateOpts([...seed.options], seed.correctIndex, idx + 1);
+      pushCandidate({
+        id: `tie-tb-${normCls}-${normSub}-${idx}`,
+        cls: normCls,
+        subject: normSub,
+        topic: topic !== 'ALL' ? topic : seed.chapter,
+        difficulty,
+        question: `[${normCls} • ${seed.chapter}] ${seed.question}`,
+        options: rotated.options,
+        correctIndex: rotated.correctIndex,
+        explanation: seed.explanation,
+        hint: seed.hint,
+        xpReward: baseXp + (idx >= 4 ? 15 : 0),
+        sourceLabel: bookCitation,
+        isBossOrSpecial: idx >= 4,
+      });
+    });
+
+    // Priority C: Existing curriculum questions if unique and matching exact topic
+    existingQuestions.forEach((eq) => {
+      if (topic && topic !== 'ALL' && !doesQuestionTopicMatchSelectedTopic(eq.topic || '', eq.subTopic || '', topic)) {
+        return;
+      }
+      pushCandidate({
+        ...eq,
+        sourceLabel: eq.sourceLabel.includes('Student')
+          ? eq.sourceLabel
+          : `📘 Official TIE ${normCls} ${normSub} Student's Textbook (${eq.topic})`,
+      });
+    });
+
+    // Priority D: Multi-chapter parameterized textbook problems (only for subjects without an uploaded textbook bank)
+    let variantIdx = 1;
+    while (unseenPool.length < 20 && variantIdx <= 40) {
+      const v = variantOffset + variantIdx++;
+      const rawQ = buildParameterizedLevelProblem(normCls, normSub, topic, difficulty, v, baseXp);
+      const rotated = rotateOpts(rawQ.options, rawQ.correctIndex, v + 2);
+      pushCandidate({
+        ...rawQ,
+        options: rotated.options,
+        correctIndex: rotated.correctIndex,
+      });
     }
-    pushCandidate({
-      ...eq,
-      sourceLabel: eq.sourceLabel.includes('Student')
-        ? eq.sourceLabel
-        : `📘 Official TIE ${normCls} ${normSub} Student's Textbook (${eq.topic})`,
-    });
-  });
-
-  // Priority D: Multi-chapter parameterized textbook problems using variantOffset so student NEVER sees repeated numbers!
-  let variantIdx = 1;
-  while (unseenPool.length < 20 && variantIdx <= 40) {
-    const v = variantOffset + variantIdx++;
-    const rawQ = buildParameterizedLevelProblem(normCls, normSub, topic, difficulty, v, baseXp);
-    const rotated = rotateOpts(rawQ.options, rawQ.correctIndex, v + 2);
-    pushCandidate({
-      ...rawQ,
-      options: rotated.options,
-      correctIndex: rotated.correctIndex,
-    });
   }
 
-  // If the student has still seen almost everything, rotate the cycle and use unseen + fresh variants
+  // If the student has seen most of the bank, rotate the cycle using the authentic uploaded textbook questions
   if (unseenPool.length < 20 && seenFallbackPool.length > 0) {
     if (unseenPool.length < 6) {
       resetSeenQuestionsForClassSubject(normCls, normSub, true);
@@ -1157,7 +1163,7 @@ export function buildLevelAccurateTextbookQuestions(
     }
   }
 
-  return unseenPool.slice(0, 20);
+  return unseenPool.slice(0, Math.max(20, unseenPool.length));
 }
 
 function buildParameterizedLevelProblem(

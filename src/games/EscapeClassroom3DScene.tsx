@@ -396,13 +396,23 @@ export const EscapeClassroom3DScene: React.FC<EscapeClassroom3DSceneProps> = ({
     scene.environment = envTex;
     pmrem.dispose();
 
+    const initialAspect = container.clientWidth / Math.max(1, container.clientHeight);
+    const initialFov =
+      initialAspect < 1
+        ? Math.min(68, Math.round(52 / Math.max(0.56, Math.sqrt(initialAspect))))
+        : 52;
+    const initialZoomOut =
+      initialAspect < 1
+        ? THREE.MathUtils.clamp(1 / Math.max(0.45, initialAspect * 0.88), 1.18, 2.05)
+        : 1.0;
+
     const camera = new THREE.PerspectiveCamera(
-      52,
-      container.clientWidth / Math.max(1, container.clientHeight),
+      initialFov,
+      initialAspect,
       0.1,
-      100
+      120
     );
-    camera.position.set(0, 7.2, 8.8);
+    camera.position.set(0, 7.2 * initialZoomOut, 8.8 * initialZoomOut);
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
@@ -410,7 +420,7 @@ export const EscapeClassroom3DScene: React.FC<EscapeClassroom3DSceneProps> = ({
     controls.maxPolarAngle = Math.PI / 2 - 0.06;
     controls.minPolarAngle = 0.25;
     controls.minDistance = 3.5;
-    controls.maxDistance = 18;
+    controls.maxDistance = 34;
     controls.target.set(0, 1.2, -1);
 
     // ==================== 3-POINT + ROOM LIGHTING ====================
@@ -1299,10 +1309,12 @@ export const EscapeClassroom3DScene: React.FC<EscapeClassroom3DSceneProps> = ({
           : Math.sin(elapsed * 2 + st.position[0]) * 0.06;
         vis.signSprite.position.y = vis.baseY + bobOffset;
 
+        const curAspect = camera.aspect || 1;
+        const mobileSignScale = curAspect < 0.65 ? 0.65 : curAspect < 1 ? 0.8 : 1.0;
         const scalePulse =
-          isHighlighted || proximityFactor > 0.35
+          (isHighlighted || proximityFactor > 0.35
             ? 1 + Math.sin(elapsed * pulseSpeed) * 0.11
-            : 0.85;
+            : 0.85) * mobileSignScale;
         vis.signSprite.scale.set(2.55 * scalePulse, 1.1 * scalePulse, 1);
 
         if (solved[st.id]) {
@@ -1522,13 +1534,19 @@ export const EscapeClassroom3DScene: React.FC<EscapeClassroom3DSceneProps> = ({
         onNearChangeRef.current(closestId);
       }
 
-      // Camera mode choreography
+      // Camera mode choreography (automatically pulls back on narrow portrait phone screens)
       const mode = cameraModeRef.current;
+      const aspect = camera.aspect || 1;
+      const portraitZoomOut =
+        aspect < 1
+          ? THREE.MathUtils.clamp(1 / Math.max(0.45, aspect * 0.88), 1.18, 2.05)
+          : 1.0;
+
       if (mode === 'chase') {
         _desiredCamPos.set(
           THREE.MathUtils.clamp(playerGroup.position.x * 0.65, -4.5, 4.5),
-          5.2,
-          Math.min(7.8, playerGroup.position.z + 5.2)
+          5.2 * (1 + (portraitZoomOut - 1) * 0.72),
+          Math.min(7.8 * portraitZoomOut, playerGroup.position.z + 5.2 * portraitZoomOut)
         );
         camera.position.lerp(_desiredCamPos, dt * 4.5);
         _lookTarget.set(
@@ -1539,7 +1557,12 @@ export const EscapeClassroom3DScene: React.FC<EscapeClassroom3DSceneProps> = ({
         controls.target.lerp(_lookTarget, dt * 6);
         controls.update();
       } else if (mode === 'overview') {
-        camera.position.lerp(_overviewPos, dt * 4);
+        _desiredCamPos.set(
+          _overviewPos.x,
+          _overviewPos.y * (1 + (portraitZoomOut - 1) * 0.65),
+          _overviewPos.z * portraitZoomOut
+        );
+        camera.position.lerp(_desiredCamPos, dt * 4);
         controls.target.lerp(_overviewTarget, dt * 5);
         controls.update();
       } else {
@@ -1559,18 +1582,27 @@ export const EscapeClassroom3DScene: React.FC<EscapeClassroom3DSceneProps> = ({
 
     const handleResize = () => {
       if (!container) return;
-      const w = container.clientWidth;
+      const w = Math.max(1, container.clientWidth);
       const h = Math.max(1, container.clientHeight);
-      camera.aspect = w / h;
+      const nextAspect = w / h;
+      camera.aspect = nextAspect;
+      camera.fov =
+        nextAspect < 1
+          ? Math.min(68, Math.round(52 / Math.max(0.56, Math.sqrt(nextAspect))))
+          : 52;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
     };
+    const resizeObserver =
+      typeof ResizeObserver !== 'undefined' ? new ResizeObserver(handleResize) : null;
+    if (resizeObserver) resizeObserver.observe(container);
     window.addEventListener('resize', handleResize);
 
     return () => {
       disposed = true;
       cancelAnimationFrame(rafId);
       clearTimeout(rafId);
+      if (resizeObserver) resizeObserver.disconnect();
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);

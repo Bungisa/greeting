@@ -288,14 +288,21 @@ export const ScienceLab3DViewport: React.FC<ScienceLab3DViewportProps> = ({
       }
     }
 
-    const isPortrait = width < height;
+    const aspect = width / Math.max(1, height);
+    const isPortrait = aspect < 1;
+    const initialFov = isPortrait
+      ? Math.min(68, Math.round(46 / Math.max(0.56, Math.sqrt(aspect))))
+      : 42;
+    const portraitZoomOut = isPortrait
+      ? THREE.MathUtils.clamp(1 / Math.max(0.48, aspect * 0.9), 1.25, 1.85)
+      : 1.0;
     const camera = new THREE.PerspectiveCamera(
-      isPortrait ? 52 : 42,
-      width / height,
+      initialFov,
+      aspect,
       0.1,
       200
     );
-    camera.position.set(0, isPortrait ? 3.8 : 3.4, isPortrait ? 8.6 : 7.2);
+    camera.position.set(0, isPortrait ? 3.8 * Math.min(1.25, portraitZoomOut) : 3.4, 7.2 * portraitZoomOut);
     cameraRef.current = camera;
 
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -303,8 +310,8 @@ export const ScienceLab3DViewport: React.FC<ScienceLab3DViewportProps> = ({
     controls.dampingFactor = 0.07;
     controls.maxPolarAngle = Math.PI / 2 - 0.03;
     controls.minDistance = 3.2;
-    controls.maxDistance = 22;
-    controls.target.set(0, 1.9, 0);
+    controls.maxDistance = 28;
+    controls.target.set(0, 1.8, 0);
     controls.update();
     controlsRef.current = controls;
 
@@ -422,9 +429,10 @@ export const ScienceLab3DViewport: React.FC<ScienceLab3DViewportProps> = ({
       staticLabBenchGroup.add(bottleGroup);
     });
 
-    // Dynamic Apparatus Group (rebuilt when sceneMode changes) — scaled up for clear 3D visibility
+    // Dynamic Apparatus Group (rebuilt when sceneMode changes) — scaled responsively so mobile screens don't clip wide setups
     const labGroup = new THREE.Group();
-    labGroup.scale.setScalar(1.28);
+    const initialLabScale = aspect < 0.68 ? 0.92 : aspect < 1 ? 1.04 : 1.22;
+    labGroup.scale.setScalar(initialLabScale);
     scene.add(labGroup);
     labGroupRef.current = labGroup;
 
@@ -497,12 +505,19 @@ export const ScienceLab3DViewport: React.FC<ScienceLab3DViewportProps> = ({
     // Resize Observer
     const handleResize = () => {
       if (!containerRef.current || !rendererRef.current || !cameraRef.current) return;
-      const w = Math.max(300, containerRef.current.clientWidth || window.innerWidth);
-      const h = Math.max(300, containerRef.current.clientHeight || window.innerHeight);
-      const portrait = w < h;
-      cameraRef.current.fov = portrait ? 56 : 45;
-      cameraRef.current.aspect = w / h;
+      const w = Math.max(260, containerRef.current.clientWidth || window.innerWidth);
+      const h = Math.max(260, containerRef.current.clientHeight || window.innerHeight);
+      const nextAspect = w / h;
+      const portrait = nextAspect < 1;
+      cameraRef.current.fov = portrait
+        ? Math.min(68, Math.round(46 / Math.max(0.56, Math.sqrt(nextAspect))))
+        : 45;
+      cameraRef.current.aspect = nextAspect;
       cameraRef.current.updateProjectionMatrix();
+      if (labGroupRef.current) {
+        const nextScale = nextAspect < 0.68 ? 0.92 : nextAspect < 1 ? 1.04 : 1.22;
+        labGroupRef.current.scale.setScalar(nextScale);
+      }
       rendererRef.current.setSize(w, h);
     };
 
@@ -1394,15 +1409,20 @@ export const ScienceLab3DViewport: React.FC<ScienceLab3DViewportProps> = ({
     const cam = cameraRef.current;
     const ctrl = controlsRef.current;
     if (!cam || !ctrl) return;
+    const aspect = cam.aspect || 1;
+    const zoomMult =
+      aspect < 1
+        ? THREE.MathUtils.clamp(1 / Math.max(0.48, aspect * 0.9), 1.25, 1.85)
+        : 1.0;
 
     if (preset === 'bench') {
-      cam.position.set(0, 3.4, 7.2);
-      ctrl.target.set(0, 1.9, 0);
+      cam.position.set(0, 3.4 * Math.min(1.25, zoomMult), 7.2 * zoomMult);
+      ctrl.target.set(0, 1.8, 0);
     } else if (preset === 'closeup') {
-      cam.position.set(0, 2.3, 4.6);
+      cam.position.set(0, 2.3 * Math.min(1.2, zoomMult), 4.6 * zoomMult);
       ctrl.target.set(0, 1.7, 0);
     } else {
-      cam.position.set(0, 9.8, 0.8);
+      cam.position.set(0, 9.8 * zoomMult, 0.8);
       ctrl.target.set(0, 0.6, 0);
     }
     ctrl.update();
