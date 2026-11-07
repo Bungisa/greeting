@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Computer Science Form Five - Complete Question Bank (elimika.online)</title>
+    <!-- MathJax Library for rendering Boolean Algebra and Mathematical Equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+
+    <header>
+        <p><strong>Watermark: elimika.online</strong> | <strong>prep. by Mr. Mohamed</strong></p>
+        <h1>Computer Science for Advanced Secondary Schools - Student's Book Form Five</h1>
+        <h2>Complete Question Bank (Scenarios, Activities, Exercises, Revision Exercises & Projects)</h2>
+    </header>
+
+    <hr>
+
+    <!-- ========================================================================= -->
+    <!-- CHAPTER ONE: COMPUTER ARCHITECTURE -->
+    <!-- ========================================================================= -->
+    <section id="chapter-1">
+        <h2>Chapter One: Computer Architecture</h2>
+
+        <h3>Scenario 1.1: Computer laboratory performance</h3>
+        <p>The school's new computer laboratory is experiencing performance issues, with slow programs to access educational materials, conducting research and doing assignments. Upgrading every computer may not be possible, so understanding computer architecture becomes crucial. Assume the computers are houses with shared space where the current computers have a single "room" for both instructions and data, causing a traffic jam that slows down processing.</p>
+        <p><strong>Question:</strong></p>
+        <ol>
+            <li>Based on the scenario, describe the ways you may undertake to improve the computer performance.</li>
+        </ol>
+
+        <h3>Activity 1.1: Simulation of Von Neumann architecture (Movement of data)</h3>
+        <p><strong>Questions:</strong></p>
+        <ol type="a">
+            <li>Describe the relationship between the three parts of the computer processor.</li>
+            <li>Does a bus system used for both data and instructions, allow the CPU to fetch and execute instructions sequentially? Explain.</li>
+        </ol>
+
+        <h3>Activity 1.2: Simulation of Von Neumann architecture (Data allocation in memory)</h3>
+        <p><strong>Instructions:</strong> Using Johnny simulator, create a program that adds the values of locations 10 and 11 and stores the result in location 12 to simulate memory allocation. Then answer the questions that follow.</p>
+        <p><strong>Questions:</strong></p>
+        <ol>
+            <li>Explain how memory allocation of data takes place by interaction between I/O system, RAM and CPU.</li>
+        </ol>
+
+        <!-- SVG: Von Neumann Architecture (Figure 1.5) -->
+        <h4>Diagram Reference: Figure 1.5 - Von Neumann Architecture</h4>
+        <svg width="650" height="240" viewBox="0 0 650 240" xmlns="http://www.w3.org/2000/svg">
+            <rect x="20" y="90" width="100" height="50" fill="none" stroke="black" stroke-width="2"/>
+            <text x="70" y="120" text-anchor="middle" font-family="sans-serif" font-size="13">Input Device</text>
+            
+            <rect x="180" y="20" width="260" height="190" fill="none" stroke="black" stroke-width="2"/>
+            <text x="200" y="45" font-family="sans-serif" font-weight="bold" font-size="14">CPU</text>
+            
+            <rect x="200" y="60" width="110" height="130" fill="none" stroke="black" stroke-width="1.5"/>
+            <text x="255" y="95" text-anchor="middle" font-family="sans-serif" font-size="13">ALU</text>
+            <text x="255" y="125" text-anchor="middle" font-family="sans-serif" font-size="13">Registers</text>
+            <text x="255" y="155" text-anchor="middle" font-family="sans-serif" font-size="13">Control Unit</text>
+
+            <rect x="350" y="60" width="75" height="130" fill="none" stroke="black" stroke-width="1.5"/>
+            <text x="387" y="120" text-anchor="middle" font-family="sans-serif" font-size="13">Memory</text>
+            <text x="387" y="138" text-anchor="middle" font-family="sans-serif" font-size="13">Unit</text>
+
+            <line x1="310" y1="95" x2="350" y2="95" stroke="black" stroke-width="1.5"/>
+            <text x="330" y="88" text-anchor="middle" font-family="sans-serif" font-size="10">Address Bus</text>
+            <line x1="310" y1="150" x2="350" y2="150" stroke="black" stroke-width="1.5"/>
+            <text x="330" y="143" text-anchor="middle" font-family="sans-serif" font-size="10">Data Bus</text>
+
+            <rect x="500" y="90" width="110" height="50" fill="none" stroke="black" stroke-width="2"/>
+            <text x="555" y="120" text-anchor="middle" font-family="sans-serif" font-size="13">Output Device</text>
+
+            <line x1="120" y1="115" x2="180" y2="115" stroke="black" stroke-width="2"/>
+            <line x1="440" y1="115" x2="500" y2="115" stroke="black" stroke-width="2"/>
+            <text x="640" y="230" text-anchor="end" font-family="sans-serif" font-size="10">elimika.online</text>
+        </svg>
+
+        <h3>Activity 1.3: Exploring the Von Neumann architecture</h3>
+        <ol>
+            <li>Using the Internet or library search, explore:
+                <ol type="a">
+                    <li>The classification of computer architecture;</li>
+                    <li>The features and applications of Von Neumann architecture and its roles in modern computing systems;</li>
+                    <li>The advantages and disadvantages of Von Neumann architecture;</li>
+                </ol>
+            </li>
+            <li>Document your findings in a portfolio.</li>
+        </ol>
+
+        <h3>Activity 1.4: Exploring the Harvard architecture</h3>
+        <p>Use the Library or Internet search to perform the following:</p>
+        <ol>
+            <li>Explore the features and applications of Harvard architecture and its roles in modern computing systems;</li>
+            <li>Explore the advantages and disadvantages of Harvard architecture;</li>
+            <li>Use any computer architecture simulation tool to simulate a Harvard architecture; and</li>
+            <li>Document your findings in a portfolio.</li>
+        </ol>
+
+        <h3>Activity 1.5: Exploring the Modified Harvard architecture</h3>
+        <p>Use the Library or Internet search to perform the following:</p>
+        <ol>
+            <li>Explore the features and applications of Modified Harvard architecture and its roles in modern computing systems;</li>
+            <li>Explore the advantages and disadvantages of Modified Harvard architecture;</li>
+            <li>Use any computer architecture simulation tool to simulate a Modified Harvard architecture; and</li>
+            <li>Write down your findings and document them in a portfolio.</li>
+        </ol>
+
+        <h3>Activity 1.6: Exploring the Non-Von Neumann architecture</h3>
+        <p>Use the Library or Internet search to perform the following:</p>
+        <ol>
+            <li>Explore the features and applications of Non-Von Neumann architecture and its roles in modern computing systems;</li>
+            <li>Explore the advantages and disadvantages of Non-Von Neumann architecture;</li>
+            <li>Use any computer architecture simulation tool to simulate a Non-Von Neumann architecture; and</li>
+            <li>Write down your findings and document them in a portfolio.</li>
+        </ol>
+
+        <h3>Activity 1.7: Exploring the Flynn's taxonomy architecture</h3>
+        <p>Use the Library or Internet search to perform the following:</p>
+        <ol>
+            <li>Explore features and applications of Flynn's taxonomy architecture and its roles in modern computing systems;</li>
+            <li>Explore the advantages and disadvantages of Flynn's taxonomy architecture;</li>
+            <li>Use any computer architecture simulation tool, simulate a Flynn's taxonomy architecture;</li>
+            <li>Explore the four architecture classes resulting from Flynn's taxonomy architecture, and connect with the simulation in number 3 above; and</li>
+            <li>Write down your findings and document them in a portfolio.</li>
+        </ol>
+
+        <h3>Exercise 1.2: Boolean Algebra Laws and Simplification</h3>
+        <ol>
+            <li>Prove the following using Boolean laws and rules:
+                <ol type="a">
+                    <li>$AB + AC + ABC = AB + AC$</li>
+                    <li>$A(\overline{A} + B) = AB$</li>
+                </ol>
+            </li>
+            <li>Use laws of Boolean algebra to simplify the following expressions:
+                <ol type="a">
+                    <li>$ABC + AB\overline{C}$</li>
+                    <li>$\overline{B}C + BC + AC$</li>
+                    <li>$B + AB + \overline{A}BC$</li>
+                    <li>$\overline{A}B\overline{C} + AC + \overline{A}BC$</li>
+                    <li>$\overline{AC} + AB\overline{C}$</li>
+                    <li>$\overline{A}BC\overline{D} + \overline{A}BCD$</li>
+                </ol>
+            </li>
+            <li>Using the laws of Boolean algebra, verify the Boolean identity $A + (A \cdot B) = A$.</li>
+        </ol>
+
+        <h3>Activity 1.8: Designing a car safety buzzer circuit</h3>
+        <p>As an electronic engineer, you are tasked with designing a car safety buzzer circuit. Here are the design specifications: The buzzer should be ON when the door is OPEN or when the key is in the IGNITION, and the seat belt is NOT BUCKLED. Create a truth table to outline these specifications using "highs" (1) and "lows" (0) to indicate sensor or indicator activity.</p>
+
+        <h3>Exercise 1.3: Truth Tables</h3>
+        <ol>
+            <li>Prove the following using the truth table:
+                <ol type="a">
+                    <li>$AB + AC + ABC = AB + AC$</li>
+                    <li>$A + (B + C) = (A + B) + C$</li>
+                </ol>
+            </li>
+            <li>Create the truth table of the following expression: $X = A + \overline{BC}$</li>
+            <li>Given the truth Table 1.9, determine the Boolean expression for $Y$ in terms of $A$ and $B$.
+                <table border="1" cellpadding="5" cellspacing="0">
+                    <caption>Table 1.9: The truth table for A, B, and Y</caption>
+                    <thead>
+                        <tr><th>A</th><th>B</th><th>Y</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>0</td><td>0</td><td>0</td></tr>
+                        <tr><td>0</td><td>1</td><td>1</td></tr>
+                        <tr><td>1</td><td>0</td><td>1</td></tr>
+                        <tr><td>1</td><td>1</td><td>0</td></tr>
+                    </tbody>
+                </table>
+            </li>
+        </ol>
+
+        <h3>Exercise 1.4: DeMorgan's Theorem</h3>
+        <ol>
+            <li>Use DeMorgan's theorem and laws of Boolean algebra to simplify the following expressions:
+                <ol type="a">
+                    <li>$\overline{\overline{ABC} + ABC}$</li>
+                    <li>$\overline{BC + \overline{B}C} + AC$</li>
+                    <li>$B + AB + \overline{A}BC$</li>
+                    <li>$\overline{A}B\overline{C} + AC + \overline{A}BC$</li>
+                </ol>
+            </li>
+            <li>Use the truth table to prove the following DeMorgan's theorem: $\overline{A \cdot B} = \overline{A} + \overline{B}$</li>
+            <li>Demonstrate DeMorgan's theorem using a truth table for the expression: $\overline{ABC} = \overline{A} + \overline{B} + \overline{C}$</li>
+        </ol>
+
+        <h3>Activity 1.9: Simulation of logic gate circuit using Logisim simulator</h3>
+        <p><strong>Questions (from Step 6 & Testing):</strong></p>
+        <ol>
+            <li>Provide descriptions on what you have observed.</li>
+            <li>Explain if the output of the circuit test from a simulator gives the same results as in Table 1.11 ($x \text{ AND } y$).</li>
+            <li>What did you observe during your exploration (Light on and Light off)?</li>
+            <li>Describe your experience when preparing a truth table, sketching a common circuit diagram, and testing the circuit in a simulator.</li>
+        </ol>
+
+        <h3>Activity 1.11: The relationship between Boolean operation and logical gates</h3>
+        <p>Two electrical switches, a bulb and a battery are connected as shown in Figure 1.28. As a technical expert, you are required to establish the truth table to reflect the circuit operations that control switches A and B, which will light up the bulb, and then propose the logic gate for the circuit. The following conditions will guide you:</p>
+        <ol type="a">
+            <li>What happens when both switches are OFF?;</li>
+            <li>What happens when only one switch is ON (either A or B)?; and</li>
+            <li>What happens when both switches are ON?</li>
+            <li>Simulate this circuit by using a Logisim simulator.</li>
+        </ol>
+
+        <!-- SVG: Figure 1.28 Electric circuit with two switches -->
+        <h4>Diagram Reference: Figure 1.28 - Electric circuit with two switches in parallel</h4>
+        <svg width="450" height="200" viewBox="0 0 450 200" xmlns="http://www.w3.org/2000/svg">
+            <line x1="40" y1="100" x2="100" y2="100" stroke="black" stroke-width="2"/>
+            <!-- Parallel loop for switches A and B -->
+            <line x1="100" y1="60" x2="100" y2="140" stroke="black" stroke-width="2"/>
+            <line x1="100" y1="60" x2="150" y2="60" stroke="black" stroke-width="2"/>
+            <line x1="150" y1="60" x2="190" y2="40" stroke="black" stroke-width="2"/>
+            <text x="170" y="35" font-family="sans-serif" font-size="13">Switch A</text>
+            <line x1="190" y1="60" x2="240" y2="60" stroke="black" stroke-width="2"/>
+            
+            <line x1="100" y1="140" x2="150" y2="140" stroke="black" stroke-width="2"/>
+            <line x1="150" y1="140" x2="190" y2="120" stroke="black" stroke-width="2"/>
+            <text x="170" y="115" font-family="sans-serif" font-size="13">Switch B</text>
+            <line x1="190" y1="140" x2="240" y2="140" stroke="black" stroke-width="2"/>
+            <line x1="240" y1="60" x2="240" y2="140" stroke="black" stroke-width="2"/>
+
+            <line x1="240" y1="100" x2="340" y2="100" stroke="black" stroke-width="2"/>
+            <!-- Bulb -->
+            <circle cx="360" cy="100" r="20" fill="none" stroke="black" stroke-width="2"/>
+            <text x="360" y="105" text-anchor="middle" font-family="sans-serif" font-size="12">Bulb</text>
+            <!-- Return path & Battery -->
+            <line x1="360" y1="120" x2="360" y2="180" stroke="black" stroke-width="2"/>
+            <line x1="40" y1="100" x2="40" y2="180" stroke="black" stroke-width="2"/>
+            <line x1="40" y1="180" x2="180" y2="180" stroke="black" stroke-width="2"/>
+            <line x1="180" y1="165" x2="180" y2="195" stroke="black" stroke-width="2"/>
+            <line x1="190" y1="172" x2="190" y2="188" stroke="black" stroke-width="3"/>
+            <text x="185" y="160" text-anchor="middle" font-family="sans-serif" font-size="12">Battery</text>
+            <line x1="190" y1="180" x2="360" y2="180" stroke="black" stroke-width="2"/>
+        </svg>
+
+        <h3>Exercise 1.5: Logic Gate Applications & Simulation</h3>
+        <ol>
+            <li>Design a logic circuit using AND, OR, and NOT gates to implement the following Boolean expression: $A \cdot (B + \overline{C})$. Draw the circuit diagram and explain each step.</li>
+            <li>Explain how you could use logic gates to create a simple security system that turns on an alarm (output) only when two conditions are met: the door is open (input A) and the motion sensor is triggered (input B). Draw the circuit and describe how it works.</li>
+            <li>Use a logic circuit simulator to create and test a circuit that represents the following logic function: $C + B \cdot C$. Provide screenshots of your circuit design and simulation results, and discuss any challenges you faced.</li>
+            <li>Use TinkerCad to simulate the application of logic gates and verify if the results match the expected behavior according to the principles of logic gates.</li>
+        </ol>
+
+        <h3>Exercise 1.6: Combinational Logic Circuits</h3>
+        <ol>
+            <li>Create a logic circuit of the Boolean expressions:
+                <ol type="a">
+                    <li>$AB + B\overline{C}$</li>
+                    <li>$\overline{B}C + (B + AC)$</li>
+                    <li>$AB + \overline{A}BC$</li>
+                </ol>
+            </li>
+            <li>Determine the Boolean expression and draw the truth table from the following circuit in Figure 1.33:
+                <!-- SVG: Figure 1.33 Logic Circuit -->
+                <br>
+                <svg width="450" height="180" viewBox="0 0 450 180" xmlns="http://www.w3.org/2000/svg">
+                    <text x="20" y="45" font-family="sans-serif" font-size="14">A</text>
+                    <line x1="35" y1="40" x2="80" y2="40" stroke="black" stroke-width="2"/>
+                    <!-- NOT Gate on A -->
+                    <polygon points="80,25 80,55 110,40" fill="none" stroke="black" stroke-width="2"/>
+                    <circle cx="114" cy="40" r="4" fill="none" stroke="black" stroke-width="2"/>
+                    <line x1="118" y1="40" x2="170" y2="40" stroke="black" stroke-width="2"/>
+
+                    <text x="20" y="95" font-family="sans-serif" font-size="14">B</text>
+                    <line x1="35" y1="90" x2="130" y2="90" stroke="black" stroke-width="2"/>
+                    <line x1="130" y1="60" x2="130" y2="120" stroke="black" stroke-width="2"/>
+                    <line x1="130" y1="60" x2="170" y2="60" stroke="black" stroke-width="2"/>
+                    <line x1="130" y1="120" x2="170" y2="120" stroke="black" stroke-width="2"/>
+
+                    <text x="20" y="145" font-family="sans-serif" font-size="14">C</text>
+                    <line x1="35" y1="140" x2="170" y2="140" stroke="black" stroke-width="2"/>
+
+                    <!-- Top Gate (AND) -->
+                    <path d="M170,30 L195,30 A20,20 0 0,1 195,70 L170,70 Z" fill="none" stroke="black" stroke-width="2"/>
+                    <line x1="215" y1="50" x2="270" y2="75" stroke="black" stroke-width="2"/>
+
+                    <!-- Bottom Gate (OR) -->
+                    <path d="M170,110 Q185,130 170,150 Q205,150 220,130 Q205,110 170,110 Z" fill="none" stroke="black" stroke-width="2"/>
+                    <line x1="220" y1="130" x2="270" y2="105" stroke="black" stroke-width="2"/>
+
+                    <!-- Final Gate (AND) -->
+                    <path d="M270,65 L295,65 A25,25 0 0,1 295,115 L270,115 Z" fill="none" stroke="black" stroke-width="2"/>
+                    <line x1="320" y1="90" x2="360" y2="90" stroke="black" stroke-width="2"/>
+                    <text x="370" y="95" font-family="sans-serif" font-weight="bold" font-size="14">F</text>
+                </svg>
+            </li>
+            <li>Design a combinational circuit with three inputs A, B, and C and three outputs X, Y, and Z. When the binary input is 0, 1, 2, and 3 the binary output is two greater than the input; when the binary input is 4, 5, 6, 7, the binary output is three less than the input.
+                <ol type="a">
+                    <li>Construct a truth table for that scenario.</li>
+                    <li>Derive the Boolean expression for the output.</li>
+                    <li>Simplify the Boolean expression for output obtained in part (b).</li>
+                    <li>Draw a logic circuit for that simplified expression in part (c).</li>
+                </ol>
+            </li>
+        </ol>
+
+        <h3>Exercise 1.7: Half and Full Adders & Circuit Simplification</h3>
+        <ol>
+            <li>Draw the truth table of the half adder and determine its Boolean expression.</li>
+            <li>Explain why Boolean algebra is important in the digital system.</li>
+            <li>Using the laws of Boolean algebra, simplify the following expressions:
+                <ol type="a">
+                    <li>$AB + A\overline{B} + BC + AC$</li>
+                    <li>$\overline{A} + AB + \overline{C} + \overline{BC}$</li>
+                    <li>$A + \overline{A}B$</li>
+                    <li>$\overline{ABC} + AC + ABC$</li>
+                </ol>
+            </li>
+            <li>Given the Boolean expression $Y = AB + ABC + A\overline{BC} + A\overline{B}$:
+                <ol type="a">
+                    <li>Draw the logic circuit of the Boolean expression.</li>
+                    <li>Simplify the Boolean expression.</li>
+                    <li>Draw the logic circuit of the simplified Boolean expression.</li>
+                </ol>
+            </li>
+            <li>From the following Boolean expressions, simplify and then draw a logic circuit for the simplified expression:
+                <ol type="a">
+                    <li>$Y = A(B + AB) + AC$</li>
+                    <li>$Y = A(A + B)(\overline{A} + \overline{B})$</li>
+                    <li>$Y = \overline{ABC} + \overline{ACC} + ABC$</li>
+                </ol>
+            </li>
+        </ol>
+
+        <h3>Scenario 1.3 (Memory Hierarchy): Book storage in the library system</h3>
+        <p>In any typical library, books are organised on shelves by subjects like Physics, Mathematics, and Computer Science. This is similar to memory hierarchy in computers, where data is stored at different levels based on accessibility and speed. Signs and labels help people locate books easily, similar to memory addresses used to access specific data on computers. Frequently accessed books are placed closer for quick access, much like cache memory in computers storing recently accessed data for faster retrieval. Books on shelves represent primary memory for immediate access, while additional copies in storage rooms or archives represent secondary memory.</p>
+        <p><strong>Questions:</strong></p>
+        <ol>
+            <li>Based on the scenario you have read, what is the importance of signs and labels in the library? Explain by relating this to how memory is organised and accessed in a computer.</li>
+            <li>Explain how useful is the idea of using shelves in the library. Analyse how this idea relates to the organisation and management of computer memory.</li>
+        </ol>
+
+        <!-- SVG: Figure 1.38 Computer Memory Hierarchy -->
+        <h4>Diagram Reference: Figure 1.38 - Computer Memory Hierarchy</h4>
+        <svg width="550" height="200" viewBox="0 0 550 200" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="275,15 480,180 70,180" fill="none" stroke="black" stroke-width="2"/>
+            <line x1="224" y1="56" x2="326" y2="56" stroke="black" stroke-width="1.5"/>
+            <line x1="173" y1="97" x2="377" y2="97" stroke="black" stroke-width="1.5"/>
+            <line x1="122" y1="138" x2="428" y2="138" stroke="black" stroke-width="1.5"/>
+            <text x="275" y="45" text-anchor="middle" font-family="sans-serif" font-size="12">CPU (Registers)</text>
+            <text x="275" y="82" text-anchor="middle" font-family="sans-serif" font-size="12">Cache Memory</text>
+            <text x="275" y="122" text-anchor="middle" font-family="sans-serif" font-size="12">Main Memory (RAM)</text>
+            <text x="275" y="165" text-anchor="middle" font-family="sans-serif" font-size="12">Magnetic Disk / Secondary Storage / Tapes</text>
+            <text x="60" y="100" text-anchor="middle" font-family="sans-serif" font-size="11" transform="rotate(-90 60,100)">Increasing Speed &amp; Cost</text>
+            <text x="495" y="100" text-anchor="middle" font-family="sans-serif" font-size="11" transform="rotate(90 495,100)">Increasing Capacity</text>
+        </svg>
+
+        <h3>Exercise 1.8: AMAT & Memory Technologies</h3>
+        <ol>
+            <li>Find the Average Memory Access Time (AMAT) for a processor with a cache hit rate of $95\%$, a hit time of $4\text{ ns}$, and a miss penalty of $80\text{ ns}$.</li>
+            <li>Given a computer system with varying memory requirements, explain how each level of the memory hierarchy (cache, main memory, and secondary storage) optimises system performance and cost-effectiveness.</li>
+            <li>Discuss how the characteristics of DRAM, SRAM, Flash Memory, and Magnetic disk make them suitable for their respective levels in the memory hierarchy. Use examples to illustrate how each technology's speed, cost, and storage capacity contribute to the overall efficiency of the system.</li>
+            <li>Flash memory, characterised by non-volatility, portability and reasonable speed has revolutionised the way we store and access data in the 21st century. Research on applications of Flash memory.</li>
+        </ol>
+
+        <h3>Exercise 1.9: Cache Memory Principles</h3>
+        <ol>
+            <li>Explain how cache memory improves the performance of a computer system. Provide an example to illustrate its role in speeding up data access.</li>
+            <li>Describe the difference between cache memory and main memory (RAM). Why is cache memory faster but smaller compared to RAM?</li>
+            <li>How does the principle of locality of reference influence the effectiveness of cache memory? Provide examples of spatial and temporal locality.</li>
+            <li>Discuss the concept of cache hit and cache miss. Why are cache hits desirable, and how do cache misses impact system performance? Provide real-world analogies to explain these concepts.</li>
+        </ol>
+
+        <h3>Activity 1.12: Exploring cache mapping techniques</h3>
+        <p><strong>The Challenge:</strong> Work with three common cache mapping schemes—Direct Mapped, k-way Set Associative, and Fully Associative. For each scenario in the table below, you are given Main memory size (M), Cache size (C), Block size (B), and Cache address (A):</p>
+        <table border="1" cellpadding="5" cellspacing="0">
+            <thead>
+                <tr><th>Scenario</th><th>M (Bytes)</th><th>C (Bytes)</th><th>B (Bytes)</th><th>A (Bytes)</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>Direct Mapped Cache</td><td>1024</td><td>128</td><td>16</td><td>232</td></tr>
+                <tr><td>2-way Set Associative Cache</td><td>4096</td><td>256</td><td>32</td><td>768</td></tr>
+                <tr><td>Fully Associative Cache</td><td>2048</td><td>512</td><td>64</td><td>1536</td></tr>
+            </tbody>
+        </table>
+        <p><strong>Tasks & Deliverables:</strong></p>
+        <ol>
+            <li>Task 1: Calculate the tag, set/line number, and block/line offset for each mapping scheme.</li>
+            <li>Task 2: Explore the advantages and disadvantages of each scheme. Document your findings in a portfolio.</li>
+        </ol>
+
+        <h3>Exercise 1.10: Cache Replacement & Associativity</h3>
+        <ol>
+            <li>Describe the LRU replacement algorithm.</li>
+            <li>What would the k-way set associative mapping become, if $k=1$?</li>
+            <li>How many sets does a fully set associative mapping have?</li>
+        </ol>
+
+        <h3>Activity 1.13: Exploring primary and secondary computer memory</h3>
+        <ol>
+            <li>Step 1: Explore primary memory (RAM) and reflect on how it acts as the computer's main working memory and its volatile nature.</li>
+            <li>Step 2: Explore secondary memory (HDD, SSD, Optical Discs), focusing on capacity, speed, cost, and typical use cases. Write down details on how the device works, its advantages and disadvantages, and comparison to other types.</li>
+            <li>Step 3: Using presentation software, create an interactive diagram showing how primary and secondary memories interact in a computer system and explain the role of the CPU.</li>
+            <li>Step 4: Research and present a case study on the rise of flash memory in mobile devices. Discuss its advantages and why it is preferred in smartphones and tablets.</li>
+            <li>Step 5: Explore a personal device, identify the type of storage used, and discuss why it is suitable.</li>
+            <li>Deliverable: Write a one-page report summarizing what you learned about primary and secondary memory, and the importance of flash memory in modern devices.</li>
+        </ol>
+
+        <h3>Exercise 1.11: Primary, Secondary & Virtual Memory (TLB)</h3>
+        <ol>
+            <li>Imagine you are a librarian managing a library with two sections: a reference section with readily available books on shelves and a vast archive room for storing older materials. How is this analogy similar to the concept of primary and secondary memory in a computer? Explain the key differences between primary and secondary memory in terms of speed and capacity.</li>
+            <li>You are working on a critical assignment and need to access a document you saved earlier. However, when you try to open it, you receive an error message. What factors could be preventing you from accessing the document? Explain the role of primary and secondary memory in potentially causing this issue.</li>
+            <li>Imagine you are working on a complex group project. To ensure everyone has access to the latest information, you might utilize a shared online document and a local copy on your device. Explain the concept of virtual memory and the TLB in a way that relates to this collaborative scenario. How do they work together to optimise memory usage?</li>
+        </ol>
+
+        <h3>Scenario 1.4: Cooking instructions in the kitchen (Instruction Set Architecture)</h3>
+        <p><strong>Questions:</strong></p>
+        <ol type="a">
+            <li>How does the concept of addressing modes in Instruction Set Architecture relate to different cooking techniques in a kitchen?</li>
+            <li>In what ways are the roles of registers in a processor similar to the tools used by a chef in a kitchen?</li>
+            <li>Can you explain the significance of understanding Instruction Set Architecture for programmers and computer engineers in developing software for different computer architectures?</li>
+        </ol>
+
+        <h3>Exercise 1.12: RISC vs CISC & Modern CPUs</h3>
+        <ol>
+            <li>The passage describes two main approaches to instruction set design: RISC and CISC. Create a table comparing these two approaches. Include details like design philosophy, instruction complexity, efficiency considerations, and common applications.</li>
+            <li>Research a specific example of a modern CPU (Central Processing Unit). Identify the ISA it uses (e.g., Intel x86, ARMv8) and explain why this particular ISA might be chosen for that specific CPU.</li>
+        </ol>
+
+        <h3>Activity 1.14: Simulation to explore how computer memory is utilised using CPU simulator</h3>
+        <p><strong>Instructions:</strong> Create a program and instructions to add two numbers. The first number (15) should be stored in register R00, the second number (20) should be stored in register R01, and the results should be stored in register R02. Create an instruction that pushes the result value in the register to the program stack (RAM) and execute it. All instructions should appear in the CPU instructions memory (RAM).</p>
+
+        <h3>Activity 1.15: Register and ISA interaction (MARS MIPS Simulator)</h3>
+        <p><strong>Questions:</strong></p>
+        <ol>
+            <li>Identify which registers were used as temporary registers and which were used for storing results (in the sample MIPS program using <code>$t0</code>, <code>$t1</code>, <code>$s0</code>, <code>$s1</code>).</li>
+            <li>Explain how the <code>li</code> instruction (load immediate) is used to load values into registers.</li>
+            <li>Discuss the role of the <code>add</code> and <code>sub</code> instructions in manipulating data within registers.</li>
+            <li>Discuss how specific ISA instructions (<code>add</code>, <code>li</code>, <code>load</code>, etc.) interact with registers.</li>
+            <li>Explain how registers contribute to the overall efficiency of program execution.</li>
+        </ol>
+
+        <h3>Exercise 1.13: Datapath Functional Units & Execution Cycle</h3>
+        <ol>
+            <li>With the help of diagrams, describe the following datapath functional units: instruction memory, program counter, adder, register file, ALU and Sign extension.</li>
+            <li>The instruction execution cycle described in 1.4.2 is for arithmetic instructions. Using the library and online resources, write the instruction execution cycle for load/store instructions.</li>
+            <li>Research and explain the purpose of the sign extension element in the datapath. When would sign extension be necessary during arithmetic operations involving immediate values in MIPS instructions?</li>
+        </ol>
+
+        <h3>Exercise 1.14: Addressing Modes in a Mobile Racing Game Engine</h3>
+        <p>Imagine you are a programmer working on a game engine for a mobile racing game. The game uses various data structures to store information about the race track, car physics, and player input. Answer the following questions, considering the most appropriate addressing mode (register, immediate, direct, indirect, or relative) for each scenario and explain your reasoning:</p>
+        <ol type="a">
+            <li><strong>Shujaa power activation:</strong> The game allows players to activate "Shujaa Power," which grants a temporary speed boost. This activation is triggered by a button press. A flag value (0 for not pressed, 1 for pressed) is stored in a specific memory location. Which addressing mode would be most efficient for the instruction that checks this flag value, and why?</li>
+            <li><strong>Car position update:</strong> During the race, the car's position on the track is constantly updated based on various calculations. The new position data needs to be stored in a specific variable within a complex data structure representing the car object. Which addressing mode would be suitable for the instruction that stores the new position, and how would you communicate this addressing mode choice to another programmer working on the same code?</li>
+            <li><strong>Dynamic difficulty adjustment:</strong> The game can adjust difficulty based on player performance. An array stores pre-defined difficulty settings. Based on the player's score, the program needs to access a specific difficulty setting within the array. Which addressing mode would be appropriate, and how could you modify the code to dynamically adjust the difficulty based on an external factor (player score)?</li>
+            <li><strong>Collision detection:</strong> To check for collisions, the game needs to compare the car's position data with the positions of obstacles stored in an array. How would you use addressing modes to efficiently compare the car's position with multiple obstacle positions stored in memory? Explain your approach to a teammate who might be less familiar with addressing modes.</li>
+            <li><strong>Optimizing performance:</strong> The game needs to run smoothly on various mobile devices. How can your understanding of addressing modes help you optimise the game code for performance? Explain your approach considering the trade-offs between different modes.</li>
+            <li>Research another addressing mode not covered in this section (such as, base displacement addressing). Explain a scenario in the game engine where this addressing mode might be useful and why.</li>
+        </ol>
+
+        <h3>Exercise 1.15: ARM vs x86 Processor Architecture</h3>
+        <ol>
+            <li>You are designing a new wearable fitness tracker. Would you choose an ARM or x86 processor for this device? Give reasons.</li>
+            <li>Both ARM and x86 architectures are constantly evolving. Research and describe a recent development in either ARM or x86 technology. How does this advancement impact the capabilities of processors?</li>
+            <li>You are participating in a debate about which processor architecture is "superior." Would you argue for ARM or x86? Develop a persuasive argument highlighting the strengths and ideal applications for your chosen architecture.</li>
+        </ol>
+
+        <h3>Scenario 1.3 (I/O Systems): Restaurant system for customer service</h3>
+        <p><strong>Questions:</strong></p>
+        <ol>
+            <li>While DMA is great for large deliveries, how would the restaurant handle individual customer orders from their tables? Is there an analogous concept in computer I/O systems for dealing with smaller data transfers? Give reasons.</li>
+            <li>Imagine multiple events happening at once—a fire alarm goes off while a large food delivery arrives. How would the restaurant staff prioritize handling these urgent situations? How does this relate to the way processors handle interrupts and exceptions with varying priorities?</li>
+            <li>Why might the head chef have restricted access to the master control panel? How does this concept translate to privileged instructions in computer architecture? Provide any security risks associated with non-privileged programs having access to certain functions.</li>
+        </ol>
+
+        <h3>Exercise 1.16: Direct Memory Access (DMA)</h3>
+        <ol>
+            <li>DMA allows direct memory access, bypassing the processor's cache. How might this impact data consistency between the processor and memory? Propose potential solutions to mitigate this challenge.</li>
+            <li>While DMA offers performance benefits, it adds hardware complexity. Research the cost implications of implementing DMA controllers in computer systems. How does this cost factor into decisions about using DMA?</li>
+            <li>Research and discuss specific examples of how DMA technology is utilised in various fields like networking, multimedia, scientific computing, or real-time data processing. Prepare a short presentation highlighting these real-world applications and their significance.</li>
+            <li>Simulate a simple DMA transfer scenario using a flowchart or pseudocode, outlining the steps involved from processor initiation to data transfer completion.</li>
+        </ol>
+
+        <h3>Exercise 1.17: Interrupts and Exceptions in MIPS</h3>
+        <ol>
+            <li>MIPS utilises the cause and status registers to manage interrupts and exceptions. Research the specific bit positions and corresponding causes within the Cause register as seen in Table 1.15 and 1.16. Investigate the status register and its role in interrupt handling within MIPS ISA. Explain how these registers work together to differentiate between interrupts and exceptions.</li>
+            <li>While MIPS utilises polled interrupts, many modern systems employ vectored interrupt tables. Research the concept of vectored interrupt tables and compare them to polled interrupts. Discuss the advantages and disadvantages of each approach. Identify real-world applications where interrupt and exception handling in MIPS ISA plays a crucial role (such as, device interactions, and system calls).</li>
+        </ol>
+
+        <h3>Exercise 1.18: Privileged and Non-Privileged Instructions</h3>
+        <ol type="a">
+            <li>Complete the following privileged instructions (x86) given real-world kitchen equivalents in Table 1.17:
+                <table border="1" cellpadding="5" cellspacing="0">
+                    <thead>
+                        <tr><th>Instruction (x86)</th><th>Kitchen Equivalent Description</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>[Fill in Instruction]</td><td><strong>Changing the recipe book (Paging table):</strong> This instruction modifies the Control Register (CR3), which acts like the head chef's master recipe book (paging table) in our analogy.</td></tr>
+                        <tr><td>[Fill in Instruction]</td><td><strong>Checking the oven temperature (input):</strong> This instruction reads a byte of data from a port specified in the DX register and stores it in the AL register.</td></tr>
+                        <tr><td>[Fill in Instruction]</td><td><strong>Turning off the stove (halt):</strong> This instruction puts the processor into a low-power state, effectively stopping all program execution.</td></tr>
+                    </tbody>
+                </table>
+            </li>
+            <li>Why is it important to restrict access to privileged instructions? Think about potential consequences if junior cooks had unrestricted access to all ingredients and appliances.</li>
+            <li>A new recipe (user program) requires deep-frying (privileged operation) a specific ingredient. How can the junior cooks (user program) achieve this task securely and efficiently, following the access control protocols of the kitchen (CPU)?</li>
+        </ol>
+
+        <h3>Activity 1.16: Building a simple computer</h3>
+        <p><strong>Instructions:</strong> ABC Company is sponsoring young innovators who have innovative ideas. Assume your school teacher assigns you and your team a task to design a simple computer system from scratch to showcase to the sponsor. The computer needs to be capable of performing basic arithmetic operations (addition, subtraction, multiplication, and division), storing and retrieving data. Your school has limited resources and budget, so you need to optimise your design to meet the requirements efficiently.</p>
+        <ol>
+            <li>Step 1: Demonstrate the key requirements you will consider to design a simple computer.</li>
+            <li>Step 2: Use a simulation tool to visualise how each part (such as Input/Output, CPU, memory) of the computer you designed works and show how different parts relate.</li>
+            <li>Step 3: Present the model or the blueprint of a simple computer you designed.</li>
+        </ol>
+
+        <h3>Exercise 1.19: Memory and I/O System Functions</h3>
+        <ol>
+            <li>What is the primary function of the memory system in a computer?</li>
+            <li>How does the I/O system contribute to the overall functionality of a computer?</li>
+            <li>What are the key responsibilities of the memory system in managing data and instructions?</li>
+            <li>How does the I/O system facilitate communication between the computer and external devices?</li>
+            <li>What are some common challenges faced by the memory and I/O systems, and how are they addressed in modern computer architectures?</li>
+        </ol>
+
+        <h3>Revision Exercise 1</h3>
+        <ol>
+            <li>Artificial intelligence (AI) and machine learning (ML) are rapidly evolving fields. How can you design your computer architecture to accommodate the ever-growing processing demands of AI and ML algorithms, considering factors like scalability and energy efficiency?</li>
+            <li>Ethical considerations are paramount in technology development. Research potential security risks and privacy concerns associated with advanced computer architectures. Propose solutions to mitigate these risks, ensuring the responsible and ethical development of your future computer system.</li>
+            <li>Modern processors employ multiple cache levels. Analyse the trade-offs between increasing the cache size (L1, L2, L3) and the impact on AMAT.</li>
+            <li>How would increasing associativity (number of ways) within a cache level affect performance? Consider factors like hit rate, miss penalty, and overall access time.</li>
+            <li>How might the traditional memory hierarchy need to adapt to efficiently handle large, complex datasets? Propose potential modifications or new memory technologies that could be beneficial for big data and Machine Learning applications.</li>
+            <li>Cache misses can introduce vulnerabilities in certain scenarios. Explain how a malicious program might exploit cache misses to gain unauthorised access to sensitive data.</li>
+            <li>Discuss potential mitigation strategies that computer architects or software developers can implement to improve cache security.</li>
+            <li>Flash memory has become a prominent storage solution, particularly in mobile devices. Brainstorm three creative ways flash memory technology could be further utilized in various aspects of everyday life beyond just storing data on smartphones and tablets.</li>
+            <li>As technology evolves, so does memory technology. Research emerging memory technologies that scientists are exploring. Briefly describe one such technology and discuss its potential advantages and disadvantages compared to traditional memory solutions.</li>
+            <li>Imagine you are designing a new type of handheld gaming device. Considering factors like battery life, processing power, and game complexity, what type of ISA (RISC or CISC) would be most suitable for this device? Explain your reasoning.</li>
+            <li>Discuss the advantages and disadvantages of having a standardised ISA for all computers.</li>
+            <li>The passage mentions the emergence of custom ISAs for specific applications. Research and describe one example of a custom ISA and its intended use case. How might custom ISAs impact the future of computing?</li>
+            <li>Provide an example of a MIPS instruction that utilises the immediate data input (immed) as shown in the datapath in Figure 1.61 and explain how it is used in operation.</li>
+            <li>Imagine explaining the differences between ARM and x86 processors to a friend who is not familiar with computer architecture. Break down the key concepts in an easy-to-understand way, using analogies or real-world examples.</li>
+            <li>Think about the environmental impact of different processor architectures. How does the lower power consumption of ARM processors contribute to a greener future for technology? Research and share some information on sustainable computing practices.</li>
+        </ol>
+
+        <h3>Chapter 1 Project</h3>
+        <p>Design a simple traffic light controller using logic gates. Simulate your design in a Logisim simulator.</p>
+    </section>
+
+    <hr>
+
+    <!-- ========================================================================= -->
+    <!-- CHAPTER TWO: PERFORMANCE AND OPTIMISATION OF COMPUTER PROCESSOR -->
+    <!-- ========================================================================= -->
+    <section id="chapter-2">
+        <h2>Chapter Two: Performance and Optimisation of Computer Processor</h2>
+
+        <h3>Scenario 2.1: Kitchen as a simple processor (Mama Chapati)</h3>
+        <p>Assume each customer orders only one chapati. In a non-pipelined approach: 1. Order taking (5 mins), 2. Dough preparation (10 mins), 3. Rolling (5 mins), 4. Cooking chapati (5 mins), 5. Serving (5 mins). Mama Chapati can optimise her kitchen using pipelining with kitchen assistants at each stage.</p>
+        <p><strong>Questions:</strong></p>
+        <ol type="a">
+            <li>How much speedup is gained by introducing a pipeline into the process of cooking chapatis?</li>
+            <li>Think about the challenges of pipelining in Mama Chapati's kitchen. What if the frying pan is already occupied when a new chapati needs to be cooked? How can Mama Chapati address this data dependency?</li>
+        </ol>
+
+        <!-- SVG: Figure 2.7 5-Stage Pipeline Timing Diagram -->
+        <h4>Diagram Reference: Figure 2.7 - 5-Stage Instruction Pipeline Timing Diagram</h4>
+        <svg width="600" height="170" viewBox="0 0 600 170" xmlns="http://www.w3.org/2000/svg">
+            <text x="10" y="35" font-family="sans-serif" font-size="12">Instruction 1</text>
+            <rect x="100" y="20" width="45" height="22" fill="none" stroke="black"/><text x="122" y="35" text-anchor="middle" font-size="11">IF</text>
+            <rect x="145" y="20" width="45" height="22" fill="none" stroke="black"/><text x="167" y="35" text-anchor="middle" font-size="11">ID</text>
+            <rect x="190" y="20" width="45" height="22" fill="none" stroke="black"/><text x="212" y="35" text-anchor="middle" font-size="11">EX</text>
+            <rect x="235" y="20" width="45" height="22" fill="none" stroke="black"/><text x="257" y="35" text-anchor="middle" font-size="11">MEM</text>
+            <rect x="280" y="20" width="45" height="22" fill="none" stroke="black"/><text x="302" y="35" text-anchor="middle" font-size="11">WB</text>
+
+            <text x="10" y="65" font-family="sans-serif" font-size="12">Instruction 2</text>
+            <rect x="145" y="50" width="45" height="22" fill="none" stroke="black"/><text x="167" y="65" text-anchor="middle" font-size="11">IF</text>
+            <rect x="190" y="50" width="45" height="22" fill="none" stroke="black"/><text x="212" y="65" text-anchor="middle" font-size="11">ID</text>
+            <rect x="235" y="50" width="45" height="22" fill="none" stroke="black"/><text x="257" y="65" text-anchor="middle" font-size="11">EX</text>
+            <rect x="280" y="50" width="45" height="22" fill="none" stroke="black"/><text x="302" y="65" text-anchor="middle" font-size="11">MEM</text>
+            <rect x="325" y="50" width="45" height="22" fill="none" stroke="black"/><text x="347" y="65" text-anchor="middle" font-size="11">WB</text>
+
+            <text x="10" y="95" font-family="sans-serif" font-size="12">Instruction 3</text>
+            <rect x="190" y="80" width="45" height="22" fill="none" stroke="black"/><text x="212" y="95" text-anchor="middle" font-size="11">IF</text>
+            <rect x="235" y="80" width="45" height="22" fill="none" stroke="black"/><text x="257" y="95" text-anchor="middle" font-size="11">ID</text>
+            <rect x="280" y="80" width="45" height="22" fill="none" stroke="black"/><text x="302" y="95" text-anchor="middle" font-size="11">EX</text>
+            <rect x="325" y="80" width="45" height="22" fill="none" stroke="black"/><text x="347" y="95" text-anchor="middle" font-size="11">MEM</text>
+            <rect x="370" y="80" width="45" height="22" fill="none" stroke="black"/><text x="392" y="95" text-anchor="middle" font-size="11">WB</text>
+
+            <text x="10" y="125" font-family="sans-serif" font-size="12">Instruction 4</text>
+            <rect x="235" y="110" width="45" height="22" fill="none" stroke="black"/><text x="257" y="125" text-anchor="middle" font-size="11">IF</text>
+            <rect x="280" y="110" width="45" height="22" fill="none" stroke="black"/><text x="302" y="125" text-anchor="middle" font-size="11">ID</text>
+            <rect x="325" y="110" width="45" height="22" fill="none" stroke="black"/><text x="347" y="125" text-anchor="middle" font-size="11">EX</text>
+            <rect x="370" y="110" width="45" height="22" fill="none" stroke="black"/><text x="392" y="125" text-anchor="middle" font-size="11">MEM</text>
+            <rect x="415" y="110" width="45" height="22" fill="none" stroke="black"/><text x="437" y="125" text-anchor="middle" font-size="11">WB</text>
+        </svg>
+
+        <h3>Activity 2.1: Simulation of the pipeline stages and movement of instruction in Computer Memory and Cache using CPU Simulator</h3>
+        <ol>
+            <li>Step 1: Study the components of the CPU.</li>
+            <li>Step 2: Create a program named "CacheTest1" with base address "101".</li>
+            <li>Step 3: Add program instructions as shown in the CPU simulator, observe the pipeline stages, run the simulation and observe the results.</li>
+        </ol>
+
+        <h3>Activity 2.2: Simulation of the pipeline stages and movement of instruction in Computer memory and cache using CPU Simulator (LDB Analysis)</h3>
+        <p><strong>Instructions:</strong> Conduct a cache performance analysis of LDB Instruction in CPU Simulator by repeating steps in Activity 2.1 with the LDB values between 0 to 10.</p>
+        <ol>
+            <li>Step 1: Record the experiment results using the parameters in the table (Addr, Instruction, Hits %, Misses %, Block).</li>
+            <li>Step 2: Analyse the experiment results and report your observation.</li>
+            <li>Step 3: Calculate the miss rate and Average Memory Access Time (AMAT).</li>
+        </ol>
+
+        <h3>Exercise 2.1: Pipeline Throughput and Depth</h3>
+        <ol>
+            <li>You are analysing a program running on a MIPS processor with a 5-stage pipeline. The program has a mix of instructions, with the following breakdown: <code>add</code>: $40\%$, <code>sub</code>: $20\%$, <code>lw</code>: $20\%$ and <code>sw</code>: $20\%$. All instructions take one cycle each in the execute stage. Memory access for <code>lw</code> and <code>sw</code> takes an additional cycle in the Memory Access stage.
+                <ol type="a">
+                    <li>Assuming a clock cycle time of $1\text{ ns}$ (nanosecond), calculate the theoretical throughput (instructions completed per second) of this program on a pipelined processor.</li>
+                    <li>How would the throughput be affected if the program had a higher percentage of <code>lw</code> and <code>sw</code> instructions compared to arithmetic instructions? Explain your reasoning.</li>
+                </ol>
+            </li>
+            <li>Imagine two MIPS processors with different pipeline depths: a 5-stage pipeline (as assumed earlier) and a deeper 8-stage pipeline. Discuss the potential benefits and drawbacks of using a deeper pipeline in terms of performance.</li>
+        </ol>
+
+        <h3>Exercise 2.2: Pipeline Hazards</h3>
+        <ol>
+            <li>Use resources such as the internet and the library to research on the following types of data hazards: Read After Write (RAW), and Write After Read (WAR).</li>
+            <li>The following instructions represent a program to be processed by a simplified processor pipeline. Identify the type(s) of hazards for each instruction, if any. Write "None" if no hazard is present:
+<pre>
+add $r1, $r2, $r3
+sub $r4, $r1, $r5
+lw  $r6, 100($r6)
+add $r7, $r4, $r8
+beq $r7, $r2, Loop
+add $r9, $r10, $r1
+</pre>
+            </li>
+        </ol>
+
+        <h3>Activity 2.3: Coin flip challenge for data hazard</h3>
+        <p><strong>Instructions:</strong> Imagine a program that simulates a coin flip game: (a) Read a user's bet amount, (b) Randomly generate a coin flip outcome, (c) Compare the bet and outcome to determine a win or loss, (d) Update the user's balance based on the result. A data hazard occurs because instruction 3 (compare) depends on the outcome generated in instruction 2 (random flip).</p>
+        <ol>
+            <li><strong>Part 1: The Penalty of stalling</strong>
+                <ul>
+                    <li>Step 1: Trace the pipeline (Without forwarding): List the four instructions and simulate the pipeline flow, indicating stalls with "Stall".</li>
+                    <li>Step 2: Observe the impact: Count the total number of cycles it takes to complete the program with stalling and discuss the performance penalty.</li>
+                </ul>
+            </li>
+            <li><strong>Part 2: Forwarding</strong>
+                <ul>
+                    <li>Step 3: Explain how forwarding could bypass the pipeline stall.</li>
+                    <li>Step 4: Trace the pipeline (with forwarding): Simulate the pipeline flow with forwarding, avoiding stalls.</li>
+                    <li>Step 5: Compare the number of cycles taken with forwarding to the number with stalling and discuss the performance gain achieved.</li>
+                </ul>
+            </li>
+        </ol>
+
+        <h3>Exercise 2.3: Stalling and Forwarding</h3>
+        <ol>
+            <li>As processor technology advances, new challenges and opportunities arise. Research emerging trends in pipeline hazard mitigation. Are there techniques beyond stalling and forwarding? How do these advancements contribute to the ever-increasing performance demands of modern computing?</li>
+            <li>You are given the following instructions below:
+<pre>
+lw  $s0, 20($t1)
+sub $t2, $s0, $t3
+</pre>
+                <ol type="a">
+                    <li>Draw the timing diagram to detect hazards. How many stalls are needed to avoid the hazard(s)?</li>
+                    <li>Now introduce forwarding to resolve the hazard. Has the forwarding helped you to completely avoid stalling the pipeline?</li>
+                    <li>Based on the answer in 2(b) and based on reputable materials from the library or the internet, state if the following statement is TRUE or FALSE: "You can always avoid stalls in data hazards by forwarding".</li>
+                </ol>
+            </li>
+        </ol>
+
+        <h3>Scenario 2.2: Laundry washing machine (Instruction Level Parallelism - ILP)</h3>
+        <p><strong>Questions:</strong></p>
+        <ol>
+            <li>Identify other independent tasks within the washing machine that could benefit from ILP. Consider safety measures and potential limitations.</li>
+            <li>How can sensor data be effectively utilized to optimise the washing process using ILP techniques?</li>
+            <li>Explain the concept of ILP to a customer at the laundromat. How does it benefit them from a practical standpoint?</li>
+        </ol>
+
+        <h3>Exercise 2.4: Instruction Level Parallelism (ILP)</h3>
+        <ol>
+            <li>How does identifying data dependencies within a program impact ILP? Explain with an example.</li>
+            <li>Design a simple flow chart illustrating the sequential and ILP execution of a program segment that subtracts two numbers.</li>
+            <li>Discuss the advantages and disadvantages of hardware- and software-based approaches to ILP.</li>
+            <li>Discuss the potential disadvantages of ILP in real-world scenarios.</li>
+        </ol>
+
+        <h3>Activity 2.4: Handling data dependencies in ILP</h3>
+        <p><strong>Instructions:</strong> Step 1: Analyse the code and identify dependencies from the following generated MIPS code, assuming all variables are in memory and are addressable as offsets from <code>$t0</code>:</p>
+<pre>
+lw  $t1, 0($t0)   // Load b to $t1
+lw  $t2, 4($t0)   // Load c to $t2
+add $t3, $t1, $t2 // $t3 = $t1 + $t2
+sw  $t3, 16($t0)  // Store $t3 to a
+lw  $t4, 8($t0)   // Load e to $t4
+lw  $t5, 12($t0)  // Load f to $t5
+add $t6, $t4, $t5 // $t6 = $t4 + $t5
+sw  $t6, 20($t0)  // Store $t6 to d
+</pre>
+        <ol>
+            <li>Step 2: Assume no forwarding has been implemented in the pipeline: (a) Analyse the code and identify dependencies, (b) Re-order the instructions to facilitate ILP, (c) Assess the performance gain of re-ordering instructions.</li>
+            <li>Step 3: Assume forwarding has been implemented in the pipeline: (a) Analyse the code and identify dependencies, (b) Re-order the instructions to facilitate ILP.</li>
+            <li>Step 4: Assess the performance gain of forwarding and re-ordering instructions and compile a comprehensive report.</li>
+        </ol>
+
+        <h3>Exercise 2.5: Loop Unrolling</h3>
+        <ol>
+            <li>Consider the loop unrolling example in the text. Explain why loop unrolling might not always be beneficial. What are some potential drawbacks of loop unrolling?</li>
+            <li>Imagine a loop that iterates 100 times, performing a multiplication ($a * b$) and storing the result in a variable ($c$). How much improvement in execution cycles could loop unrolling (factor of 4) achieve, assuming a 5-stage pipeline and perfect pipelining conditions? Explain your calculations.</li>
+        </ol>
+
+        <h3>Activity 2.5: Presentation on the benefits of superscalar execution and ILP in developing imaging applications</h3>
+        <p>You have been selected as part of a team to develop an image processing application that involves applying multiple filters to an image. By using reputable materials from the internet and library, prepare a presentation to show how concepts like superscalar execution and ILP will benefit the application's performance.</p>
+
+        <h3>Exercise 2.6: Scalar vs Superscalar Processors</h3>
+        <ol>
+            <li>Consider a program with the following instruction sequence:
+                <ul>
+                    <li>Instruction 1: Add A and B, store in C</li>
+                    <li>Instruction 2: Subtract C from D, store in E</li>
+                    <li>Instruction 3: Multiply E and F, store in G</li>
+                </ul>
+                <ol type="a">
+                    <li>Explain how a scalar pipelined processor would execute this sequence. How many clock cycles would it likely take (assuming no pipeline stalls)?</li>
+                    <li>How would a 2-issue superscalar processor potentially improve the execution time compared to the scalar approach? Briefly explain your reasoning.</li>
+                </ol>
+            </li>
+            <li>Which of the following statements accurately describes the key difference between a scalar and a superscalar processor?
+                <ol type="a">
+                    <li>Scalar processors can exploit out-of-order execution, while superscalar processors cannot.</li>
+                    <li>Superscalar processors have multiple execution units, whereas scalar processors have only one.</li>
+                    <li>Scalar processors are more complex due to dynamic scheduling, unlike superscalar processors.</li>
+                    <li>Superscalar processors require compiler intervention for parallel execution, while scalar processors do not.</li>
+                </ol>
+            </li>
+        </ol>
+
+        <!-- SVG: Figure 2.11 2-Bit Branch Prediction State Diagram -->
+        <h4>Diagram Reference: Figure 2.11 - States in a 2-bit Branch Prediction Scheme</h4>
+        <svg width="550" height="150" viewBox="0 0 550 150" xmlns="http://www.w3.org/2000/svg">
+            <ellipse cx="90" cy="75" rx="65" ry="30" fill="none" stroke="black" stroke-width="2"/>
+            <text x="90" y="72" text-anchor="middle" font-size="11">Strongly Not Taken</text>
+            <text x="90" y="88" text-anchor="middle" font-weight="bold" font-size="12">(00)</text>
+
+            <ellipse cx="240" cy="75" rx="65" ry="30" fill="none" stroke="black" stroke-width="2"/>
+            <text x="240" y="72" text-anchor="middle" font-size="11">Weakly Not Taken</text>
+            <text x="240" y="88" text-anchor="middle" font-weight="bold" font-size="12">(01)</text>
+
+            <ellipse cx="390" cy="75" rx="65" ry="30" fill="none" stroke="black" stroke-width="2"/>
+            <text x="390" y="72" text-anchor="middle" font-size="11">Weakly Taken</text>
+            <text x="390" y="88" text-anchor="middle" font-weight="bold" font-size="12">(10)</text>
+
+            <line x1="150" y1="60" x2="180" y2="60" stroke="black" stroke-width="1.5"/>
+            <text x="165" y="52" text-anchor="middle" font-size="10">Taken</text>
+            <line x1="180" y1="90" x2="150" y2="90" stroke="black" stroke-width="1.5"/>
+            <text x="165" y="105" text-anchor="middle" font-size="10">Not Taken</text>
+
+            <line x1="300" y1="60" x2="330" y2="60" stroke="black" stroke-width="1.5"/>
+            <text x="315" y="52" text-anchor="middle" font-size="10">Taken</text>
+            <line x1="330" y1="90" x2="300" y2="90" stroke="black" stroke-width="1.5"/>
+            <text x="315" y="105" text-anchor="middle" font-size="10">Not Taken</text>
+        </svg>
+
+        <h3>Exercise 2.7: Branch Prediction</h3>
+        <ol>
+            <li>You are working on a processor design that utilizes dynamic branch prediction. The processor encounters the following loop code:
+<pre>
+for (int i = 0; i &lt; 10; i++) {
+    if (i &gt; 5) {
+        // Execute some instructions only for the second half of the loop
+    }
+}
+</pre>
+                <ol type="a">
+                    <li>Analyse the loop behavior and identify how many times the conditional branch (<code>if (i &gt; 5)</code>) will be taken during a single loop execution. Explain your answer.</li>
+                    <li>Which approach would be more suitable for the given loop, and why?</li>
+                </ol>
+            </li>
+            <li><strong>2-Bit BHT Simulation:</strong> Simulate on paper the behavior of a 2-bit Branch History Table (BHT) for the provided loop. Assume the initial BHT prediction state is "Strongly Not Taken" (00).
+                <ol type="a">
+                    <li>Create a table with the following columns: Iteration, Actual Branch, BHT Prediction (before the update), and Outcome update (after execution).</li>
+                    <li>Fill out the table for the first five iterations of the loop.</li>
+                </ol>
+            </li>
+            <li>Based on your simulation in question 2, calculate the prediction accuracy of the 2-bit BHT for the first five iterations of the loop.</li>
+            <li>Briefly discuss the impact of branch prediction accuracy on processor performance. How can improved prediction accuracy benefit real-world applications?</li>
+        </ol>
+
+        <h3>Exercise 2.8: Register Renaming</h3>
+        <ol>
+            <li>Imagine you are a computer detective investigating a case of slow program execution. The culprit is inefficient use of registers in the processor! You have identified a segment of instructions that seem to be creating a problem:
+<pre>
+mul r1, r2, r3
+sub r1, r1, 4
+add r4, r1, r5
+</pre>
+                <ol type="a">
+                    <li>Identify the data dependency between these instructions. What type of dependency is it (RAW, WAR, or WAW)?</li>
+                    <li>Explain why this dependency might create a bottleneck in program execution.</li>
+                </ol>
+            </li>
+            <li>How could register renaming be used to eliminate the dependency you identified? Show how the instructions might be rewritten with temporary registers assigned by the renaming process.</li>
+            <li>Explain how register renaming, by eliminating dependencies, helps improve overall program execution speed. Hint: Think about how it allows for more efficient instruction scheduling.</li>
+            <li>Modern processors employ various techniques to optimise performance. Research another technique (e.g., pipelining or out-of-order execution) and explain how it works alongside register renaming for a performance boost.</li>
+        </ol>
+
+        <h3>Scenario 2.3: Kitchen as a simple processor (Pizza Party - Thread & Data Level Parallelism)</h3>
+        <p><strong>Questions:</strong></p>
+        <ol>
+            <li>Imagine you are the party planner in charge. How would you assign different tasks as separate threads to get things done faster?</li>
+            <li>What potential challenges could arise when using multithreading in party planning? How could you mitigate these challenges?</li>
+        </ol>
+
+        <h3>Exercise 2.9: Multithreading and Simultaneous Multithreading (SMT)</h3>
+        <ol>
+            <li>Imagine a multithreaded program downloading a large file (Thread A) and performing a complex mathematical calculation (Thread B) concurrently. How might data dependencies between these threads impact their execution? Explain your answer.</li>
+            <li>Imagine you have a program that involves a large number of independent tasks. Discuss the potential advantages and disadvantages of using SMT versus a multi-core processor with separate processes for each task.</li>
+            <li>Modern operating systems employ scheduling algorithms to manage threads and processes. Research different scheduling algorithms used for multithreading and explain how they impact performance and resource utilisation.</li>
+            <li>Imagine a single CPU core with SMT that supports two logical cores. The program has two threads:
+<pre>
+# Thread 1 (Print Numbers)
+def print_numbers():
+    for i in range(1, 6):
+        print(i)
+
+# Thread 2 (Calculate Factorial)
+def calculate_factorial(n):
+    result = 1
+    for i in range(1, n + 1):
+        result *= i
+    print(f"Factorial of {n} is: {result}")
+
+# Main Program
+start_thread(print_numbers)
+start_thread(calculate_factorial, 5)
+wait_for_threads()
+</pre>
+                <ol type="a">
+                    <li>Explain the expected output of the program. In what order will the numbers be printed (from Thread 1) and the factorial result (from Thread 2) be displayed?</li>
+                    <li>Imagine running this program with a single thread instead of two. How might the output and execution order differ?</li>
+                    <li>Considering the scenario above, explain how multithreading can potentially improve the responsiveness of the program, especially for a user interacting with it.</li>
+                    <li>While this program demonstrates multithreading, can SMT further improve its performance within a single core? Explain your reasoning.</li>
+                </ol>
+            </li>
+        </ol>
+
+        <h3>Exercise 2.10: Data-Level Parallelism (DLP) & SIMD</h3>
+        <ol>
+            <li>Analyse the following applications and explain how SIMD instructions can be beneficial in each scenario:
+                <ol type="a">
+                    <li>Image processing (applying a filter to a high-resolution image)</li>
+                    <li>Audio processing (encoding/decoding an audio file)</li>
+                    <li>Scientific computing (performing vectorised calculations on large datasets)</li>
+                </ol>
+            </li>
+            <li>Imagine you are working on a program that analyses website traffic data from millions of users. How can data partitioning be advantageous in this scenario? Consider factors such as improved performance, scalability, and efficient resource utilisation.</li>
+            <li>Discuss two common data partitioning strategies, domain decomposition and spatial decomposition, and provide a real-world application example for each.</li>
+            <li>Research and identify two emerging challenges or limitations associated with thread-level parallelism (TLP) in modern processor architectures.</li>
+            <li>Briefly discuss potential solutions or mitigation strategies that computer architects might consider to address emerging TLP challenges.</li>
+            <li>Imagine a program that downloads a large file (Thread A) and performs a complex mathematical calculation (Thread B) concurrently. Analyse two scenarios:
+                <ol type="a">
+                    <li>Scenario 1: No data dependencies exist between Thread A and Thread B.</li>
+                    <li>Scenario 2: Thread B relies on the completion of Thread A to access specific downloaded data for the calculation.</li>
+                </ol>
+            </li>
+            <li>Explain how the presence or absence of data dependencies would impact the execution flow and potential performance benefits of multithreading in these scenarios.</li>
+        </ol>
+
+        <h3>Revision Exercise 2</h3>
+        <ol>
+            <li>For the following code snippet, trace the execution steps (such as fetch, decode, execute, memory access, write back) in both a non-pipelined and a pipelined processor (assuming no hazards). Compare the number of clock cycles it takes to complete the instructions in both scenarios. Explain the speedup achieved through pipelining:
+<pre>
+lw  $t0, 4($s3)   # Load value from memory to $t0
+sub $t1, $t0, $s4 # Subtract $s4 from loaded value to $t1
+</pre>
+            </li>
+            <li>Research the concept of forwarding in pipelined processors. Briefly explain how forwarding can be used to address data hazards and potentially improve performance compared to stalling.</li>
+            <li>Imagine you are a computer architect. How might future processor designs enhance ILP techniques?</li>
+            <li>Research and compare two different architectures (such as VLIW and Superscalar) that exploit ILP. Summarise their key differences and advantages in a short presentation.</li>
+            <li>Imagine you are a compiler developer working on optimising a code segment for a modern processor. The code involves multiple loops and calculations. How would you approach this task, considering the concepts of loop unrolling, instruction scheduling, and data dependence analysis? Briefly outline your strategy.</li>
+            <li>Investigate the impact of cache size and memory access patterns on the effectiveness of loop unrolling.</li>
+            <li>Research real-world compiler optimisation techniques related to data dependence analysis (beyond the basic example provided). Explain, in your own words, how data dependence analysis helps compilers exploit ILP effectively.</li>
+            <li>Discuss two potential benefits and two trade-offs associated with using superscalar processors compared to scalar processors.</li>
+            <li>Imagine you are a computer architect tasked with designing the next generation of processors. How could you leverage the concepts of superscalar execution and ILP beyond simply increasing the number of execution units? Briefly describe your innovative approach.</li>
+            <li>Assume the initial BHT prediction is "Strongly taken" (11). Analyse the differences in prediction behavior compared to an initial prediction of "Strongly not taken" scenario.</li>
+            <li>A single CPU core with SMT technology is processing two threads. Thread 1 is performing image editing, which requires frequent memory access. Thread 2 is performing text processing, which is CPU-bound. How might SMT benefit from this scenario?</li>
+            <li>Think about an application you use daily (e.g., web browser, video editor). How might multithreading or SMT contribute to its responsiveness and overall user experience? Explain your reasoning.</li>
+        </ol>
+
+        <h3>Chapter 2 Project: Analyzing website traffic data</h3>
+        <p>Imagine you are tasked to work on a program that analyses website traffic data from millions of users. As an expert in Computer Science, investigate how data partitioning can enhance the performance of your program and solve this problem. Explore challenges associated with modern processor architectures and suggest the solutions. Document your findings and explanations in a well-organised report and keep it in a portfolio.</p>
+    </section>
+
+    <hr>
+
+    <!-- ========================================================================= -->
+    <!-- CHAPTER THREE: ADVANCED COMPUTER NETWORKS -->
+    <!-- ========================================================================= -->
+    <section id="chapter-3">
+        <h2>Chapter Three: Advanced Computer Networks</h2>
+
+        <h3>Scenario 3.1: Sending a letter to a friend</h3>
+        <p>Imagine you want to send a letter to a friend in another region. The entire process involves several steps, each with specific tasks to ensure the letter reaches its destination safely and correctly.</p>
+        <p><strong>Questions:</strong></p>
+        <ol type="a">
+            <li>When you write the letter and choose the language and format, how does this reflect communication models?</li>
+            <li>Briefly explain, what do you do before you send the letter to your friends?</li>
+            <li>Describe the mechanism you undertake in preparing and sending a letter to a friend, basing on the above scenario.</li>
+        </ol>
+
+        <!-- SVG: Figure 3.4 OSI vs TCP/IP Model Comparison -->
+        <h4>Diagram Reference: Figure 3.4 - Comparison of OSI Model and TCP/IP Model</h4>
+        <svg width="500" height="220" viewBox="0 0 500 220" xmlns="http://www.w3.org/2000/svg">
+            <text x="100" y="20" text-anchor="middle" font-weight="bold" font-size="13">OSI Model (7 Layers)</text>
+            <rect x="30" y="30" width="140" height="22" fill="none" stroke="black"/><text x="100" y="45" text-anchor="middle" font-size="11">7. Application</text>
+            <rect x="30" y="55" width="140" height="22" fill="none" stroke="black"/><text x="100" y="70" text-anchor="middle" font-size="11">6. Presentation</text>
+            <rect x="30" y="80" width="140" height="22" fill="none" stroke="black"/><text x="100" y="95" text-anchor="middle" font-size="11">5. Session</text>
+            <rect x="30" y="105" width="140" height="22" fill="none" stroke="black"/><text x="100" y="120" text-anchor="middle" font-size="11">4. Transport</text>
+            <rect x="30" y="130" width="140" height="22" fill="none" stroke="black"/><text x="100" y="145" text-anchor="middle" font-size="11">3. Network</text>
+            <rect x="30" y="155" width="140" height="22" fill="none" stroke="black"/><text x="100" y="170" text-anchor="middle" font-size="11">2. Data Link</text>
+            <rect x="30" y="180" width="140" height="22" fill="none" stroke="black"/><text x="100" y="195" text-anchor="middle" font-size="11">1. Physical</text>
+
+            <text x="350" y="20" text-anchor="middle" font-weight="bold" font-size="13">TCP/IP Model (4 Layers)</text>
+            <rect x="280" y="30" width="140" height="72" fill="none" stroke="black"/><text x="350" y="70" text-anchor="middle" font-size="12">Application</text>
+            <rect x="280" y="105" width="140" height="22" fill="none" stroke="black"/><text x="350" y="120" text-anchor="middle" font-size="12">Transport</text>
+            <rect x="280" y="130" width="140" height="22" fill="none" stroke="black"/><text x="350" y="145" text-anchor="middle" font-size="12">Internet</text>
+            <rect x="280" y="155" width="140" height="47" fill="none" stroke="black"/><text x="350" y="182" text-anchor="middle" font-size="12">Network Access</text>
+        </svg>
+
+        <h3>Activity 3.1: Exploring OSI Model Layers and Comparing with TCP/IP</h3>
+        <ol>
+            <li><strong>Explore OSI model layers:</strong>
+                <ol type="a">
+                    <li>Research and understand the distinct functions of each OSI model layer (Physical, Data Link, Network, Transport, Session, Presentation, Application).</li>
+                    <li>Explore how data is processed and transferred through these layers during communication.</li>
+                </ol>
+            </li>
+            <li><strong>Compare OSI with TCP/IP Layers:</strong>
+                <ol type="a">
+                    <li>Analyse the functionalities of OSI layers and compare them with corresponding layers in the TCP/IP model.</li>
+                    <li>Identify similarities and differences in terms of protocols, data encapsulation, and network communication handling.</li>
+                </ol>
+            </li>
+            <li><strong>Deliverables:</strong> Write down your findings by outlining the functions of each OSI model layer and a comparative analysis between OSI and TCP/IP layers. Document your work in a portfolio.</li>
+        </ol>
+
+        <h3>Exercise 3.1: Reference Models & Protocols</h3>
+        <ol>
+            <li>Give examples of different protocols that devices use on a network.</li>
+            <li>Besides ensuring smooth data exchange, what other advantages do reference models offer in network communication?</li>
+            <li>How do reference models change and incorporate new technologies and network protocols?</li>
+            <li>Provide additional real-world examples where a standardized approach is essential for ensuring communication or compatibility between different systems.</li>
+        </ol>
+
+        <h3>Exercise 3.2: Data Encapsulation & OSI Layers</h3>
+        <ol>
+            <li>What happens when application data moves from one layer to another in the OSI model as far as the OSI model is concerned?</li>
+            <li>Evaluate what is added to the user data when it passes from one layer to another in the OSI model. Give the resulting name for user data at each layer.</li>
+            <li>The OSI model has been around for decades. Despite its enduring value, can you envision any limitations of the model in the context of future network technologies? If so, propose potential adaptations or alternative models that might be necessary.</li>
+            <li>Differentiate between physical communications and virtual communications between OSI layers during data transfer.</li>
+        </ol>
+
+        <h3>Activity 3.2: Exploring of the Physical Layer</h3>
+        <p>Use Internet search to perform the following:</p>
+        <ol>
+            <li><strong>Research the Physical Layer:</strong> Use the Internet to explore and analyse the physical layer of the OSI model.</li>
+            <li><strong>Identify Transmission Medium:</strong> Determine the type of transmission medium used to connect your computer to the network.</li>
+            <li><strong>Classify Transmission Medium:</strong> Identify the broad category of this transmission medium (such as wired, wireless) and list its advantages and disadvantages.</li>
+            <li><strong>Analyse data transmission:</strong> Discuss how this transmission medium sends and receives bits for website viewing on your computer.</li>
+        </ol>
+
+        <h3>Exercise 3.3: Physical Layer</h3>
+        <ol>
+            <li>Discuss the factors affecting signal strength at the physical layer.</li>
+            <li>What are the main devices used at the physical layer?</li>
+            <li>Discuss how the physical layer's design and implementation influence the efficiency and reliability of a network.</li>
+        </ol>
+
+        <h3>Activity 3.3: Exploring of the Data Link Layer</h3>
+        <ol>
+            <li><strong>Step 1: Explore hop-to-hop delivery:</strong> (a) Research how the data link layer enables hop-to-hop delivery of frames that encapsulate your request for website viewing (from computer to switch to router). (b) Use network simulation software to create a simple network topology and observe how data is encapsulated into frames.</li>
+            <li><strong>Step 2: Analyse incoming packages:</strong> Investigate how incoming packages (web page responses) arrive at the router, pass through the switch, and eventually reach your computer, and simulate the return path.</li>
+            <li><strong>Step 3: Examine Data Link layer protocols:</strong> Study how protocols at the data link layer cooperate and use tools like Wireshark to capture and analyse real network traffic (source and destination MAC addresses).</li>
+            <li><strong>Step 4: Document your findings</strong> in a portfolio with screenshots.</li>
+        </ol>
+
+        <h3>Exercise 3.4: Data Link Layer & VLANs</h3>
+        <ol>
+            <li>How does the Data Link layer handle errors that occur during data transmission, and what are the advantages and disadvantages of these error detection and correction methods?</li>
+            <li>Evaluate the impact of different Data Link layer protocols on network performance. How do protocols like Ethernet and Wi-Fi manage access to the shared communication medium, and which is more efficient in various scenarios?</li>
+            <li>Explain why it is necessary for an organisation to use VLANs.</li>
+        </ol>
+
+        <h3>Activity 3.4: Exploring the Network layer</h3>
+        <ol>
+            <li><strong>Designing a network for a new office:</strong> (a) Imagine you need to design a network for a new office building. (b) Plan how you will set up the network layer to support both wired and wireless devices. (c) Ensure your network can grow in the future (scalability). (d) Think about how to keep the network secure. (e) Consider your budget and how to keep costs low. (f) Document your network plan.</li>
+            <li><strong>Handling a router failure:</strong> (a) Imagine a router in your network stops working, causing communication problems. (b) Think of different ways to reroute the network traffic to fix the issue quickly. (c) Make sure your solutions keep the network secure and data safe. (d) Write down your ideas for alternative routing solutions.</li>
+            <li><strong>Document your findings</strong> in a portfolio.</li>
+        </ol>
+
+        <h3>Activity 3.5: Exploring adaptive and non-adaptive routing algorithms</h3>
+        <ol>
+            <li>Step 1: Research adaptive and non-adaptive routing algorithms, how each type functions, their advantages, disadvantages, and real-world examples.</li>
+            <li>Step 2: Create a table or chart that compares the key features of adaptive and non-adaptive routing algorithms (response to network changes, complexity, efficiency, scalability).</li>
+            <li>Step 3: Use network simulation software to set up a simple network topology and implement an adaptive routing algorithm (e.g., OSPF or EIGRP) and a non-adaptive routing algorithm (e.g., static routing).</li>
+            <li>Step 4: Write a detailed report comparing their performance, behavior, and use cases.</li>
+        </ol>
+
+        <h3>Exercise 3.5: Network Layer Routing & Quality of Service (QoS)</h3>
+        <ol>
+            <li>The Internet has revolutionised communication and collaboration on a global scale. Explain how a deep understanding of the network layer empowers individuals and businesses to leverage the power of the Internet effectively.</li>
+            <li>Explain the concept of routing protocols and how they help routers choose the best paths for data to travel. How does this choice of routing algorithm affect the performance and fault tolerance of different network topologies (e.g., mesh, star, ring)? Provide a detailed analysis with examples.</li>
+            <li>Imagine you are a network administrator troubleshooting a slow network connection. How would understanding the network layer's functionalities, particularly routing, help you diagnose the issue?</li>
+            <li>How does Quality of Service (QoS) impact network performance and user experience in modern digital environments?</li>
+            <li>What are the key components and implementation methods of Quality of Service (QoS) mechanisms, and how do they contribute to optimising network traffic?</li>
+        </ol>
+
+        <h3>Exercise 3.6: IPv4 Addressing & Address Classes</h3>
+        <ol>
+            <li>
+                <ol type="a">
+                    <li>How would you determine the class for a given IP address in dotted decimal notation?</li>
+                    <li>Identify the class for the following IP addresses in dotted decimal notation:
+                        <ol type="i">
+                            <li><code>100.31.21.11</code></li>
+                            <li><code>165.10.11.1</code></li>
+                            <li><code>242.12.13.14</code></li>
+                            <li><code>200.200.200.200</code></li>
+                            <li><code>230.13.56.100</code></li>
+                        </ol>
+                    </li>
+                </ol>
+            </li>
+            <li>How would you determine the class for a given IP address in binary notation? Identify the class for the following IP addresses in binary notation:
+                <ol type="a">
+                    <li><code>11110001 11111000 10110011 00011001</code></li>
+                    <li><code>01110000 11000111 00111110 00011001</code></li>
+                    <li><code>11000111 00111110 00000000 10111110</code></li>
+                    <li><code>10110011 00000000 10111110 00110011</code></li>
+                    <li><code>01000111 00110110 10110011 00011111</code></li>
+                </ol>
+            </li>
+            <li>
+                <ol type="a">
+                    <li>How would you determine Network ID and Host ID parts for a given IP address?</li>
+                    <li>Identify Network ID and Host ID parts for the following IP addresses:
+                        <ol type="i">
+                            <li><code>112.45.231.11</code></li>
+                            <li><code>201.198.168.2</code></li>
+                            <li><code>165.19.20.6</code></li>
+                        </ol>
+                    </li>
+                </ol>
+            </li>
+            <li>Calculate the number of Network IDs and Host IDs for each IP address class. Then, pick one network ID from each class and list all possible IP addresses that can be assigned within that network.</li>
+        </ol>
+
+        <h3>Activity 3.7: Exploring the network layer with simulation</h3>
+        <ol>
+            <li><strong>Simulate end-to-end delivery:</strong> Use network simulation software (such as Cisco Packet Tracer, GNS3) to simulate how the network layer enables end-to-end delivery of packets between your computer and a simulated web server.</li>
+            <li><strong>Examine network layer protocols:</strong> Research how protocols at the network layer (such as IPv4 and IPv6) facilitate the delivery of web content in various simulated network environments, and compare their functionalities.</li>
+            <li><strong>Study the role of routers:</strong> Utilize simulation to observe the role of Layer 3 devices (routers) in managing simulated outgoing and incoming packets.</li>
+            <li><strong>Document your findings</strong> into a portfolio report with screenshots.</li>
+        </ol>
+
+        <h3>Exercise 3.7: Subnetting</h3>
+        <ol>
+            <li>Tanzania Institute of Education has been allocated the network address <code>211.77.20.0</code> and needs to create 6 subnets. The largest subnet must accommodate up to 25 hosts, and future subnet sizes should not exceed 30 hosts. Identify the valid subnets and the host IP addresses within each subnet.</li>
+            <li>A school is granted site address (IP address) <code>11.0.0.0/24</code> for its use. Design the subnets for the school considering the following number of hosts:
+                <ol type="a">
+                    <li>Subnet A with 50 hosts</li>
+                    <li>Subnet B with 25 hosts</li>
+                    <li>Subnet C with 10 hosts, and</li>
+                    <li>Subnet D with 5 hosts</li>
+                </ol>
+            </li>
+            <li>NECTA head office is granted the site address <code>135.65.20.31</code> by the regional ISP (Internet Service Provider) for its use:
+                <ol type="a">
+                    <li>Create 16 subnets for NECTA</li>
+                    <li>Calculate the number of hosts per subnet</li>
+                    <li>Determine the subnet ranges</li>
+                </ol>
+            </li>
+        </ol>
+
+        <h3>Activity 3.8: Exploring the Transport layer</h3>
+        <ol>
+            <li><strong>Explore the Transport layer:</strong> Investigate how the Transport layer facilitates end-to-end delivery of content between your computer and a web server with each click on a website.</li>
+            <li><strong>Examine the roles of TCP and UDP:</strong> Study the functions of Transmission Control Protocol (TCP) and User Datagram Protocol (UDP) in delivering web content to your computer, and highlight the differences between TCP and UDP.</li>
+            <li><strong>Flow control and congestion avoidance:</strong> Explore mechanisms that manage the rate of data transmission (flow control) and techniques that regulate data flow to prevent network congestion (congestion avoidance).</li>
+        </ol>
+
+        <h3>Exercise 3.8: Transport Layer (TCP, UDP & Flow Control)</h3>
+        <ol>
+            <li>Imagine you are designing a video-conferencing application. Would you choose TCP or UDP for data transmission? Justify your answer considering the characteristics of each protocol and the requirements of a video conference.</li>
+            <li>Imagine you are developing a reliable file transfer application. Discuss how understanding error detection mechanisms in the Transport layer can be used to improve data integrity during file transfers.</li>
+            <li>Explain the concept of flow control in the Transport layer. How does it prevent data from overwhelming the receiver?</li>
+            <li>Imagine you are downloading a large file from the internet. How might flow control mechanisms implemented in the Transport layer affect the download speed you experience?</li>
+        </ol>
+
+        <h3>Activity 3.9: Accessing web pages to explore the Application layer</h3>
+        <p><strong>Instructions:</strong> Open a web browser on a networked computer, enter <code>www.necta.go.tz</code> to send an HTTP GET request, observe the server's response, interact with links/forms, and summarize your observations in a written report explaining how the Application layer handles web browsing.</p>
+
+        <h3>Activity 3.10: Exploring the Application Layer</h3>
+        <ol>
+            <li>Step 1: Research HTTP, HTTPS, FTP, SMTP, and DNS using reliable sources and take notes on each protocol's primary function and typical use cases.</li>
+            <li>Step 2: Look into the detailed features of each protocol and compare the advantages and disadvantages of each.</li>
+            <li>Step 3: Identify real-world applications that use these protocols and document how they utilize them in a written portfolio report.</li>
+        </ol>
+
+        <h3>Exercise 3.9: Application Layer Protocols</h3>
+        <ol>
+            <li>Use a network analysis tool such as Wireshark to capture traffic from a web browsing session or simulate by using Packet Tracer. Identify and describe the key components of an HTTP request and response. How do these components differ when browsing a secure HTTPS site?</li>
+            <li>Use any network analyser (such as Wireshark) to set up an FTP server and client on your local network or simulate by using Packet Tracer. Transfer a file using FTP and then using SFTP. Compare the transfer process and the security measures in place. What differences do you observe?</li>
+            <li>Configure an email client with SMTP, IMAP, and POP3 settings for a given email service. Send an email and verify its receipt using IMAP and POP3. What are the key differences in how emails are handled by IMAP versus POP3?</li>
+            <li>How can you explore a Session layer and Presentation layer using network simulation software (such as GNS3 or Packet Tracer)? Explain their role in the OSI model, primary functions, and real-world examples.</li>
+        </ol>
+
+        <h3>Activity 3.11: Straight-through cable construction</h3>
+        <p><strong>Instructions:</strong> Follow steps 1 to 10 (Determine length, Cut cable, Strip cable, Organise pairs to T568-B standard, Reorder pairs, Prepare wires, Attach RJ-45 Plug, Crimp plug, Repeat for second end, Test cable with a cable tester) to build and test a Category 5, 5e, or 6 UTP Ethernet straight-through patch cable and document the test results.</p>
+
+        <h3>Activity 3.12: Crossover Cable Construction</h3>
+        <p><strong>Instructions:</strong> Follow steps 1 to 11 (Wire one end to T568-A and the other end to T568-B standard, Measure length, Cut cable, Strip cable, Organise pairs, Untwist and reorder pairs, Prepare wires, Attach RJ-45 plug, Crimp plug, Repeat for other end with T568-A, Test cable) to construct and test a functional Ethernet crossover cable and document the test results.</p>
+
+        <h3>Activity 3.13: Creating a star topology using Cisco Packet Tracer</h3>
+        <p><strong>Instructions:</strong> Launch Cisco Packet Tracer, add End Devices (PC0, PC1, PC2, PC3) and a Switch (2950-24 Switch0), connect each PC to the switch using copper straight-through cables, verify link lights, assign IP addresses (<code>192.168.1.2</code>, <code>192.168.1.3</code>, <code>192.168.1.4</code> with subnet mask <code>255.255.255.0</code>), and test connectivity using the <code>ping</code> command.</p>
+
+        <!-- SVG: Star Topology Diagram (Activity 3.13) -->
+        <h4>Diagram Reference: Activity 3.13 - Star Topology in Cisco Packet Tracer</h4>
+        <svg width="450" height="190" viewBox="0 0 450 190" xmlns="http://www.w3.org/2000/svg">
+            <rect x="175" y="75" width="100" height="35" fill="none" stroke="black" stroke-width="2"/>
+            <text x="225" y="97" text-anchor="middle" font-size="12" font-weight="bold">Switch0 (2950)</text>
+
+            <rect x="20" y="20" width="70" height="35" fill="none" stroke="black"/><text x="55" y="42" text-anchor="middle" font-size="11">PC0</text>
+            <rect x="20" y="130" width="70" height="35" fill="none" stroke="black"/><text x="55" y="152" text-anchor="middle" font-size="11">PC1</text>
+            <rect x="360" y="20" width="70" height="35" fill="none" stroke="black"/><text x="395" y="42" text-anchor="middle" font-size="11">PC2</text>
+            <rect x="360" y="130" width="70" height="35" fill="none" stroke="black"/><text x="395" y="152" text-anchor="middle" font-size="11">PC3</text>
+
+            <line x1="90" y1="37" x2="175" y2="85" stroke="black" stroke-width="1.5"/>
+            <line x1="90" y1="147" x2="175" y2="100" stroke="black" stroke-width="1.5"/>
+            <line x1="360" y1="37" x2="275" y2="85" stroke="black" stroke-width="1.5"/>
+            <line x1="360" y1="147" x2="275" y2="100" stroke="black" stroke-width="1.5"/>
+        </svg>
+
+        <h3>Activity 3.14: Fostering network awareness at Mtakuja Secondary School</h3>
+        <p>Imagine you have been assigned the role of Network Security Administrator at Mtakuja Secondary School. Outline your strategy for educating students, teachers, and staff about cybersecurity best practices and emphasising the importance of safeguarding personal and school information from online threats.</p>
+
+        <h3>Exercise 3.10: Network Security Principles</h3>
+        <ol>
+            <li>How do the principles of confidentiality, integrity, and availability (CIA triad) guide the development and implementation of network security policies within an organisation?</li>
+            <li>Using examples, explain how preventive, detective, and corrective controls function within a network security model to protect against potential threats.</li>
+            <li>What are the distinguishing characteristics of malware, phishing, and denial-of-service attacks, and how do these threats specifically exploit network vulnerabilities?</li>
+            <li>How can misconfigured network devices and weak authentication mechanisms contribute to security breaches, and what steps can be taken to mitigate these vulnerabilities?</li>
+        </ol>
+
+        <h3>Exercise 3.11: PSTN and Mobile Telephone Systems</h3>
+        <ol>
+            <li>Explain the fundamental differences between PSTN and mobile telephone systems in terms of infrastructure and technology.</li>
+            <li>Describe the process of a call setup and teardown in a PSTN. What are the roles of the central office and the local loop in this process?</li>
+            <li>How does handover work in a mobile telephone system? Describe the different types of handovers and the scenarios in which they occur.</li>
+            <li>What are the key differences between the various generations of mobile networks (1G, 2G, 3G, 4G, and 5G)? Focus on their technological advancements and capabilities.</li>
+            <li>Discuss the security challenges associated with PSTN and mobile telephone systems. What protocols or measures are commonly used to address these challenges?</li>
+            <li>Describe the role of the Mobile Switching Center (MSC) in a mobile telephone system. How does it interact with other components like the Base Station Controller (BSC) and the Base Transceiver Station (BTS)?</li>
+        </ol>
+
+        <h3>Revision Exercise 3</h3>
+        <ol>
+            <li>Imagine you are troubleshooting a network connectivity issue. How can your knowledge of the OSI and TCP/IP models assist you in identifying the problematic layer?</li>
+            <li>New technologies are continually emerging. How do you envision the OSI and TCP/IP models needing to evolve to incorporate future network functionalities?</li>
+            <li>Research a particular network technology, such as VPNs or wireless networking, and elaborate how it operates within the framework of the OSI or TCP/IP model.</li>
+            <li>How does VLAN segmentation contribute to network efficiency and security, and what are the key considerations when implementing VLANs in a large-scale enterprise network?</li>
+            <li>What role does ARP (Address Resolution Protocol) play in modern networking, and how does it facilitate communication between devices within the same subnet?</li>
+            <li>Explain the significance of HTTP (Hypertext Transfer Protocol) in the context of web communication, and how its features contribute to the browsing experience for end-users.</li>
+            <li>What are the primary differences between FTP (File Transfer Protocol) and HTTP in terms of their functionalities, security features, and suitability for various file transfer scenarios?</li>
+            <li>Given a network with the IP address <code>192.168.1.0/24</code>, how many subnets can be created using a subnet mask of <code>255.255.255.192</code>, and what are the valid IP ranges for each subnet?</li>
+            <li>In a network with the IP address range <code>172.16.0.0/16</code>, how many host addresses are available per subnet if subnetting with a mask of <code>255.255.255.240</code>?</li>
+            <li>If a company requires four subnets, each accommodating at least 30 hosts, what is the minimum subnet mask that can be used, and what are the network addresses and valid host ranges for each subnet?</li>
+            <li>In a network with the IP address <code>10.10.0.0/22</code>, how many bits are used for subnetting, and how many subnets and hosts are available in this configuration?</li>
+            <li>Given the requirement to create six subnets from the network <code>192.168.10.0/24</code>, determine the appropriate subnet mask and calculate the valid IP ranges for each subnet.</li>
+            <li>Cybersecurity threats are a growing concern. How does understanding the OSI and TCP/IP models aid in identifying potential vulnerabilities and implementing security measures at different network layers?</li>
+            <li>Explain the concept of social engineering and how attackers exploit human psychology to gain access to sensitive information or systems. How can organisations raise awareness and mitigate social engineering risks?</li>
+            <li>How can vulnerability scanning and patching help identify and address potential security weaknesses?</li>
+        </ol>
+
+        <h3>Chapter 3 Project: Designing a school network</h3>
+        <p>Suppose you have been assigned to design a network for your school, which has been allocated the IP address <code>198.50.60.0</code>. Describe the procedures you could undertake to complete this project. In your project, make sure you deliver a comprehensive and detailed report covering the analysis, design decisions, and implementation process including screenshots of the Cisco Packet Tracer implementation.</p>
+    </section>
+
+    <hr>
+
+    <!-- ========================================================================= -->
+    <!-- CHAPTER FOUR: OBJECT ORIENTED PROGRAMMING WITH C++ -->
+    <!-- ========================================================================= -->
+    <section id="chapter-4">
+        <h2>Chapter Four: Object Oriented Programming with C++</h2>
+
+        <h3>Scenario 4.1: Your school library system</h3>
+        <p>Your school library wants to efficiently organise and manage its collection of books to improve book service delivery at your school. The librarian aims to create a system that can keep track of books, handle checkouts, and provide information to students and staff.</p>
+        <p><strong>Questions:</strong></p>
+        <ol>
+            <li>What kind of information should the system collect and from which type of system users?</li>
+            <li>Do you think, in this scenario, the OOP can be applied in real-world situations? Briefly explain how.</li>
+        </ol>
+
+        <!-- SVG: Figure 4.1 Class and Object Representation -->
+        <h4>Diagram Reference: Figure 4.1 - A Car as an Object</h4>
+        <svg width="450" height="170" viewBox="0 0 450 170" xmlns="http://www.w3.org/2000/svg">
+            <rect x="20" y="15" width="410" height="140" fill="none" stroke="black" stroke-width="2"/>
+            <line x1="20" y1="45" x2="430" y2="45" stroke="black" stroke-width="1.5"/>
+            <text x="225" y="35" text-anchor="middle" font-weight="bold" font-size="14">CLASS: Car | OBJECT: Toyota</text>
+            <text x="35" y="70" font-weight="bold" font-size="12">PROPERTIES (Attributes):</text>
+            <text x="35" y="90" font-size="12">- Make (Toyota), Model (Carina)</text>
+            <text x="35" y="110" font-size="12">- Color (Silver), Year (2021)</text>
+            <text x="35" y="130" font-size="12">- Mileage (31500 km)</text>
+
+            <text x="250" y="70" font-weight="bold" font-size="12">METHODS (Behaviors):</text>
+            <text x="250" y="90" font-size="12">- StartEngine()</text>
+            <text x="250" y="110" font-size="12">- Accelerate()</text>
+            <text x="250" y="130" font-size="12">- Brake()</text>
+        </svg>
+    </section>
+
+    <hr>
+
+    <footer>
+        <p><strong>Watermark: elimika.online</strong> | <strong>prep. by Mr. Mohamed</strong></p>
+    </footer>
+
+</body>
+</html>

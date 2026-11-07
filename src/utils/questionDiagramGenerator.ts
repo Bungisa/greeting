@@ -1420,6 +1420,220 @@ export function getQuestionDiagramSvg(
     };
   }
 
+  // ============================================================================
+  // FORM 5 COMPUTER SCIENCE TEXTBOOK DIAGRAMS (Chapters 1 to 8)
+  // ============================================================================
+  if (
+    qLower.includes('von neumann') ||
+    qLower.includes('figure 1.5') ||
+    qLower.includes('activity 1.1:') ||
+    qLower.includes('activity 1.2:')
+  ) {
+    return {
+      title: 'Figure 1.5: Von Neumann Architecture',
+      caption: 'CPU (ALU, Registers, Control Unit) connected via Address/Data Bus to Memory Unit and I/O Devices',
+      svgHtml: `<svg viewBox="0 0 650 240" class="w-full max-w-[520px] h-auto mx-auto" xmlns="http://www.w3.org/2000/svg">
+        <rect width="650" height="240" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+        <rect x="20" y="90" width="100" height="50" rx="6" fill="#eff6ff" stroke="#1d4ed8" stroke-width="2"/>
+        <text x="70" y="120" text-anchor="middle" font-family="sans-serif" font-weight="700" font-size="13" fill="#1e3a8a">Input Device</text>
+        <rect x="180" y="20" width="260" height="190" rx="8" fill="#f8fafc" stroke="#0f172a" stroke-width="2"/>
+        <text x="200" y="45" font-family="sans-serif" font-weight="800" font-size="14" fill="#0f172a">CPU</text>
+        <rect x="200" y="60" width="110" height="130" rx="6" fill="#ffffff" stroke="#334155" stroke-width="1.5"/>
+        <text x="255" y="95" text-anchor="middle" font-family="sans-serif" font-weight="700" font-size="13" fill="#0f172a">ALU</text>
+        <text x="255" y="125" text-anchor="middle" font-family="sans-serif" font-weight="700" font-size="13" fill="#2563eb">Registers</text>
+        <text x="255" y="155" text-anchor="middle" font-family="sans-serif" font-weight="700" font-size="13" fill="#047857">Control Unit</text>
+        <rect x="350" y="60" width="75" height="130" rx="6" fill="#fefce8" stroke="#ca8a04" stroke-width="1.5"/>
+        <text x="387" y="120" text-anchor="middle" font-family="sans-serif" font-weight="700" font-size="13" fill="#854d0e">Memory</text>
+        <text x="387" y="138" text-anchor="middle" font-family="sans-serif" font-weight="700" font-size="13" fill="#854d0e">Unit</text>
+        <line x1="310" y1="95" x2="350" y2="95" stroke="#0f172a" stroke-width="1.8"/>
+        <text x="330" y="88" text-anchor="middle" font-family="sans-serif" font-size="10" font-weight="700" fill="#334155">Address Bus</text>
+        <line x1="310" y1="150" x2="350" y2="150" stroke="#0f172a" stroke-width="1.8"/>
+        <text x="330" y="143" text-anchor="middle" font-family="sans-serif" font-size="10" font-weight="700" fill="#334155">Data Bus</text>
+        <rect x="500" y="90" width="110" height="50" rx="6" fill="#ecfdf5" stroke="#047857" stroke-width="2"/>
+        <text x="555" y="120" text-anchor="middle" font-family="sans-serif" font-weight="700" font-size="13" fill="#065f46">Output Device</text>
+        <line x1="120" y1="115" x2="180" y2="115" stroke="#0f172a" stroke-width="2"/>
+        <line x1="440" y1="115" x2="500" y2="115" stroke="#0f172a" stroke-width="2"/>
+      </svg>`,
+    };
+  }
+
+  if (
+    qLower.includes('figure 1.33') ||
+    (qLower.includes('exercise 1.6') && (qLower.includes('q1') || qLower.includes('q2') || qLower.includes('q3')))
+  ) {
+    return {
+      title: 'Figure 1.33: Combinational Logic Gate Circuit (Output Q)',
+      caption: 'Inputs A, B, C feeding OR, AND, and NOT gates to produce intermediate wires D, E, F and final output Q',
+      svgHtml: `<svg viewBox="0 0 600 220" class="w-full max-w-[500px] h-auto mx-auto" xmlns="http://www.w3.org/2000/svg">
+        <rect width="600" height="220" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+        <text x="20" y="55" font-weight="bold" font-size="14" fill="#0f172a">A</text>
+        <line x1="40" y1="50" x2="140" y2="50" stroke="#0f172a" stroke-width="2"/>
+        <text x="20" y="105" font-weight="bold" font-size="14" fill="#0f172a">B</text>
+        <line x1="40" y1="100" x2="100" y2="100" stroke="#0f172a" stroke-width="2"/>
+        <circle cx="100" cy="100" r="3.5" fill="#1d4ed8"/>
+        <line x1="100" y1="100" x2="100" y2="70" stroke="#1d4ed8" stroke-width="2"/>
+        <line x1="100" y1="70" x2="140" y2="70" stroke="#1d4ed8" stroke-width="2"/>
+        <line x1="100" y1="100" x2="100" y2="130" stroke="#1d4ed8" stroke-width="2"/>
+        <line x1="100" y1="130" x2="260" y2="130" stroke="#1d4ed8" stroke-width="2"/>
+        <text x="20" y="175" font-weight="bold" font-size="14" fill="#0f172a">C</text>
+        <line x1="40" y1="170" x2="140" y2="170" stroke="#0f172a" stroke-width="2"/>
+        <path d="M140,40 Q155,60 140,80 Q180,80 195,60 Q180,40 140,40 Z" fill="#eff6ff" stroke="#1d4ed8" stroke-width="2"/>
+        <text x="163" y="65" font-size="10" font-weight="700" fill="#1e3a8a">OR</text>
+        <polygon points="140,155 140,185 170,170" fill="#fef2f2" stroke="#dc2626" stroke-width="2"/>
+        <circle cx="175" cy="170" r="4" fill="#ffffff" stroke="#dc2626" stroke-width="2"/>
+        <line x1="195" y1="60" x2="390" y2="60" stroke="#0f172a" stroke-width="2"/>
+        <text x="290" y="52" font-weight="bold" font-size="13" fill="#1d4ed8">D</text>
+        <line x1="180" y1="170" x2="260" y2="170" stroke="#0f172a" stroke-width="2"/>
+        <text x="220" y="162" font-weight="bold" font-size="13" fill="#dc2626">E</text>
+        <path d="M260,120 L285,120 A25,25 0 0,1 285,180 L260,180 Z" fill="#ecfdf5" stroke="#047857" stroke-width="2"/>
+        <text x="268" y="155" font-size="10" font-weight="700" fill="#065f46">AND</text>
+        <line x1="310" y1="150" x2="360" y2="150" stroke="#0f172a" stroke-width="2"/>
+        <text x="335" y="142" font-weight="bold" font-size="13" fill="#047857">F</text>
+        <line x1="360" y1="150" x2="360" y2="90" stroke="#0f172a" stroke-width="2"/>
+        <line x1="360" y1="90" x2="390" y2="90" stroke="#0f172a" stroke-width="2"/>
+        <path d="M390,50 L415,50 A25,25 0 0,1 415,100 L390,100 Z" fill="#fefce8" stroke="#ca8a04" stroke-width="2"/>
+        <text x="398" y="80" font-size="10" font-weight="700" fill="#854d0e">AND</text>
+        <line x1="440" y1="75" x2="500" y2="75" stroke="#0f172a" stroke-width="2"/>
+        <text x="515" y="80" font-weight="bold" font-size="15" fill="#0f172a">Q</text>
+      </svg>`,
+    };
+  }
+
+  if (
+    qLower.includes('memory hierarchy') ||
+    qLower.includes('figure 1.38') ||
+    qLower.includes('book storage in the library system')
+  ) {
+    return {
+      title: 'Figure 1.38: Computer Memory Hierarchy Pyramid',
+      caption: 'From top to bottom: CPU Registers → Cache (SRAM) → Main Memory (DRAM) → Secondary/Offline Storage (Access Speed & Cost/Bit increase upward; Capacity increases downward)',
+      svgHtml: `<svg viewBox="0 0 560 220" class="w-full max-w-[480px] h-auto mx-auto" xmlns="http://www.w3.org/2000/svg">
+        <rect width="560" height="220" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+        <polygon points="260,20 110,195 410,195" fill="#eff6ff" stroke="#1d4ed8" stroke-width="2.2"/>
+        <line x1="222" y1="64" x2="298" y2="64" stroke="#1d4ed8" stroke-width="1.8"/>
+        <line x1="185" y1="108" x2="335" y2="108" stroke="#1d4ed8" stroke-width="1.8"/>
+        <line x1="148" y1="152" x2="372" y2="152" stroke="#1d4ed8" stroke-width="1.8"/>
+        <text x="260" y="54" text-anchor="middle" font-size="11" font-weight="800" fill="#1e3a8a">Registers</text>
+        <text x="260" y="92" text-anchor="middle" font-size="11.5" font-weight="800" fill="#047857">Cache (L1 / L2 / L3 SRAM)</text>
+        <text x="260" y="135" text-anchor="middle" font-size="12" font-weight="800" fill="#b45309">Main Memory (RAM / DRAM)</text>
+        <text x="260" y="180" text-anchor="middle" font-size="12" font-weight="800" fill="#0f172a">Secondary Storage (SSD / Magnetic Disk)</text>
+        <line x1="65" y1="185" x2="65" y2="32" stroke="#dc2626" stroke-width="2"/>
+        <polygon points="60,36 65,24 70,36" fill="#dc2626"/>
+        <text x="55" y="110" text-anchor="end" font-size="10" font-weight="800" fill="#dc2626">Faster &amp; Costlier</text>
+        <line x1="455" y1="32" x2="455" y2="185" stroke="#047857" stroke-width="2"/>
+        <polygon points="450,181 455,193 460,181" fill="#047857"/>
+        <text x="465" y="110" font-size="10" font-weight="800" fill="#047857">Larger Capacity</text>
+      </svg>`,
+    };
+  }
+
+  if (
+    qLower.includes('mama chapati') ||
+    qLower.includes('figure 2.7') ||
+    (qLower.includes('pipeline') && qLower.includes('if') && qLower.includes('wb'))
+  ) {
+    return {
+      title: 'Figure 2.7: 5-Stage Instruction Pipeline Timing Diagram',
+      caption: 'Overlapping execution of Instruction Fetch (IF), Decode (ID), Execute (EX), Memory (MEM), and Write Back (WB)',
+      svgHtml: `<svg viewBox="0 0 560 190" class="w-full max-w-[490px] h-auto mx-auto" xmlns="http://www.w3.org/2000/svg">
+        <rect width="560" height="190" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+        <text x="25" y="32" font-size="11" font-weight="800" fill="#334155">Instr.</text>
+        <text x="115" y="32" font-size="10.5" font-weight="700" fill="#475569">CC1</text>
+        <text x="165" y="32" font-size="10.5" font-weight="700" fill="#475569">CC2</text>
+        <text x="215" y="32" font-size="10.5" font-weight="700" fill="#475569">CC3</text>
+        <text x="265" y="32" font-size="10.5" font-weight="700" fill="#475569">CC4</text>
+        <text x="315" y="32" font-size="10.5" font-weight="700" fill="#475569">CC5</text>
+        <text x="365" y="32" font-size="10.5" font-weight="700" fill="#475569">CC6</text>
+        <text x="415" y="32" font-size="10.5" font-weight="700" fill="#475569">CC7</text>
+        <text x="465" y="32" font-size="10.5" font-weight="700" fill="#475569">CC8</text>
+        <!-- Row 1 -->
+        <text x="25" y="62" font-size="11" font-weight="800" fill="#0f172a">I₁</text>
+        <rect x="100" y="45" width="46" height="24" rx="4" fill="#dbeafe" stroke="#2563eb"/><text x="123" y="61" text-anchor="middle" font-size="10" font-weight="800" fill="#1e3a8a">IF</text>
+        <rect x="150" y="45" width="46" height="24" rx="4" fill="#dcfce7" stroke="#16a34a"/><text x="173" y="61" text-anchor="middle" font-size="10" font-weight="800" fill="#14532d">ID</text>
+        <rect x="200" y="45" width="46" height="24" rx="4" fill="#fef9c3" stroke="#ca8a04"/><text x="223" y="61" text-anchor="middle" font-size="10" font-weight="800" fill="#713f12">EX</text>
+        <rect x="250" y="45" width="46" height="24" rx="4" fill="#fce7f3" stroke="#db2777"/><text x="273" y="61" text-anchor="middle" font-size="10" font-weight="800" fill="#831843">MEM</text>
+        <rect x="300" y="45" width="46" height="24" rx="4" fill="#ede9fe" stroke="#7c3aed"/><text x="323" y="61" text-anchor="middle" font-size="10" font-weight="800" fill="#4c1d95">WB</text>
+        <!-- Row 2 -->
+        <text x="25" y="96" font-size="11" font-weight="800" fill="#0f172a">I₂</text>
+        <rect x="150" y="79" width="46" height="24" rx="4" fill="#dbeafe" stroke="#2563eb"/><text x="173" y="95" text-anchor="middle" font-size="10" font-weight="800" fill="#1e3a8a">IF</text>
+        <rect x="200" y="79" width="46" height="24" rx="4" fill="#dcfce7" stroke="#16a34a"/><text x="223" y="95" text-anchor="middle" font-size="10" font-weight="800" fill="#14532d">ID</text>
+        <rect x="250" y="79" width="46" height="24" rx="4" fill="#fef9c3" stroke="#ca8a04"/><text x="273" y="95" text-anchor="middle" font-size="10" font-weight="800" fill="#713f12">EX</text>
+        <rect x="300" y="79" width="46" height="24" rx="4" fill="#fce7f3" stroke="#db2777"/><text x="323" y="95" text-anchor="middle" font-size="10" font-weight="800" fill="#831843">MEM</text>
+        <rect x="350" y="79" width="46" height="24" rx="4" fill="#ede9fe" stroke="#7c3aed"/><text x="373" y="95" text-anchor="middle" font-size="10" font-weight="800" fill="#4c1d95">WB</text>
+        <!-- Row 3 -->
+        <text x="25" y="130" font-size="11" font-weight="800" fill="#0f172a">I₃</text>
+        <rect x="200" y="113" width="46" height="24" rx="4" fill="#dbeafe" stroke="#2563eb"/><text x="223" y="129" text-anchor="middle" font-size="10" font-weight="800" fill="#1e3a8a">IF</text>
+        <rect x="250" y="113" width="46" height="24" rx="4" fill="#dcfce7" stroke="#16a34a"/><text x="273" y="129" text-anchor="middle" font-size="10" font-weight="800" fill="#14532d">ID</text>
+        <rect x="300" y="113" width="46" height="24" rx="4" fill="#fef9c3" stroke="#ca8a04"/><text x="323" y="129" text-anchor="middle" font-size="10" font-weight="800" fill="#713f12">EX</text>
+        <rect x="350" y="113" width="46" height="24" rx="4" fill="#fce7f3" stroke="#db2777"/><text x="373" y="129" text-anchor="middle" font-size="10" font-weight="800" fill="#831843">MEM</text>
+        <rect x="400" y="113" width="46" height="24" rx="4" fill="#ede9fe" stroke="#7c3aed"/><text x="423" y="129" text-anchor="middle" font-size="10" font-weight="800" fill="#4c1d95">WB</text>
+        <!-- Row 4 -->
+        <text x="25" y="164" font-size="11" font-weight="800" fill="#0f172a">I₄</text>
+        <rect x="250" y="147" width="46" height="24" rx="4" fill="#dbeafe" stroke="#2563eb"/><text x="273" y="163" text-anchor="middle" font-size="10" font-weight="800" fill="#1e3a8a">IF</text>
+        <rect x="300" y="147" width="46" height="24" rx="4" fill="#dcfce7" stroke="#16a34a"/><text x="323" y="163" text-anchor="middle" font-size="10" font-weight="800" fill="#14532d">ID</text>
+        <rect x="350" y="147" width="46" height="24" rx="4" fill="#fef9c3" stroke="#ca8a04"/><text x="373" y="163" text-anchor="middle" font-size="10" font-weight="800" fill="#713f12">EX</text>
+        <rect x="400" y="147" width="46" height="24" rx="4" fill="#fce7f3" stroke="#db2777"/><text x="423" y="163" text-anchor="middle" font-size="10" font-weight="800" fill="#831843">MEM</text>
+        <rect x="450" y="147" width="46" height="24" rx="4" fill="#ede9fe" stroke="#7c3aed"/><text x="473" y="163" text-anchor="middle" font-size="10" font-weight="800" fill="#4c1d95">WB</text>
+      </svg>`,
+    };
+  }
+
+  if (
+    qLower.includes('osi model') ||
+    qLower.includes('figure 3.4') ||
+    (qLower.includes('osi') && qLower.includes('tcp/ip'))
+  ) {
+    return {
+      title: 'Figure 3.4: 7-Layer OSI Model vs. 4-Layer TCP/IP Reference Model',
+      caption: 'Comparison of the ISO/OSI 7 layers with the TCP/IP protocol suite layers',
+      svgHtml: `<svg viewBox="0 0 540 230" class="w-full max-w-[480px] h-auto mx-auto" xmlns="http://www.w3.org/2000/svg">
+        <rect width="540" height="230" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+        <text x="145" y="24" text-anchor="middle" font-size="12" font-weight="800" fill="#1e3a8a">OSI Model (7 Layers)</text>
+        <text x="395" y="24" text-anchor="middle" font-size="12" font-weight="800" fill="#065f46">TCP/IP Model (4 Layers)</text>
+        <rect x="55" y="34" width="180" height="24" rx="4" fill="#eff6ff" stroke="#2563eb"/><text x="145" y="50" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e3a8a">7. Application</text>
+        <rect x="55" y="61" width="180" height="24" rx="4" fill="#eff6ff" stroke="#2563eb"/><text x="145" y="77" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e3a8a">6. Presentation</text>
+        <rect x="55" y="88" width="180" height="24" rx="4" fill="#eff6ff" stroke="#2563eb"/><text x="145" y="104" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1e3a8a">5. Session</text>
+        <rect x="55" y="115" width="180" height="24" rx="4" fill="#fefce8" stroke="#ca8a04"/><text x="145" y="131" text-anchor="middle" font-size="10.5" font-weight="700" fill="#854d0e">4. Transport (TCP/UDP)</text>
+        <rect x="55" y="142" width="180" height="24" rx="4" fill="#ecfdf5" stroke="#059669"/><text x="145" y="158" text-anchor="middle" font-size="10.5" font-weight="700" fill="#065f46">3. Network (IP)</text>
+        <rect x="55" y="169" width="180" height="24" rx="4" fill="#f1f5f9" stroke="#475569"/><text x="145" y="185" text-anchor="middle" font-size="10.5" font-weight="700" fill="#0f172a">2. Data Link (MAC)</text>
+        <rect x="55" y="196" width="180" height="24" rx="4" fill="#f1f5f9" stroke="#475569"/><text x="145" y="212" text-anchor="middle" font-size="10.5" font-weight="700" fill="#0f172a">1. Physical</text>
+        <rect x="305" y="34" width="180" height="78" rx="4" fill="#eff6ff" stroke="#2563eb"/><text x="395" y="77" text-anchor="middle" font-size="11.5" font-weight="800" fill="#1e3a8a">Application Layer</text>
+        <rect x="305" y="115" width="180" height="24" rx="4" fill="#fefce8" stroke="#ca8a04"/><text x="395" y="131" text-anchor="middle" font-size="11" font-weight="800" fill="#854d0e">Transport Layer</text>
+        <rect x="305" y="142" width="180" height="24" rx="4" fill="#ecfdf5" stroke="#059669"/><text x="395" y="158" text-anchor="middle" font-size="11" font-weight="800" fill="#065f46">Internet Layer</text>
+        <rect x="305" y="169" width="180" height="51" rx="4" fill="#f1f5f9" stroke="#475569"/><text x="395" y="198" text-anchor="middle" font-size="11" font-weight="800" fill="#0f172a">Network Access Layer</text>
+      </svg>`,
+    };
+  }
+
+  if (
+    qLower.includes('figure 8.25') ||
+    qLower.includes('server-side scripting') ||
+    (qLower.includes('php') && qLower.includes('web server') && qLower.includes('client'))
+  ) {
+    return {
+      title: 'Figure 8.25: Server-Side PHP & Database Scripting Workflow',
+      caption: '1. Client sends HTTP Request → 2. Web Server locates .php script → 3. PHP Engine queries MySQL via PDO → 4. Pure HTML response returned to Browser',
+      svgHtml: `<svg viewBox="0 0 650 200" class="w-full max-w-[520px] h-auto mx-auto" xmlns="http://www.w3.org/2000/svg">
+        <rect width="650" height="200" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+        <rect x="30" y="60" width="130" height="80" rx="6" fill="#eff6ff" stroke="#1d4ed8" stroke-width="2"/>
+        <text x="95" y="95" text-anchor="middle" font-weight="bold" font-size="13" fill="#1e3a8a">Client</text>
+        <text x="95" y="115" text-anchor="middle" font-size="11" fill="#334155">(Web Browser)</text>
+        <rect x="460" y="45" width="155" height="110" rx="6" fill="#ecfdf5" stroke="#047857" stroke-width="2"/>
+        <text x="537" y="70" text-anchor="middle" font-weight="bold" font-size="13" fill="#065f46">Web Server</text>
+        <rect x="475" y="80" width="125" height="25" rx="4" fill="#ffffff" stroke="#059669"/>
+        <text x="537" y="97" text-anchor="middle" font-size="10" font-weight="700" fill="#0f172a">2. Locate .php File</text>
+        <rect x="475" y="115" width="125" height="28" rx="4" fill="#fefce8" stroke="#ca8a04"/>
+        <text x="537" y="133" text-anchor="middle" font-size="10" font-weight="700" fill="#854d0e">3. PHP Engine + PDO</text>
+        <line x1="160" y1="80" x2="460" y2="80" stroke="#1d4ed8" stroke-width="2"/>
+        <polygon points="452,75 460,80 452,85" fill="#1d4ed8"/>
+        <text x="310" y="72" text-anchor="middle" font-size="11" font-weight="700" fill="#1e3a8a">1. HTTP Request (GET / POST)</text>
+        <line x1="460" y1="125" x2="160" y2="125" stroke="#047857" stroke-width="2"/>
+        <polygon points="168,120 160,125 168,130" fill="#047857"/>
+        <text x="310" y="118" text-anchor="middle" font-size="11" font-weight="700" fill="#065f46">4. HTML Stream Returned to Client</text>
+      </svg>`,
+    };
+  }
+
   return null;
 }
 

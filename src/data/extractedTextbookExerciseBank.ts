@@ -1,3 +1,5 @@
+import { COMPUTER_SCIENCE_F5_BANK } from './computerScienceF5Bank.ts';
+
 export interface ExtractedTextbookExerciseSeed {
   id: string;
   cls: string;
@@ -8099,7 +8101,10 @@ function buildExpandedTextbookExerciseItems(): ExtractedTextbookExerciseSeed[] {
   return expanded;
 }
 
-export const FULL_EXTRACTED_TEXTBOOK_BANK: ExtractedTextbookExerciseSeed[] =
-  buildExpandedTextbookExerciseItems();
+export const FULL_EXTRACTED_TEXTBOOK_BANK: ExtractedTextbookExerciseSeed[] = [
+  ...buildExpandedTextbookExerciseItems(),
+  ...COMPUTER_SCIENCE_F5_BANK,
+];
+
 
 

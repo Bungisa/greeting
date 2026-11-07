@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Computer Science Form Five - Question Bank Part 3 (elimika.online)</title>
+    <!-- MathJax Library for Mathematical & Programming Expressions -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+
+    <header>
+        <p><strong>Watermark: elimika.online</strong> | <strong>prep. by Mr. Mohamed</strong></p>
+        <h1>Computer Science for Advanced Secondary Schools - Student's Book Form Five</h1>
+        <h2>Complete Question Bank: Chapter 5 (Part 2), Chapter 6 (Python OOP), Chapter 7 (Operating Systems) &amp; Chapter 8 (Databases &amp; DBMS)</h2>
+    </header>
+
+    <hr>
+
+    <!-- ========================================================================= -->
+    <!-- CHAPTER FIVE: OBJECT ORIENTED PROGRAMMING WITH JAVA (CONTINUED: 348-384) -->
+    <!-- ========================================================================= -->
+    <section id="chapter-5-part-2">
+        <h2>Chapter Five: Object Oriented Programming with Java (Continued from Page 348)</h2>
+
+        <h3>Exercise 5.3: Constructors and Destructors in Java</h3>
+        <ol>
+            <li>Write a Java class <code>Car</code> with a constructor that initialises the <code>brand</code> and <code>model</code> attributes. Demonstrate its usage in a <code>Main</code> class.</li>
+            <li>Create a class <code>Book</code> with attributes <code>title</code>, <code>author</code>, and <code>price</code>. Implement a parameterised constructor that initialises these attributes. Write a <code>Main</code> class to create and display details of multiple <code>Book</code> objects.</li>
+            <li>Define a class <code>Employee</code> with attributes <code>name</code> and <code>salary</code>. Include a default constructor that initialises <code>name</code> to "Unknown" and <code>salary</code> to 0. Demonstrate creating an <code>Employee</code> object using this default constructor in a <code>Main</code> class.</li>
+            <li>Discuss the concept of destructors in Java. Explain why Java does not have a <code>finalize</code> destructor method like C++ and how garbage collection handles resource cleanup.</li>
+            <li>Create a class <code>DatabaseConnection</code> that simulates opening a database connection in its constructor and closing it in a method <code>closeConnection()</code>. Illustrate the importance of proper resource management using constructors and methods in Java.</li>
+        </ol>
+
+        <h3>Activity 5.8: Visualisation of execution code in inheritance of class Vehicle</h3>
+        <p><strong>Aim:</strong> Understand and visualise the execution of code involving inheritance in Java using the <code>Vehicle</code> class and its subclasses in Jeliot 3.</p>
+        <ol>
+            <li>Step 1: Open the Jeliot 3 compiler and orient with the interface (Code execution area, Method area, Expression evaluation area, Constants area, Instance area).</li>
+            <li>Step 2: Type or paste the inheritance code (Program Example 5.23: <code>class Vehicle</code> and <code>class Car extends Vehicle</code>) into the code execution area, then click Compile to debug the program.</li>
+            <li>Step 3: Click Play to run the codes step by step.</li>
+            <li>Step 4: Observe the output through the console and close the compiler.</li>
+        </ol>
+
+        <h3>Activity 5.9: Visualisation of Java interface code execution</h3>
+        <p>Using Jeliot 3 or a later version, visualise the step-by-step execution of a Java program to explore interfaces in Java. Use the code in Program Example 5.25 (multiple interfaces <code>One</code> and <code>Two</code> implemented by <code>class OnRoadTest</code>).</p>
+
+        <h3>Exercise 5.4: Inheritance and Interfaces in Java</h3>
+        <ol>
+            <li>Explain the concept of inheritance in Java and how it allows classes to inherit properties and behaviors from other classes. Provide an example of inheritance in action.</li>
+            <li>Describe the difference between single inheritance and multiple inheritance in Java. How does Java handle multiple inheritance, and why is it achieved differently than in other programming languages?</li>
+            <li>How do interfaces provide a way to achieve multiple inheritance in Java? Explain the role of interfaces in defining contracts for classes and how classes implement interfaces to fulfill those contracts.</li>
+            <li>Discuss the diamond problem in the context of multiple inheritance and explain how Java's interface approach avoids this issue. Provide an example to illustrate how interfaces help resolve the diamond problem.</li>
+            <li>Describe the concept of abstract classes and how they relate to inheritance and interfaces in Java. Explain when it is appropriate to use abstract classes versus interfaces in your Java programs.</li>
+            <li>Discuss the importance of polymorphism in Object-Oriented Programming and how inheritance and interfaces contribute to achieving polymorphic behavior in Java. Provide examples to demonstrate polymorphism in action using inheritance and interfaces.</li>
+        </ol>
+
+        <h3>Activity 5.10: Visualisation of code execution in Java abstraction</h3>
+        <p>Using Jeliot 3 or a later version, visualise the step-by-step execution of a Java program to explore abstraction in Java. Use the code in Program Example 5.26 (<code>abstract class Animal</code> and <code>class Pig extends Animal</code>).</p>
+
+        <h3>Exercise 5.5: Abstraction in Java</h3>
+        <ol>
+            <li>Describe how abstraction is implemented in Java through abstract classes and interfaces. Provide examples of each.</li>
+            <li>Discuss the role of abstract methods in abstract classes and interfaces. How do they contribute to achieving abstraction?</li>
+            <li>Describe a real-world scenario where abstraction would be beneficial in Java programming. How would you implement abstraction to solve the problem?</li>
+            <li>Explain the concept of data hiding and how it relates to abstraction in Java. Provide examples to illustrate your explanation.</li>
+            <li>Design a Java program that utilizes abstraction to model a banking system. Include abstract classes or interfaces to represent different account types, such as savings and checking accounts, and demonstrate how abstraction simplifies the implementation and maintenance of the system.</li>
+        </ol>
+
+        <h3>Exercise 5.6: Access Modifiers, "this", and "final" Keywords in Java</h3>
+        <ol>
+            <li>Explain the difference between <code>public</code>, <code>private</code>, and <code>protected</code> access modifiers in Java. Give examples of when each would be used.</li>
+            <li>How does the <code>this</code> keyword work in Java? Provide examples to illustrate its usage in different contexts.</li>
+            <li>Describe the purpose of the <code>final</code> keyword in Java. How does it affect variables, methods, and classes? Give examples to demonstrate its usage.</li>
+            <li>Can you use the <code>final</code> keyword with local variables in Java? Explain with examples.</li>
+            <li>What happens if you try to access a private member variable of a class directly from another class? How can you access it using the <code>this</code> keyword? Provide an example.</li>
+        </ol>
+
+        <h3>Activity 5.11: Visualisation of encapsulation in Java</h3>
+        <p>Using Jeliot 3 or a later version, visualise the step-by-step execution of a Java program to explore encapsulation in Java. Use the code in Program Example 5.34 / 5.35 (Getter and Setter methods).</p>
+
+        <h3>Exercise 5.7: Encapsulation in Java</h3>
+        <ol>
+            <li>Explain the concept of encapsulation in Java and why it is important in software development.</li>
+            <li>Compare and contrast the <code>public</code>, <code>private</code>, and <code>protected</code> access modifiers in Java, highlighting their roles in encapsulation.</li>
+            <li>How does encapsulation contribute to the security and integrity of Java code? Provide examples to illustrate your answer.</li>
+            <li>Describe the steps involved in achieving encapsulation in a Java class. Include the declaration of attributes, access modifiers, and the use of getter and setter methods.</li>
+            <li>Discuss the advantages of using getter and setter methods to access private attributes in Java classes. Provide real-world scenarios where encapsulation through getter and setter methods would be beneficial.</li>
+            <li>Explain the potential risks of exposing class attributes as public fields without encapsulation. How does encapsulation mitigate these risks?</li>
+            <li>Design a Java class representing a bank account with private attributes for account number, balance, and customer name. Implement getter and setter methods for accessing and modifying these attributes, ensuring encapsulation principles are followed.</li>
+        </ol>
+
+        <h3>Activity 5.12: Visualisation of polymorphism in Java</h3>
+        <p>Using Jeliot 3 or a later version, visualise the step-by-step execution of a Java program to explore polymorphism in Java. Use the code in Program Example 5.36 / 5.37.</p>
+
+        <h3>Exercise 5.8: Polymorphism, Method Overloading &amp; Method Overriding in Java</h3>
+        <ol>
+            <li>Define polymorphism in Java and explain how it contributes to the flexibility and extensibility of object-oriented programs.</li>
+            <li>Describe the two types of polymorphism in Java: compile-time (method overloading) and runtime (method overriding). Provide examples of each.</li>
+            <li>Explain the concept of method overloading in Java. How does it enable polymorphism? Provide a scenario where method overloading would be useful.</li>
+            <li>Discuss the significance of method overriding in Java polymorphism. How does it allow subclasses to provide their own implementation of inherited methods?</li>
+            <li>Describe how polymorphism is achieved through inheritance and method overriding in Java. Provide a practical example to illustrate the concept.</li>
+            <li>Explain the role of dynamic method dispatch in achieving runtime polymorphism in Java. How does it enable method invocation based on the actual object type?</li>
+            <li>Design a Java program that demonstrates both compile-time and runtime polymorphism. Include examples of method overloading and method overriding to showcase the flexibility of polymorphic behavior.</li>
+            <li>How does the Java compiler determine which overloaded method to call during compile-time polymorphism?</li>
+        </ol>
+
+        <h3>Application Design Question (Page 382)</h3>
+        <p>Assume you are the programmer. Design any system relevant to your environment that will use the four stages for building an application (Stage One: Planning the project, Stage Two: Designing classes and relationships, Stage Three: Implementing the project, Stage Four: Testing and debugging).</p>
+
+        <h3>Revision Exercise 5</h3>
+        <ol>
+            <li>Create a Java class named <code>Car</code> with attributes such as <code>make</code>, <code>model</code>, and <code>year</code>. Define methods to set and retrieve these attributes. Instantiate multiple <code>Car</code> objects and display their details.</li>
+            <li>Implement a Java program to calculate the area of different shapes (circle, rectangle, triangle) using methods for each shape. Use abstraction to hide the implementation details of the area calculation.</li>
+            <li>Develop a Java application for a banking system with classes like <code>Account</code>, <code>SavingsAccount</code>, and <code>CheckingAccount</code>. Implement inheritance to create specialized account types and encapsulation to protect sensitive account information.</li>
+            <li>Write a Java program to demonstrate method overloading by creating multiple methods with the same name but different parameter lists, such as calculating the area of a square, rectangle, and circle.</li>
+            <li>Create a Java program to model a simple library system with classes like <code>Book</code>, <code>Author</code>, and <code>Library</code>. Use inheritance to represent relationships between different entities and encapsulation to protect book information.</li>
+            <li>Implement a Java program to demonstrate polymorphism by creating a base class <code>Shape</code> with methods like <code>draw()</code> and <code>calculateArea()</code>. Then, create subclasses like <code>Circle</code>, <code>Rectangle</code>, and <code>Triangle</code> to override these methods with specific implementations.</li>
+            <li>Develop a Java application to simulate a shopping cart system with classes like <code>Product</code>, <code>ShoppingCart</code>, and <code>Customer</code>. Use encapsulation to protect the cart's contents and inheritance to represent different types of customers.</li>
+            <li>Write a Java program to perform basic arithmetic operations (addition, subtraction, multiplication, division) using methods and operators. Use variables to store operands and results.</li>
+            <li>Implement a Java program to define and use constants for mathematical constants like Pi ($\pi$) and Euler's number ($e$). Use these constants in calculations throughout the program.</li>
+            <li>Create a Java application to model a school system with classes like <code>Student</code>, <code>Teacher</code>, and <code>Course</code>. Use constructors to initialize object states and demonstrate method overriding in subclasses.</li>
+            <li>Develop a Java program to manage employee information with classes like <code>Employee</code>, <code>Manager</code>, and <code>Intern</code>. Use inheritance to represent different employee roles and encapsulation to protect sensitive employee data.</li>
+            <li>Write a Java application to model a simple game with classes like <code>Player</code>, <code>Enemy</code>, and <code>Weapon</code>. Demonstrate polymorphism by allowing different types of players and enemies to interact with each other.</li>
+            <li>Implement a Java program to handle exceptions in file I/O operations. Use <code>try-catch</code> blocks to handle potential errors like file not found or permission denied.</li>
+            <li>Create a Java program to demonstrate operator precedence by performing complex arithmetic expressions involving addition, subtraction, multiplication, and division.</li>
+            <li>Develop a Java application to implement a basic calculator with methods for arithmetic operations like addition, subtraction, multiplication, and division. Use method overloading to handle different parameter types and numbers of operands.</li>
+            <li>Explore the following plain text of OOP codes, then answer the questions that follow:
+<pre>
+public class Car {
+    private String make;
+    private String model;
+    private int year;
+    private boolean running;
+
+    public Car(String make, String model, int year) {
+        this.make = make;       // Encapsulated attribute
+        this.model = model;     // Encapsulated attribute
+        this.year = year;       // Encapsulated attribute
+        this.running = false;   // Encapsulated attribute
+    }
+    public void startEngine() {
+        this.running = true;    // Setter method
+    }
+    public void stopEngine() {
+        this.running = false;   // Setter method
+    }
+    public String getMake() {
+        return this.make;       // Getter method
+    }
+}
+</pre>
+                <ol type="i">
+                    <li>What do you understand by Setter method and Getter method from the codes above?</li>
+                    <li>Explain why the attributes in the class are labelled <code>private</code>.</li>
+                    <li>In the provided code examples, how is encapsulation implemented in the <code>Car</code> class?</li>
+                    <li>What are the advantages of encapsulating data and methods within a class, as demonstrated in the code?</li>
+                </ol>
+            </li>
+        </ol>
+
+        <h3>Chapter 5 Project: Exploring Garbage Collection in Java</h3>
+        <p><strong>Project overview:</strong> In this project, investigate the inner workings of Java's garbage collection mechanism. By creating and destroying a significant number of objects, observe how the <code>finalize()</code> method is invoked just before an object is garbage collected. Submit a detailed report including screenshots of the running Java garbage collection mechanism program.</p>
+    </section>
+
+    <hr>
+
+    <!-- ========================================================================= -->
+    <!-- CHAPTER SIX: OBJECT ORIENTED PROGRAMMING WITH PYTHON (PAGES 385-409) -->
+    <!-- ========================================================================= -->
+    <section id="chapter-6">
+        <h2>Chapter Six: Object Oriented Programming with Python</h2>
+
+        <h3>Scenario 6.1: Python-powered camera</h3>
+        <p>Imagine you love taking pictures of wild animals in their natural homes. To capture the best shots, you use special cameras that are powered by Python. These cameras can track and recognise even the rarest animals using smart technology. With Python's help, you can document these incredible creatures, learn more about their behavior, and help protect them. By using Python, you can take amazing photos that show the beauty of nature and make people care about conserving our wildlife.</p>
+        <p><strong>Question:</strong></p>
+        <ol>
+            <li>How does Python-driven camera technology aid in tracking and identifying rare animals in wildlife photography? Provide a concise explanation.</li>
+        </ol>
+
+        <h3>Activity 6.1: Checking if Python is installed on Windows PC</h3>
+        <ol>
+            <li>Step 1: In the start bar, type <code>cmd.exe</code>.</li>
+            <li>Step 2: Open the command prompt.</li>
+            <li>Step 3: Type <code>python --version</code> and press Enter to display the installed Python version.</li>
+        </ol>
+
+        <h3>Activity 6.2: Setting up Python environment</h3>
+        <ol>
+            <li>Step 1: Obtain the Python file from a teacher or download the installer from the official Python website (<code>python.org</code>).</li>
+            <li>Step 2: Run the installer and follow the installation instructions provided.</li>
+            <li>Step 3: During the installation, make sure to select the option to add Python to the system PATH so that you can run Python from any command prompt.</li>
+        </ol>
+
+        <h3>Activity 6.3: Writing the first Python program: "Hello fellow Africans"</h3>
+        <ol>
+            <li>Step 1: Open a text editor (Notepad++ or IDLE).</li>
+            <li>Step 2: Type the following code: <code>print("Hello fellow Africans!")</code></li>
+            <li>Step 3: Save your first program as <code>HelloAfrica.py</code>.</li>
+            <li>Step 4: Navigate to the directory where you saved your file and run <code>python HelloAfrica.py</code> on the command line (or Run Module in IDLE).</li>
+        </ol>
+
+        <h3>Activity 6.4: Visualisation of program codes in Thonny software</h3>
+        <p>Use the following codes to visualise its step-by-step execution in Thonny software:</p>
+<pre>
+for i in range(1, 14):
+    if i % 2 == 0:
+        continue
+    print(i)
+</pre>
+        <ol>
+            <li>Step 1: Open Thonny software.</li>
+            <li>Step 2: Open the file you saved using the Thonny interface and click the debug/step button to visualise step-by-step execution and track variable changes.</li>
+        </ol>
+
+        <h3>Activity 6.5: Creating and using a Python module</h3>
+        <ol>
+            <li><strong>Step 1: Create the module (<code>mymodule.py</code>):</strong>
+<pre>
+CONSTANT_PI = 3.14159
+def add(a, b):
+    return a + b
+def subtract(a, b):
+    return a - b
+</pre>
+            </li>
+            <li><strong>Step 2: Use the Module (<code>main.py</code>):</strong>
+<pre>
+import mymodule
+result_add = mymodule.add(500, 1300)
+result_subtract = mymodule.subtract(101, 17)
+print("Addition result:", result_add)
+print("Subtraction result:", result_subtract)
+</pre>
+            </li>
+            <li><strong>Step 3: Run the Script</strong> via terminal using <code>python main.py</code>.</li>
+            <li><strong>Extension Activity:</strong>
+                <ol type="a">
+                    <li>Add more functions to <code>mymodule.py</code>, such as <code>modulus(a, b)</code> and <code>power(a, b)</code>, and use them in <code>main.py</code>.</li>
+                    <li>Create another module named <code>geometry.py</code> with functions like <code>area_of_circle(radius)</code> and <code>circumference_of_circle(radius)</code>. Use these functions in a new script named <code>geometry_test.py</code>.</li>
+                </ol>
+            </li>
+        </ol>
+        <p><strong>Questions:</strong></p>
+        <ol>
+            <li>Reflect on how using modules can help in organising and reusing code.</li>
+            <li>Discuss how you can apply the concept of modules in larger projects.</li>
+        </ol>
+
+        <h3>Exercise 6.1: Python Fundamentals, Control Structures &amp; Functions</h3>
+        <ol>
+            <li>Create a Python script that defines variables of different data types (integer, float, string, and boolean). Print the type of each variable.</li>
+            <li>Write a Python program that takes two numbers as input from the user and performs addition, subtraction, multiplication, and division. Display the results for each operation.</li>
+            <li>Develop a Python script that accepts a string input from the user, converts it to uppercase, and prints the length of the string.</li>
+            <li>Create a Python program that initialises a list with five integer elements. Use a <code>for</code> loop to iterate through the list and print each element doubled.</li>
+            <li>Write a Python script that takes a number as input from the user and prints whether the number is positive, negative, or zero.</li>
+            <li>Define a Python function that takes two parameters and returns their sum. Call the function with two numbers and print the result.</li>
+        </ol>
+
+        <h3>Exercise 6.2: OOP Concepts in Python</h3>
+        <ol>
+            <li>Explain the concept of encapsulation in Python and why it is important in Object-Oriented Programming.</li>
+            <li>How does encapsulation help in achieving data hiding and preventing direct access to class attributes in Python?</li>
+            <li>Discuss the role of access modifiers such as public, private (<code>__</code>), and protected (<code>_</code>) in implementing encapsulation in Python.</li>
+            <li>Provide an example of a Python class with private attributes and demonstrate how encapsulation is used to access and modify these attributes.</li>
+            <li>What is abstraction in Python and how does it differ from encapsulation?</li>
+            <li>Explain the concept of abstract classes and methods in Python. Provide an example to illustrate their usage.</li>
+            <li>How does abstraction help in simplifying complex systems and promoting code reusability in Python?</li>
+            <li>Discuss the benefits of using abstract classes and methods in Python programming, especially in large-scale projects.</li>
+            <li>Define inheritance in Python and describe its role in Object-Oriented Programming.</li>
+        </ol>
+
+        <h3>Revision Exercise 6</h3>
+        <ol>
+            <li>Write Python code to calculate the area of a rectangle with length 5 units and width 3 units. Print the result.</li>
+            <li>Write a Python program that asks the user to input their age. If the age is greater than or equal to 18, print "You are an adult". Otherwise, print "You are a minor".</li>
+            <li>Create a list of your favorite fruits. Write a Python program that uses a <code>for</code> loop to iterate through the list and print each fruit name on a new line.</li>
+            <li>Define a Python function called <code>calculate_cube</code> that takes an integer parameter <code>side_length</code> and returns the volume of a cube with that side length. Test the function with a side length of 4 units.</li>
+            <li>Write a Python program that prompts the user to enter their full name. Print the initials of their first name and last name in uppercase letters. For example, if the user inputs "Mtukula Jamaasoni", the output should be "MJ".</li>
+            <li>Write a Python program that reads a text file named <code>grades.txt</code>. Each line in the file contains a student's name followed by their grade (for example, "Mponjoli 97"). Your program should calculate and print the average grade for all students. Handle any possible exceptions that may occur during file reading or grade calculation.</li>
+            <li>Explain the concept of polymorphism in Python OOP and provide a real-world example.</li>
+            <li>How does encapsulation enhance data security and privacy in Python classes? Give an example.</li>
+            <li>Describe the process of inheritance in Python and discuss its advantages in code reusability.</li>
+            <li>What is the purpose of an abstract class in Python? Provide an example of defining and implementing an abstract class.</li>
+            <li>How can you achieve method overriding in Python classes? Provide a scenario where method overriding is useful.</li>
+            <li>Discuss the difference between class attributes and instance attributes in Python classes with suitable examples.</li>
+            <li>Explain the role of constructors in Python classes. How do you define and use constructors in your code?</li>
+            <li>What is the significance of the <code>super()</code> function in Python inheritance? Give an example demonstrating its usage.</li>
+            <li>How do you implement encapsulation using private and protected attributes in Python classes? Provide syntax examples.</li>
+            <li>Describe the concept of multiple inheritance in Python. What precautions should you take when using multiple inheritance?</li>
+            <li>Discuss the benefits of using abstraction in Python programming. Provide an example of abstracting a complex system into classes.</li>
+            <li>How does method overloading differ from method overriding in Python? Provide examples to illustrate both concepts.</li>
+            <li>What is the purpose of the <code>__init__()</code> method in Python classes? How does it differ from other methods?</li>
+            <li>Describe the process of Method Resolution Order (MRO) in Python inheritance. How does Python determine the order of method execution in subclasses?</li>
+        </ol>
+
+        <h3>Chapter 6 Project: Developing School Examination Grading System</h3>
+        <p><strong>Project Description:</strong> Mtakuja Secondary School is initiating a project to develop an Examination Grading System using the Python programming language to manage student details (names, classes, total subjects, term, year of study, exam scores), calculate average marks, rank students based on performance, and store student data securely in a database.</p>
+        <p><strong>Project Tasks:</strong></p>
+        <ol>
+            <li>Design a user-friendly interface for inputting and displaying student details and examination scores.</li>
+            <li>Develop Python classes and functions for storing and managing student records, including details like names, classes, terms, and exam scores.</li>
+            <li>Implement algorithms for calculating average marks and ranking students based on their scores.</li>
+            <li>Integrate a database system for secure storage and retrieval of student data.</li>
+            <li>Test the system thoroughly to ensure accuracy and reliability.</li>
+            <li>Document each step of the development process, including code snippets, explanations, and screenshots.</li>
+        </ol>
+    </section>
+
+    <hr>
+
+    <!-- ========================================================================= -->
+    <!-- CHAPTER SEVEN: OPERATING SYSTEMS (PAGES 410-432) -->
+    <!-- ========================================================================= -->
+    <section id="chapter-7">
+        <h2>Chapter Seven: Operating Systems</h2>
+
+        <h3>Case Study 7.1: Photo sharing among club members</h3>
+        <p>Members of an active School Photography Club have recently returned from a field trip to Serengeti National Park, where they took pictures of the environment and wildlife using laptops, tablets, and smartphones with various operating systems (Android, macOS, Windows) in different formats (JPEG, RAW).</p>
+        <p><strong>Questions:</strong></p>
+        <ol>
+            <li>How can the club members leverage the functionalities of their individual Operating Systems to share photos across different devices?</li>
+            <li>Which OS features can help organise the large number of photos efficiently?</li>
+            <li>How does using different image formats (JPEG vs RAW) affect the sharing process?</li>
+            <li>Which security measures that operating systems offer can help ensure that the photos are securely protected from unauthorised access?</li>
+            <li>How can the club leverage features within their chosen platform (online gallery, social media) to present the photos in an engaging way?</li>
+        </ol>
+
+        <!-- SVG: Figures 7.1, 7.2, 7.3 Operating System Interaction & Kernel Architectures -->
+        <h4>Diagram Reference: Figure 7.1 (OS Interaction), Figure 7.2 (Monolithic Kernel) &amp; Figure 7.3 (Microkernel)</h4>
+        <svg width="750" height="230" viewBox="0 0 750 230" xmlns="http://www.w3.org/2000/svg">
+            <!-- Fig 7.1 OS Interaction -->
+            <text x="115" y="18" text-anchor="middle" font-weight="bold" font-size="11">OS Layers (Fig 7.1)</text>
+            <rect x="25" y="28" width="180" height="35" fill="none" stroke="black" stroke-width="1.5"/>
+            <text x="115" y="50" text-anchor="middle" font-size="11">Users (User 1, User 2...)</text>
+            <line x1="115" y1="63" x2="115" y2="83" stroke="black" stroke-width="1.5"/>
+            <rect x="25" y="83" width="180" height="65" fill="none" stroke="black" stroke-width="1.5"/>
+            <text x="115" y="102" text-anchor="middle" font-size="11">System &amp; Application Software</text>
+            <rect x="45" y="112" width="140" height="26" fill="none" stroke="black"/>
+            <text x="115" y="129" text-anchor="middle" font-weight="bold" font-size="11">Operating System</text>
+            <line x1="115" y1="148" x2="115" y2="168" stroke="black" stroke-width="1.5"/>
+            <rect x="25" y="168" width="180" height="42" fill="none" stroke="black" stroke-width="1.5"/>
+            <text x="115" y="193" text-anchor="middle" font-size="11">Hardware (CPU, RAM, I/O)</text>
+
+            <!-- Fig 7.2 Monolithic Kernel -->
+            <text x="370" y="18" text-anchor="middle" font-weight="bold" font-size="11">Monolithic Kernel (Fig 7.2)</text>
+            <rect x="310" y="28" width="120" height="25" fill="none" stroke="black"/>
+            <text x="370" y="45" text-anchor="middle" font-size="11">Applications</text>
+            <line x1="260" y1="65" x2="480" y2="65" stroke="black" stroke-dasharray="4,4"/>
+            <text x="450" y="60" font-size="9">User Space</text>
+            <text x="450" y="77" font-size="9">Kernel Space</text>
+            <rect x="300" y="75" width="140" height="24" fill="none" stroke="black"/>
+            <text x="370" y="91" text-anchor="middle" font-size="10">System Call Interface</text>
+            <rect x="260" y="115" width="220" height="95" fill="none" stroke="black" stroke-width="1.5"/>
+            <text x="370" y="132" text-anchor="middle" font-weight="bold" font-size="11">Kernel</text>
+            <text x="370" y="155" text-anchor="middle" font-size="10">[Memory] [IPC] [Process Sched]</text>
+            <text x="370" y="185" text-anchor="middle" font-size="10">[File Sys] [I/O Mgr] [Net Mgr]</text>
+
+            <!-- Fig 7.3 Microkernel -->
+            <text x="625" y="18" text-anchor="middle" font-weight="bold" font-size="11">Microkernel (Fig 7.3)</text>
+            <rect x="565" y="28" width="120" height="24" fill="none" stroke="black"/>
+            <text x="625" y="44" text-anchor="middle" font-size="11">Applications</text>
+            <rect x="520" y="70" width="210" height="28" fill="none" stroke="black"/>
+            <text x="625" y="88" text-anchor="middle" font-size="10">[File Sys] [Proc Sched] [Device Mgr]</text>
+            <line x1="515" y1="112" x2="735" y2="112" stroke="black" stroke-dasharray="4,4"/>
+            <text x="700" y="107" font-size="9">User Space</text>
+            <text x="700" y="124" font-size="9">Kernel Space</text>
+            <rect x="525" y="130" width="200" height="80" fill="none" stroke="black" stroke-width="1.5"/>
+            <text x="625" y="152" text-anchor="middle" font-weight="bold" font-size="11">Microkernel (IPC)</text>
+            <text x="625" y="185" text-anchor="middle" font-size="10">[Memory Mgmt] [Synchronization]</text>
+        </svg>
+
+        <h3>Activity 7.1: Evolution of Operating Systems exploration</h3>
+        <ol>
+            <li>Step 1: Discuss the basic concept of an operating system and its role in managing computer hardware and software.</li>
+            <li>Step 2: Research how operating systems have evolved over time to meet the changing needs of users and advancements in technology.</li>
+            <li>Step 3: Present your research findings in a comprehensive report summarising: (a) Notable operating systems developed, including their key features and innovations during their assigned era; (b) Impact of these operating systems on computing and technology during that time.</li>
+        </ol>
+        <p><strong>Questions:</strong></p>
+        <ol>
+            <li>Reflect on how operating systems have evolved over time and the significance of these changes.</li>
+            <li>Discuss the role of operating systems in shaping the modern computing landscape and their influence on user experience, software development, and technological innovation.</li>
+        </ol>
+
+        <h3>Activity 7.2: Investigating key features of an Operating System</h3>
+        <p>Use the internet to research and write a report of no more than two pages on the following aspects of the operating system installed on a personal computer, smartphone, or tablet owned by your parent, relative, or your school:</p>
+        <ol>
+            <li>Investigate and summarize the features, strengths, and weaknesses of all OS versions prior to the currently installed version.</li>
+            <li>Identify and describe the key components of the currently installed OS version. Explain the function(s) of each component.</li>
+            <li>Provide two examples of application software that are negatively impacted by limitations in resource management, inefficient device drivers, or security measures within the currently installed OS version.</li>
+            <li>Explain how these limitations affect the performance or usability of the software.</li>
+        </ol>
+
+        <h3>Exercise 7.1: Operating System Concepts, Architecture &amp; Design</h3>
+        <ol>
+            <li>Suppose that you are a technical support specialist assisting someone unfamiliar with computers. Use simple terms and diagrams to explain the basic functions of an operating system and how it interacts with hardware and software applications.</li>
+            <li>Imagine that you have been given the task of creating a user guide for a new mobile app that needs to be user-friendly for people across different cultures and languages. How can you leverage the various features of operating systems to create a clear and universally understandable user interface?</li>
+            <li>Conduct research and write a two-page report on different types of malware that can target operating systems. How can an understanding of OS architecture (such as kernel, security features) help users protect their devices from such threats?</li>
+            <li>Compare and contrast the design considerations for a desktop Operating System and a mobile Operating System. How do these considerations relate to user needs and resource limitations of each device?</li>
+            <li>Imagine that you and your classmates are developing a new open-source Operating System that focuses on education. How can you leverage online collaboration tools and communication platforms to involve a global community of software developers and testers in the development process? What benefits might this approach have?</li>
+        </ol>
+
+        <h3>Activity 7.3: Exploring process management on a computer</h3>
+        <ol>
+            <li><strong>Step 1: Identify running processes:</strong> Open Task Manager (Windows), Activity Monitor (macOS), or System Monitor (Linux). Identify running processes and observe how they utilize CPU, memory, and disk resources.</li>
+            <li><strong>Step 2: Observe resource utilisation:</strong> Open a web browser, music player, document editor, and a heavy game or video editing software, and note how CPU usage and memory consumption change.</li>
+            <li><strong>Step 3: Analyse processes:</strong> Identify application processes versus background processes and describe how demanding applications affect overall system performance.</li>
+            <li><strong>Step 4: Research and documentation:</strong> Research system and background processes and produce a one-page report on process management.</li>
+        </ol>
+
+        <h3>Exercise 7.2: Process Management</h3>
+        <ol>
+            <li>Suppose you are a tech support specialist for a school computer lab. A student reports that their computer is slow and unresponsive. Use your understanding of process management to explain in simple terms to the student what might be causing the issue and how they can identify resource-heavy processes.</li>
+            <li>Research and compare different process scheduling algorithms used by operating systems, and explain how these algorithms impact the performance of modern computer games and the overall user experience.</li>
+            <li>Imagine that you are part of a team developing a new mobile operating system that focuses on energy efficiency. Explain how understanding process management can help you to optimise resource allocation and battery life on mobile devices.</li>
+            <li>Security threats can exploit vulnerabilities in processes. Research and discuss different types of malware that target processes. How can users be vigilant and identify potential threats related to process management?</li>
+            <li>Open-source operating systems like Linux are known for their customisation options. Investigate how advanced users can leverage the command line to manage processes on Linux. Explain the benefits and potential challenges of this approach.</li>
+        </ol>
+
+        <h3>Activity 7.4: Visualizing CPU/Process scheduling using simulation tool</h3>
+        <ol>
+            <li>Steps 1-4: Start the CPU Simulator, open the COMPILER window, enter the loop test source code, compile it, and load the compiled code (<code>LOOKTEST</code>) into memory.</li>
+            <li>Steps 5-6: In the OS Simulator, create 4 processes from the program, select the First-Come, First-Served (FCFS) scheduling policy, click START, and observe the RUNNING PROCESSES and READY PROCESSES views.</li>
+            <li>Step 7: Repeat steps 1 to 6 using (a) Shortest Job First (SJF) and (b) Round Robin (RR) scheduling policies, and document the setup and results in a portfolio report.</li>
+        </ol>
+
+        <!-- SVG: Figure 7.11 Deadlock Situation -->
+        <h4>Diagram Reference: Figure 7.11 - Deadlock Resource Allocation Graph</h4>
+        <svg width="450" height="190" viewBox="0 0 450 190" xmlns="http://www.w3.org/2000/svg">
+            <rect x="175" y="15" width="100" height="35" fill="none" stroke="black" stroke-width="2"/>
+            <text x="225" y="37" text-anchor="middle" font-weight="bold" font-size="12">Resource 1</text>
+
+            <rect x="175" y="135" width="100" height="35" fill="none" stroke="black" stroke-width="2"/>
+            <text x="225" y="157" text-anchor="middle" font-weight="bold" font-size="12">Resource 2</text>
+
+            <circle cx="70" cy="95" r="35" fill="none" stroke="black" stroke-width="2"/>
+            <text x="70" y="99" text-anchor="middle" font-weight="bold" font-size="12">Process 1</text>
+
+            <circle cx="380" cy="95" r="35" fill="none" stroke="black" stroke-width="2"/>
+            <text x="380" y="99" text-anchor="middle" font-weight="bold" font-size="12">Process 2</text>
+
+            <!-- Arrows -->
+            <line x1="175" y1="32" x2="95" y2="68" stroke="black" stroke-width="1.5"/>
+            <text x="115" y="42" font-size="11">Assigned to</text>
+
+            <line x1="95" y1="122" x2="175" y2="152" stroke="black" stroke-width="1.5"/>
+            <text x="115" y="152" font-size="11">Waiting for</text>
+
+            <line x1="275" y1="152" x2="355" y2="122" stroke="black" stroke-width="1.5"/>
+            <text x="330" y="152" font-size="11">Assigned to</text>
+
+            <line x1="355" y1="68" x2="275" y2="32" stroke="black" stroke-width="1.5"/>
+            <text x="330" y="42" font-size="11">Waiting for</text>
+        </svg>
+
+        <h3>Activity 7.5: Online interactive CPU Scheduling Simulation</h3>
+        <p><strong>Instructions (using an online simulator):</strong></p>
+        <ol>
+            <li>Steps 1-4: Choose "First Come First Served (FCFS)", create 4-5 processes with varying burst times (e.g., P1: 500ms, P2: 300ms, P3: 800ms), and run the simulation to observe the Gantt chart and turnaround times.</li>
+            <li><strong>Step 5: Analyse FCFS:</strong>
+                <ol type="a">
+                    <li>How do processes with shorter burst times fare in this algorithm?</li>
+                    <li>Observe the waiting time for each process. Does it seem fair?</li>
+                </ol>
+            </li>
+            <li>Steps 6-7: Select "Shortest Job First (SJF)" and run the simulation with the same processes.</li>
+            <li><strong>Step 8: Compare and analyse:</strong>
+                <ol type="a">
+                    <li>How does the turnaround time for each process differ between FCFS and SJF?</li>
+                    <li>Which algorithm seems to favor shorter processes?</li>
+                    <li>Discuss the advantages and disadvantages of each algorithm based on the simulation results.</li>
+                </ol>
+            </li>
+            <li>Steps 9-10: Change the burst times and explore Round Robin (RR) and Priority Scheduling. Document your findings in a report.</li>
+        </ol>
+
+        <h3>Exercise 7.3: CPU Scheduling</h3>
+        <ol>
+            <li>How does CPU scheduling impact the digital workflow of a computer user?</li>
+            <li>Research and compare different CPU scheduling algorithms used by three operating systems of your choice. Work with a colleague to create a table or infographic summarizing the strengths and weaknesses of each algorithm.</li>
+            <li>Imagine you are part of a development team creating a new operating system for a self-driving car. Explain how CPU scheduling algorithms play a critical role in ensuring real-time response for critical tasks like braking or sensor data processing.</li>
+        </ol>
+
+        <h3>Activity 7.6: Monitoring the usage of computer memory</h3>
+        <p><strong>Instructions &amp; Deliverables:</strong> Open Task Manager / Activity Monitor, locate the Memory Usage section (Total memory, Used memory, Available memory, Memory pressure), open and close multiple programs (including a resource-intensive program), and write a two-page report covering:</p>
+        <ol type="a">
+            <li>Explain the importance of memory management for the smooth operation of a computer system.</li>
+            <li>Discuss how memory usage impacts application performance. What might happen if a program requires more memory than available?</li>
+            <li>Use resources on the internet and the school library to study the concept of virtual memory and how it helps to extend the available memory by utilizing hard drive space.</li>
+            <li>Document your findings in a portfolio.</li>
+        </ol>
+
+        <h3>Revision Exercise 7</h3>
+        <ol>
+            <li>Research the concept of context switching in CPU scheduling. How can operating systems minimize context switching to improve the gaming experience?</li>
+            <li>Operating systems use fairness and efficiency principles when scheduling CPU tasks. Discuss with your classmates the ethical considerations of prioritizing certain processes (e.g., emergency services applications) over others. How can we balance fairness with efficiency in CPU scheduling?</li>
+            <li>How does CPU scheduling affect app responsiveness and patience?</li>
+            <li>How can you optimise the performance of a smartphone using CPU scheduling knowledge?</li>
+            <li>How does CPU scheduling promote collaboration and sharing of computer resources?</li>
+            <li>How does CPU scheduling connect to coding and resource management?</li>
+            <li>How can the knowledge of CPU scheduling prepare you for emerging technologies?</li>
+            <li>Provide two real-world cases of deadlock. For each case briefly explain its causes and ways to handle the deadlock. How does the OS handle process synchronization to avoid race conditions?</li>
+            <li>How does the OS use CPU scheduling to improve efficiency?</li>
+            <li>What are the key differences between preemptive and non-preemptive scheduling?</li>
+            <li>How does the OS ensure data security and integrity on storage devices?</li>
+            <li>What mechanisms does the OS use to detect and recover from deadlocks?</li>
+            <li>Imagine that you are a team developing a new mobile operating system for educational tablets. Discuss and answer the following questions:
+                <ol type="a">
+                    <li>Who are the primary users of this tablet OS (students, teachers, both)? What are their specific needs and priorities?</li>
+                    <li>How will you ensure the security and privacy of student data stored on the tablets?</li>
+                    <li>How can the OS handle multiple apps running simultaneously while maintaining efficient usage of computer resources such as CPU and memory?</li>
+                    <li>Design a user-friendly and intuitive interface suitable for users of different ages and tech experience levels. Sketch your ideas or create a simple mock-up.</li>
+                    <li>How can the OS be designed to adapt to future technological advancements and integrate with emerging learning technologies?</li>
+                </ol>
+            </li>
+            <li>Choose one of the following statements and prepare arguments for or against it:
+                <ol type="a">
+                    <li>Virtual memory is always a better alternative to increasing physical RAM.</li>
+                    <li>Round Robin scheduling is the most efficient CPU scheduling algorithm for all scenarios.</li>
+                    <li>Operating systems should prioritize user convenience over system efficiency.</li>
+                </ol>
+            </li>
+            <li>Conduct research on emerging operating system trends related to artificial intelligence, cloud computing, Internet of Things (IoT) platforms, or mobile technology. Create a short presentation or infographic explaining your findings and how these trends might impact future OS functionality.</li>
+        </ol>
+
+        <h3>Chapter 7 Project: Exploring and Comparing Operating Systems</h3>
+        <p><strong>Project Objective:</strong> Explore and compare different operating systems across various devices (Windows, macOS, Android, iOS, Linux) and compare two similar OS versions (such as Windows 10 vs. Windows 11).</p>
+        <ol>
+            <li><strong>Step 1: Research the OS of Your Choice:</strong> (a) Target Devices, (b) Core Functionalities (memory management, CPU scheduling, process management, security), (c) User Interface, (d) Strengths and Weaknesses.</li>
+            <li><strong>Step 2: Specific Feature Comparison:</strong> Choose a specific feature (such as security measures, virtual assistants) and compare how different OSs handle it.</li>
+            <li><strong>Project Deliverables:</strong> Write a five-page individual report summarizing what you have learned and the insights gained from the project.</li>
+        </ol>
+    </section>
+
+    <hr>
+
+    <!-- ========================================================================= -->
+    <!-- CHAPTER EIGHT: DATABASES AND DATABASE MANAGEMENT SYSTEMS (PAGES 433-501) -->
+    <!-- ========================================================================= -->
+    <section id="chapter-8">
+        <h2>Chapter Eight: Databases and Database Management Systems</h2>
+
+        <h3>Scenario 8.1: Traditional paper base for academic records management</h3>
+        <p>The new Form Five students have just reported to a school for high school admission. They are disturbed by the amount of paperwork the school uses to manage the students' academic records, including continuous assessments and certificates. In a move to modernize information management, the school has decided to implement a database system for managing academic records.</p>
+        <p><strong>Questions:</strong></p>
+        <ol>
+            <li>What challenges might the new students face in managing their academic records using traditional paper-based methods?</li>
+            <li>How can a database system streamline the process of managing academic records compared to manual methods?</li>
+            <li>What are the essential features and functionalities that a database designed for academic records management should possess?</li>
+        </ol>
+
+        <h3>Activity 8.1: Exploring information storage systems at your school</h3>
+        <p>Explore and compare different storage methods—(1) Physical files, (2) Database system, and (3) File-based system—at your school. Write a brief report comprising:</p>
+        <ol type="a">
+            <li>Summary of your observations and key findings for each storage method.</li>
+            <li>Comparison of the pros and cons of physical files, database systems, and file-based systems.</li>
+            <li>Real-world applications and examples where each system might be most effective.</li>
+        </ol>
+
+        <h3>Exercise 8.1: File-Based Systems vs. DBMS</h3>
+        <ol>
+            <li>Why is immediate and accurate data updating crucial for complex databases like government payment systems and social media platforms?</li>
+            <li>How does concurrency differ between file-based systems and DBMS, and why is it important?</li>
+            <li>Explain how data redundancy and inconsistency can be a problem in a file-based system compared to a DBMS. Provide examples.</li>
+            <li>How does a DBMS handle concurrent access to data, and why is this important? Contrast this with the concurrency control mechanisms in a file-based system.</li>
+            <li>Explain how a DBMS reduces data redundancy and inconsistency compared to file-based systems, citing real-world examples.</li>
+        </ol>
+
+        <!-- SVG: Figure 8.3 (Network Model) & Figure 8.7 (Data Models Pyramid) -->
+        <h4>Diagram Reference: Figure 8.3 (Network Database Model) &amp; Figure 8.7 (Conceptual, Logical &amp; Physical Models)</h4>
+        <svg width="680" height="200" viewBox="0 0 680 200" xmlns="http://www.w3.org/2000/svg">
+            <!-- Network Model (Fig 8.3) -->
+            <text x="150" y="18" text-anchor="middle" font-weight="bold" font-size="12">Network Model (Fig 8.3)</text>
+            <rect x="110" y="28" width="80" height="25" fill="none" stroke="black" stroke-width="1.5"/>
+            <text x="150" y="45" text-anchor="middle" font-size="11">Stores</text>
+            <line x1="150" y1="53" x2="70" y2="75" stroke="black"/><line x1="150" y1="53" x2="230" y2="75" stroke="black"/>
+            <rect x="30" y="75" width="80" height="25" fill="none" stroke="black" stroke-width="1.5"/>
+            <text x="70" y="92" text-anchor="middle" font-size="11">Clerks</text>
+            <rect x="190" y="75" width="80" height="25" fill="none" stroke="black" stroke-width="1.5"/>
+            <text x="230" y="92" text-anchor="middle" font-size="11">Customers</text>
+            <line x1="70" y1="100" x2="150" y2="122" stroke="black"/><line x1="230" y1="100" x2="150" y2="122" stroke="black"/>
+            <rect x="105" y="122" width="90" height="25" fill="none" stroke="black" stroke-width="1.5"/>
+            <text x="150" y="139" text-anchor="middle" font-size="11">Transactions</text>
+            <line x1="150" y1="147" x2="150" y2="165" stroke="black"/>
+            <rect x="110" y="165" width="80" height="25" fill="none" stroke="black" stroke-width="1.5"/>
+            <text x="150" y="182" text-anchor="middle" font-size="11">Items</text>
+
+            <!-- Data Models Pyramid (Fig 8.7) -->
+            <text x="490" y="18" text-anchor="middle" font-weight="bold" font-size="12">Data Models Hierarchy (Fig 8.7)</text>
+            <polygon points="490,28 630,185 350,185" fill="none" stroke="black" stroke-width="2"/>
+            <line x1="443" y1="80" x2="537" y2="80" stroke="black" stroke-width="1.5"/>
+            <line x1="396" y1="132" x2="584" y2="132" stroke="black" stroke-width="1.5"/>
+            <text x="490" y="68" text-anchor="middle" font-weight="bold" font-size="11">Physical Model</text>
+            <text x="490" y="112" text-anchor="middle" font-weight="bold" font-size="11">Logical Model</text>
+            <text x="490" y="162" text-anchor="middle" font-weight="bold" font-size="11">Conceptual Model</text>
+        </svg>
+
+        <h3>Exercise 8.2: Database Models</h3>
+        <ol>
+            <li>Explain the concept of a database model and explain its significance in contemporary information systems.</li>
+            <li>How do hierarchical and network models differ, and provide practical examples of their applications.</li>
+            <li>Compare and contrast relational and object-oriented models, and cite real-world examples.</li>
+        </ol>
+
+        <h3>Activity 8.2: Designing a Data Model</h3>
+        <p>Following the real-life bus schedule example provided in Example 8.1, design a data model for a shop encompassing conceptual, logical, and physical data models. Focus on three key entities.</p>
+
+        <h3>Activity 8.3: Identify keys in the tables</h3>
+        <p>Examine the related tables of Student Registration and Student Results in your school:</p>
+        <ol>
+            <li>Step 1: Examine the Student Registration table and Student Results table.</li>
+            <li>Step 2: Identify the Primary key, Foreign key, Candidate key, and Alternate key.</li>
+            <li>Step 3: Draw a diagram to show the relationship between the Student Registration and Student Results tables and indicate the Primary, Foreign, Candidate, and Alternate keys.</li>
+        </ol>
+
+        <h3>Activity 8.4: Applying selection and projection operations</h3>
+        <p>Implement the concepts of selection and projection by analyzing the query <code>Select Fname, job, hiredate, sal From emp Where deptno=30</code> based on the employee table in Figure 8.13:</p>
+        <ol>
+            <li>Step 1: Understand Selection (filtering rows) and Projection (selecting specific columns).</li>
+            <li>Step 2: Analyse and execute the query on the <code>emp</code> table to retrieve records matching <code>deptno=30</code>.</li>
+            <li>Step 3: Present the query results in a structured tabular format including columns for <code>Fname</code>, <code>job</code>, <code>hiredate</code>, and <code>sal</code>.</li>
+        </ol>
+
+        <!-- SVG: Figure 8.14 & 8.15 ER Diagram & Cardinality Notations -->
+        <h4>Diagram Reference: Figure 8.14 (ER Diagram) &amp; Figure 8.15 (Crow's Foot Cardinality Notations)</h4>
+        <svg width="700" height="190" viewBox="0 0 700 190" xmlns="http://www.w3.org/2000/svg">
+            <!-- ER Model (Fig 8.14) -->
+            <text x="190" y="18" text-anchor="middle" font-weight="bold" font-size="12">ER Diagram Elements (Fig 8.14)</text>
+            <ellipse cx="65" cy="40" rx="45" ry="14" fill="none" stroke="black"/><text x="65" y="44" text-anchor="middle" font-size="10">Student_ID</text>
+            <line x1="65" y1="54" x2="65" y2="75" stroke="black"/>
+            <rect x="25" y="75" width="80" height="30" fill="none" stroke="black" stroke-width="1.5"/>
+            <text x="65" y="94" text-anchor="middle" font-weight="bold" font-size="11">Student</text>
+            <line x1="65" y1="105" x2="65" y2="126" stroke="black"/>
+            <ellipse cx="65" cy="140" rx="40" ry="14" fill="none" stroke="black"/><text x="65" y="144" text-anchor="middle" font-size="10">Age</text>
+
+            <line x1="105" y1="90" x2="145" y2="90" stroke="black"/>
+            <polygon points="145,90 185,65 225,90 185,115" fill="none" stroke="black" stroke-width="1.5"/>
+            <text x="185" y="94" text-anchor="middle" font-size="11">Takes</text>
+            <line x1="225" y1="90" x2="265" y2="90" stroke="black"/>
+
+            <ellipse cx="305" cy="40" rx="45" ry="14" fill="none" stroke="black"/><text x="305" y="44" text-anchor="middle" font-size="10">Course_ID</text>
+            <line x1="305" y1="54" x2="305" y2="75" stroke="black"/>
+            <rect x="265" y="75" width="80" height="30" fill="none" stroke="black" stroke-width="1.5"/>
+            <text x="305" y="94" text-anchor="middle" font-weight="bold" font-size="11">Course</text>
+            <line x1="305" y1="105" x2="305" y2="126" stroke="black"/>
+            <ellipse cx="305" cy="140" rx="40" ry="14" fill="none" stroke="black"/><text x="305" y="144" text-anchor="middle" font-size="10">Credits</text>
+
+            <!-- Cardinality Notations (Fig 8.15) -->
+            <text x="530" y="18" text-anchor="middle" font-weight="bold" font-size="12">Cardinality Symbols (Fig 8.15)</text>
+            <line x1="420" y1="40" x2="520" y2="40" stroke="black" stroke-width="1.5"/>
+            <line x1="510" y1="33" x2="510" y2="47" stroke="black" stroke-width="1.5"/>
+            <text x="540" y="44" font-size="11">One</text>
+
+            <line x1="420" y1="68" x2="520" y2="68" stroke="black" stroke-width="1.5"/>
+            <line x1="505" y1="68" x2="520" y2="60" stroke="black"/><line x1="505" y1="68" x2="520" y2="76" stroke="black"/>
+            <text x="540" y="72" font-size="11">Many</text>
+
+            <line x1="420" y1="96" x2="520" y2="96" stroke="black" stroke-width="1.5"/>
+            <line x1="505" y1="89" x2="505" y2="103" stroke="black"/><line x1="513" y1="89" x2="513" y2="103" stroke="black"/>
+            <text x="540" y="100" font-size="11">One and only one</text>
+
+            <line x1="420" y1="124" x2="520" y2="124" stroke="black" stroke-width="1.5"/>
+            <circle cx="500" cy="124" r="5" fill="white" stroke="black"/><line x1="512" y1="117" x2="512" y2="131" stroke="black"/>
+            <text x="540" y="128" font-size="11">Zero or one</text>
+
+            <line x1="420" y1="152" x2="520" y2="152" stroke="black" stroke-width="1.5"/>
+            <line x1="500" y1="145" x2="500" y2="159" stroke="black"/>
+            <line x1="505" y1="152" x2="520" y2="144" stroke="black"/><line x1="505" y1="152" x2="520" y2="160" stroke="black"/>
+            <text x="540" y="156" font-size="11">One or many</text>
+        </svg>
+
+        <h3>Exercise 8.3: Keys, Domains, Selection &amp; Projection</h3>
+        <ol>
+            <li>Identify two related entities in your school students' organisation and determine three possible attributes for each. Create both tables with three tuples for each and show how they relate.</li>
+            <li>In the tables you have created in question (1), identify the primary key, candidate key, alternate key, and foreign key. Also, determine the domain for each attribute that was identified.</li>
+            <li>Differentiate between selection and projection in an RDBMS while giving examples.</li>
+        </ol>
+
+        <h3>Activity 8.5: Construction of an E-R diagram to represent a real-life database</h3>
+        <p><strong>Instructions:</strong> In a University, a student enrols in courses. A student must be assigned to at least one or more courses. To maintain instruction quality, a Professor can deliver only one course. Create an Entity-Relationship Diagram (ERD) following these steps: (1) Entity Identification (Student, Course, Professor), (2) Relationship Identification (Assigned, Delivers), (3) Cardinality Identification, (4) Identify Attributes (Student_ID, StudentName, Employee_ID, ProfessorName, Course_ID, CourseName), and (5) Create the ERD.</p>
+
+        <h3>Activity 8.6: Exploring multivalued dependencies in databases</h3>
+        <ol>
+            <li>Step 1: Study Multivalued Dependencies where one attribute determines another, but the dependent attribute can have multiple independent values.</li>
+            <li>Step 2: Observe your environment to find a real-life scenario where several independent attributes relate to a single entity.</li>
+            <li>Step 3: Design a single table that demonstrates multivalued dependency characteristics, including attributes and sample data, and explain how multivalued dependencies are illustrated.</li>
+        </ol>
+
+        <h3>Activity 8.7: Normalising databases up to the 3rd Normal Form (3NF)</h3>
+        <p>Study Table 8.17 and then answer the questions that follow:</p>
+        <table border="1" cellpadding="5" cellspacing="0">
+            <caption>Table 8.17: Employee details before normalization</caption>
+            <thead>
+                <tr><th>Staff No</th><th>Branch No</th><th>Branch address</th><th>Name</th><th>Position</th><th>Hr/week</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>S3244</td><td>B0021</td><td>Temeke, Plt 12G DSM</td><td>Asha Haji</td><td>Assistant</td><td>16</td></tr>
+                <tr><td>S3244</td><td>B0045</td><td>Mikocheni, Plt 32A, DSM</td><td>Asha Haji</td><td>Assistant</td><td>9</td></tr>
+                <tr><td>S4545</td><td>B0021</td><td>Temeke, Plt 12G DSM</td><td>Mayalla Macho</td><td>Assistant</td><td>14</td></tr>
+                <tr><td>S4545</td><td>B0045</td><td>Mikocheni, Plt 32A, DSM</td><td>Mayalla Macho</td><td>Assistant</td><td>10</td></tr>
+            </tbody>
+        </table>
+        <p><strong>Questions:</strong></p>
+        <ol>
+            <li>Why is this table not in 3NF? Give two reasons.</li>
+            <li>Describe and illustrate the process of normalizing the data shown in Table 8.17 to the Third Normal Form (3NF).</li>
+            <li>Identify the primary, alternate, and foreign keys in your 3NF relations.</li>
+        </ol>
+
+        <h3>Activity 8.8: Designing a database model for a school library</h3>
+        <ol>
+            <li>Step 1: Choose an appropriate database model (relational or object-oriented).</li>
+            <li>Step 2: List the requirements for a school library system, including Book inventory, Student records, and Borrowing transactions.</li>
+            <li>Step 3: Design a schema that includes: (a) Entities: <code>Books</code>, <code>Students</code>, and <code>Transactions</code>; (b) Attributes: <code>Books(BookID, Title, Author)</code>, <code>Students(StudentID, Name)</code>, <code>Transactions(TransactionID, BookID, StudentID, BorrowDate)</code>; and (e) Relationships.</li>
+            <li>Step 4: Create sample data for Books, Students, and Transactions.</li>
+            <li>Step 5: Implement the database using database design software.</li>
+            <li>Step 6: Use basic SQL queries to retrieve data and generate simple reports.</li>
+        </ol>
+
+        <h3>Exercise 8.4: Database Normalisation &amp; Models</h3>
+        <ol>
+            <li>Describe the steps you would take to convert unnormalised tables to the First Normal Form, Second Normal Form, and Third Normal Form.</li>
+            <li>Provide at least one example relevant to a school or college environment that illustrates reasons for converting database tables to the First, Second, and Third Normal Forms.</li>
+            <li>Contrast relational and object-oriented models and give two examples of their uses in real life for each of them.</li>
+            <li>Why is the relational model the most used model today despite the continued invention of even newer models?</li>
+            <li>Identify a real-world application for each of the following database models: hierarchical, network, and relational. Justify your choice based on the characteristics of each model.</li>
+            <li>What features would you find in an object-oriented database model that are not typically present in a relational database model?</li>
+            <li>How do data structures like trees relate to database models? Provide an example of a database model that uses this structure.</li>
+        </ol>
+
+        <h3>Activity 8.9: Designing a database table using SQL</h3>
+        <ol>
+            <li>Step 1: Identify a practical scenario or problem that requires storing information in a database table with 5 to 10 columns.</li>
+            <li>Step 2: Design the schema of your database table (define 5 to 10 columns, data types, primary keys, foreign keys, and constraints).</li>
+            <li>Step 3: Write SQL <code>CREATE TABLE</code> commands to create the database table.</li>
+            <li>Step 4: Populate the table with sample data using SQL <code>INSERT</code> statements.</li>
+            <li>Step 5: Execute SQL <code>SELECT</code> queries to verify that data has been successfully inserted.</li>
+        </ol>
+
+        <h3>Activity 8.10: Data storage and organisation in a normal school environment</h3>
+        <p><strong>Instructions:</strong> Prepare a set of physical index cards representing pieces of data, strategize how to categorize or sort them based on common attributes, and label/sort the cards.</p>
+        <p><strong>Questions:</strong></p>
+        <ol>
+            <li>Describe how you organised the cards, including the categories or sorting criteria used. Discuss the advantages (ease of retrieval, visual clarity) and challenges (ambiguous categorization, limited space) encountered during the process.</li>
+            <li>Discuss similarities between organizing physical cards and organizing data in a database. Highlight concepts such as categorization (grouping data based on common attributes), searchability (ease of finding specific information), and scalability (handling larger datasets).</li>
+        </ol>
+
+        <h3>Activity 8.11: Indexing in a school environment</h3>
+        <p><strong>Instructions:</strong> Compare searching for specific information in two identical copies of a book—one without an index and one with an index.</p>
+        <p><strong>Questions:</strong></p>
+        <ol>
+            <li>Explain the process and challenges faced when searching for information in the first book without an index.</li>
+            <li>Describe how the presence of an index in the second book facilitated faster information retrieval.</li>
+            <li>Discuss the impact of having an index on the speed and ease of searching for information in the second book.</li>
+            <li>Compare the functionality of a book index with indexes in databases, highlighting similarities and differences.</li>
+        </ol>
+
+        <h3>Activity 8.12: Exploring query optimization in database management</h3>
+        <p><strong>Instructions:</strong> Prepare a set of complex questions/queries using the physical data cards, plan strategies (filtering, sorting, indexing), and execute/refine your queries.</p>
+        <p><strong>Questions:</strong></p>
+        <ol>
+            <li>Describe the strategy(s) or approach you selected and discuss any challenges encountered.</li>
+            <li>Explain your process for finding answers to the queries using your chosen approach(es).</li>
+            <li>Discuss how Database Management System (DBMS) software optimises queries through analyzing query execution plans, utilising indexes, and employing optimization techniques.</li>
+            <li>Analyse how the strategies you employed align with the principles of query optimization in DBMS.</li>
+            <li>Discuss the importance of selecting the most efficient approach based on factors such as data volume, complexity, and performance requirements.</li>
+        </ol>
+
+        <h3>Activity 8.13: Understanding database functionality and SQL operations</h3>
+        <p><strong>Instructions:</strong> (1) Create a database for a topic of your interest (such as your favorite sports team), (2) Manipulate data (insert, update, delete records), (3) Create SELECT query challenges, and (4) Optimise queries by creating indexes on your tables and comparing query execution speeds before and after indexing.</p>
+        <p><strong>Questions:</strong></p>
+        <ol>
+            <li>Describe the steps you took to create your database and the tables within it.</li>
+            <li>How did you handle data manipulation tasks? Provide examples of insert, update, and delete operations you performed.</li>
+            <li>Explain the queries you used to retrieve specific information. What challenges did you face, and how did you overcome them?</li>
+            <li>Discuss the performance differences you observed before and after creating indexes on your tables. Why are indexes important for query optimization?</li>
+            <li>Reflect on how understanding database operations and SQL can be beneficial in real-world applications.</li>
+        </ol>
+
+        <h3>Exercise 8.5: SQL DDL, DML &amp; DQL Queries</h3>
+        <ol>
+            <li>Create an SQL statement to create a table named <code>Books</code>. The table should have four columns:
+                <ol type="a">
+                    <li><code>BookID</code> - as an integer and the primary key,</li>
+                    <li><code>Title</code> - as a variable character with a maximum length of 250 characters,</li>
+                    <li><code>AuthorName</code> - as a variable character with a maximum length of 100 characters, and</li>
+                    <li><code>PublishedYear</code> - as an integer.</li>
+                </ol>
+            </li>
+            <li>Write an SQL query to insert the following data into the <code>Books</code> table:
+                <ol type="a">
+                    <li>BookID: <code>1</code>, Title: <code>"Database System Concepts"</code>, Authors: <code>"Abraham Silberschatz, Henry F. Korth, and S. Sudarshan"</code>, PublishedYear: <code>2020</code></li>
+                    <li>BookID: <code>2</code>, Title: <code>"Artificial Intelligence in Education: Promise and Implications for Teaching and Learning"</code>, Authors: <code>"Charles Fadel, Wayne Holmes, and Maya Bialik"</code>, PublishedYear: <code>2017</code></li>
+                </ol>
+            </li>
+            <li>Write an SQL query to retrieve all columns for all books in the <code>Books</code> table that were published after the year 2018.</li>
+            <li>The publication year of "2017" by Charles Fadel, Wayne Holmes, and Maya Bialik was mistakenly entered as 2017. It was published in 2019. Write an SQL query to correct this mistake in the <code>Books</code> table.</li>
+            <li>Assuming there was a mistake, and the book with BookID 2 is not supposed to be in the <code>Books</code> table, write an SQL query to delete this book from the table.</li>
+        </ol>
+
+        <h3>Activity 8.14: The village water systems - a parallel and distributed systems simulation</h3>
+        <p><strong>Questions:</strong></p>
+        <ol>
+            <li>Explain your strategy for completing tasks in parallel.</li>
+            <li>Describe how you coordinated tasks between different areas in the distributed system.</li>
+            <li>Discuss the benefits and challenges of parallel and distributed systems in this analogy.</li>
+            <li>Provide real-world examples in Tanzania where these systems can be applied.</li>
+        </ol>
+
+        <h3>Exercise 8.6: SQL Queries, Parallel &amp; Distributed Databases</h3>
+        <ol>
+            <li>Write an SQL query to select all records from a table named <code>Students</code> where the <code>Grade</code> is <code>'A'</code>.</li>
+            <li>Construct an SQL query to update the salary of all employees in the <code>"Sales"</code> department by $10\%$.</li>
+            <li>What attributes in a database identify if it is either a parallel or distributed database system?</li>
+            <li>Why do developers consider data partitioning in parallel database systems an important technique?</li>
+        </ol>
+
+        <h3>Activity 8.15: Exploring emerging applications</h3>
+        <p>Explore the details of emerging technologies such as IoT, Real-Time Analytics, AI/ML, Personalization and Recommendation Engines, and Privacy-Enhanced Technology through Internet and library research:</p>
+        <ol>
+            <li>Analyze the primary benefits offered by each emerging application.</li>
+            <li>Describe the distinct features and ideal scenarios where these applications are most effective.</li>
+            <li>Categorize these applications based on their industrial applications and sectors.</li>
+            <li>Evaluate the significance and impact of these trends across various industries.</li>
+            <li>Write down your findings and document them comprehensively in a portfolio.</li>
+        </ol>
+
+        <h3>Activity 8.16: Relational Databases, ER Model and SQL (Online Simulation)</h3>
+        <ol>
+            <li>Step 1: Use an online database simulation tool (e.g., DB Fiddle, SQL Fiddle) to construct a database schema for a school library, including tables for <code>Books</code>, <code>Members</code>, and <code>Loans</code>, and define appropriate data types for each attribute.</li>
+            <li>Step 2: Write SQL queries to retrieve and manipulate data within the library database (querying specific genres, retrieving loan information for individual students, and identifying overdue books).</li>
+        </ol>
+
+        <h3>Activity 8.17: Non-relational (NoSQL) databases</h3>
+        <ol>
+            <li>Step 1 &amp; 2: Choose an online NoSQL database platform (e.g., MongoDB Atlas Free Tier or Firebase), sign up, and create a new database instance.</li>
+            <li>Step 3 &amp; 4: Create a new database and collections (e.g., "movies" with documents storing title, director, and genre) and perform insert, update, and delete operations.</li>
+            <li>Step 5: Perform basic and advanced filtering/sorting queries and compile a report comparing NoSQL and relational databases.</li>
+        </ol>
+
+        <h3>Activity 8.18: Data warehouse - building a mini data warehouse</h3>
+        <ol>
+            <li>Step 1: Design the schema for your data warehouse.</li>
+            <li>Step 2: Collect sample datasets from various sources.</li>
+            <li>Step 3: Perform ETL (Extract, Transform, Load) processes using spreadsheet software to clean and transform the data into a consistent format.</li>
+            <li>Step 4 &amp; 5: Perform basic queries, generate reports, and analyse the data to identify trends, patterns, or anomalies.</li>
+        </ol>
+
+        <h3>Activity 8.19: Exploring big data and key benefits</h3>
+        <ol>
+            <li>Step 1: Investigate and analyse the significant advantages brought about by the advent of big data.</li>
+            <li>Step 2: Describe the unique characteristics of big data and identify its ideal applications, and document your findings in a portfolio.</li>
+        </ol>
+
+        <h3>Activity 8.20: Exploring big data with social media analytics</h3>
+        <p><strong>Instructions:</strong> Choose a social media platform, gather analytics metrics (engagement rates, follower growth, post reach), organise and visualise the data in spreadsheet charts/graphs, and prepare a concise report addressing:</p>
+        <ol type="a">
+            <li>What insights does the data provide about user engagement?</li>
+            <li>How does the timing of posts influence reach?</li>
+            <li>Which types of content generate the most interaction?</li>
+            <li>Explore how big data analytics can impact decision-making in various sectors, including business.</li>
+        </ol>
+
+        <h3>Exercise 8.7: Emerging Database Models &amp; Technologies</h3>
+        <ol>
+            <li>How can you identify that particular kinds of data are "Big Data"?</li>
+            <li>How can you persuade a user to use a Graph Database against a Relational Database and vice versa?</li>
+            <li>What is the need for developers to use serverless databases?</li>
+            <li>What key attributes does Blockchain technology enhance in databases?</li>
+            <li>Describe a scenario where a Time-Series Database (TSDB) would be MOST valuable.</li>
+            <li>Identify applications that find it necessary to use a Distributed Database. Explain why.</li>
+            <li>What do you understand by the term "Database as a Service" (DBaaS)? What valuable contribution does it have?</li>
+            <li>Discuss the contributions brought by the rise of IoT (Internet of Things) devices.</li>
+        </ol>
+
+        <h3>Activity 8.21: Understanding the role of databases in modern applications</h3>
+        <p>Explore the Internet and library resources to understand the critical role of databases in modern web and mobile applications. Record your discoveries and document them into a portfolio.</p>
+
+        <h3>Activity 8.22: Installing MySQL using local environments</h3>
+        <p>Follow Steps 1 to 9 to download the MySQL Community Server Installer, configure the server (port 3306, strong password encryption, Windows Service), execute the installation, and write a brief report demonstrating the ability to create and manage databases locally.</p>
+
+        <h3>Activity 8.23: Creating and managing a SQL database for Farming Data</h3>
+        <ol>
+            <li>Step 1: Create the <code>farming_database</code> using <code>CREATE DATABASE farming_database;</code></li>
+            <li>Step 2: Switch to the database using <code>USE farming_database;</code></li>
+            <li>Step 3: Create the <code>farmers</code> table (<code>id INT PRIMARY KEY, name VARCHAR(50) NOT NULL, age INT, location VARCHAR(100), contact VARCHAR(20)</code>).</li>
+            <li>Step 4: Create the <code>crops</code> table including a <code>farmer_id</code> foreign key referencing <code>farmers(id)</code>, and compile a comprehensive execution report.</li>
+        </ol>
+
+        <h3>Activity 8.24: Creating an index and view in SQL</h3>
+        <ol>
+            <li>Step 1: Add an index to the <code>name</code> column in the <code>crops</code> table: <code>CREATE INDEX idx_crops_name ON crops(name);</code></li>
+            <li>Step 2: Create a view named <code>crop_farmer_information</code> joining the <code>crops</code> and <code>farmers</code> tables on <code>c.farmer_id = f.id</code>, and document the query results.</li>
+        </ol>
+
+        <h3>Activity 8.25: Altering the structure of an SQL database</h3>
+        <ol>
+            <li>Step 1 &amp; 2: Use the SQL command <code>ALTER TABLE farmers ADD COLUMN email VARCHAR(50);</code> to add a new column to the <code>farmers</code> table.</li>
+            <li>Step 3: Verify the changes using <code>DESCRIBE farmers;</code> and document the output.</li>
+        </ol>
+
+        <h3>Activity 8.26: Deleting an Index from a SQL database</h3>
+        <ol>
+            <li>Step 1 &amp; 2: Use the SQL command <code>DROP INDEX idx_crops_name ON crops;</code> to drop the index from the <code>crops</code> table.</li>
+            <li>Step 3: Verify that the index has been dropped using <code>SHOW INDEX FROM crops;</code> and write a brief reflection on using the <code>DROP</code> statement.</li>
+        </ol>
+    </section>
+
+    <hr>
+
+    <footer>
+        <p><strong>Watermark: elimika.online</strong> | <strong>prep. by Mr. Mohamed</strong></p>
+    </footer>
+
+</body>
+</html>

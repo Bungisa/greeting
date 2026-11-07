@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Computer Science Form Five - Question Bank Part 4 (Final) (elimika.online)</title>
+    <!-- MathJax Library for Mathematical & Programming Expressions -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+
+    <header>
+        <p><strong>Watermark: elimika.online</strong> | <strong>prep. by Mr. Mohamed</strong></p>
+        <h1>Computer Science for Advanced Secondary Schools - Student's Book Form Five</h1>
+        <h2>Complete Question Bank: Chapter 8 (PHP, PDO, NoSQL, Revision Exercise 8 &amp; Final Projects) (Pages 500 to 539)</h2>
+    </header>
+
+    <hr>
+
+    <!-- ========================================================================= -->
+    <!-- CHAPTER EIGHT: DATABASES AND DBMS (CONTINUED: PAGES 500 - 524) -->
+    <!-- ========================================================================= -->
+    <section id="chapter-8-part-2">
+        <h2>Chapter Eight: Databases and Database Management Systems (Continued from Page 500)</h2>
+
+        <!-- SVG: Figure 8.25 Server-side Scripting Workflow -->
+        <h4>Diagram Reference: Figure 8.25 - Server-Side Scripting Workflow</h4>
+        <svg width="650" height="200" viewBox="0 0 650 200" xmlns="http://www.w3.org/2000/svg">
+            <!-- Client -->
+            <rect x="30" y="60" width="130" height="80" fill="none" stroke="black" stroke-width="2"/>
+            <text x="95" y="95" text-anchor="middle" font-weight="bold" font-size="13">Client</text>
+            <text x="95" y="115" text-anchor="middle" font-size="11">(User's Computer /</text>
+            <text x="95" y="130" text-anchor="middle" font-size="11">Web Browser)</text>
+
+            <!-- Web Server -->
+            <rect x="460" y="45" width="150" height="110" fill="none" stroke="black" stroke-width="2"/>
+            <text x="535" y="70" text-anchor="middle" font-weight="bold" font-size="13">Web Server</text>
+            <rect x="475" y="80" width="120" height="25" fill="none" stroke="black"/>
+            <text x="535" y="97" text-anchor="middle" font-size="10">2. Locate Page File</text>
+            <rect x="475" y="115" width="120" height="28" fill="none" stroke="black"/>
+            <text x="535" y="133" text-anchor="middle" font-size="10">3. PHP Script Engine</text>
+
+            <!-- Request Arrow -->
+            <line x1="160" y1="80" x2="460" y2="80" stroke="black" stroke-width="1.5"/>
+            <polygon points="453,76 460,80 453,84" fill="black"/>
+            <text x="310" y="72" text-anchor="middle" font-size="11">1. User HTTP Request (URL / Form)</text>
+
+            <!-- Response Arrow -->
+            <line x1="460" y1="125" x2="160" y2="125" stroke="black" stroke-width="1.5"/>
+            <polygon points="167,121 160,125 167,129" fill="black"/>
+            <text x="310" y="118" text-anchor="middle" font-size="11">4. HTML Stream Passed Back to Client</text>
+            <text x="310" y="145" text-anchor="middle" font-size="10">5 &amp; 6. Browser Processes &amp; Displays Web Page</text>
+            <text x="640" y="190" text-anchor="end" font-size="10">elimika.online</text>
+        </svg>
+
+        <h3>Activity 8.27: Creating dynamic content with PHP</h3>
+        <p><strong>Aim:</strong> To demonstrate the integration of PHP within HTML and CSS to create dynamic web content, including displaying text and current date dynamically retrieved from a server-side script.</p>
+        <p><strong>Instructions:</strong> Develop a basic PHP script to showcase "Welcome to the computer science course!" along with today's date on a web page. Additionally, integrate PHP within HTML and CSS to generate dynamic content from a local database table with four columns.</p>
+        <p><strong>Deliverables:</strong></p>
+        <ol type="a">
+            <li>PHP script displaying "Welcome to the computer science course!" and the current date.</li>
+            <li>HTML page integrating PHP to display dynamic content.</li>
+            <li>Optionally, demonstrate the use of PHP to fetch and display data from a local database table.</li>
+        </ol>
+
+        <h3>Activity 8.28: Building a task management web application with PHP, PDO, and MySQL</h3>
+        <p><strong>Aim:</strong> To develop proficiency in PHP and PDO for performing CRUD operations on a MySQL database while creating a functional web-based task management application.</p>
+        <p><strong>Instructions:</strong></p>
+        <ol>
+            <li><strong>Step 1: Database setup:</strong>
+                <ol type="a">
+                    <li>Create a MySQL database named <code>task_manager</code>.</li>
+                    <li>Within <code>task_manager</code>, create a table named <code>tasks</code> with fields: <code>id</code> (INT, Primary Key, Auto Increment), <code>task_name</code> (VARCHAR(255)), and <code>is_completed</code> (BOOLEAN or TINYINT defaulting to 0).</li>
+                </ol>
+            </li>
+            <li><strong>Step 2: PHP application setup:</strong>
+                <ol type="a">
+                    <li>Create <code>index.php</code> for listing tasks.</li>
+                    <li>Create <code>add_task.php</code> for adding new tasks.</li>
+                    <li>Create <code>update_task.php</code> for updating task completion status.</li>
+                    <li>Create <code>delete_task.php</code> for deleting tasks.</li>
+                </ol>
+            </li>
+            <li><strong>Step 3: CRUD Operations:</strong>
+                <ol type="a">
+                    <li><strong>Create (Add new task):</strong> Implement a form in <code>add_task.php</code> to insert new tasks into the <code>tasks</code> table using PDO.</li>
+                    <li><strong>Read (List tasks):</strong> Query all tasks in <code>index.php</code> and display them in a list format showing task names and completion status. Include functionality for "Mark as Completed/Not Completed", "Edit", and "Delete".</li>
+                    <li><strong>Update (Mark task as completed/not completed):</strong> Develop logic in <code>update_task.php</code> to toggle the completion status of tasks based on user interaction.</li>
+                    <li><strong>Delete (Remove a Task):</strong> Implement functionality in <code>delete_task.php</code> to delete tasks from the <code>tasks</code> table.</li>
+                </ol>
+            </li>
+            <li><strong>Step 4: Testing:</strong>
+                <ol type="a">
+                    <li>Test adding new tasks through <code>add_task.php</code>.</li>
+                    <li>Verify the list of tasks and their completion status in <code>index.php</code>.</li>
+                    <li>Test updating task status using <code>update_task.php</code>.</li>
+                    <li>Ensure deletion of tasks functions correctly with <code>delete_task.php</code>.</li>
+                </ol>
+            </li>
+        </ol>
+
+        <h3>Exercise 8.8: PHP &amp; PDO Database Connectivity</h3>
+        <ol>
+            <li>Describe PHP and its role in web development.</li>
+            <li>What advantages does PDO offer for MySQL developers?</li>
+            <li>How can you connect to a MySQL database using PDO in PHP?</li>
+            <li>How would you fetch data from a database using PDO?</li>
+        </ol>
+
+        <h3>Exercise 8.9: NoSQL Databases (MongoDB, Redis, Cassandra, Graph Databases)</h3>
+        <ol>
+            <li>Compare and contrast the benefits of using a wide-column store versus a graph database in different application scenarios.</li>
+            <li>Discuss the use cases where a document-oriented database like MongoDB would be more suitable than a relational database system.</li>
+            <li>What are the advantages of using NoSQL databases for handling unstructured data compared to traditional relational databases?</li>
+            <li>Set up a MongoDB database using MongoDB Atlas Free Tier. Then, perform the following:
+                <ol type="a">
+                    <li>Create a new MongoDB cluster on MongoDB Atlas.</li>
+                    <li>Define a collection named <code>"books"</code> with fields like <code>title</code>, <code>author</code>, and <code>genre</code>.</li>
+                    <li>Insert sample documents into the <code>"books"</code> collection.</li>
+                    <li>Write queries to retrieve books based on author and genre.</li>
+                </ol>
+            </li>
+            <li>Implement a simple key-value store using Redis by performing the following:
+                <ol type="a">
+                    <li>Install and set up Redis on your local machine or use a cloud-based Redis service.</li>
+                    <li>Define keys for storing data related to user sessions (such as session IDs and user data).</li>
+                    <li>Implement operations to set, get, and delete key-value pairs.</li>
+                    <li>Test the key-value store by storing and retrieving sample data.</li>
+                </ol>
+            </li>
+            <li>Set up a Cassandra cluster and perform basic operations by implementing the following:
+                <ol type="a">
+                    <li>Install Cassandra on a local machine or use a cloud-based Cassandra service.</li>
+                    <li>Create a keyspace named <code>"library"</code> and define a table <code>"books"</code> with columns for book ID, title, author, and genre.</li>
+                    <li>Insert sample data into the <code>"books"</code> table.</li>
+                    <li>Write CQL queries to retrieve books based on book ID and author.</li>
+                </ol>
+            </li>
+        </ol>
+
+        <h3>Revision Exercise 8</h3>
+        <ol>
+            <li>How might the use of databases in academic records management align with broader trends in digital transformation and information technology?</li>
+            <li>What is a Structured Query Language? Briefly explain how it is used to interact with relational databases.</li>
+            <li>How does a NoSQL database differ from a relational database in terms of data structure and flexibility?</li>
+            <li>In what scenario might a NoSQL database be a better choice compared to a traditional relational database?</li>
+            <li>What is a data warehouse, and how does it differ from a traditional database in terms of its purpose and data organisation?</li>
+            <li>Explain the challenges of big data associated with collecting, managing, and analysing massive datasets.</li>
+            <li>Provide an example of how big data and data warehouses could be used in a specific industry (such as healthcare, finance, education, local governments).</li>
+            <li>Identify any correlation between where the user is browsing from and the specific actions they perform on the website.</li>
+            <li>Analyse the content of user messages left on different website pages, to identify any recurring themes or concerns expressed by users of specific services provided by the website:
+                <ol type="a">
+                    <li>What features would you find in an object-oriented database model that are not typically present in a relational database model?</li>
+                    <li>How do data structures like trees relate to database models? Provide an example of a database model that uses this structure.</li>
+                </ol>
+            </li>
+            <li>Construct an SQL query to update the salary of all employees in the "Sales" department by $10\%$.</li>
+            <li>How can you respond to someone who needs to understand about parallel and distributed database systems?</li>
+            <li>In parallel database systems, why is data partitioning considered an important technique?</li>
+            <li>What is the primary reason for using tables (comprising rows and columns) in a relational database management system (RDBMS) for data storage?</li>
+            <li>Why are indexes used in a database management system (DBMS)?</li>
+            <li>In the context of a database management system (DBMS), what is the goal of query optimization?</li>
+            <li>Consider a national healthcare system in Tanzania that stores patient records, medical histories, and treatment information. Which system between parallel and distributed database systems would be most appropriate if the goal is to ensure reliable access to complete patient records at any hospital across the country, and why?</li>
+            <li>Describe demands created by the rise of IoT (Internet of Things) devices.</li>
+            <li>What is the purpose of the <code>echo</code> statement in PHP?</li>
+            <li>What makes GET and POST HTTP methods not look the same?</li>
+            <li>Demonstrate with code how to implement a CRUD operation for a <code>'users'</code> table in PHP using PDO.</li>
+        </ol>
+
+        <h3>Chapter 8 Project: Multi-functional Library Management System</h3>
+        <p><strong>Project Overview:</strong> Develop a comprehensive Library Management System (LMS) that integrates various functionalities relevant to the topics covered throughout the course. The LMS will allow users to manage library resources, borrow and return books, search for books, and provide administrative functionalities.</p>
+        <p><strong>Project Components:</strong></p>
+        <ol>
+            <li><strong>Computer architecture and processor optimization:</strong> Implement efficient data structures and algorithms for managing large datasets of books and user information. Optimise data retrieval and storage operations to minimize processing time using techniques such as indexing and caching.</li>
+            <li><strong>Object-Oriented Programming (C++, Java, Python):</strong> Choose one programming language (C++, Java, or Python) to implement the core functionalities of the LMS. Use object-oriented principles to design classes such as <code>Book</code>, <code>User</code>, <code>Library</code>, and <code>Transaction</code> to model the entities and interactions within the system.</li>
+            <li><strong>Computer networks:</strong> Implement network communication aspects such as client-server architecture for remote access to the LMS. Design protocols for data exchange between the client (library users) and server (library database).</li>
+            <li><strong>Operating systems:</strong> Consider concurrency and synchronization issues when implementing features like book borrowing and returning to ensure data consistency. Utilize file handling and memory management concepts for efficient data storage and retrieval.</li>
+            <li><strong>Databases and Database Management Systems:</strong> Design a relational database schema using SQLite, MySQL, or PostgreSQL to store information about books, users, transactions, etc. Implement CRUD (Create, Read, Update, Delete) operations to interact with the database from the LMS application.</li>
+        </ol>
+        <p><strong>Project Deliverables:</strong></p>
+        <ol>
+            <li><strong>Functional LMS application:</strong> A fully functional application with a user-friendly interface for library users (borrowers) and administrators (librarians).</li>
+            <li><strong>Documentation:</strong> Detailed documentation including system design, database schema, class diagrams, user manuals, and technical specifications.</li>
+            <li><strong>Presentation:</strong> A final presentation demonstrating the LMS functionalities, architecture, and optimisation strategies used.</li>
+        </ol>
+
+        <h3>END OF ADVANCED LEVEL SECONDARY EDUCATION PROJECT (Page 524)</h3>
+        <p>Select an area of your interest related to Computer Science, then design and conduct a project.</p>
+    </section>
+
+    <hr>
+
+    <footer>
+        <p><strong>Watermark: elimika.online</strong> | <strong>prep. by Mr. Mohamed</strong></p>
+    </footer>
+
+</body>
+</html>

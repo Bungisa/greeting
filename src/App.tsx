@@ -151,40 +151,17 @@ async function fetchElimikaApi(endpointPath: string, options?: RequestInit): Pro
   const isFileProtocol = typeof window !== 'undefined' && window.location.protocol === 'file:';
   const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
   const isStaticCustomDomain = hostname.includes('github.io');
-  const isAlreadyOnRemoteBase = hostname.includes('run.app');
 
   if (!isFileProtocol && !isStaticCustomDomain) {
-    for (let attempt = 0; attempt < 2; attempt++) {
-      try {
-        const localRes = await fetch(endpointPath, options);
-        const contentType = localRes.headers.get('content-type') || '';
-        if (localRes.ok && contentType.includes('application/json')) {
-          if (!isAlreadyOnRemoteBase && endpointPath.startsWith('/api/moha/')) {
-            try {
-              const cloned = localRes.clone();
-              const peekData = await cloned.json();
-              if (peekData && peekData.source === 'local') {
-                const remoteRes = await fetch(`${ELIMIKA_REMOTE_API_BASE}${endpointPath}`, options);
-                const remoteType = remoteRes.headers.get('content-type') || '';
-                if (remoteRes.ok && remoteType.includes('application/json')) {
-                  const remoteCloned = remoteRes.clone();
-                  const remoteData = await remoteCloned.json();
-                  if (remoteData && remoteData.source === 'gemini') {
-                    return remoteRes;
-                  }
-                }
-              }
-            } catch {
-              // If remote fetch or JSON peek fails, return the working localRes below
-            }
-          }
-          return localRes;
-        }
-      } catch {
-        // retry once after brief delay before falling back
+    try {
+      const localRes = await fetch(endpointPath, options);
+      const contentType = localRes.headers.get('content-type') || '';
+      if (localRes.ok && contentType.includes('application/json')) {
+        return localRes;
       }
-      if (attempt === 0) {
-        await new Promise((r) => setTimeout(r, 700));
+    } catch (err) {
+      if (options?.signal?.aborted) {
+        throw err;
       }
     }
   }
@@ -2778,8 +2755,11 @@ export default function App() {
     setTeacherStudioOpen(false);
     setGeneratingDocType(type);
 
+    // Render instant TIE / PO-RALG document immediately (0ms) so the user never waits on a spinner
+    const instantHtml = buildInstantOfficialDocument(type, meta);
+    setStudioPreviewHtml(instantHtml);
     const userMsgId = `user-doc-${Date.now()}`;
-    const loadingMsgId = `ai-doc-load-${Date.now() + 1}`;
+    const docMsgId = `ai-doc-${Date.now() + 1}`;
 
     setMohaMessages((prev) => [
       ...prev,
@@ -2789,16 +2769,18 @@ export default function App() {
         text: `${docLabels[type]}: ${meta.topic}`,
       },
       {
-        id: loadingMsgId,
+        id: docMsgId,
         role: 'ai',
-        loading: true,
-        text: `Generating ${docLabels[type]}...`,
+        text: instantHtml,
       },
     ]);
+    setGeneratingDocType(null);
+    showToast(`✅ Generated ${docLabels[type]}!`);
 
+    // Background AI enrichment if available within 5 seconds
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
       const response = await fetchElimikaApi('/api/moha/generate-doc', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2811,40 +2793,13 @@ export default function App() {
         if (data.html) {
           setStudioPreviewHtml(data.html);
           setMohaMessages((prev) =>
-            prev.map((m) =>
-              m.id === loadingMsgId
-                ? {
-                    id: `ai-doc-${Date.now()}`,
-                    role: 'ai',
-                    text: data.html,
-                  }
-                : m
-            )
+            prev.map((m) => (m.id === docMsgId ? { ...m, text: data.html } : m))
           );
-          setGeneratingDocType(null);
-          showToast(`✅ Generated ${docLabels[type]}!`);
-          return;
         }
       }
     } catch {
-      // Instant local fallback below
+      // Keep the instant official document already displayed
     }
-
-    const instantHtml = buildInstantOfficialDocument(type, meta);
-    setStudioPreviewHtml(instantHtml);
-    setMohaMessages((prev) =>
-      prev.map((m) =>
-        m.id === loadingMsgId
-          ? {
-              id: `ai-doc-${Date.now()}`,
-              role: 'ai',
-              text: instantHtml,
-            }
-          : m
-      )
-    );
-    setGeneratingDocType(null);
-    showToast(`✅ Generated ${docLabels[type]}!`);
   }
 
   async function sendMwalimuMessage(
@@ -3021,6 +2976,10 @@ export default function App() {
       setQuizResultSaved(false);
     }
 
+    const recentHistory = mohaMessages
+      .slice(-6)
+      .map((m) => ({ id: m.id, role: m.role, text: m.text }));
+
     setMohaMessages((prev) => [
       ...prev,
       {
@@ -3037,13 +2996,9 @@ export default function App() {
       },
     ]);
 
-    const recentHistory = mohaMessages
-      .slice(-6)
-      .map((m) => ({ id: m.id, role: m.role, text: m.text }));
-
     try {
       const controller = new AbortController();
-      const requestTimeoutMs = attachedImg ? 42000 : 26000;
+      const requestTimeoutMs = attachedImg ? 34000 : 22000;
       const timeoutId = setTimeout(() => controller.abort(), requestTimeoutMs);
       const response = await fetchElimikaApi('/api/moha/chat', {
         method: 'POST',
@@ -6509,7 +6464,7 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Row 2 on Mobile / Right on Desktop: Workspace Tab Switcher + Daily Quiz + Teach AI + Dark Mode */}
+              {/* Row 2 on Mobile / Right on Desktop: Workspace Tab Switcher + Daily Quiz + Dark Mode */}
               <div className="flex items-center gap-1 overflow-x-auto no-scrollbar shrink-0">
                 {[
                   { id: 'chat' as const, label: '💬 Chat' },
@@ -6539,19 +6494,25 @@ export default function App() {
                 >
                   🎯 Daily Quiz
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setMohaLearnPanelOpen(true)}
-                  className="px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-bold whitespace-nowrap bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-2xs cursor-pointer flex items-center gap-1 shrink-0"
-                  title="Teach Moha AI custom notes or topics (Saved permanently in localStorage)"
-                >
-                  <span>🧠 Teach AI</span>
-                  {learnedMemory.length > 0 && (
-                    <span className="px-1.5 py-0.2 rounded-full bg-slate-950 text-amber-300 text-[10px] font-black">
-                      {learnedMemory.length}
-                    </span>
-                  )}
-                </button>
+                {mohaViewMode === 'chat' && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setMohaMessages([
+                        {
+                          id: 'msg-welcome',
+                          role: 'ai',
+                          text: `Ready for **${mohaActiveClass} • ${mohaActiveSubject}**.`,
+                        },
+                      ])
+                    }
+                    className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 text-[11px] font-bold flex items-center gap-1 cursor-pointer shrink-0"
+                    title="Clear Chat"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Clear</span>
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => selectThemeMode(darkMode ? 'light' : 'dark')}
@@ -6572,60 +6533,6 @@ export default function App() {
           {/* ==================== VIEW 1: CLEAN CHAT ==================== */}
           {mohaViewMode === 'chat' && (
             <div className="flex-1 min-h-0 flex flex-col max-w-5xl w-full mx-auto overflow-hidden">
-              {/* Minimal Single-Row Quick Actions */}
-              <div className="shrink-0 px-3 sm:px-5 py-1.5 bg-slate-100/80 border-b border-slate-200 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar text-xs">
-                <div className="flex items-center gap-1.5 whitespace-nowrap">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const activeChap =
-                        selectedQuizTopic && selectedQuizTopic !== 'ALL'
-                          ? selectedQuizTopic
-                          : activeSyllabusTopics[0]?.replace(/^\d+\.\d+\s*/, '').trim() || 'Chapter 1';
-                      sendMwalimuMessage(`Explain ${activeChap}`);
-                    }}
-                    className="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 font-bold text-[11px] cursor-pointer"
-                  >
-                    📖 Explain Chapter
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const activeChap =
-                        selectedQuizTopic && selectedQuizTopic !== 'ALL'
-                          ? selectedQuizTopic
-                          : activeSyllabusTopics[0]?.replace(/^\d+\.\d+\s*/, '').trim() || 'Chapter 1';
-                      sendMwalimuMessage(`Solve questions on ${activeChap}`);
-                    }}
-                    className="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 font-bold text-[11px] cursor-pointer"
-                  >
-                    🧮 Solve Questions
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMohaLearnPanelOpen(true)}
-                    className="px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300 font-bold text-[11px] cursor-pointer"
-                  >
-                    🧠 Teach AI
-                  </button>
-                </div>
-
-                <button
-                  onClick={() =>
-                    setMohaMessages([
-                      {
-                        id: 'msg-welcome',
-                        role: 'ai',
-                        text: `Ready for **${mohaActiveClass} • ${mohaActiveSubject}**.`,
-                      },
-                    ])
-                  }
-                  className="px-2 py-1 rounded-lg text-slate-500 hover:text-rose-600 font-bold flex items-center gap-1 cursor-pointer shrink-0"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>Clear</span>
-                </button>
-              </div>
 
               {/* Scrollable Messages Viewport */}
               <div
@@ -7063,116 +6970,6 @@ export default function App() {
       {toastMessage && (
         <div className="fixed bottom-20 right-4 z-50 bg-slate-900 text-white text-xs font-bold px-4 py-3 rounded-xl shadow-lg">
           {toastMessage}
-        </div>
-      )}
-
-      {/* 🧠 TEACH MOHA AI MODAL (PERMANENT SELF-LEARNING MEMORY IN LOCALSTORAGE) */}
-      {mohaLearnPanelOpen && (
-        <div
-          className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4"
-          onClick={() => setMohaLearnPanelOpen(false)}
-        >
-          <div
-            className="bg-white rounded-3xl max-w-xl w-full p-5 sm:p-6 border border-slate-200 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3">
-              <div>
-                <span className="text-[11px] font-extrabold uppercase tracking-wider text-amber-600">
-                  Self-Learning Memory Engine (localStorage)
-                </span>
-                <h3 className="text-lg font-black text-slate-900">
-                  🧠 Teach Moha AI Custom Notes &amp; Topics
-                </h3>
-              </div>
-              <button
-                onClick={() => setMohaLearnPanelOpen(false)}
-                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
-              >
-                ✕ Close
-              </button>
-            </div>
-
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Add custom school notes, definitions, marking rubrics, or topic explanations below. Moha AI permanently saves them in your browser&apos;s <strong>localStorage</strong> and automatically recalls them whenever you or your students ask about that topic.
-            </p>
-
-            <div className="space-y-3 text-xs">
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">
-                  Topic Name or Trigger Question ({mohaActiveClass} — {mohaActiveSubject})
-                </label>
-                <input
-                  type="text"
-                  value={learnTopicInput}
-                  onChange={(e) => setLearnTopicInput(e.target.value)}
-                  placeholder="e.g. Osmosis in Plant Cells, or School Exam Rule"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-violet-600 focus:outline-none font-semibold"
-                />
-              </div>
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">
-                  Custom Notes / Answer to Remember Permanently
-                </label>
-                <textarea
-                  rows={4}
-                  value={learnAnswerInput}
-                  onChange={(e) => setLearnAnswerInput(e.target.value)}
-                  placeholder="Write the exact definition, worked example, or teaching notes that Moha AI should remember..."
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-violet-600 focus:outline-none font-medium"
-                />
-              </div>
-              <div className="flex items-center justify-end gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={() => setMohaLearnPanelOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSaveLearnedFromForm}
-                  className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold cursor-pointer"
-                >
-                  🧠 Save to Permanent Memory
-                </button>
-              </div>
-            </div>
-
-            {learnedMemory.length > 0 && (
-              <div className="pt-3 border-t border-slate-200 space-y-2">
-                <div className="text-xs font-black text-slate-800">
-                  Saved Memory Items ({learnedMemory.length})
-                </div>
-                <div className="max-h-48 overflow-y-auto space-y-2 pr-1">
-                  {learnedMemory.map((item, idx) => (
-                    <div
-                      key={`${item.topic}-${idx}`}
-                      className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-start justify-between gap-2 text-xs"
-                    >
-                      <div className="space-y-0.5 min-w-0">
-                        <div className="font-bold text-slate-900 truncate">
-                          {item.topic}{' '}
-                          <span className="text-[10px] font-semibold text-violet-700">
-                            ({item.cls} · {item.subject})
-                          </span>
-                        </div>
-                        <div className="text-slate-600 line-clamp-2">{item.content}</div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => deleteMohaLearnedItem(item.topic)}
-                        className="px-2 py-1 rounded bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[10px] shrink-0 cursor-pointer"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
         </div>
       )}
 

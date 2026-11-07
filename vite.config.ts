@@ -103,6 +103,19 @@ export default defineConfig(() => {
         },
       }),
     ],
+    define: {
+      __CS_F5_RAW_HTMLS__: JSON.stringify(
+        [
+          'computer_f5_bank_of_qns_1950aee2.html',
+          'computer_f5_bank_of_ques_87e7b403.html',
+          'computer_f5_bank_of_questions_1e5f4d7b.html',
+          'computer_f5_bank_8d71db45.html',
+        ].map((f) => {
+          const p = path.resolve(__dirname, 'public', 'assets', 'aistudio', f);
+          return fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : '';
+        })
+      ),
+    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

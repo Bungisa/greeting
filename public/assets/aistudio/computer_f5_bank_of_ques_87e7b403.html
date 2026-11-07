@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Computer Science Form Five - Question Bank Part 2 (elimika.online)</title>
+    <!-- MathJax Library for Mathematical & Programming Expressions -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+
+    <header>
+        <p><strong>Watermark: elimika.online</strong> | <strong>prep. by Mr. Mohamed</strong></p>
+        <h1>Computer Science for Advanced Secondary Schools - Student's Book Form Five</h1>
+        <h2>Complete Question Bank: Chapter 4 (OOP with C++) &amp; Chapter 5 (OOP with Java - Part 1)</h2>
+    </header>
+
+    <hr>
+
+    <!-- ========================================================================= -->
+    <!-- CHAPTER FOUR: OBJECT ORIENTED PROGRAMMING WITH C++ (CONTINUED) -->
+    <!-- ========================================================================= -->
+    <section id="chapter-4">
+        <h2>Chapter Four: Object Oriented Programming with C++ (Continued from Page 214)</h2>
+
+        <h3>Exercise 4.2: Encapsulation in OOP</h3>
+        <ol>
+            <li>How does the concept of encapsulation help in maintaining data integrity and promoting information hiding?</li>
+            <li>Explain how encapsulation is achieved in the <code>Book</code> class of the library management system scenario.</li>
+            <li>How do getters and setters contribute to encapsulation in OOP, and what is their role in accessing and modifying object state?</li>
+            <li>In the <code>Car</code> class example, how are encapsulation principles applied to control access to the car's attributes and methods?</li>
+            <li>Can you describe a real-world scenario where encapsulation would be beneficial, based on the examples provided in the code?</li>
+        </ol>
+
+        <!-- SVG: Figures 4.3, 4.4, 4.5, 4.6, 4.7 Categories of Inheritance -->
+        <h4>Diagram Reference: Figures 4.3 to 4.7 - Categories of Inheritance in OOP</h4>
+        <svg width="750" height="220" viewBox="0 0 750 220" xmlns="http://www.w3.org/2000/svg">
+            <!-- Single Inheritance -->
+            <text x="70" y="20" text-anchor="middle" font-weight="bold" font-size="12">Single (Fig 4.4)</text>
+            <rect x="30" y="35" width="80" height="28" fill="none" stroke="black" stroke-width="1.5"/>
+            <text x="70" y="54" text-anchor="middle" font-size="12">Class A</text>
+            <line x1="70" y1="63" x2="70" y2="105" stroke="black" stroke-width="1.5"/>
+            <polygon points="66,100 74,100 70,107" fill="black"/>
+            <rect x="30" y="107" width="80" height="28" fill="none" stroke="black" stroke-width="1.5"/>
+            <text x="70" y="126" text-anchor="middle" font-size="12">Class B</text>
+
+            <!-- Multilevel Inheritance -->
+            <text x="230" y="20" text-anchor="middle" font-weight="bold" font-size="12">Multilevel (Fig 4.5)</text>
+            <rect x="190" y="35" width="80" height="28" fill="none" stroke="black" stroke-width="1.5"/>
+            <text x="230" y="54" text-anchor="middle" font-size="12">Class A</text>
+            <line x1="230" y1="63" x2="230" y2="95" stroke="black" stroke-width="1.5"/>
+            <polygon points="226,90 234,90 230,97" fill="black"/>
+            <rect x="190" y="97" width="80" height="28" fill="none" stroke="black" stroke-width="1.5"/>
+            <text x="230" y="116" text-anchor="middle" font-size="12">Class B</text>
+            <line x1="230" y1="125" x2="230" y2="157" stroke="black" stroke-width="1.5"/>
+            <polygon points="226,152 234,152 230,159" fill="black"/>
+            <rect x="190" y="159" width="80" height="28" fill="none" stroke="black" stroke-width="1.5"/>
+            <text x="230" y="178" text-anchor="middle" font-size="12">Class C</text>
+
+            <!-- Hierarchical Inheritance -->
+            <text x="415" y="20" text-anchor="middle" font-weight="bold" font-size="12">Hierarchical (Fig 4.6)</text>
+            <rect x="375" y="35" width="80" height="28" fill="none" stroke="black" stroke-width="1.5"/>
+            <text x="415" y="54" text-anchor="middle" font-size="12">Class A</text>
+            <line x1="395" y1="63" x2="365" y2="107" stroke="black" stroke-width="1.5"/>
+            <line x1="435" y1="63" x2="465" y2="107" stroke="black" stroke-width="1.5"/>
+            <rect x="325" y="107" width="80" height="28" fill="none" stroke="black" stroke-width="1.5"/>
+            <text x="365" y="126" text-anchor="middle" font-size="12">Class B</text>
+            <rect x="425" y="107" width="80" height="28" fill="none" stroke="black" stroke-width="1.5"/>
+            <text x="465" y="126" text-anchor="middle" font-size="12">Class C</text>
+
+            <!-- Hybrid Inheritance -->
+            <text x="625" y="20" text-anchor="middle" font-weight="bold" font-size="12">Hybrid (Fig 4.7)</text>
+            <rect x="585" y="35" width="80" height="28" fill="none" stroke="black" stroke-width="1.5"/>
+            <text x="625" y="54" text-anchor="middle" font-size="12">Class A</text>
+            <line x1="605" y1="63" x2="575" y2="97" stroke="black" stroke-width="1.5"/>
+            <line x1="645" y1="63" x2="675" y2="97" stroke="black" stroke-width="1.5"/>
+            <rect x="535" y="97" width="80" height="28" fill="none" stroke="black" stroke-width="1.5"/>
+            <text x="575" y="116" text-anchor="middle" font-size="12">Class B</text>
+            <rect x="635" y="97" width="80" height="28" fill="none" stroke="black" stroke-width="1.5"/>
+            <text x="675" y="116" text-anchor="middle" font-size="12">Class C</text>
+            <line x1="575" y1="125" x2="605" y2="159" stroke="black" stroke-width="1.5"/>
+            <line x1="675" y1="125" x2="645" y2="159" stroke="black" stroke-width="1.5"/>
+            <rect x="585" y="159" width="80" height="28" fill="none" stroke="black" stroke-width="1.5"/>
+            <text x="625" y="178" text-anchor="middle" font-size="12">Class D</text>
+            <text x="740" y="210" text-anchor="end" font-size="10">elimika.online</text>
+        </svg>
+
+        <h3>Exercise 4.3: Inheritance in OOP</h3>
+        <ol>
+            <li>Analyse the statement that, "Inheritance is the process by which objects of one class acquire the properties of objects of another class."</li>
+            <li>How does multilevel inheritance differ from single inheritance? Explain the potential benefits and drawbacks of using multilevel inheritance in an OOP application.</li>
+            <li>Provide a simple, real-world example of multilevel inheritance involving a base class, a derived class, and a further derived class, and explain how methods and attributes are inherited and extended at each level.</li>
+        </ol>
+
+        <h3>Exercise 4.4: Polymorphism in OOP</h3>
+        <ol>
+            <li>Give an example of how polymorphism can improve code reusability and maintainability.</li>
+            <li>Imagine a class named "Animal" with a method "makeSound()". In Object-Oriented Programming (OOP), how might polymorphism be used with this scenario?</li>
+            <li>Imagine you are designing a simple video game. How would you use classes and objects to represent different elements of the game, such as characters, items, and environments? How might inheritance and polymorphism come into play in this scenario?</li>
+            <li>Consider a superclass "Shape" with a method "getArea()". Subclasses like "Square" and "Circle" inherit this method. Which type of polymorphism is at play when the appropriate "getArea()" method is chosen based on the object's class at runtime?</li>
+            <li>You have a function <code>greetAnimal(animal)</code> in your code. This function can accept objects of various animal classes (Dog, Cat, etc.). How might polymorphism be beneficial in this scenario?</li>
+            <li>Imagine a class hierarchy for vehicles (Car, Truck, Bike). How could polymorphism be used to create a function <code>moveAllVehicles(vehicles)</code> that works with all vehicle types?</li>
+            <li>Polymorphism is often associated with inheritance. Can polymorphism exist without inheritance? Explain your answer.</li>
+            <li>In the real world, provide an example of something that exhibits a similar concept to polymorphism.</li>
+        </ol>
+
+        <!-- SVG: Figure 4.8 & 4.9 Data Abstraction and Process Abstraction -->
+        <h4>Diagram Reference: Figure 4.8 (Data Abstraction) &amp; Figure 4.9 (Process Abstraction)</h4>
+        <svg width="680" height="210" viewBox="0 0 680 210" xmlns="http://www.w3.org/2000/svg">
+            <!-- Data Abstraction -->
+            <rect x="15" y="75" width="95" height="60" fill="none" stroke="black" stroke-width="1.5"/>
+            <text x="62" y="110" text-anchor="middle" font-size="12">User Program</text>
+            <rect x="160" y="15" width="145" height="175" fill="none" stroke="black" stroke-width="2"/>
+            <text x="232" y="32" text-anchor="middle" font-weight="bold" font-size="12">Object (Fig 4.8)</text>
+            <rect x="180" y="40" width="105" height="42" fill="none" stroke="black"/>
+            <text x="232" y="55" text-anchor="middle" font-size="11">Private: Name, Id</text>
+            <rect x="180" y="92" width="105" height="42" fill="none" stroke="black"/>
+            <text x="232" y="110" text-anchor="middle" font-size="11">Public: get_name()</text>
+            <text x="232" y="125" text-anchor="middle" font-size="11">set_name(str)</text>
+            <rect x="180" y="142" width="105" height="40" fill="none" stroke="black"/>
+            <text x="232" y="160" text-anchor="middle" font-size="11">Public: get_id()</text>
+            <text x="232" y="175" text-anchor="middle" font-size="11">set_id(int)</text>
+            <line x1="110" y1="95" x2="180" y2="110" stroke="black" stroke-width="1.5"/>
+            <line x1="110" y1="115" x2="180" y2="160" stroke="black" stroke-width="1.5"/>
+
+            <!-- Process Abstraction -->
+            <rect x="355" y="75" width="95" height="60" fill="none" stroke="black" stroke-width="1.5"/>
+            <text x="402" y="110" text-anchor="middle" font-size="12">Car Driver</text>
+            <rect x="500" y="15" width="160" height="175" fill="none" stroke="black" stroke-width="2"/>
+            <text x="580" y="32" text-anchor="middle" font-weight="bold" font-size="12">Car (Fig 4.9)</text>
+            <rect x="515" y="40" width="130" height="65" fill="none" stroke="black"/>
+            <text x="580" y="55" text-anchor="middle" font-size="11">Private: fill_fuel()</text>
+            <text x="580" y="70" text-anchor="middle" font-size="11">create_spark()</text>
+            <text x="580" y="85" text-anchor="middle" font-size="11">change_piston_speed()</text>
+            <rect x="515" y="115" width="130" height="65" fill="none" stroke="black"/>
+            <text x="580" y="132" text-anchor="middle" font-size="11">Public: turn_on()</text>
+            <text x="580" y="147" text-anchor="middle" font-size="11">turn_off(), break()</text>
+            <text x="580" y="162" text-anchor="middle" font-size="11">gear_change()</text>
+            <line x1="450" y1="105" x2="515" y2="145" stroke="black" stroke-width="1.5"/>
+        </svg>
+
+        <h3>Exercise 4.5: Abstraction in OOP</h3>
+        <ol>
+            <li>Imagine a class called "BankAccount". Suggest the attributes that are expected for this class.</li>
+            <li>Describe how a principle of OOP would assist you in restricting direct access to the balance in your BankAccount so that someone may not change your account balance.</li>
+            <li>Recommend the methods to be used in the class "BankAccount" in order to control how the balance is accessed and modified, potentially adding security checks or validations.</li>
+        </ol>
+
+        <h3>Activity 4.1: Installation of Borland C++</h3>
+        <ol>
+            <li>Step 1: Download the complete version of Borland C++ Compiler.</li>
+            <li>Step 2: Copy the folder of Borland in the C drive.</li>
+            <li>Step 3: Write each step to install Borland C++ Compiler in your computer.</li>
+        </ol>
+
+        <h3>Exercise 4.6: Program Errors and Output in C++</h3>
+        <ol>
+            <li>Study the following C++ program:
+<pre>
+include&lt;iostream&gt;;
+using namespace std;
+int main
+{
+    cout&lt;&lt;Read and enjoy C++ programming&lt;&lt;endl;
+    return 0;
+}
+</pre>
+                <ol type="a">
+                    <li>Identify all errors in the program.</li>
+                    <li>Correct errors before running the program.</li>
+                    <li>Run the program and display the results.</li>
+                </ol>
+            </li>
+            <li>Describe five (5) characteristics of a good program.</li>
+            <li>Will the following lines of code in (a) and (b) print the same thing? Explain why or why not:
+                <ol type="a">
+                    <li><code>cout &lt;&lt; 5 &lt;&lt; '\n';</code></li>
+                    <li><code>cout &lt;&lt; "5" &lt;&lt; '\n';</code></li>
+                </ol>
+            </li>
+            <li>Will the following lines of code print the same thing? Explain why or why not:
+                <ol type="a">
+                    <li><code>cout &lt;&lt; y &lt;&lt; '\n';</code></li>
+                    <li><code>cout &lt;&lt; "y" &lt;&lt; '\n';</code></li>
+                </ol>
+            </li>
+        </ol>
+
+        <!-- SVG: Figure 4.23 Fundamental Data Types in C++ -->
+        <h4>Diagram Reference: Figure 4.23 - Fundamental Data Types in C++</h4>
+        <svg width="500" height="140" viewBox="0 0 500 140" xmlns="http://www.w3.org/2000/svg">
+            <rect x="190" y="10" width="120" height="30" fill="none" stroke="black" stroke-width="1.5"/>
+            <text x="250" y="30" text-anchor="middle" font-weight="bold" font-size="13">Data types</text>
+            <line x1="250" y1="40" x2="250" y2="65" stroke="black" stroke-width="1.5"/>
+            <line x1="80" y1="65" x2="420" y2="65" stroke="black" stroke-width="1.5"/>
+            <line x1="80" y1="65" x2="80" y2="90" stroke="black" stroke-width="1.5"/>
+            <line x1="250" y1="65" x2="250" y2="90" stroke="black" stroke-width="1.5"/>
+            <line x1="420" y1="65" x2="420" y2="90" stroke="black" stroke-width="1.5"/>
+
+            <rect x="15" y="90" width="130" height="30" fill="none" stroke="black" stroke-width="1.5"/>
+            <text x="80" y="110" text-anchor="middle" font-size="12">Built-in/primary</text>
+
+            <rect x="185" y="90" width="130" height="30" fill="none" stroke="black" stroke-width="1.5"/>
+            <text x="250" y="110" text-anchor="middle" font-size="12">Derived</text>
+
+            <rect x="355" y="90" width="130" height="30" fill="none" stroke="black" stroke-width="1.5"/>
+            <text x="420" y="110" text-anchor="middle" font-size="12">User defined</text>
+        </svg>
+
+        <h3>Activity 4.2: Identifying data types from a program</h3>
+        <p>Examine the following C++ program:</p>
+<pre>
+#include&lt;iostream&gt;
+#include&lt;iomanip&gt;
+using namespace std;
+void printMonth(int year, int month);
+void printMonthTitle(int year, int month);
+void printMonthName(int month);
+void printMonthBody(int year, int month);
+int getStartDay(int year, int month);
+int getTotalNumberOfDays(int year, int month);
+int getNumberOfDaysInMonth(int year, int month);
+bool isLeapYear(int year);
+
+int main()
+{
+    int year, month;
+    cout&lt;&lt;"Enter full year: ";
+    cin&gt;&gt;year;
+    cout&lt;&lt;"Enter month in number between 1 and 12:";
+    cin&gt;&gt;month;
+    cout&lt;&lt;endl;
+    printMonth(year, month);
+    cout&lt;&lt;endl;
+    cout&lt;&lt;endl;
+    return 0;
+}
+</pre>
+        <p><strong>Questions:</strong></p>
+        <ol>
+            <li>Identify all data types applied in the program.</li>
+            <li>Write the role of each data type you have identified in (1).</li>
+            <li>Type the program on the Dev C++ text editor.</li>
+            <li>Compile the program.</li>
+            <li>Identify errors obtained after compiling the program.</li>
+            <li>State the errors obtained after compiling the program.</li>
+        </ol>
+
+        <h3>Exercise 4.7: Data Types and C++ Strings/Characters</h3>
+        <ol>
+            <li>What is wrong with the following program?
+<pre>
+#include &lt;iostream.h&gt;
+using namespace std;
+int main()
+{
+    int y = 0;
+    cout &lt;&lt; "y" &lt;&lt; endl;
+    return 0;
+}
+</pre>
+            </li>
+            <li>Compile and run the following program; thereafter, explain the output:
+<pre>
+#include &lt;iostream&gt;
+using namespace std;
+int main()
+{
+    cout &lt;&lt; "Size of char: " &lt;&lt; sizeof(char) &lt;&lt; " byte" &lt;&lt; endl;
+    cout &lt;&lt; "Size of integer: " &lt;&lt; sizeof(int) &lt;&lt; " bytes" &lt;&lt; endl;
+    cout &lt;&lt; "Size of float: " &lt;&lt; sizeof(float) &lt;&lt; " bytes" &lt;&lt; endl;
+    cout &lt;&lt; "Size of double: " &lt;&lt; sizeof(double) &lt;&lt; " bytes" &lt;&lt; endl;
+    return 0;
+}
+</pre>
+            </li>
+            <li>Examine the following C++ code and answer the questions that follow:
+<pre>
+string str1;
+string str2;
+char ch;
+cin &gt;&gt; str1;
+str2 = str1;
+cin &gt;&gt; ch;
+str2[0] = ch;
+cout &lt;&lt; str1 &lt;&lt; " -&gt; " &lt;&lt; str2 &lt;&lt; endl;
+</pre>
+                <p><strong>Questions:</strong></p>
+                <ol type="a">
+                    <li>What is the output if the input is <code>Akilimali J</code>?</li>
+                    <li>What is the output if the input is <code>Salome A</code>?</li>
+                    <li>What is the output if the input is <code>Abas H</code>?</li>
+                </ol>
+            </li>
+            <li>Write a program that asks the user to enter the length of the sides of a triangle and outputs the shape of the triangle.</li>
+            <li>What is the difference between the character <code>'n'</code> and the character <code>'\n'</code>?</li>
+        </ol>
+
+        <h3>Activity 4.3: Data type and variable in a program</h3>
+        <p>Examine the following C++ program, and then answer the questions that follow:</p>
+<pre>
+#include&lt;iostream&gt;
+using namespace std;
+int main()
+{
+    char ch;
+    cout&lt;&lt;"Enter lower case alphabet: ";
+    cin&gt;&gt;ch;
+    ch = ch - 32;
+    cout&lt;&lt;"\nThe uppercase alphabet is "&lt;&lt;ch;
+    cout&lt;&lt;endl;
+    return 0;
+}
+</pre>
+        <p><strong>Questions:</strong></p>
+        <ol>
+            <li>Type the program code above on any C++ text editor program.</li>
+            <li>Compile and run the program to display an output.</li>
+            <li>Re-type the program to produce the same output without using variable and data type.</li>
+            <li>Compare the two programs and explain how difficult it is to practice this program without using variable and data type.</li>
+        </ol>
+
+        <h3>Exercise 4.8: Variables in C++</h3>
+        <ol>
+            <li>What is the advantage of data type in declaration?</li>
+            <li>What is the output of the following code fragment:
+<pre>
+int x;
+x = 'B';
+cout &lt;&lt; x &lt;&lt; '\n';
+</pre>
+            </li>
+            <li>Write a C++ program that reads two numbers entered by the user from the keyboard, calculates their sum, and displays the result on the screen.</li>
+        </ol>
+
+        <h3>Exercise 4.9: Constants and Variable Assignment</h3>
+        <ol>
+            <li>Write a C++ program that will enable customers to know the Value-Added Tax to be paid for any purchase price of the commodity. The VAT rate of $18.2\%$ should be declared as a constant, and the formula should be $(\text{VAT} = 18.2\% \times \text{Purchase prices})$.</li>
+            <li>Differentiate the terms variable and constant as applied in C++ programming.</li>
+            <li>Create a C++ program that prompts a user to enter a radius of the sphere. The program should calculate and display the volume of the sphere as output. (Hint: The formula for calculating the volume of the sphere is $\frac{4}{3}\pi r^3$, where $r$ represents the radius of the sphere). Use Table 4.6 in your declaration:
+                <table border="1" cellpadding="5" cellspacing="0">
+                    <caption>Table 4.6: Declaration</caption>
+                    <thead>
+                        <tr><th>Data name</th><th>Data type</th><th>Declaration type</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Pie ($\pi$) = 3.1415926</td><td>Double</td><td>Constant</td></tr>
+                        <tr><td>Radius</td><td>Float</td><td>Variable</td></tr>
+                        <tr><td>Volume</td><td>Double</td><td>Variable</td></tr>
+                    </tbody>
+                </table>
+            </li>
+            <li>
+                <ol type="a">
+                    <li>What are the benefits of using constants in a C++ program?</li>
+                    <li>What is wrong with the following C++ program? Explain.
+<pre>
+#include&lt;iostream&gt;
+using namespace std;
+int main()
+{
+    PI = 3.142;
+    double temp = PI * 5;
+    cout&lt;&lt;temp&lt;&lt;endl;
+    return 0;
+}
+</pre>
+                    </li>
+                </ol>
+            </li>
+            <li>Consider the following program:
+<pre>
+#include &lt;iostream.h&gt;
+using namespace std;
+int main()
+{
+    int a;
+    int b;
+    a = 2;
+    b = 5;
+    a = b;
+    b = 4;
+    cout &lt;&lt; "a = " &lt;&lt; a &lt;&lt; endl;
+    cout &lt;&lt; "b = " &lt;&lt; b &lt;&lt; endl;
+    return 0;
+}
+</pre>
+                <ol type="a">
+                    <li>What is the output of this program?</li>
+                    <li>Using a diagram, illustrate how memory changes during variable assignment.</li>
+                </ol>
+            </li>
+        </ol>
+
+        <h3>Activity 4.4: Writing mathematical expression using C++ programs</h3>
+        <p>Practice on how to write mathematical expressions in C++ programs by following the steps below:</p>
+        <ol>
+            <li>Step 1: Type the following expression in (a) word processor and (b) C++ text editor. Compare the arithmetic operation typed in both (a) and (b):
+                $$z = \frac{5x - 1}{6} - \frac{7}{x}(a + 2b - c)(y - 5) + 10\left(\frac{4}{x} + \frac{5 + 2x}{y - 1}\right)$$
+            </li>
+            <li>Step 2: If $x = 1$, $y = 2$, $a = 3$, $b = 5$ and $c = 6$, use a calculator to find the value of $z$.</li>
+            <li>Step 3: Write a C++ program to find the value of $z$ using the values given in step 2.</li>
+            <li>Step 4: Comment on the results obtained in step 2 and step 3.</li>
+        </ol>
+
+        <h3>Activity 4.5: Creating a program that combines expressions and assignments</h3>
+        <p>Use the knowledge you have learnt in previous sections, create a simple program that combines expressions and assignments in a C++ program. Once you have created it, highlight how they are used to manipulate and store data in a C++ program.</p>
+
+        <h3>Exercise 4.10: Operators, Expressions, Input &amp; Output Streams</h3>
+        <ol>
+            <li>Write a C++ program that can enable a user to convert Fahrenheit to Centigrade degree. Use the formula, $\text{Centigrade} = \frac{5}{9}(\text{Fahrenheit} - 32)$.</li>
+            <li>Write the following program on a C++ text editor; then, display the output:
+<pre>
+#include&lt;iostream&gt;
+using namespace std;
+int main()
+{
+    cout&lt;&lt;"2%3 = "&lt;&lt;2%3;
+    return 0;
+}
+</pre>
+            </li>
+            <li>Write a C++ program that enables the user to calculate the gradient (slope) of the straight line. A program will prompt the user to enter two points $(x_1, y_1)$ and $(x_2, y_2)$. Then, a program will find and display a slope. Use the formula:
+                $$\text{Slope} = \frac{y_2 - y_1}{x_2 - x_1}$$
+            </li>
+            <li>What are the functions of "cout" and "cin" in writing a C++ program?</li>
+            <li>Using output stream "cout" write a C++ program that displays the following table as shown in Figure 4.36:
+                <table border="1" cellpadding="5" cellspacing="0">
+                    <thead>
+                        <tr><th>VARIABLE</th><th>DATATYPE</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Name</td><td>char</td></tr>
+                        <tr><td>Decimals</td><td>double</td></tr>
+                    </tbody>
+                </table>
+            </li>
+            <li>Construct a C++ program that takes a character as an input from the keyboard and converts it into a capital letter or small letter depending on its form. A program should check the validity of the entered character and display a message "The entered character is not an alphabetical letter" if the input is not a letter.</li>
+            <li>Give the output of the given program:
+<pre>
+#include &lt;iostream&gt;
+using namespace std;
+int main()
+{
+    cout &lt;&lt; "1 + 5 = " &lt;&lt; 1 + 5 &lt;&lt; endl;
+    cout &lt;&lt; "13 + 89 = " &lt;&lt; 13 + 89 &lt;&lt; endl;
+    cout &lt;&lt; "30 - 20 = " &lt;&lt; 30 - 20 &lt;&lt; endl;
+    cout &lt;&lt; "46 - 90 = " &lt;&lt; 46 - 90 &lt;&lt; endl;
+    cout &lt;&lt; "2 * 7 = " &lt;&lt; 2 * 7 &lt;&lt; endl;
+    cout &lt;&lt; "5 / 2 = " &lt;&lt; 5 / 2 &lt;&lt; endl;
+    cout &lt;&lt; "21 / 7 = " &lt;&lt; 21 / 7 &lt;&lt; endl;
+    cout &lt;&lt; "35 % 6 = " &lt;&lt; 35 % 6 &lt;&lt; endl;
+    cout &lt;&lt; "4 % 6 = " &lt;&lt; 4 % 6 &lt;&lt; endl;
+    return 0;
+}
+</pre>
+            </li>
+        </ol>
+
+        <!-- SVG: Control Structure Flowcharts (Figures 4.38, 4.40, 4.42, 4.44) -->
+        <h4>Diagram Reference: Selection Control Structure Flowcharts (IF...THEN, IF...ELSE, Nested IF, Switch Case)</h4>
+        <svg width="750" height="220" viewBox="0 0 750 220" xmlns="http://www.w3.org/2000/svg">
+            <!-- IF...THEN (Fig 4.38) -->
+            <text x="90" y="18" text-anchor="middle" font-weight="bold" font-size="11">IF...THEN (Fig 4.38)</text>
+            <polygon points="90,30 140,55 90,80 40,55" fill="none" stroke="black" stroke-width="1.5"/>
+            <text x="90" y="59" text-anchor="middle" font-size="10">Condition</text>
+            <line x1="40" y1="55" x2="15" y2="55" stroke="black"/><line x1="15" y1="55" x2="15" y2="105" stroke="black"/>
+            <text x="27" y="48" font-size="9">YES</text>
+            <rect x="5" y="105" width="65" height="28" fill="none" stroke="black"/>
+            <text x="37" y="123" text-anchor="middle" font-size="10">Statement</text>
+            <line x1="90" y1="80" x2="90" y2="170" stroke="black"/>
+            <text x="102" y="110" font-size="9">NO</text>
+            <line x1="37" y1="133" x2="37" y2="170" stroke="black"/><line x1="37" y1="170" x2="80" y2="170" stroke="black"/>
+            <circle cx="90" cy="170" r="10" fill="none" stroke="black"/>
+
+            <!-- IF...ELSE (Fig 4.40) -->
+            <text x="280" y="18" text-anchor="middle" font-weight="bold" font-size="11">IF...ELSE (Fig 4.40)</text>
+            <polygon points="280,30 330,55 280,80 230,55" fill="none" stroke="black" stroke-width="1.5"/>
+            <text x="280" y="59" text-anchor="middle" font-size="10">Condition</text>
+            <line x1="230" y1="55" x2="200" y2="55" stroke="black"/><line x1="200" y1="55" x2="200" y2="105" stroke="black"/>
+            <text x="212" y="48" font-size="9">True</text>
+            <rect x="165" y="105" width="70" height="28" fill="none" stroke="black"/>
+            <text x="200" y="123" text-anchor="middle" font-size="10">True Stmt</text>
+            <line x1="330" y1="55" x2="360" y2="55" stroke="black"/><line x1="360" y1="55" x2="360" y2="105" stroke="black"/>
+            <text x="345" y="48" font-size="9">False</text>
+            <rect x="325" y="105" width="70" height="28" fill="none" stroke="black"/>
+            <text x="360" y="123" text-anchor="middle" font-size="10">False Stmt</text>
+            <line x1="200" y1="133" x2="200" y2="170" stroke="black"/><line x1="200" y1="170" x2="270" y2="170" stroke="black"/>
+            <line x1="360" y1="133" x2="360" y2="170" stroke="black"/><line x1="360" y1="170" x2="290" y2="170" stroke="black"/>
+            <circle cx="280" cy="170" r="10" fill="none" stroke="black"/>
+
+            <!-- Switch Case (Fig 4.44) -->
+            <text x="550" y="18" text-anchor="middle" font-weight="bold" font-size="11">Switch Case (Fig 4.44)</text>
+            <polygon points="500,30 540,48 500,66 460,48" fill="none" stroke="black"/>
+            <text x="500" y="52" text-anchor="middle" font-size="10">case 1</text>
+            <line x1="540" y1="48" x2="590" y2="48" stroke="black"/>
+            <rect x="590" y="35" width="75" height="24" fill="none" stroke="black"/><text x="627" y="51" text-anchor="middle" font-size="10">statement 1</text>
+
+            <line x1="500" y1="66" x2="500" y2="85" stroke="black"/>
+            <polygon points="500,85 540,103 500,121 460,103" fill="none" stroke="black"/>
+            <text x="500" y="107" text-anchor="middle" font-size="10">case 2</text>
+            <line x1="540" y1="103" x2="590" y2="103" stroke="black"/>
+            <rect x="590" y="90" width="75" height="24" fill="none" stroke="black"/><text x="627" y="106" text-anchor="middle" font-size="10">statement 2</text>
+
+            <line x1="500" y1="121" x2="500" y2="145" stroke="black"/>
+            <rect x="455" y="145" width="90" height="24" fill="none" stroke="black"/>
+            <text x="500" y="161" text-anchor="middle" font-size="10">default stmt</text>
+        </svg>
+
+        <h3>Exercise 4.11: Selection Control Structures (If &amp; Switch Statements)</h3>
+        <ol>
+            <li>Identify errors made in the following program:
+<pre>
+if (marks &gt;= 60)
+    Grade = 'D';
+else if (marks &gt;= 70)
+    Grade = 'C';
+else if (marks &gt;= 80)
+    Grade = 'B';
+else if (marks &gt;= 90)
+    Grade = 'A';
+else
+    Grade = 'F';
+</pre>
+            </li>
+            <li>Use <code>if</code> statement to create a C++ program that allows the user to enter five numbers. Then, the program arranges the numbers from the smallest to the largest number.</li>
+            <li>Write a program that prompts the user to enter a month and year. The program should display the number of days of that month as output.</li>
+            <li>Study the following C++ program that prints one line of text, then answer the questions that follow:
+<pre>
+#include &lt;iostream&gt;
+using namespace std;
+int main()
+{
+    int input;
+    cin &gt;&gt; input;
+    if (input &lt; 11) {
+        if (input != 6)
+            cout &lt;&lt; "wow ";
+        else
+            input++;
+    }
+    else {
+        if (input == 18)
+            input += 11;
+        else
+            cout &lt;&lt; "Oyaaa!";
+    }
+    cout &lt;&lt; input &lt;&lt; '\n';
+}
+</pre>
+                <p>What will the program print if the user enters the following numbers as inputs? (a) <code>4</code>, (b) <code>20</code>, (c) <code>6</code>, (d) <code>18</code>, (e) <code>-6</code></p>
+            </li>
+            <li>Write a C++ program that requests six integer values from the user. The program should give the message to the user as follows: if any of the values entered are duplicates, the message output should read "DUPLICATE VALUES"; otherwise, it prints "ALL ARE UNIQUE VALUES".</li>
+        </ol>
+
+        <h3>Exercise 4.12 (Switch-Case Continuation on Page 269)</h3>
+        <ol start="4">
+            <li>Rewrite the following <code>if</code> statement by using the <code>switch-case</code> statement. Then, draw a flowchart of the given <code>switch-case</code> statement:
+<pre>
+if (k == 1)
+    m += 5;
+else if (k == 2)
+    m += 10;
+else if (k == 3)
+    m += 16;
+else if (k == 4)
+    m += 34;
+</pre>
+            </li>
+            <li>Consider the following code fragment:
+<pre>
+int x;
+cin &gt;&gt; x;
+switch (x + 3) {
+case 5:
+    cout &lt;&lt; x &lt;&lt; '\n';
+    break;
+case 10:
+    cout &lt;&lt; x - 3 &lt;&lt; '\n';
+    break;
+case 20:
+    cout &lt;&lt; x + 3 &lt;&lt; '\n';
+    break;
+}
+</pre>
+                <p>Determine the output of the above program when the user enters <code>3</code>, <code>7</code>, <code>9</code>, <code>19</code> and <code>22</code> respectively.</p>
+            </li>
+        </ol>
+
+        <!-- SVG: Looping Flowcharts (Figures 4.46, 4.48, 4.50) -->
+        <h4>Diagram Reference: Iteration/Looping Control Structure Flowcharts (While, Do-While, For Loop)</h4>
+        <svg width="700" height="200" viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg">
+            <!-- While Loop (Fig 4.46) -->
+            <text x="110" y="18" text-anchor="middle" font-weight="bold" font-size="11">While Loop (Fig 4.46)</text>
+            <polygon points="110,35 160,60 110,85 60,60" fill="none" stroke="black" stroke-width="1.5"/>
+            <text x="110" y="63" text-anchor="middle" font-size="10">Condition</text>
+            <line x1="110" y1="85" x2="110" y2="115" stroke="black"/>
+            <text x="125" y="102" font-size="9">True</text>
+            <rect x="65" y="115" width="90" height="30" fill="none" stroke="black"/>
+            <text x="110" y="134" text-anchor="middle" font-size="10">Loop Body</text>
+            <line x1="65" y1="130" x2="35" y2="130" stroke="black"/><line x1="35" y1="130" x2="35" y2="25" stroke="black"/><line x1="35" y1="25" x2="110" y2="25" stroke="black"/>
+            <line x1="160" y1="60" x2="185" y2="60" stroke="black"/><line x1="185" y1="60" x2="185" y2="175" stroke="black"/>
+            <text x="172" y="53" font-size="9">False</text>
+
+            <!-- Do-While Loop (Fig 4.48) -->
+            <text x="340" y="18" text-anchor="middle" font-weight="bold" font-size="11">Do-While Loop (Fig 4.48)</text>
+            <rect x="295" y="40" width="90" height="30" fill="none" stroke="black"/>
+            <text x="340" y="59" text-anchor="middle" font-size="10">Loop Body</text>
+            <line x1="340" y1="70" x2="340" y2="100" stroke="black"/>
+            <polygon points="340,100 390,125 340,150 290,125" fill="none" stroke="black" stroke-width="1.5"/>
+            <text x="340" y="128" text-anchor="middle" font-size="10">Condition</text>
+            <line x1="290" y1="125" x2="265" y2="125" stroke="black"/><line x1="265" y1="125" x2="265" y2="30" stroke="black"/><line x1="265" y1="30" x2="340" y2="30" stroke="black"/>
+            <text x="278" y="118" font-size="9">True</text>
+            <line x1="340" y1="150" x2="340" y2="180" stroke="black"/>
+            <text x="355" y="168" font-size="9">False</text>
+
+            <!-- For Loop (Fig 4.50) -->
+            <text x="560" y="18" text-anchor="middle" font-weight="bold" font-size="11">For Loop (Fig 4.50)</text>
+            <rect x="480" y="30" width="80" height="24" fill="none" stroke="black"/>
+            <text x="520" y="46" text-anchor="middle" font-size="10">Initialisation</text>
+            <line x1="520" y1="54" x2="520" y2="90" stroke="black"/>
+            <polygon points="520,90 565,115 520,140 475,115" fill="none" stroke="black" stroke-width="1.5"/>
+            <text x="520" y="118" text-anchor="middle" font-size="10">Condition</text>
+            <line x1="565" y1="115" x2="625" y2="115" stroke="black"/>
+            <text x="585" y="108" font-size="9">True</text>
+            <rect x="585" y="75" width="80" height="24" fill="none" stroke="black"/>
+            <text x="625" y="91" text-anchor="middle" font-size="10">Loop Body</text>
+            <rect x="585" y="35" width="80" height="24" fill="none" stroke="black"/>
+            <text x="625" y="51" text-anchor="middle" font-size="10">Inc / Dec</text>
+            <line x1="625" y1="75" x2="625" y2="59" stroke="black"/>
+            <line x1="585" y1="47" x2="520" y2="68" stroke="black"/>
+            <line x1="520" y1="140" x2="520" y2="180" stroke="black"/>
+            <text x="535" y="160" font-size="9">False</text>
+        </svg>
+
+        <h3>Activity 4.6: Difference between the 'while loop, do...while loop and for...loop'</h3>
+        <ol type="a">
+            <li>Write three C++ programs to display students' results. Each program prompts a user to enter the number of students in the class and the marks of five (5) subjects for each student. Then, the program displays total marks and average marks for each student, using:
+                <ol type="i">
+                    <li><code>while...loop</code></li>
+                    <li><code>do-while...loop</code></li>
+                    <li><code>for...loop</code></li>
+                </ol>
+            </li>
+            <li>Compare the results generated from each loop.</li>
+            <li>Comment on the results obtained from each loop.</li>
+        </ol>
+
+        <h3>Exercise 4.13: Loops &amp; Mathematical Patterns</h3>
+        <ol>
+            <li>Write a C++ program that displays the Pascal triangle, as shown in Figure 4.52, when a user enters the power of expansion (e.g., for power 4: rows <code>1</code>, <code>1 1</code>, <code>1 2 1</code>, <code>1 3 3 1</code>, <code>1 4 6 4 1</code>).</li>
+            <li>Use a <code>for</code> loop to write a C++ program which outputs the multiplication table (1 to 9) as shown in Figure 4.53.</li>
+            <li>Create a simple calculator using C++ programming language to solve the factorial of a number and read an exponent when the user enters the base and power of a particular exponent. A calculator should allow the user to choose either to solve factorial or exponent of the number using a switch case statement.</li>
+            <li>Write a C++ program to display even numbers, odd numbers, or prime numbers which lie within a range entered by the user.</li>
+            <li>What is printed by the following code fragment?
+<pre>
+int x = 0;
+do {
+    cout &lt;&lt; x &lt;&lt; " ";
+    x++;
+} while (x &lt; 10);
+cout &lt;&lt; '\n';
+</pre>
+            </li>
+        </ol>
+
+        <h3>Activity 4.7: Understanding the application of some of the built-in functions</h3>
+        <ol type="a">
+            <li>Search on the internet built-in functions which are used to:
+                <ol type="i">
+                    <li>Change a character into a number using the ASCII system</li>
+                    <li>Round the decimal number into the whole number</li>
+                    <li>Solve modulus division by returning remainders after the user divides two numbers.</li>
+                </ol>
+            </li>
+            <li>Write header files of each function.</li>
+            <li>Write a C++ program to show the application of each function.</li>
+        </ol>
+
+        <h3>Exercise 4.14: Functions, Parameters &amp; Built-in Functions</h3>
+        <ol>
+            <li>
+                <ol type="a">
+                    <li>What is the difference between passing parameters by value and by reference?</li>
+                    <li>Write a C++ program to demonstrate how parameters are passed by value and by reference.</li>
+                </ol>
+            </li>
+            <li>
+                <ol type="a">
+                    <li>Differentiate between a function prototype and function header.</li>
+                    <li>Write a C++ program to show the application of the function prototype.</li>
+                </ol>
+            </li>
+            <li>Create a C++ program that will prompt a user to enter the range of the number and choose to display either an even, odd or a prime number. Then, the program will display selected types of number according to the range the user enters. (Example: Enter a range of the number: 5; Enter a type of the number: prime; Output: 2, 3, 5, 7, 11. Note: Use "isPrime" function to display prime numbers).</li>
+            <li>Write a C++ program that can help WAMO bank to calculate the total amount of money ($A$) gained by the customer after "$n$" number of years. Given, the interest rate "$R$" provided by the bank is $12\%$. The program will prompt the user to enter the amount of money ($P$) invested by the customer and then display the result on the computer screen. Hint: Use the formula, $A = P(1 + R)^n$. Use function <code>pow(a, b)</code> for $a^b$.</li>
+        </ol>
+
+        <!-- SVG: Figure 4.62 Structure of an Array -->
+        <h4>Diagram Reference: Figure 4.62 - Structure of a 1D Array in Memory</h4>
+        <svg width="550" height="140" viewBox="0 0 550 140" xmlns="http://www.w3.org/2000/svg">
+            <text x="275" y="20" text-anchor="middle" font-weight="bold" font-size="13">Array Name: marks (Contiguous Memory Allocation)</text>
+            <rect x="25" y="45" width="70" height="35" fill="none" stroke="black" stroke-width="1.5"/><text x="60" y="67" text-anchor="middle" font-size="12">45</text>
+            <rect x="95" y="45" width="70" height="35" fill="none" stroke="black" stroke-width="1.5"/><text x="130" y="67" text-anchor="middle" font-size="12">67</text>
+            <rect x="165" y="45" width="70" height="35" fill="none" stroke="black" stroke-width="1.5"/><text x="200" y="67" text-anchor="middle" font-size="12">78</text>
+            <rect x="235" y="45" width="70" height="35" fill="none" stroke="black" stroke-width="1.5"/><text x="270" y="67" text-anchor="middle" font-size="12">33.4</text>
+            <rect x="305" y="45" width="70" height="35" fill="none" stroke="black" stroke-width="1.5"/><text x="340" y="67" text-anchor="middle" font-size="12">56.7</text>
+            <rect x="375" y="45" width="70" height="35" fill="none" stroke="black" stroke-width="1.5"/><text x="410" y="67" text-anchor="middle" font-size="12">...</text>
+            <rect x="445" y="45" width="70" height="35" fill="none" stroke="black" stroke-width="1.5"/><text x="480" y="67" text-anchor="middle" font-size="12">66</text>
+
+            <text x="60" y="100" text-anchor="middle" font-size="11">marks[0]</text>
+            <text x="130" y="100" text-anchor="middle" font-size="11">marks[1]</text>
+            <text x="200" y="100" text-anchor="middle" font-size="11">marks[2]</text>
+            <text x="270" y="100" text-anchor="middle" font-size="11">marks[3]</text>
+            <text x="340" y="100" text-anchor="middle" font-size="11">marks[4]</text>
+            <text x="410" y="100" text-anchor="middle" font-size="11">...</text>
+            <text x="480" y="100" text-anchor="middle" font-size="11">marks[49]</text>
+        </svg>
+
+        <h3>Activity 4.8: Filling number in the table (Sudoku 2D Array)</h3>
+        <p>Consider a box of $9 \times 9$ grid divided into $3 \times 3$ small boxes as shown in Table 4.17 (Sudoku table):</p>
+        <table border="1" cellpadding="5" cellspacing="0">
+            <caption>Table 4.17: Sudoku Table</caption>
+            <tbody>
+                <tr><td>6</td><td></td><td>9</td><td></td><td>4</td><td></td><td></td><td></td><td>1</td></tr>
+                <tr><td>7</td><td>1</td><td></td><td>5</td><td></td><td>9</td><td>6</td><td></td><td></td></tr>
+                <tr><td></td><td>5</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr><td>2</td><td></td><td>7</td><td></td><td>8</td><td></td><td></td><td>9</td><td></td></tr>
+                <tr><td></td><td></td><td></td><td></td><td>6</td><td></td><td></td><td>2</td><td>4</td></tr>
+                <tr><td></td><td>6</td><td></td><td>9</td><td></td><td></td><td></td><td></td><td>8</td></tr>
+                <tr><td></td><td></td><td>8</td><td></td><td></td><td></td><td>3</td><td></td><td></td></tr>
+                <tr><td></td><td></td><td></td><td>4</td><td></td><td></td><td></td><td></td><td>7</td></tr>
+                <tr><td></td><td></td><td></td><td></td><td>5</td><td></td><td></td><td></td><td></td></tr>
+            </tbody>
+        </table>
+        <ol type="a">
+            <li>Fill all blanks where each row and column should complete numbers 1 to 9 without repeating any number.</li>
+            <li>Write a C++ program using an array that prompts a user to fill the box. The program should prompt the user to enter the given number to each box and display the completely filled table.</li>
+        </ol>
+
+        <h3>Exercise 4.15: One-Dimensional &amp; Multi-Dimensional Arrays</h3>
+        <ol>
+            <li>Write a C++ program using an array that allows a teacher to enter the number of students and their marks. Then, the program should find the average class marks and use a "function" to state a grade class mark. Apply Table 4.18 to display the grade class marks of students:
+                <table border="1" cellpadding="5" cellspacing="0">
+                    <caption>Table 4.18: Grade pass mark</caption>
+                    <thead>
+                        <tr><th>AVERAGE CLASS MARK</th><th>GRADE</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>81 - 100</td><td>A</td></tr>
+                        <tr><td>61 - 80</td><td>B</td></tr>
+                        <tr><td>41 - 60</td><td>C</td></tr>
+                        <tr><td>21 - 40</td><td>D</td></tr>
+                        <tr><td>0 - 20</td><td>F</td></tr>
+                    </tbody>
+                </table>
+            </li>
+            <li>Use a multi-dimensional array to create a C++ program that asks for elements of a matrix. Then, the program should display the matrix and its transpose as represented in Figure 4.65.</li>
+            <li>Consider the declaration: <code>int majumuisho[10][20];</code>. Write the C++ program that prints all the elements in <code>majumuisho</code>. All elements in the same row should appear on the same line, and each successive row should appear on its own line.</li>
+            <li>Consider the declaration <code>int mayai[50][100][100][25];</code>. How many elements does <code>mayai</code> hold?</li>
+        </ol>
+
+        <h3>Activity 4.9: Applying string library function in C++ program</h3>
+        <p>Write a C++ program to show the application of string library functions. In your program include the following functions:</p>
+        <ol type="a">
+            <li><code>strlen()</code></li>
+            <li><code>strcpy()</code></li>
+            <li><code>strcat()</code></li>
+            <li><code>strcmp()</code></li>
+            <li><code>strchr()</code></li>
+            <li><code>strstr()</code></li>
+        </ol>
+
+        <h3>Exercise 4.16: Strings and Arrays</h3>
+        <ol>
+            <li>Differentiate between string and array.</li>
+            <li>Why do we use the null character <code>'\0'</code> in string initialisation?</li>
+            <li>Write a program that displays the statement "C++ programming language".</li>
+            <li>Can we declare an array to hold the mixture of both doubles and ints? Explain.</li>
+            <li>Explain what will happen if you attempt to access an element of an array using a negative index.</li>
+        </ol>
+
+        <h3>Exercise 4.17: Classes and Objects in C++</h3>
+        <ol>
+            <li>Create a <code>Book</code> class that has attributes called <code>author</code>, <code>title</code>, and <code>ISBN</code>. Show methods that will display book details.</li>
+            <li>Create a <code>Car</code> class with attributes called <code>make</code>, <code>model</code>, <code>year</code>, and <code>speed</code>. Include methods such as <code>accelerate</code> and <code>brake</code>.</li>
+            <li>Judge the following codes:
+<pre>
+class Animal {
+    int y;
+};
+int main()
+{
+    Animal h;
+    cout &lt;&lt; h.y;
+    return 0;
+}
+</pre>
+            </li>
+        </ol>
+
+        <h3>Activity 4.10: Developing program to deposit and withdraw money</h3>
+        <p>Assume you have been hired by a bank to develop a program for customers to deposit and withdraw money. The program should check if the requested withdrawal amount exceeds the current balance before processing. It should also perform additional functions.</p>
+
+        <h3>Activity 4.11: Developing program using polymorphism to calculate areas for various shapes</h3>
+        <p>Develop a program using polymorphism to calculate the areas of a rectangle, square, trapezium, and rhombus.</p>
+
+        <h3>Activity 4.12: Developing program using encapsulation to manage student's examination</h3>
+        <p>Imagine you are an examination officer at Mpemba High School. Create a program to manage students' examinations, including their names, admission numbers, and scores for some subjects. The program should calculate total and average scores of students.</p>
+
+        <h3>Activity 4.13: Implementing a simple school management system (Abstraction in C++)</h3>
+        <ol>
+            <li><strong>Step 1: Implement base class:</strong>
+                <ol type="a">
+                    <li>Create an abstract base class <code>SchoolMember</code> with common attributes like <code>name</code>, <code>age</code>, and <code>id</code>.</li>
+                    <li>Define pure virtual functions for actions like <code>introduce()</code> and <code>getRole()</code>.</li>
+                </ol>
+            </li>
+            <li><strong>Step 2: Implement derived class:</strong>
+                <ol type="a">
+                    <li>Implement a <code>Teacher</code> class that inherits from <code>SchoolMember</code> with specific attributes like <code>subject</code>.</li>
+                    <li>Implement a <code>Student</code> class that inherits from <code>SchoolMember</code> with specific attributes like <code>grade</code>.</li>
+                    <li>Ensure both derived classes provide their own implementation of the <code>introduce()</code> and <code>getRole()</code> methods.</li>
+                </ol>
+            </li>
+            <li><strong>Step 3: Implement main function:</strong>
+                <ol type="a">
+                    <li>Instantiate objects of <code>Teacher</code> and <code>Student</code>.</li>
+                    <li>Call their respective methods to demonstrate polymorphic behavior.</li>
+                    <li>Print out the introductions and roles of the school members.</li>
+                </ol>
+            </li>
+        </ol>
+
+        <h3>Exercise 4.18: Implementing OOP Pillars in C++</h3>
+        <ol>
+            <li>Create a C++ program that simulates a bank account system. Define a base class <code>BankAccount</code> with private attributes like <code>accountNumber</code>, <code>balance</code>, and <code>ownerName</code>. Provide public methods to deposit and withdraw money, and to display account details. Then, derive a class <code>SavingsAccount</code> that adds an attribute for interest rate and a method to apply interest. Explain how abstraction helps in managing the complexity of the system.</li>
+            <li>Design a C++ program for a library management system. Create a base class <code>LibraryItem</code> with attributes like <code>title</code>, <code>author</code>, and <code>ISBN</code>. Include methods to get the details of the item. Then, derive classes <code>Book</code> and <code>Magazine</code> from <code>LibraryItem</code>, adding specific attributes and methods for each. How does abstraction make the system more manageable and user-friendly?</li>
+            <li>In a banking system, how would you use inheritance to model different types of accounts such as <code>SavingsAccount</code>, <code>CheckingAccount</code>, and <code>LoanAccount</code>, all inheriting from a base class <code>BankAccount</code>? Discuss how you would structure the classes to maximize code reusability and minimize redundancy.</li>
+            <li>Consider a class representing a bank account. How would you use encapsulation to ensure that the account balance can only be modified through specified methods, such as <code>deposit()</code> and <code>withdraw()</code>, while preventing direct access to the balance variable from outside the class?</li>
+            <li>How would you use polymorphism to implement a system for processing different types of shapes, such as circles, rectangles, and triangles, where each shape has a <code>calculateArea()</code> method? Discuss how you would design the classes and utilize polymorphism to calculate the area of each shape without explicitly checking the type of the object.</li>
+            <li>This code demonstrates how inheritance, encapsulation, polymorphism, and abstraction can be used together to create flexible and reusable code in C++. Study the code carefully and extract blocks of code that represent inheritance, encapsulation, polymorphism, and abstraction. Evaluate each block of code in each pillar:
+<pre>
+#include &lt;iostream&gt;
+using namespace std;
+// Base class
+class Shape {
+public:
+    virtual void draw() {
+        cout &lt;&lt; "Drawing a shape" &lt;&lt; endl;
+    }
+};
+// Derived class Circle
+class Circle : public Shape {
+public:
+    void draw() override {
+        cout &lt;&lt; "Drawing a circle" &lt;&lt; endl;
+    }
+};
+// Derived class Rectangle
+class Rectangle : public Shape {
+public:
+    void draw() override {
+        cout &lt;&lt; "Drawing a rectangle" &lt;&lt; endl;
+    }
+};
+void drawShape(Shape* shape) {
+    shape-&gt;draw();
+}
+int main() {
+    Circle circle;
+    Rectangle rectangle;
+    drawShape(&amp;circle);
+    drawShape(&amp;rectangle);
+    return 0;
+}
+</pre>
+            </li>
+        </ol>
+
+        <h3>Revision Exercise 4</h3>
+        <ol>
+            <li>Read the following C++ program and answer the questions that follow:
+<pre>
+#include&lt;iostream&gt;
+using namespace std;
+int main()
+{
+    int num, temp, sum = 0;
+    cout&lt;&lt;"Enter a positive integer: ";
+    cin&gt;&gt;num;
+    temp = num;
+    do
+    {
+        sum = sum + num % 10;
+        num = num / 10;
+    }
+    while(num &gt; 0);
+    cout&lt;&lt;"sum is: "&lt;&lt;sum&lt;&lt;endl;
+    system("PAUSE");
+    return 0;
+}
+</pre>
+                <ol type="a">
+                    <li>What are the functions of the line <code>#include&lt;iostream&gt;</code> and <code>system("PAUSE");</code>?</li>
+                    <li>Write an error made from this program (if any).</li>
+                </ol>
+            </li>
+            <li>Why do we need to state data type when declaring variables in a C++ program?</li>
+            <li>How will you guarantee and ensure that a variable's value can never be changed after its initialisation?</li>
+            <li>If $a = 7$, $y = 4$, $z = 3$, and $u = 2$, evaluate each of the following statements, if possible. If it is not possible, state the reason:
+                <ol type="a">
+                    <li><code>(a + z) % y</code></li>
+                    <li><code>(a + y) % u</code></li>
+                    <li><code>(y + u) % a</code></li>
+                    <li><code>(a + y) * u</code></li>
+                    <li><code>(a % y) % z</code></li>
+                    <li><code>(y % z) % u</code></li>
+                    <li><code>(a * z) % y</code></li>
+                    <li><code>((a * y) * u) * z</code></li>
+                </ol>
+            </li>
+            <li>Evaluate the following expressions:
+                <ol type="a">
+                    <li><code>15 / 3</code></li>
+                    <li><code>17 - 12 / 4 * 2</code></li>
+                    <li><code>34 % 7</code></li>
+                    <li><code>3 - 7 % 7</code></li>
+                    <li><code>18.0 / 4</code></li>
+                    <li><code>20 - 5 / 2.0</code></li>
+                    <li><code>13 + 5 % 2 - 3</code></li>
+                    <li><code>15.0 + 3.0 * 2.0 / 5.0</code></li>
+                </ol>
+            </li>
+            <li>Write the syntax of the following C++ statements:
+                <ol type="a">
+                    <li>Switch case statement</li>
+                    <li>Variable declaration and initialisation.</li>
+                </ol>
+            </li>
+            <li>Suppose you are developing a game where there are various types of vehicles, such as cars, trucks, and motorcycles. How would you use polymorphism to implement a <code>drive()</code> method for each vehicle type, ensuring that the correct behavior is executed based on the specific type of vehicle object? Provide a code example demonstrating the use of polymorphism in this scenario.</li>
+            <li>Write a C++ program to find all roots of a quadratic equation ($ax^2 + bx + c = 0$). The program should prompt a user to enter the coefficients and then display the roots. The program should also be able to test the type of the root displayed and state whether those roots are real distinct ($b^2 &gt; 4ac$), real identical ($b^2 = 4ac$), or imaginary ($b^2 &lt; 4ac$).</li>
+            <li>Use a function named "largest" to create a C++ program that determines the largest number from a set of 10 numbers.</li>
+            <li>By using the concept of function, write a C++ program that prompts the user to input three integer values and find the greatest value of the three values.</li>
+            <li>Write a C++ program that finds the reverse of a number entered by the user. When the number entered is '5261' then the reverse value should be '1625'.</li>
+            <li>Given the declaration <code>int orodha[100];</code>:
+                <ol type="a">
+                    <li>What expression represents the very first element of <code>orodha</code>?</li>
+                    <li>What expression represents the very last element of <code>orodha</code>?</li>
+                    <li>Write the code fragment that prints out the contents of <code>orodha</code>.</li>
+                    <li>Is the expression <code>orodha[3.0]</code> legal or illegal?</li>
+                </ol>
+            </li>
+            <li>The NMB ATM allows a customer to withdraw a maximum of Tshs 1,000,000/= per day. If a customer withdraws more than Tshs 335,000/=, the service charge is $6\%$ of the amount over Tshs 335,000/=. If the customer does not have sufficient money in the account, the ATM informs the customer about the insufficient fund and gives the option to withdraw the money for a service charge of Tshs 1250/=. If there is no balance in the account or if the account balance is negative, the customer will not be allowed to withdraw any money from the ATM. If the amount to be withdrawn exceeds Tshs 1,000,000/=, the ATM informs the customer about the maximum amount that can be withdrawn. Write an algorithm that allows the customer to enter the amount to be withdrawn. The algorithm should check the total amount in the account, dispense the money to the customer, and debit the customer account by the amount withdrawn and the service charges, if any.</li>
+            <li>Explain the concept of polymorphism and its different types, such as compile-time polymorphism (function overloading) and runtime polymorphism (virtual functions), in C++. Provide examples illustrating each type of polymorphism and discuss their advantages and use cases.</li>
+            <li>Write a C++ program to implement a class called <code>Shape</code> with virtual member functions for calculating area and perimeter. Derive classes such as <code>Circle</code>, <code>Rectangle</code>, and <code>Triangle</code> from the <code>Shape</code> class and override virtual functions accordingly.</li>
+            <li>Write a C++ program to display the following patterns (Figure 4.75a and 4.75b):
+<pre>
+Pattern (a):Inverted Star Triangle     Pattern (b): Number Triangle
+* * * * * * * * *                      1
+  * * * * * * *                        2 2
+    * * * * *                          3 3 3
+      * * *                            4 4 4 4
+        *                              5 5 5 5 5
+</pre>
+            </li>
+            <li>Create a calendar using the C++ programming language. A program will prompt a user to enter a year followed by a month in a number. Then, the calendar will be displayed as shown in Figure 4.76 (using Switch case for month names, functions for translating days, <code>if...then</code> for days in each month, and <code>isLeapYear()</code> for leap years after 1800).</li>
+        </ol>
+
+        <h3>Chapter 4 Project: Designing and implementing a simple library management system</h3>
+        <p>Design and implement a simple library management system by creating a console-based application that manages a library's collection of books. The system should allow users to add, delete, search, and display books. The system should also demonstrate the use of classes, inheritance, polymorphism, encapsulation, and data abstraction. After you accomplish this, submit the functional library management system with detailed documentation.</p>
+    </section>
+
+    <hr>
+
+    <!-- ========================================================================= -->
+    <!-- CHAPTER FIVE: OBJECT ORIENTED PROGRAMMING WITH JAVA (PAGES 308 - 350) -->
+    <!-- ========================================================================= -->
+    <section id="chapter-5">
+        <h2>Chapter Five: Object Oriented Programming with Java (Pages 308 to 350)</h2>
+
+        <h3>Scenario 5.1: "Java kinywaji" coffee shop</h3>
+        <p>Imagine you own a coffee shop called "Java Kinywaji" and want to improve operations. You develop a Java-based system to manage inventory, handle orders, and provide real-time information. This system allows you to track inventory, customise orders, process payments, and display promotions. As a result, your coffee shop becomes efficient, delivering exceptional service that keeps customers coming back.</p>
+        <p><strong>Questions:</strong></p>
+        <ol type="a">
+            <li>How does the Java-based system help you track inventory and improve efficiency? What features enable effective inventory management?</li>
+            <li>How does the Java system enhance the customer experience at "Java Kinywaji"? How does it streamline ordering and provide real-time information to customers?</li>
+        </ol>
+
+        <h3>Exercise 5.1: Classes and Objects in Java</h3>
+        <ol>
+            <li>Develop a class named <code>Car</code> with properties <code>make</code>, <code>model</code>, and <code>year</code>. Create three objects of this class and print their details.</li>
+            <li>Implement a class <code>Rectangle</code> with properties <code>length</code> and <code>width</code>. Add methods to calculate the area and perimeter of the rectangle. Create an object of the class and display the area and perimeter.</li>
+            <li>Write a program of a class <code>Student</code> with instance variables <code>name</code> and <code>age</code>, and a class variable <code>schoolName</code>. Create three instances of the <code>Student</code> class and assign different values to the instance variables but the same value to the class variable. Print the details of each student.</li>
+            <li>Create a class <code>BankAccount</code> with instance variables <code>accountNumber</code> and <code>balance</code>. Add methods to deposit and withdraw money, and check the balance. Instantiate an object of the class and perform some transactions.</li>
+        </ol>
+
+        <h3>Activity 5.1: Exploring of abstraction in the surrounding environments</h3>
+        <p><strong>Instructions:</strong> Everyone knows how to turn on the TV, but understanding how it operates is not necessary. In abstraction, simple entities such as variables, classes, and objects can represent more complex underlying code and data. Use relevant materials or resources, including library search, to explore other issues or things that are examples of abstraction. Document your findings in a portfolio report that includes sketches and photographs.</p>
+
+        <h3>Activity 5.2: Exploring encapsulation in the surrounding environments</h3>
+        <p><strong>Instructions:</strong> Hiding your data so that it is protected from modifications is the same as encapsulation. In a medical capsule, the medication is always secure inside the capsule. Use relevant materials or resources, including library search, to explore other issues or things that are examples of encapsulation. Document your findings in a portfolio report that includes sketches, diagrams, or photographs.</p>
+
+        <h3>Activity 5.3: Exploring of inheritance in the surrounding environments</h3>
+        <p><strong>Instructions:</strong> In human families, a child inherits the properties from his father. In Java perspective the two groups are known as parent class (Super or Base class) and Child class (derived class or subclass). Use relevant materials or resources, including library search, to explore other issues or things that are examples of inheritance. Document your findings in a portfolio report with sketches and photographs.</p>
+
+        <h3>Activity 5.4: Exploring of polymorphism in the surrounding environments</h3>
+        <p><strong>Instructions:</strong> In Java, polymorphism is like different types of vehicles (cars, bicycles, trucks) which share the same road, or different banks offering different interest rates. Use relevant materials or resources, including library search, to explore other issues or things that are examples of polymorphism. Document your findings in a portfolio report that includes sketches and photographs.</p>
+
+        <h3>Activity 5.5: Checking Java installed file</h3>
+        <ol>
+            <li>Step 1: Type the following in Command Prompt in the search field at the start bar: <code>C:\Users\Your Name&gt;java -version</code></li>
+            <li>Step 2: Press enter after finishing typing to verify the installed Java Runtime Environment and HotSpot Server VM build.</li>
+        </ol>
+
+        <h3>Activity 5.6: Installing Java in Windows (i.e. Windows 10)</h3>
+        <ol>
+            <li>Step 1: Download Java for free at <code>oracle.com</code>.</li>
+            <li>Step 2: Double click the downloaded executable file to install by following the steps that will show up.</li>
+            <li>Steps 3-8: Go to System Properties &gt; Advanced System Settings &gt; Environment Variables &gt; Path &gt; Edit &gt; New, add the JDK <code>\bin</code> directory path (e.g., <code>C:\Program Files\Java\jdk-22\bin</code>), click OK, and save the process.</li>
+        </ol>
+
+        <h3>Activity 5.7: Writing a simple program - Hello Tanzanians</h3>
+        <ol>
+            <li>Step 1: Open a text editor, Notepad.</li>
+            <li>Step 2: Type the following code:
+<pre>
+class Tunalianzisha {
+    public static void main(String[] args) {
+        System.out.println("Hello Tanzanians");
+    }
+}
+</pre>
+            </li>
+            <li>Step 3: Save your first program in Notepad as <code>Tunalianzisha.java</code> at any location.</li>
+            <li>Step 4: Open Command Prompt (<code>cmd</code>), navigate to the folder where you saved your file, then type <code>javac Tunalianzisha.java</code> to compile it into bytecode.</li>
+            <li>Step 5: Type <code>java Tunalianzisha</code> and press Enter to run the program and output <code>Hello Tanzanians</code>.</li>
+        </ol>
+
+        <!-- SVG: Figure 5.5 Java Data Types Hierarchy -->
+        <h4>Diagram Reference: Figure 5.5 - Hierarchy of Data Types in Java</h4>
+        <svg width="650" height="240" viewBox="0 0 650 240" xmlns="http://www.w3.org/2000/svg">
+            <rect x="260" y="10" width="110" height="26" fill="none" stroke="black" stroke-width="1.5"/>
+            <text x="315" y="27" text-anchor="middle" font-weight="bold" font-size="12">Data Type</text>
+
+            <line x1="290" y1="36" x2="180" y2="60" stroke="black" stroke-width="1.5"/>
+            <line x1="340" y1="36" x2="450" y2="60" stroke="black" stroke-width="1.5"/>
+
+            <rect x="130" y="60" width="100" height="25" fill="none" stroke="black"/>
+            <text x="180" y="77" text-anchor="middle" font-size="11">Primitive</text>
+
+            <rect x="400" y="60" width="110" height="25" fill="none" stroke="black"/>
+            <text x="455" y="77" text-anchor="middle" font-size="11">Non-Primitive</text>
+            <line x1="510" y1="72" x2="555" y2="55" stroke="black"/><text x="560" y="58" font-size="11">String</text>
+            <line x1="510" y1="72" x2="555" y2="75" stroke="black"/><text x="560" y="78" font-size="11">Array</text>
+            <line x1="510" y1="72" x2="555" y2="95" stroke="black"/><text x="560" y="98" font-size="11">Etc.</text>
+
+            <line x1="160" y1="85" x2="90" y2="110" stroke="black"/>
+            <line x1="200" y1="85" x2="260" y2="110" stroke="black"/>
+
+            <rect x="45" y="110" width="85" height="24" fill="none" stroke="black"/>
+            <text x="87" y="126" text-anchor="middle" font-size="11">Boolean</text>
+            <line x1="87" y1="134" x2="87" y2="205" stroke="black"/>
+            <text x="87" y="220" text-anchor="middle" font-weight="bold" font-size="11">boolean</text>
+
+            <rect x="215" y="110" width="90" height="24" fill="none" stroke="black"/>
+            <text x="260" y="126" text-anchor="middle" font-size="11">Numeric</text>
+            <line x1="240" y1="134" x2="175" y2="155" stroke="black"/>
+            <line x1="280" y1="134" x2="360" y2="155" stroke="black"/>
+
+            <text x="175" y="168" text-anchor="middle" font-size="11">Character</text>
+            <line x1="175" y1="172" x2="175" y2="205" stroke="black"/>
+            <text x="175" y="220" text-anchor="middle" font-weight="bold" font-size="11">char</text>
+
+            <text x="360" y="168" text-anchor="middle" font-size="11">Integral</text>
+            <line x1="340" y1="172" x2="295" y2="190" stroke="black"/>
+            <line x1="380" y1="172" x2="465" y2="190" stroke="black"/>
+
+            <text x="295" y="202" text-anchor="middle" font-size="11">Integer</text>
+            <text x="295" y="222" text-anchor="middle" font-weight="bold" font-size="11">byte | short | int | long</text>
+
+            <text x="480" y="202" text-anchor="middle" font-size="11">Floating-point</text>
+            <text x="480" y="222" text-anchor="middle" font-weight="bold" font-size="11">float | double</text>
+        </svg>
+
+        <!-- SVG: Figure 5.12 Java Logical Operators Symbols -->
+        <h4>Diagram Reference: Figure 5.12 - Java Logical Operators Gate Symbols</h4>
+        <svg width="450" height="100" viewBox="0 0 450 100" xmlns="http://www.w3.org/2000/svg">
+            <!-- AND -->
+            <line x1="20" y1="30" x2="45" y2="30" stroke="black" stroke-width="1.5"/>
+            <line x1="20" y1="50" x2="45" y2="50" stroke="black" stroke-width="1.5"/>
+            <path d="M45,20 L70,20 A20,20 0 0,1 70,60 L45,60 Z" fill="none" stroke="black" stroke-width="2"/>
+            <line x1="90" y1="40" x2="115" y2="40" stroke="black" stroke-width="1.5"/>
+            <text x="67" y="82" text-anchor="middle" font-weight="bold" font-size="12">AND (&amp;&amp;)</text>
+
+            <!-- OR -->
+            <line x1="160" y1="30" x2="190" y2="30" stroke="black" stroke-width="1.5"/>
+            <line x1="160" y1="50" x2="190" y2="50" stroke="black" stroke-width="1.5"/>
+            <path d="M185,20 Q200,40 185,60 Q220,60 235,40 Q220,20 185,20 Z" fill="none" stroke="black" stroke-width="2"/>
+            <line x1="235" y1="40" x2="260" y2="40" stroke="black" stroke-width="1.5"/>
+            <text x="210" y="82" text-anchor="middle" font-weight="bold" font-size="12">OR (||)</text>
+
+            <!-- NOT -->
+            <line x1="305" y1="40" x2="330" y2="40" stroke="black" stroke-width="1.5"/>
+            <polygon points="330,22 330,58 365,40" fill="none" stroke="black" stroke-width="2"/>
+            <circle cx="370" cy="40" r="5" fill="none" stroke="black" stroke-width="2"/>
+            <line x1="375" y1="40" x2="400" y2="40" stroke="black" stroke-width="1.5"/>
+            <text x="352" y="82" text-anchor="middle" font-weight="bold" font-size="12">NOT (!)</text>
+        </svg>
+
+        <h3>Worked Bitwise Shift Questions (Page 335)</h3>
+        <ol type="i">
+            <li>Perform the bitwise left shift operation on the integer 6. Left shift each bit by 1 (<code>6 &lt;&lt; 1</code>). Write the answer in binary and decimal.</li>
+            <li>Perform the right shift by two bits operation on the integer 7 (<code>7 &gt;&gt; 2</code>) without use of a Java program.</li>
+            <li>Perform the right shift by two bits operation on integer 60 (<code>60 &gt;&gt; 2</code>) without use of a Java program.</li>
+        </ol>
+
+        <h3>Exercise 5.2: Creating Classes and Objects in Java (Page 348)</h3>
+        <ol>
+            <li>Create a class named <code>MyFamily</code> utilising keywords <code>public</code> and <code>class</code>.</li>
+            <li>Using the class <code>MyFamily</code>, create the object called <code>OurGarden</code> using the keyword <code>new</code>.</li>
+            <li>Write codes that will use the object <code>OurGarden</code> to access and print the value of any variable declared with integer data type in the class <code>MyFamily</code>.</li>
+        </ol>
+    </section>
+
+    <hr>
+
+    <footer>
+        <p><strong>Watermark: elimika.online</strong> | <strong>prep. by Mr. Mohamed</strong></p>
+    </footer>
+
+</body>
+</html>

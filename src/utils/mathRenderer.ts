@@ -261,7 +261,29 @@ function formatMultiPartLineBreaks(textWithMathPlaceholders: string): string {
  */
 export function renderMathTextToHtml(raw: string): string {
   if (!raw) return '';
-  const normalized = normalizeMathExpressions(raw);
+
+  const renderedCodeSnippets: string[] = [];
+  const withCodePlaceholders = raw
+    .replace(/```[a-zA-Z0-9_+-]*\n?([\s\S]*?)```/g, (_match, codeBody) => {
+      const idx = renderedCodeSnippets.length;
+      renderedCodeSnippets.push(
+        `<pre class="my-2 overflow-x-auto rounded-lg bg-slate-900 p-3 font-mono text-xs leading-relaxed text-slate-100"><code>${escapeHtmlBasic(
+          String(codeBody).trim()
+        )}</code></pre>`
+      );
+      return `@@RENDERED_CODE_${idx}@@`;
+    })
+    .replace(/`([^`\n]+)`/g, (_match, inlineCode) => {
+      const idx = renderedCodeSnippets.length;
+      renderedCodeSnippets.push(
+        `<code class="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[0.9em] text-slate-800">${escapeHtmlBasic(
+          String(inlineCode)
+        )}</code>`
+      );
+      return `@@RENDERED_CODE_${idx}@@`;
+    });
+
+  const normalized = normalizeMathExpressions(withCodePlaceholders);
 
   const renderedMathSnippets: string[] = [];
   const withPlaceholders = normalized.replace(
@@ -281,9 +303,14 @@ export function renderMathTextToHtml(raw: string): string {
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\n+/g, '<br />');
 
-  return escaped.replace(/@@RENDERED_MATH_(\d+)@@/g, (_m, idxStr) => {
+  const withMathRestored = escaped.replace(/@@RENDERED_MATH_(\d+)@@/g, (_m, idxStr) => {
     const idx = Number(idxStr);
     return renderedMathSnippets[idx] ?? _m;
+  });
+
+  return withMathRestored.replace(/@@RENDERED_CODE_(\d+)@@/g, (_m, idxStr) => {
+    const idx = Number(idxStr);
+    return renderedCodeSnippets[idx] ?? _m;
   });
 }
 
