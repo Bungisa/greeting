@@ -1022,7 +1022,9 @@ export function buildLevelAccurateTextbookQuestions(
   subject: string,
   topic: string,
   difficulty: GameDifficulty,
-  existingQuestions: GameQuestion[]
+  existingQuestions: GameQuestion[],
+  subTopic: string = 'ALL',
+  roundOffset: number = 0
 ): GameQuestion[] {
   const normCls = (cls || 'Form 1').trim();
   const normSub = (subject || 'Basic Mathematics').trim();
@@ -1049,9 +1051,21 @@ export function buildLevelAccurateTextbookQuestions(
   };
 
   // 0. Pull Stored Textbook Questions extracted from uploaded books first!
-  const storedTextbookQuestions = getStoredBankQuestionsForClassSubject(normCls, normSub, topic);
+  let storedTextbookQuestions = getStoredBankQuestionsForClassSubject(normCls, normSub, topic);
+  if (subTopic && subTopic !== 'ALL') {
+    const subFiltered = storedTextbookQuestions.filter((sq) =>
+      doesQuestionTopicMatchSelectedTopic(sq.subTopic || '', sq.topic || '', subTopic)
+    );
+    if (subFiltered.length >= 4) {
+      storedTextbookQuestions = subFiltered;
+    } else if (subFiltered.length > 0) {
+      const rest = storedTextbookQuestions.filter((sq) => !subFiltered.includes(sq));
+      storedTextbookQuestions = [...subFiltered, ...rest];
+    }
+  }
+
   let studentSeenSigs = getSeenSignaturesForClassSubject(normCls, normSub);
-  const variantOffset = getVariantOffsetForClassSubject(normCls, normSub);
+  const variantOffset = getVariantOffsetForClassSubject(normCls, normSub) + Math.max(0, roundOffset);
 
   // 1. Filter curated TIE Textbook seeds matching exact Class & Subject AND selected Topic (never mix other Form levels or other chapters!)
   const exactClassMatches = TIE_LEVEL_TEXTBOOK_BANK.filter(
@@ -1078,7 +1092,7 @@ export function buildLevelAccurateTextbookQuestions(
 
   // Priority A: Extracted questions stored from Uploaded Textbooks
   storedTextbookQuestions.forEach((sq, idx) => {
-    const rotated = rotateOpts([...sq.options], sq.correctIndex, idx + 1);
+    const rotated = rotateOpts([...sq.options], sq.correctIndex, idx + 1 + roundOffset);
     pushCandidate({
       id: sq.id || `stored-tb-${normCls}-${normSub}-${idx}`,
       cls: normCls,
@@ -1106,7 +1120,7 @@ export function buildLevelAccurateTextbookQuestions(
     // Priority B: Curated level-specific TIE textbook questions (only for subjects without an uploaded textbook bank)
     exactClassMatches.forEach((seed, idx) => {
       const bookCitation = `📘 Official TIE ${normCls} ${normSub} Student's Book — ${seed.chapter}`;
-      const rotated = rotateOpts([...seed.options], seed.correctIndex, idx + 1);
+      const rotated = rotateOpts([...seed.options], seed.correctIndex, idx + 1 + roundOffset);
       pushCandidate({
         id: `tie-tb-${normCls}-${normSub}-${idx}`,
         cls: normCls,
@@ -1161,6 +1175,12 @@ export function buildLevelAccurateTextbookQuestions(
       if (unseenPool.length >= 20) break;
       unseenPool.push(sItem);
     }
+  }
+
+  if (roundOffset > 0 && unseenPool.length > 8) {
+    const shift = (roundOffset * 8) % unseenPool.length;
+    const shifted = [...unseenPool.slice(shift), ...unseenPool.slice(0, shift)];
+    return shifted.slice(0, Math.max(20, shifted.length));
   }
 
   return unseenPool.slice(0, Math.max(20, unseenPool.length));

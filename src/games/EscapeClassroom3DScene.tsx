@@ -113,6 +113,8 @@ interface EscapeClassroom3DSceneProps {
   solvedMap: Record<RoomStationId, boolean>;
   chalkboardEquation: string;
   masterCodePreview: string;
+  solvedPinPreview?: string;
+  verifiedSpecimensCount?: number;
   cameraMode: CameraViewMode;
   isModalOpen: boolean;
   isEscaped: boolean;
@@ -251,16 +253,20 @@ function createSignCanvasTexture(
   return tex;
 }
 
-function createChalkboardTexture(equationText: string, solved: boolean): THREE.CanvasTexture {
+function createChalkboardTexture(
+  equationText: string,
+  solved: boolean,
+  solvedPin: string = ''
+): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
   canvas.width = 512;
   canvas.height = 256;
   const ctx = canvas.getContext('2d')!;
 
-  ctx.fillStyle = '#053326';
+  ctx.fillStyle = solved ? '#042f2e' : '#053326';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  ctx.strokeStyle = '#065f46';
+  ctx.strokeStyle = solved ? '#10b981' : '#065f46';
   ctx.lineWidth = 3;
   for (let i = 0; i < 512; i += 64) {
     ctx.beginPath();
@@ -270,18 +276,70 @@ function createChalkboardTexture(equationText: string, solved: boolean): THREE.C
   }
 
   ctx.fillStyle = '#fde68a';
-  ctx.font = '900 24px monospace';
+  ctx.font = '900 22px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('★ LOCK #1 · CHALKBOARD CIPHER ★', 256, 48);
+  ctx.fillText('★ LOCK #1 · CHALKBOARD CIPHER ★', 256, 44);
 
   ctx.fillStyle = '#a7f3d0';
-  ctx.font = 'bold 22px monospace';
-  const cleanEq = equationText.replace(/\$/g, '').slice(0, 42);
-  ctx.fillText(cleanEq || '3A - 2 = 4 | √16 = B | 2³ = C', 256, 118);
+  ctx.font = 'bold 20px monospace';
+  const cleanEq = equationText.replace(/\$/g, '').slice(0, 44);
+  ctx.fillText(cleanEq || 'Solve Problems A, B, C -> 3-Digit PIN', 256, 108);
 
-  ctx.fillStyle = solved ? '#4ade80' : '#38bdf8';
-  ctx.font = '900 28px monospace';
-  ctx.fillText(solved ? '✓ PIN UNLOCKED' : 'SOLVE FOR 3-DIGIT PIN', 256, 192);
+  if (solved) {
+    ctx.fillStyle = '#34d399';
+    ctx.font = '900 28px monospace';
+    ctx.fillText(`✓ PIN UNLOCKED: [ ${solvedPin || '✓✓✓'} ]`, 256, 176);
+    ctx.fillStyle = '#fde68a';
+    ctx.font = 'bold 17px monospace';
+    ctx.fillText('PROCEED TO LOCK #2 (LAB BENCH)', 256, 222);
+  } else {
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = '900 26px monospace';
+    ctx.fillText('SOLVE FOR 3-DIGIT PIN [A][B][C]', 256, 184);
+  }
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+function createLogicBoardTexture(masterCode: string, solved: boolean): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d')!;
+
+  ctx.fillStyle = solved ? '#022c22' : '#0f172a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Circuit trace lines
+  ctx.strokeStyle = solved ? '#10b981' : '#1d4ed8';
+  ctx.lineWidth = 3;
+  for (let y = 32; y < 256; y += 44) {
+    ctx.beginPath();
+    ctx.moveTo(16, y);
+    ctx.lineTo(110, y);
+    ctx.lineTo(135, y + 14);
+    ctx.lineTo(496, y + 14);
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = solved ? '#6ee7b7' : '#38bdf8';
+  ctx.font = '900 22px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('★ LOCK #4 · LOGIC SYNTHESIS BOARD ★', 256, 46);
+
+  ctx.fillStyle = '#e2e8f0';
+  ctx.font = 'bold 19px monospace';
+  ctx.fillText('GATE MATRIX: [PIN] + [LATCH] + [KEY]', 256, 108);
+
+  ctx.fillStyle = solved ? '#4ade80' : '#fbbf24';
+  ctx.font = '900 27px monospace';
+  ctx.fillText(
+    solved ? `✓ EXIT CODE: ${masterCode || 'READY'}` : `SYNTHESIZE: ${masterCode || '???-??-??'}`,
+    256,
+    182
+  );
 
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
@@ -293,6 +351,9 @@ export const EscapeClassroom3DScene: React.FC<EscapeClassroom3DSceneProps> = ({
   recommendedNextStation,
   solvedMap,
   chalkboardEquation,
+  masterCodePreview,
+  solvedPinPreview = '',
+  verifiedSpecimensCount = 0,
   cameraMode,
   isModalOpen,
   isEscaped,
@@ -310,6 +371,15 @@ export const EscapeClassroom3DScene: React.FC<EscapeClassroom3DSceneProps> = ({
 
   const solvedMapRef = useRef<Record<RoomStationId, boolean>>(solvedMap);
   solvedMapRef.current = solvedMap;
+
+  const masterCodePreviewRef = useRef<string>(masterCodePreview);
+  masterCodePreviewRef.current = masterCodePreview;
+
+  const solvedPinPreviewRef = useRef<string>(solvedPinPreview);
+  solvedPinPreviewRef.current = solvedPinPreview;
+
+  const verifiedSpecimensRef = useRef<number>(verifiedSpecimensCount);
+  verifiedSpecimensRef.current = verifiedSpecimensCount;
 
   const cameraModeRef = useRef<CameraViewMode>(cameraMode);
   cameraModeRef.current = cameraMode;
@@ -688,25 +758,39 @@ export const EscapeClassroom3DScene: React.FC<EscapeClassroom3DSceneProps> = ({
     benchTop.position.set(0, 1.15, 0);
     labGroup.add(benchTop);
 
-    // 3 Glowing Specimen Flasks on Lab Bench
-    const flaskColors = [0x10b981, 0x38bdf8, 0xf59e0b];
+    // 3 Glowing Specimen Flasks on Lab Bench (react individually as each Specimen problem is verified!)
+    const flaskColors = [0x38bdf8, 0xf59e0b, 0xa855f7];
+    const specimenFlaskMeshes: THREE.Mesh[] = [];
+    const specimenHaloRings: THREE.Mesh[] = [];
     for (let i = 0; i < 3; i++) {
-      const flask = new THREE.Mesh(
-        new THREE.ConeGeometry(0.22, 0.52, 18),
-        new THREE.MeshStandardMaterial({
-          color: flaskColors[i],
-          emissive: flaskColors[i],
-          emissiveIntensity: 0.45,
-          roughness: 0.15,
-          metalness: 0.1,
-        })
-      );
+      const flaskMat = new THREE.MeshStandardMaterial({
+        color: flaskColors[i],
+        emissive: flaskColors[i],
+        emissiveIntensity: 0.45,
+        roughness: 0.15,
+        metalness: 0.1,
+      });
+      const flask = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.54, 18), flaskMat);
       flask.position.set(-0.75 + i * 0.75, 1.46, 0);
       labGroup.add(flask);
+      specimenFlaskMeshes.push(flask);
+
+      const haloRing = new THREE.Mesh(
+        new THREE.TorusGeometry(0.24, 0.03, 10, 24),
+        new THREE.MeshBasicMaterial({
+          color: 0x34d399,
+          transparent: true,
+          opacity: 0.0,
+        })
+      );
+      haloRing.rotation.x = Math.PI / 2;
+      haloRing.position.set(-0.75 + i * 0.75, 1.85, 0);
+      labGroup.add(haloRing);
+      specimenHaloRings.push(haloRing);
     }
     registerStationProp('lab_bench', labGroup);
 
-    // 6. LOCKED SUPPLY CABINET (LOCK #3)
+    // 6. LOCKED SUPPLY CABINET (LOCK #3) WITH HINGED SAFE DOOR & 3D GOLDEN MASTER KEY INSIDE
     const cabinetGroup = new THREE.Group();
     cabinetGroup.position.set(6.45, 0, -2.2);
     const cabinetBody = new THREE.Mesh(
@@ -716,6 +800,18 @@ export const EscapeClassroom3DScene: React.FC<EscapeClassroom3DSceneProps> = ({
     cabinetBody.position.set(0, 1.6, 0);
     cabinetGroup.add(cabinetBody);
 
+    // Hinged front safe door that swings open when Lock #3 is solved
+    const cabinetDoorPivot = new THREE.Group();
+    cabinetDoorPivot.position.set(-0.44, 1.6, -0.92);
+    cabinetGroup.add(cabinetDoorPivot);
+
+    const cabinetDoorPanel = new THREE.Mesh(
+      new THREE.BoxGeometry(0.08, 2.85, 1.84),
+      new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.7, roughness: 0.28 })
+    );
+    cabinetDoorPanel.position.set(0, 0, 0.92);
+    cabinetDoorPivot.add(cabinetDoorPanel);
+
     const cabinetLockPad = new THREE.Mesh(
       new THREE.BoxGeometry(0.12, 0.45, 0.35),
       new THREE.MeshStandardMaterial({
@@ -724,11 +820,33 @@ export const EscapeClassroom3DScene: React.FC<EscapeClassroom3DSceneProps> = ({
         emissiveIntensity: 0.6,
       })
     );
-    cabinetLockPad.position.set(-0.45, 1.7, 0);
-    cabinetGroup.add(cabinetLockPad);
+    cabinetLockPad.position.set(-0.06, 0.1, 1.55);
+    cabinetDoorPivot.add(cabinetLockPad);
+
+    // 3D Golden Master Key spinning inside the safe (revealed when door swings open)
+    const goldenKeyGroup = new THREE.Group();
+    goldenKeyGroup.position.set(-0.55, 1.65, 0);
+    const goldKeyMat = new THREE.MeshStandardMaterial({
+      color: 0xfbbf24,
+      emissive: 0xd97706,
+      emissiveIntensity: 0.85,
+      metalness: 0.85,
+      roughness: 0.15,
+    });
+    const keyBow = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.045, 12, 24), goldKeyMat);
+    keyBow.position.set(0, 0.22, 0);
+    goldenKeyGroup.add(keyBow);
+    const keyShaft = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.42, 12), goldKeyMat);
+    keyShaft.position.set(0, -0.05, 0);
+    goldenKeyGroup.add(keyShaft);
+    const keyBit = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.08, 0.04), goldKeyMat);
+    keyBit.position.set(0.06, -0.18, 0);
+    goldenKeyGroup.add(keyBit);
+    cabinetGroup.add(goldenKeyGroup);
+
     registerStationProp('cabinet', cabinetGroup);
 
-    // 7. LOGIC SYNTHESIS BOARD (LOCK #4)
+    // 7. LOGIC SYNTHESIS BOARD (LOCK #4) WITH LIVE CIRCUIT & CODE DISPLAY
     const logicGroup = new THREE.Group();
     logicGroup.position.set(3.2, 0, -5.82);
     const logicFrame = new THREE.Mesh(
@@ -738,15 +856,14 @@ export const EscapeClassroom3DScene: React.FC<EscapeClassroom3DSceneProps> = ({
     logicFrame.position.set(0, 2.55, 0);
     logicGroup.add(logicFrame);
 
-    const logicScreen = new THREE.Mesh(
-      new THREE.PlaneGeometry(2.9, 1.55),
-      new THREE.MeshStandardMaterial({
-        color: 0x38bdf8,
-        emissive: 0x1d4ed8,
-        emissiveIntensity: 0.65,
-        roughness: 0.2,
-      })
-    );
+    const logicScreenMat = new THREE.MeshStandardMaterial({
+      map: createLogicBoardTexture(masterCodePreviewRef.current, Boolean(solvedMapRef.current.logic_board)),
+      roughness: 0.22,
+      metalness: 0.1,
+      emissive: 0x1e3a8a,
+      emissiveIntensity: 0.32,
+    });
+    const logicScreen = new THREE.Mesh(new THREE.PlaneGeometry(2.9, 1.55), logicScreenMat);
     logicScreen.position.set(0, 2.55, 0.09);
     logicGroup.add(logicScreen);
     registerStationProp('logic_board', logicGroup);
@@ -1188,7 +1305,9 @@ export const EscapeClassroom3DScene: React.FC<EscapeClassroom3DSceneProps> = ({
           badge = '💡 CLUE';
         }
 
-        const stateKey = `${state}:${badge}`;
+        const stateKey = `${state}:${badge}:${
+          st.id === 'chalkboard' ? solvedPinPreviewRef.current : ''
+        }:${st.id === 'logic_board' ? masterCodePreviewRef.current : ''}`;
         if (vis.lastStateKey !== stateKey) {
           vis.lastStateKey = stateKey;
           const oldMap = vis.signSprite.material.map;
@@ -1200,10 +1319,21 @@ export const EscapeClassroom3DScene: React.FC<EscapeClassroom3DSceneProps> = ({
             const oldBoard = boardFaceMat.map;
             boardFaceMat.map = createChalkboardTexture(
               chalkboardEquation,
-              Boolean(solved.chalkboard)
+              Boolean(solved.chalkboard),
+              solvedPinPreviewRef.current
             );
             boardFaceMat.needsUpdate = true;
             oldBoard?.dispose();
+          }
+
+          if (st.id === 'logic_board') {
+            const oldLogic = logicScreenMat.map;
+            logicScreenMat.map = createLogicBoardTexture(
+              masterCodePreviewRef.current,
+              Boolean(solved.logic_board)
+            );
+            logicScreenMat.needsUpdate = true;
+            oldLogic?.dispose();
           }
         }
 
@@ -1473,6 +1603,41 @@ export const EscapeClassroom3DScene: React.FC<EscapeClassroom3DSceneProps> = ({
             onArriveRef.current(arrivedStation);
           }
         }
+      }
+
+      // Animate physical 3D station reactions (Lab flasks, Supply Cabinet Safe door + Golden Key)
+      const verifiedSpecimens = verifiedSpecimensRef.current;
+      for (let i = 0; i < specimenFlaskMeshes.length; i++) {
+        const flaskMesh = specimenFlaskMeshes[i];
+        const haloRing = specimenHaloRings[i];
+        const flaskMat = flaskMesh.material as THREE.MeshStandardMaterial;
+        const haloMat = haloRing.material as THREE.MeshBasicMaterial;
+        const isVerified = Boolean(solvedMapRef.current.lab_bench) || i < verifiedSpecimens;
+        if (isVerified) {
+          flaskMat.color.setHex(0x10b981);
+          flaskMat.emissive.setHex(0x059669);
+          flaskMat.emissiveIntensity = 0.9 + Math.sin(elapsed * 5 + i) * 0.25;
+          flaskMesh.position.y = 1.46 + Math.sin(elapsed * 4 + i) * 0.04;
+          haloMat.opacity = 0.75 + Math.sin(elapsed * 6 + i) * 0.2;
+          haloRing.position.y = 1.82 + Math.sin(elapsed * 4 + i) * 0.08;
+          haloRing.scale.setScalar(1 + Math.sin(elapsed * 5 + i) * 0.12);
+        } else {
+          flaskMesh.position.y = 1.46;
+          haloMat.opacity = 0;
+        }
+      }
+
+      const targetCabinetAngle = solvedMapRef.current.cabinet ? -Math.PI * 0.58 : 0;
+      cabinetDoorPivot.rotation.y = THREE.MathUtils.damp(
+        cabinetDoorPivot.rotation.y,
+        targetCabinetAngle,
+        4.5,
+        dt
+      );
+      goldenKeyGroup.visible = Boolean(solvedMapRef.current.cabinet);
+      if (solvedMapRef.current.cabinet) {
+        goldenKeyGroup.rotation.y = elapsed * 2.6;
+        goldenKeyGroup.position.y = 1.65 + Math.sin(elapsed * 3.5) * 0.08;
       }
 
       // Character Limb & Body Animation

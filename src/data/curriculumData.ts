@@ -1,4 +1,5 @@
 import { FULL_EXTRACTED_TEXTBOOK_BANK } from './extractedTextbookExerciseBank.ts';
+import { getPhysicsF2DiagramSvg } from './physicsF2Diagrams.ts';
 
 export interface PaperRecord {
   id: string;
@@ -302,13 +303,12 @@ export const TIE_SYLLABUS_COMPETENCES: Record<string, Record<string, string[]>> 
       'Chapter 10: Introduction to Light (Concept of Light, Sources of Light, Propagation and Transmission of Light, Shadows, Eclipses, Pinhole Camera & Reflection of Light)',
     ],
     'Form 2': [
-      'Chapter 1: Static Electricity (Concept of Static Electricity, Conductors and Insulators, Gold-Leaf Electroscope, Capacitors, Charge Distribution & Lightning and Thunderstorms)',
-      'Chapter 2: Current Electricity (Concept of Current Electricity, Ohm Law V = IR, Resistance to an Electric Current, Series/Parallel Resistors, Heating Effect of an Electric Current, Electrical Installations & Cells)',
-      'Chapter 3: Magnetism (Concept of Magnetism, Magnetisation and Demagnetisation, Magnetic Field of a Magnet & Earth Magnetic Field)',
-      'Chapter 4: Nature and Reflection of Light (Concept of Light, Propagation and Transmission of Light, Reflection Through a Plane Mirror & Reflection from Curved Mirrors: Concave & Convex Mirrors, Mirror Formula 1/f = 1/u + 1/v)',
-      'Chapter 5: Refraction and Dispersion of Light (Concept of Refraction of Light, Snell Law, Total Internal Reflection, Refraction by a Glass Prism, Colours of Light & Refraction by Lenses)',
-      'Chapter 6: Optical Instruments (Simple Microscope, Compound Microscope, Astronomical Telescope, Binoculars, Lens Camera & The Human Eye)',
-      'Chapter 7: Forces in Equilibrium, Simple Machines & Linear Motion (Moment of a Force, Principle of Moments, Centre of Gravity, Levers, Pulleys, Equations of Uniformly Accelerated Motion, Newton Laws of Motion, Temperature & Sustainable Energy)',
+      'Chapter 1: Static Electricity',
+      'Chapter 2: Current Electricity',
+      'Chapter 3: Magnetism',
+      'Chapter 4: Nature and Reflection of Light',
+      'Chapter 5: Refraction and Dispersion of Light',
+      'Chapter 6: Optical Instruments',
     ],
     'Form 3': [
       'Chapter 1: Applications of Vectors (Scalar & Vector Quantities, Triangle & Parallelogram Laws of Vector Addition, Relative Velocity & Resolution of Vectors)',
@@ -355,11 +355,11 @@ export const TIE_SYLLABUS_COMPETENCES: Record<string, Record<string, string[]>> 
       'Chapter 7: Air, Combustion, Firefighting, and Rusting (Composition of Air, Combustion, Classes of Fire, Fire Extinguishers & Conditions/Prevention of Rusting)',
     ],
     'Form 2': [
-      'Chapter 1: Atomic Structure (Sub-Atomic Particles, Electronic Arrangement, Atomic & Mass Numbers, Isotopes)',
-      'Chapter 2: Periodic Classification (Periodic Law, Electronic Configuration & Trends Across Periods and Down Groups)',
-      'Chapter 3: Chemical Bonding, Formula and Nomenclature (Ionic & Covalent Bonding, Oxidation Numbers, Empirical/Molecular Formulas & IUPAC Names)',
-      'Chapter 4: Chemical Reactions (Balancing Equations, Net Ionic Equations, Redox & Types of Chemical Reactions)',
-      'Chapter 5: Acids, Bases, and Salts (Strengths of Acids & Bases, Indicators, pH Scale, Classification, Preparation & Properties of Salts)',
+      'Chapter 1: Atomic Structure',
+      'Chapter 2: Periodic Classification',
+      'Chapter 3: Chemical Bonding, Formula and Nomenclature',
+      'Chapter 4: Chemical Reactions',
+      'Chapter 5: Acids, Bases, and Salts',
     ],
     'Form 3': [
       'Chapter 1: Chemical Equations (Balancing Molecular Equations, State Symbols, Total & Net Ionic Equations)',
@@ -407,12 +407,12 @@ export const TIE_SYLLABUS_COMPETENCES: Record<string, Record<string, string[]>> 
       'Chapter 11: Viruses, Kingdom Monera and Kingdom Protoctista (Characteristics, Structure & Economic Importance of Viruses, Bacteria, Amoeba, Euglena, Paramecium & Plasmodium)',
     ],
     'Form 2': [
-      'Chapter 1: Nutrition in Animals and Plants (Concept of Nutrition, Nutrients, Balanced Diet, Nutritional Requirements, Nutritional Deficiencies, Biochemical Food Tests & Photosynthesis)',
-      'Chapter 2: Digestive System (The Human Digestion Process, Digestive System of Ruminants & Disorders and Diseases of the Human Digestive System)',
-      'Chapter 3: Transport of Materials in Living Organisms (Concept of Transportation of Materials, Diffusion, Osmosis and Mass Flow)',
-      'Chapter 4: Transport of Materials in Flowering Plants (The Vascular System: Xylem and Phloem, Absorption and Movement of Water and Mineral Salts, Transpiration & Guttation)',
-      'Chapter 5: Transport of Materials in Mammals (The Mammalian Heart, Blood Vessels, The Blood, ABO & Rhesus Blood Groups, Blood Transfusion, Blood Circulation & Lymphatic System)',
-      'Chapter 6: Gas Exchange and Respiration (Gas Exchange in Mammals, Gas Exchange in Plants, Aerobic and Anaerobic Respiration & Respiratory Disorders)',
+      'Chapter 1: Nutrition in Animals and Plants',
+      'Chapter 2: Digestive System',
+      'Chapter 3: Transport of Materials in Living Organisms',
+      'Chapter 4: Transport of Materials in Flowering Plants',
+      'Chapter 5: Transport of Materials in Mammals',
+      'Chapter 6: Gas Exchange and Respiration',
     ],
     'Form 3': [
       'Chapter 1: Coordination in Plants (Concept of Coordination in Plants, Plant Hormones/Phytohormones & Tropic and Nastic Movements)',
@@ -529,12 +529,12 @@ export const TIE_SYLLABUS_COMPETENCES: Record<string, Record<string, string[]>> 
   },
   'Information and Computer Studies (ICS)': {
     'Form 1': [
-      'Chapter 1: Introduction to Information and Computer Studies (Concept of ICS & Relationship of ICS with Other Subjects)',
-      'Chapter 2: Data and Information (Concept of Data and Information, Information Dissemination, Modern Ways of Disseminating Information & Communication Media)',
-      'Chapter 3: Computer Evolution (Early Computer Development: Abacus, Napier Bones, Pascaline, Analytical Engine & Computer Generations 1st to 5th)',
-      'Chapter 4: Computer Hardware and Software (Input Devices, CPU/Processor, Primary & Secondary Memory, Output Devices; System Software/Operating Systems & Application Software)',
-      'Chapter 5: Classification and Significance of Computers (Classification by Size, Purpose & Data Handled; Significance of Computers in Education, Health, Banking & Industry)',
-      'Chapter 6: Computer Handling (Concept of Computer Handling, Power Management/UPS, Utility Programs, Data Backup & Computer Security)',
+      'Chapter 1: Introduction to Information and Computer Studies',
+      'Chapter 2: Data and Information',
+      'Chapter 3: Computer Evolution',
+      'Chapter 4: Computer Hardware and Software',
+      'Chapter 5: Classification and Significance of Computers',
+      'Chapter 6: Computer Handling',
     ],
     'Form 2': [
       'Chapter 1: Word Processing (Concept of Word Processing, Creating, Editing, Formatting Tables & Printing Documents)',
@@ -556,12 +556,12 @@ export const TIE_SYLLABUS_COMPETENCES: Record<string, Record<string, string[]>> 
   },
   'Computer Science': {
     'Form 1': [
-      'Chapter 1: Introduction to Information and Computer Studies / Computer Science (Concept of ICS/Computer Science & Relationship with Other Subjects)',
-      'Chapter 2: Data and Information (Concept of Data and Information, Information Dissemination, Modern Ways of Disseminating Information & Communication Media)',
-      'Chapter 3: Computer Evolution (Early Computer Development: Abacus, Napier Bones, Pascaline, Analytical Engine & Computer Generations 1st to 5th)',
-      'Chapter 4: Computer Hardware and Software (Input Devices, CPU/Processor, Primary & Secondary Memory, Output Devices; System Software/Operating Systems & Application Software)',
-      'Chapter 5: Classification and Significance of Computers (Classification by Size, Purpose & Data Handled; Significance of Computers in Education, Health, Banking & Industry)',
-      'Chapter 6: Computer Handling (Concept of Computer Handling, Power Management/UPS, Utility Programs, Data Backup & Computer Security)',
+      'Chapter 1: Introduction to Information and Computer Studies',
+      'Chapter 2: Data and Information',
+      'Chapter 3: Computer Evolution',
+      'Chapter 4: Computer Hardware and Software',
+      'Chapter 5: Classification and Significance of Computers',
+      'Chapter 6: Computer Handling',
     ],
     'Form 2': [
       'Chapter 1: The Internet (The Concept of the Internet, Basic Internet Related Concepts, Internet Connectivity, Internet Services and Applications & Ethical and Responsible Use of the Internet)',
@@ -608,14 +608,10 @@ export const TIE_SYLLABUS_COMPETENCES: Record<string, Record<string, string[]>> 
       'Chapter 5: Map Work (Concept of a Map, Components/Essentials of a Map, Types of Maps, Map Scale, Measuring Distances & Areas, Compass Bearing, Direction & Grid References)',
     ],
     'Form 2': [
-      'Chapter 1: The Internal Structure of the Earth (Crust/Lithosphere, Mantle/Asthenosphere, Outer & Inner Core; Folding, Faulting, Rocks, Vulcanicity & Earthquakes)',
-      'Chapter 2: The External Structure of the Earth (Layers of the Atmosphere, Weathering, Mass Wasting, Action of Running Water/Rivers, Drainage Systems, Wind Action in Deserts & Coral Reefs/Wave Action)',
-      'Chapter 3: Map Reading and Interpretation (Types of Maps: Road/Railway, Political, Thematic & Urban Planning Maps; Relief Representation: Contours, Spot Heights, Hachures, Layer Tinting; Relief Features, Intervisibility, Cross-Sections, Vertical Exaggeration VE & Gradient Calculations)',
-      'Chapter 4: Photograph Reading and Interpretation (Horizontal/Ground, Oblique & Vertical Aerial Photographs; Foreground, Middleground, Background; Scale, Time of Day, Season & Human Activities)',
-      'Chapter 5: Human Activities & Agriculture (Primary to Quinary Activities; Small-Scale Subsistence vs Large-Scale Plantation Farming & Livestock Keeping)',
-      'Chapter 6: Water Management & Sustainable Use of Forest Resources (Uses of Water, River Basin Projects: Rufiji/JNHPP, Forest Types & Conservation)',
-      'Chapter 7: Sustainable Mining & Tourism (Mineral Types, Mining Methods, Tourist Attractions in Tanzania & Eco-Tourism)',
-      'Chapter 8: Manufacturing Industry, Power/Energy Resources & Transport (Industrial Location, Renewable/Non-Renewable Energy & Transport Networks in East Africa)',
+      'Chapter 1: The Internal Structure of the Earth',
+      'Chapter 2: The External Structure of the Earth',
+      'Chapter 3: Map Reading and Interpretation',
+      'Chapter 4: Photograph Reading and Interpretation',
     ],
     'Form 3': [
       'Chapter 1: Structure of the Earth (Concentric Zones: Crust/Lithosphere, Mantle/Mesosphere, Core/Barysphere; Igneous, Sedimentary & Metamorphic Rocks and Rock Cycle)',
@@ -1200,6 +1196,12 @@ export const OFFICIAL_ATTACHED_TIE_BOOKS: PaperRecord[] = [
   { id: 'tie-drive-book-103', title: 'Kiswahili F1', form: 'Form 1', subject: 'Kiswahili', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1LfBotG42DW_gV_L7eBAutmt_ffKWIry_/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-104', title: 'MATHEMATICS F1 (TIE 2023 Revised Book)', form: 'Form 1', subject: 'Basic Mathematics', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1g0lE1PZAyD1wjQP_EyjzUJow39caujxn/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-105', title: 'PHYSICS F1', form: 'Form 1', subject: 'Physics', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1mUAUNoLsP0c_kAJ89Uhr0Zl5O13mgyVp/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
+  { id: 'tie-drive-book-cs-f5-1', title: "Computer Science for Advanced Secondary Schools — Student's Book Form Five (Chapters 1–4 Question Bank)", form: 'Form 5', subject: 'Computer Science', year: '2025', category: 'TIE Book', paperUrl: '/assets/aistudio/computer_f5_bank_of_qns_1950aee2.html', answersUrl: null, isBook: true, isSyllabus: false },
+  { id: 'tie-drive-book-cs-f5-2', title: "Computer Science for Advanced Secondary Schools — Student's Book Form Five (Chapters 4–5 Question Bank)", form: 'Form 5', subject: 'Computer Science', year: '2025', category: 'TIE Book', paperUrl: '/assets/aistudio/computer_f5_bank_of_ques_87e7b403.html', answersUrl: null, isBook: true, isSyllabus: false },
+  { id: 'tie-drive-book-cs-f5-3', title: "Computer Science for Advanced Secondary Schools — Student's Book Form Five (Chapters 5–8 Question Bank)", form: 'Form 5', subject: 'Computer Science', year: '2025', category: 'TIE Book', paperUrl: '/assets/aistudio/computer_f5_bank_of_questions_1e5f4d7b.html', answersUrl: null, isBook: true, isSyllabus: false },
+  { id: 'tie-drive-book-cs-f5-4', title: "Computer Science for Advanced Secondary Schools — Student's Book Form Five (Chapter 8 & Projects Question Bank)", form: 'Form 5', subject: 'Computer Science', year: '2025', category: 'TIE Book', paperUrl: '/assets/aistudio/computer_f5_bank_8d71db45.html', answersUrl: null, isBook: true, isSyllabus: false },
+  { id: 'tie-drive-book-geo-f2-bank', title: "Geography for Secondary Schools — Student's Book Form Two (TIE Comprehensive Question Bank)", form: 'Form 2', subject: 'Geography', year: '2025', category: 'TIE Book', paperUrl: '/assets/aistudio/question_bank_F2_Geo_3cb6195c.html', answersUrl: null, isBook: true, isSyllabus: false },
+  { id: 'tie-drive-book-ics-f1-bank', title: "Information and Computer Studies for Secondary Schools — Student's Book Form One (TIE Comprehensive Question Bank)", form: 'Form 1', subject: 'Computer Science', year: '2025', category: 'TIE Book', paperUrl: '/assets/aistudio/question_bank_70b39640.html', answersUrl: null, isBook: true, isSyllabus: false },
 ];
 
 export const MOHA_BUILTIN_KNOWLEDGE = [
@@ -1664,12 +1666,50 @@ export function matchesFormRange(recordForm: string, targetClass: string): boole
 
 export function getSyllabusTopicsForClassSubject(cls: string, subject: string): string[] {
   const cleanCls = normalizeClassName(cls || 'Form 3');
-  const cleanSub = normalizeSubjectName(subject || 'Basic Mathematics');
-  const subjectKey = Object.keys(TIE_SYLLABUS_COMPETENCES).find(
-    (k) => matchesSubjectQuery(k, cleanSub)
-  );
-  if (subjectKey && TIE_SYLLABUS_COMPETENCES[subjectKey]) {
-    const classMap = TIE_SYLLABUS_COMPETENCES[subjectKey];
+  const rawSub = (subject || '').trim();
+  const cleanSub = normalizeSubjectName(rawSub || 'Basic Mathematics');
+
+  // 1. Prioritize exact chapters from uploaded textbook banks (FULL_EXTRACTED_TEXTBOOK_BANK) whenever present for this Class & Subject
+  const uploadedTopicsSet = new Set<string>();
+  for (const seed of FULL_EXTRACTED_TEXTBOOK_BANK) {
+    if (
+      normalizeClassName(seed.cls) === cleanCls &&
+      matchesSubjectQuery(seed.subject, cleanSub)
+    ) {
+      const cleanChapterTitle = (seed.topic || '').replace(/\s*\([^)]+\)\s*$/, '').trim();
+      if (cleanChapterTitle) {
+        uploadedTopicsSet.add(cleanChapterTitle);
+      }
+    }
+  }
+  if (uploadedTopicsSet.size > 0) {
+    return Array.from(uploadedTopicsSet);
+  }
+
+  // 2. Otherwise look up TIE_SYLLABUS_COMPETENCES, prioritizing exact subject key matches that have this class level
+  const allKeys = Object.keys(TIE_SYLLABUS_COMPETENCES);
+  const exactKeyWithClass =
+    allKeys.find(
+      (k) => k.toLowerCase() === rawSub.toLowerCase() && Boolean(TIE_SYLLABUS_COMPETENCES[k]?.[cleanCls])
+    ) ||
+    allKeys.find(
+      (k) => k.toLowerCase() === cleanSub.toLowerCase() && Boolean(TIE_SYLLABUS_COMPETENCES[k]?.[cleanCls])
+    ) ||
+    allKeys.find(
+      (k) => matchesSubjectQuery(k, cleanSub) && Boolean(TIE_SYLLABUS_COMPETENCES[k]?.[cleanCls])
+    );
+
+  if (exactKeyWithClass && TIE_SYLLABUS_COMPETENCES[exactKeyWithClass]?.[cleanCls]) {
+    return TIE_SYLLABUS_COMPETENCES[exactKeyWithClass][cleanCls];
+  }
+
+  const fallbackKey =
+    allKeys.find((k) => k.toLowerCase() === rawSub.toLowerCase()) ||
+    allKeys.find((k) => k.toLowerCase() === cleanSub.toLowerCase()) ||
+    allKeys.find((k) => matchesSubjectQuery(k, cleanSub));
+
+  if (fallbackKey && TIE_SYLLABUS_COMPETENCES[fallbackKey]) {
+    const classMap = TIE_SYLLABUS_COMPETENCES[fallbackKey];
     if (classMap[cleanCls]) {
       return classMap[cleanCls];
     }
@@ -2107,6 +2147,17 @@ export function buildTopicDiagramSvg(
   }
 
   if (sLower.includes('physic') || tLower.includes('circuit') || tLower.includes('ohm') || tLower.includes('current') || tLower.includes('force')) {
+    const f2VectorSvg = getPhysicsF2DiagramSvg(`${topic} ${subTopic}`, topic, subTopic);
+    if (f2VectorSvg) {
+      return {
+        title: f2VectorSvg.title || `High-Precision Vector Physics Diagram — ${safeSubTopic}`,
+        caption:
+          customCaption ||
+          f2VectorSvg.caption ||
+          `Official TIE ${escapeHtml(cls)} ${escapeHtml(subject)} vector diagram illustrating ${safeSubTopic} (${safeTopic}).`,
+        svgHtml: f2VectorSvg.svgHtml,
+      };
+    }
     return {
       title: `Labeled Physics Experimental & Theoretical Diagram — ${safeSubTopic}`,
       caption:
@@ -3933,11 +3984,37 @@ export function getSubTopicsForMainTopic(
   subjectOrMainTopic: string,
   optionalMainTopic?: string
 ): string[] {
+  const explicitCls = optionalMainTopic !== undefined ? normalizeClassName(clsOrSubject) : '';
   const subject = optionalMainTopic !== undefined ? subjectOrMainTopic : clsOrSubject;
   const mainTopic = optionalMainTopic !== undefined ? optionalMainTopic : subjectOrMainTopic;
   const cleanMain = (mainTopic || '').replace(/^\d+\.\d+\s*/, '').trim();
+  const cleanSub = normalizeSubjectName(subject || '');
 
-  // If the topic string has parenthetical sub-items like "Algebra (Linear Equations, Simultaneous Equations, Inequalities)", extract them
+  // 1. Prioritize real sub-topics / exercises from uploaded textbook banks (FULL_EXTRACTED_TEXTBOOK_BANK)
+  if (cleanMain && cleanMain.toUpperCase() !== 'ALL') {
+    const chMatch = cleanMain.match(/^chapter\s+(\d+)\b/i);
+    const mainCore = cleanMain.replace(/\s*\([^)]+\)\s*$/, '').trim().toLowerCase();
+    const uploadedSubTopics = new Set<string>();
+    for (const seed of FULL_EXTRACTED_TEXTBOOK_BANK) {
+      if (explicitCls && normalizeClassName(seed.cls) !== explicitCls) continue;
+      if (cleanSub && !matchesSubjectQuery(seed.subject, cleanSub)) continue;
+      const seedTopicLower = (seed.topic || '').replace(/\s*\([^)]+\)\s*$/, '').trim().toLowerCase();
+      const seedChMatch = seedTopicLower.match(/^chapter\s+(\d+)\b/i);
+      const topicMatches =
+        seedTopicLower === mainCore ||
+        seedTopicLower.includes(mainCore) ||
+        mainCore.includes(seedTopicLower) ||
+        Boolean(chMatch && seedChMatch && chMatch[1] === seedChMatch[1]);
+      if (topicMatches && seed.subTopic && seed.subTopic.trim()) {
+        uploadedSubTopics.add(seed.subTopic.trim());
+      }
+    }
+    if (uploadedSubTopics.size > 0) {
+      return Array.from(uploadedSubTopics);
+    }
+  }
+
+  // 2. If the topic string has parenthetical sub-items like "Algebra (Linear Equations, Simultaneous Equations, Inequalities)", extract them
   const parenMatch = cleanMain.match(/\(([^)]+)\)/);
   if (parenMatch && parenMatch[1]) {
     const parts = parenMatch[1]

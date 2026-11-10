@@ -39,7 +39,7 @@ export interface QuestionBankStats {
   uploadedTextbookTitles: string[];
 }
 
-const QUESTION_BANK_STORAGE_KEY = 'elimika_textbook_question_bank_v15';
+const QUESTION_BANK_STORAGE_KEY = 'elimika_textbook_question_bank_v19';
 const SEEN_QUESTIONS_STORAGE_KEY = 'elimika_seen_questions_v7';
 
 export function normalizeClassSubjectKey(cls: string, subject: string): string {

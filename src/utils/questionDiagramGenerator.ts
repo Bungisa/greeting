@@ -1,3 +1,6 @@
+import { getPhysicsF2DiagramSvg } from '../data/physicsF2Diagrams.ts';
+import { getMathF1DiagramSvg } from '../data/mathF1Bank.ts';
+
 export interface QuestionDiagramSpec {
   title: string;
   svgHtml: string;
@@ -60,6 +63,22 @@ export function getQuestionDiagramSvg(
   const body = questionText.replace(/^\s*(\[[^\]]+\]\s*)+/g, '').trim();
   const qLower = body.toLowerCase();
   const subLower = (_subject || '').toLowerCase();
+
+  // Check Form 1 Basic Mathematics exact vector SVG diagrams
+  const mathF1Diagram = getMathF1DiagramSvg(questionText, _topic, _subTopic);
+  if (mathF1Diagram) return mathF1Diagram;
+
+  // Check Form 2 Physics high-precision vector SVG diagrams first when subject is Physics or question has Physics F2 figures
+  if (
+    subLower.includes('physics') ||
+    subLower.includes('fizikia') ||
+    /figure\s+[1-6]\.\d+|electroscope|wheatstone|metre bridge|concave mirror|convex mirror|compound microscope|astronomical telescope/i.test(
+      questionText
+    )
+  ) {
+    const physDiagram = getPhysicsF2DiagramSvg(questionText, _topic, _subTopic);
+    if (physDiagram) return physDiagram;
+  }
 
   // ============================================================================
   // 1. ELECTRICAL SWITCHING NETWORK (Only when question asks about switches/terminals)

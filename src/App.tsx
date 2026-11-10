@@ -4066,19 +4066,24 @@ export default function App() {
   }, [mohaViewMode, tsClass, mohaActiveClass, tsSubject, mohaActiveSubject, activeSiteResources, extractedBookChaptersMap]);
 
   const activeSyllabusTopics = React.useMemo(() => {
-    const targetCls = mohaViewMode === 'studio' ? tsClass || mohaActiveClass : mohaActiveClass || tsClass;
-    const targetSub = mohaViewMode === 'studio' ? tsSubject || mohaActiveSubject : mohaActiveSubject || tsSubject;
+    const isStudioMode = activePage === 'moha' && mohaViewMode === 'studio';
+    const targetCls = isStudioMode ? tsClass || mohaActiveClass : mohaActiveClass || tsClass;
+    const targetSub = isStudioMode ? tsSubject || mohaActiveSubject : mohaActiveSubject || tsSubject;
     const baseTopics = getSyllabusTopicsForClassSubject(targetCls, targetSub);
     const mapKey = `${targetCls}__${targetSub}`;
 
-    // If chapters were extracted from the attached PDF textbook for this class/subject, prioritize them
-    if (extractedBookChaptersMap[mapKey]?.length) {
+    // Only override with user-attached PDF/text extraction if the user explicitly focused an attached book for this exact class & subject
+    const focused = activeSiteResources.focusedResource;
+    const focusedMatchesCurrent =
+      focused &&
+      normalizeClassName(focused.form || '') === normalizeClassName(targetCls) &&
+      matchesSubjectQuery(focused.subject || '', targetSub, focused.title || '');
+
+    if (focusedMatchesCurrent && extractedBookChaptersMap[mapKey]?.length) {
       return extractedBookChaptersMap[mapKey];
     }
 
-    // If the pinned or attached book has explicit chapters/topics in customContent, extract and prioritize them
-    const focused = activeSiteResources.focusedResource;
-    const rawCustom = focused?.customContent || activeSiteResources.books[0]?.customContent || '';
+    const rawCustom = focusedMatchesCurrent ? focused?.customContent || '' : '';
     if (rawCustom) {
       const extractedChapters = extractTextbookChaptersFromText(rawCustom);
       if (extractedChapters.length > 0) {
@@ -4092,7 +4097,7 @@ export default function App() {
       }
     }
     return baseTopics;
-  }, [mohaViewMode, tsClass, mohaActiveClass, tsSubject, mohaActiveSubject, activeSiteResources, extractedBookChaptersMap]);
+  }, [activePage, mohaViewMode, tsClass, mohaActiveClass, tsSubject, mohaActiveSubject, activeSiteResources, extractedBookChaptersMap]);
 
   return (
     <div className="min-h-screen w-full max-w-full overflow-x-hidden flex flex-col bg-[var(--bg-canvas)] text-[var(--text-primary)] transition-colors">
@@ -4125,21 +4130,14 @@ export default function App() {
           <nav className="hidden lg:flex items-center gap-5 text-sm font-semibold text-slate-600">
             <button
               onClick={() => resetToStep1()}
-              className={`hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                activePage === 'papers' ? 'text-blue-600 font-bold underline underline-offset-4' : ''
-              }`}
-            >
-              Past Papers
-            </button>
-            <button
-              onClick={() => openBooksPage()}
-              className={`hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                activePage === 'books' || activePage === 'syllabus'
-                  ? 'text-emerald-700 font-bold underline underline-offset-4'
+              className={`hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                activePage === 'papers' || activePage === 'books' || activePage === 'syllabus'
+                  ? 'text-blue-600 font-bold underline underline-offset-4'
                   : ''
               }`}
             >
-              📚 TIE Books &amp; Syllabus
+              <BookOpen className="w-4 h-4" />
+              <span>Library (Papers, Books &amp; Syllabus)</span>
             </button>
             <button
               onClick={() => openDailyQuizPage()}
@@ -4226,268 +4224,237 @@ export default function App() {
           transition={{ duration: 0.22, ease: 'easeOut' }}
           className="flex-grow flex flex-col"
         >
-          <section className="pt-5 pb-6 bg-gradient-to-b from-white via-slate-50 to-slate-100 border-b border-slate-200">
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center space-y-4">
-              <div className="text-xs font-bold text-blue-700 tracking-wide">
-                Tanzania National Examinations (NECTA) &amp; TIE Curriculum · Standard 1–7 &amp; Form 1–6
-              </div>
-
-              <h1 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight leading-snug">
-                Select Class &amp; Subject for{' '}
-                <span className="text-blue-600">Past Papers, TIE Books &amp; Syllabus</span>
-              </h1>
-
-              {/* Smart Search + Voice Search + Recent Search Queries Dropdown */}
-              <div ref={searchBoxContainerRef} className="relative max-w-2xl mx-auto">
-                <div className="flex items-center bg-white rounded-2xl shadow-sm border border-slate-300 px-3.5 py-2.5 focus-within:border-blue-600 transition-colors">
-                  <Search className="w-5 h-5 text-slate-400 shrink-0 mr-2.5" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onFocus={() => setShowSearchSuggestions(true)}
-                    onClick={() => setShowSearchSuggestions(true)}
-                    onChange={(e) => {
-                      handleSmartSearchChange(e.target.value);
-                      setShowSearchSuggestions(true);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && searchQuery.trim().length >= 2) {
-                        saveRecentSearchQuery(searchQuery);
-                        setShowSearchSuggestions(false);
-                      } else if (e.key === 'Escape') {
-                        setShowSearchSuggestions(false);
-                      }
-                    }}
-                    placeholder="Search directly (e.g. Form 4 Math 2024, Form 2 Physics Book)..."
-                    className="w-full text-sm sm:text-base font-medium bg-transparent text-slate-800 placeholder-slate-400 focus:outline-none"
-                  />
-                  {searchQuery.trim().length > 0 && (
-                    <button
-                      onClick={() => {
-                        handleSmartSearchChange('');
-                        setShowSearchSuggestions(true);
-                      }}
-                      className="text-slate-400 hover:text-slate-700 p-1.5 mr-1 cursor-pointer"
-                      title="Clear search"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
+          <section className="py-3 bg-white border-b border-slate-200">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-2.5">
+              {/* Compact Top Row: Unified Library 3-Tab Switcher + Search */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+                <div className="inline-flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 shrink-0">
                   <button
-                    onClick={startVoiceSearch}
-                    className="p-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs flex items-center gap-1 shrink-0 cursor-pointer"
-                    title="Voice Search"
+                    type="button"
+                    onClick={() => setActivePage('papers')}
+                    className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-bold text-xs bg-blue-600 text-white shadow-2xs flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
                   >
-                    <Mic className="w-4 h-4" />
+                    <FileText className="w-3.5 h-3.5" />
+                    <span>Past Papers</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openBooksPage(selectedClass)}
+                    className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-bold text-xs text-slate-700 hover:text-slate-900 hover:bg-white/70 flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
+                  >
+                    <span>📘 Books ({availableUploadedBooks.length})</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openSyllabusPage()}
+                    className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-bold text-xs text-slate-700 hover:text-slate-900 hover:bg-white/70 flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
+                  >
+                    <span>📜 Syllabus ({availableUploadedSyllabuses.length})</span>
                   </button>
                 </div>
 
-                {showSearchSuggestions && recentSearchQueries.length > 0 && (() => {
-                  const qLower = searchQuery.trim().toLowerCase();
-                  const matchingQueries = qLower
-                    ? recentSearchQueries.filter((item) => item.toLowerCase().includes(qLower))
-                    : recentSearchQueries;
-                  const displayList = matchingQueries.length > 0 ? matchingQueries : recentSearchQueries;
+                {/* Smart Search + Voice Search */}
+                <div ref={searchBoxContainerRef} className="relative flex-1 max-w-md">
+                  <div className="flex items-center bg-slate-50 rounded-xl border border-slate-300 px-3 py-1.5 focus-within:border-blue-600 focus-within:bg-white transition-colors">
+                    <Search className="w-4 h-4 text-slate-400 shrink-0 mr-2" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onFocus={() => setShowSearchSuggestions(true)}
+                      onClick={() => setShowSearchSuggestions(true)}
+                      onChange={(e) => {
+                        handleSmartSearchChange(e.target.value);
+                        setShowSearchSuggestions(true);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && searchQuery.trim().length >= 2) {
+                          saveRecentSearchQuery(searchQuery);
+                          setShowSearchSuggestions(false);
+                        } else if (e.key === 'Escape') {
+                          setShowSearchSuggestions(false);
+                        }
+                      }}
+                      placeholder="Search paper or book (e.g. Form 4 Math)..."
+                      className="w-full text-xs sm:text-sm font-medium bg-transparent text-slate-800 placeholder-slate-400 focus:outline-none"
+                    />
+                    {searchQuery.trim().length > 0 && (
+                      <button
+                        onClick={() => {
+                          handleSmartSearchChange('');
+                          setShowSearchSuggestions(true);
+                        }}
+                        className="text-slate-400 hover:text-slate-700 p-1 mr-0.5 cursor-pointer"
+                        title="Clear search"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                    <button
+                      onClick={startVoiceSearch}
+                      className="p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs flex items-center shrink-0 cursor-pointer"
+                      title="Voice Search"
+                    >
+                      <Mic className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
 
-                  return (
-                    <div className="absolute left-0 right-0 top-full mt-2 z-30 bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden text-left">
-                      <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
-                          Recent Searches
-                        </span>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            clearRecentSearchQueries();
-                            setShowSearchSuggestions(false);
-                          }}
-                          className="text-[11px] font-bold text-rose-600 hover:text-rose-700 cursor-pointer"
-                        >
-                          Clear All
-                        </button>
-                      </div>
-                      <div className="max-h-60 overflow-y-auto divide-y divide-slate-100">
-                        {displayList.map((term) => (
-                          <div
-                            key={term}
-                            className="flex items-center justify-between px-4 py-2.5 hover:bg-blue-50/70 transition-colors group"
+                  {showSearchSuggestions && recentSearchQueries.length > 0 && (() => {
+                    const qLower = searchQuery.trim().toLowerCase();
+                    const matchingQueries = qLower
+                      ? recentSearchQueries.filter((item) => item.toLowerCase().includes(qLower))
+                      : recentSearchQueries;
+                    const displayList = matchingQueries.length > 0 ? matchingQueries : recentSearchQueries;
+
+                    return (
+                      <div className="absolute left-0 right-0 top-full mt-1.5 z-30 bg-white rounded-xl border border-slate-200 shadow-lg overflow-hidden text-left">
+                        <div className="px-3 py-2 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+                          <span className="text-[11px] font-bold text-slate-500">Recent Searches</span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              clearRecentSearchQueries();
+                              setShowSearchSuggestions(false);
+                            }}
+                            className="text-[11px] font-bold text-rose-600 hover:text-rose-700 cursor-pointer"
                           >
-                            <button
-                              type="button"
-                              onClick={() => {
-                                handleSmartSearchChange(term, true);
-                                setShowSearchSuggestions(false);
-                              }}
-                              className="flex items-center gap-2.5 flex-1 min-w-0 text-left cursor-pointer"
+                            Clear
+                          </button>
+                        </div>
+                        <div className="max-h-48 overflow-y-auto divide-y divide-slate-100">
+                          {displayList.map((term) => (
+                            <div
+                              key={term}
+                              className="flex items-center justify-between px-3 py-2 hover:bg-blue-50/70 transition-colors group"
                             >
-                              <Search className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600 shrink-0" />
-                              <span className="text-xs sm:text-sm font-semibold text-slate-700 group-hover:text-blue-700 truncate">
-                                {term}
-                              </span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                removeRecentSearchQuery(term);
-                              }}
-                              className="p-1 text-slate-400 hover:text-rose-600 rounded-lg cursor-pointer shrink-0"
-                              title="Remove from recent searches"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        ))}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  handleSmartSearchChange(term, true);
+                                  setShowSearchSuggestions(false);
+                                }}
+                                className="flex items-center gap-2 flex-1 min-w-0 text-left cursor-pointer"
+                              >
+                                <Search className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600 shrink-0" />
+                                <span className="text-xs font-semibold text-slate-700 group-hover:text-blue-700 truncate">
+                                  {term}
+                                </span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  removeRecentSearchQuery(term);
+                                }}
+                                className="p-1 text-slate-400 hover:text-rose-600 rounded-lg cursor-pointer shrink-0"
+                                title="Remove"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })()}
-              </div>
-
-              {/* Clean Segmented Primary Resource Switcher */}
-              <div className="inline-flex flex-wrap items-center justify-center gap-1.5 p-1.5 bg-slate-200/75 rounded-2xl border border-slate-300/70">
-                <button
-                  onClick={() => setActivePage('papers')}
-                  className="px-4 py-2 rounded-xl font-bold text-xs sm:text-sm bg-blue-600 text-white shadow-xs transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
-                >
-                  <FileText className="w-4 h-4" />
-                  <span>Past Papers</span>
-                </button>
-                <button
-                  onClick={() => openBooksPage()}
-                  className="px-4 py-2 rounded-xl font-bold text-xs sm:text-sm bg-white hover:bg-emerald-50 text-slate-900 border border-slate-200/80 transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
-                >
-                  <span>📚 TIE Books &amp; Syllabus</span>
-                </button>
-                <button
-                  onClick={() => openDailyQuizPage()}
-                  className="px-4 py-2 rounded-xl font-bold text-xs sm:text-sm bg-white hover:bg-violet-50 text-slate-900 border border-slate-200/80 transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
-                >
-                  <span>🎯 Daily Quiz</span>
-                </button>
+                    );
+                  })()}
+                </div>
               </div>
             </div>
           </section>
 
-          <main className="flex-grow py-6 pb-24">
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-6">
-              {/* Breadcrumbs + Step Back Bar */}
-              <div className="flex items-center justify-between gap-2">
-                <nav className="flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-500 overflow-x-auto pb-1">
-                  <button
-                    onClick={() => setStep(1)}
-                    className={`px-3 py-1.5 rounded-xl whitespace-nowrap shrink-0 cursor-pointer ${
-                      step === 1 ? 'bg-blue-600 text-white font-bold' : 'bg-blue-100 text-blue-800 font-semibold'
-                    }`}
-                  >
-                    1. Class Level
-                  </button>
-                  <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
-                  <button
-                    onClick={() => selectedClass && setStep(2)}
-                    disabled={step < 2}
-                    className={`px-3 py-1.5 rounded-xl whitespace-nowrap shrink-0 ${
-                      step === 2
-                        ? 'bg-blue-600 text-white font-bold'
-                        : step > 2
-                        ? 'bg-blue-100 text-blue-800 font-semibold cursor-pointer'
-                        : 'bg-slate-100 text-slate-400 disabled:opacity-60'
-                    }`}
-                  >
-                    2. {selectedClass || 'Subject'}
-                  </button>
-                  <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
-                  <button
-                    disabled={step < 3}
-                    className={`px-3 py-1.5 rounded-xl whitespace-nowrap shrink-0 ${
-                      step === 3 ? 'bg-blue-600 text-white font-bold' : 'bg-slate-100 text-slate-400 disabled:opacity-60'
-                    }`}
-                  >
-                    3. {selectedSubject || 'Past Papers'}
-                  </button>
-                </nav>
+          <main className="flex-grow py-4 pb-24">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-4">
+              {/* Show Step Navigation Bar ONLY when inside Step 2 or Step 3 */}
+              {step > 1 && (
+                <div className="flex items-center justify-between gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200">
+                  <nav className="flex items-center gap-1.5 text-xs font-bold text-slate-500 overflow-x-auto">
+                    <button
+                      onClick={() => setStep(1)}
+                      className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 whitespace-nowrap shrink-0 cursor-pointer"
+                    >
+                      All Classes
+                    </button>
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />
+                    <button
+                      onClick={() => selectedClass && setStep(2)}
+                      className={`px-2.5 py-1 rounded-lg whitespace-nowrap shrink-0 cursor-pointer ${
+                        step === 2 ? 'bg-blue-600 text-white' : 'bg-blue-50 text-blue-800'
+                      }`}
+                    >
+                      {selectedClass || 'Subject'}
+                    </button>
+                    {step === 3 && (
+                      <>
+                        <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />
+                        <span className="px-2.5 py-1 rounded-lg bg-blue-600 text-white whitespace-nowrap shrink-0">
+                          {selectedSubject}
+                        </span>
+                      </>
+                    )}
+                  </nav>
 
-                {step > 1 && (
                   <button
                     onClick={handleGoBack}
-                    className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 border border-slate-300 text-slate-800 font-bold text-xs flex items-center gap-1.5 shrink-0 cursor-pointer shadow-2xs"
+                    className="px-3 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1 shrink-0 cursor-pointer"
                   >
                     <ArrowLeft className="w-3.5 h-3.5" />
                     <span>Back</span>
                   </button>
-                )}
-              </div>
+                </div>
+              )}
 
               {/* Network Error Banner */}
               {syncStatus === 'error' && (
-                <div className="p-5 bg-rose-50 border border-rose-200 rounded-2xl text-center space-y-2">
-                  <h3 className="text-sm font-bold text-rose-900">Unable to Sync Google Sheet Data</h3>
-                  <p className="text-xs text-rose-700">Please check your internet connection and click Retry.</p>
+                <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl flex items-center justify-between gap-3">
+                  <span className="text-xs font-bold text-rose-900">Unable to sync online papers.</span>
                   <button
                     onClick={() => fetchSheetData()}
-                    className="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs px-4 py-2 rounded-xl inline-flex items-center gap-1.5 cursor-pointer"
+                    className="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs px-3 py-1.5 rounded-lg inline-flex items-center gap-1 cursor-pointer shrink-0"
                   >
-                    <RefreshCw className="w-4 h-4" /> Retry Connection
+                    <RefreshCw className="w-3.5 h-3.5" /> Retry
                   </button>
                 </div>
               )}
 
-              {/* STEP 1: CHOOSE CLASS & PROFESSIONAL ACADEMIC HUB */}
+              {/* STEP 1: COMPACT & BEGINNER-FRIENDLY CLASS SELECTOR */}
               {step === 1 && (
-                <section className="space-y-8">
-                  {/* Quick Resume Bar if user previously selected a class */}
+                <section className="space-y-4">
+                  {/* Slim 1-Line Quick Resume Bar */}
                   {savedClass && (
-                    <div className="p-3.5 sm:p-4 bg-emerald-50 border border-emerald-300 rounded-2xl flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <span className="w-9 h-9 rounded-xl bg-emerald-600 text-white font-black text-xs flex items-center justify-center shrink-0">
-                          {savedClass.replace(/[^0-9]/g, '') || '★'}
-                        </span>
-                        <div className="min-w-0">
-                          <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 block">
-                            Last Selected Class
-                          </span>
-                          <span className="text-sm sm:text-base font-bold text-emerald-950 truncate block">
-                            Continue with {savedClass} Past Papers &amp; TIE Books
-                          </span>
-                        </div>
-                      </div>
+                    <div className="px-3.5 py-2.5 bg-emerald-50 border border-emerald-300 rounded-xl flex items-center justify-between gap-2">
+                      <span className="text-xs sm:text-sm font-bold text-emerald-950 truncate">
+                        Continue with <strong>{savedClass}</strong>
+                      </span>
                       <button
                         onClick={() => selectClass(savedClass)}
-                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs whitespace-nowrap shrink-0 cursor-pointer"
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg whitespace-nowrap shrink-0 cursor-pointer"
                       >
                         Open {savedClass} →
                       </button>
                     </div>
                   )}
 
-                  {/* 1. PRIMARY FOCUS: CHOOSE YOUR CLASS LEVEL */}
-                  <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-5">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
-                      <div>
-                        <h2 className="text-base sm:text-lg font-black text-slate-900">
-                          01. Select Your Class Level
-                        </h2>
-                        <p className="text-xs text-slate-500">
-                          Choose a class to browse Past Papers, Marking Schemes, Official TIE Textbooks, Syllabuses &amp; Daily Quiz.
-                        </p>
-                      </div>
+                  {/* 1. COMPACT CLASS LEVEL CARD */}
+                  <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-3.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <h2 className="text-sm sm:text-base font-black text-slate-900">
+                        Choose Your Class
+                      </h2>
 
-                      {/* Segmented Class Tier Filter Toggle */}
-                      <div className="inline-flex items-center p-1 rounded-xl bg-slate-100 border border-slate-200 self-start sm:self-auto shrink-0">
+                      <div className="inline-flex items-center p-0.5 rounded-lg bg-slate-100 border border-slate-200 shrink-0">
                         {[
-                          { id: 'ALL' as const, label: 'All (13)' },
-                          { id: 'Secondary' as const, label: '🎓 Secondary (F1–F6)' },
-                          { id: 'Primary' as const, label: '🎒 Primary (Std 1–7)' },
+                          { id: 'ALL' as const, label: 'All' },
+                          { id: 'Secondary' as const, label: 'Form 1–6' },
+                          { id: 'Primary' as const, label: 'Std 1–7' },
                         ].map((tab) => (
                           <button
                             key={tab.id}
                             type="button"
                             onClick={() => setClassTierFilter(tab.id)}
-                            className={`px-2.5 sm:px-3 py-1.5 rounded-lg font-bold text-[11px] sm:text-xs transition-all cursor-pointer whitespace-nowrap ${
+                            className={`px-2.5 py-1 rounded-md font-bold text-xs transition-all cursor-pointer whitespace-nowrap ${
                               classTierFilter === tab.id
-                                ? 'bg-blue-600 text-white shadow-2xs'
-                                : 'text-slate-700 hover:text-slate-900'
+                                ? 'bg-blue-600 text-white'
+                                : 'text-slate-600 hover:text-slate-900'
                             }`}
                           >
                             {tab.label}
@@ -4498,94 +4465,47 @@ export default function App() {
 
                     {/* Secondary School (Form 1-6) */}
                     {(classTierFilter === 'ALL' || classTierFilter === 'Secondary') && (
-                    <div className="space-y-2.5">
-                      <div className="flex items-center justify-between text-xs font-bold text-slate-600">
-                        <span>Secondary School (Ordinary &amp; Advanced Level · Form 1 – Form 6)</span>
-                        <span className="text-slate-400">O-Level &amp; A-Level</span>
-                      </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                        {[
-                          { cls: 'Form 1', sub: 'Ordinary Secondary · TIE Books' },
-                          { cls: 'Form 2', sub: 'FTNA National Assessment' },
-                          { cls: 'Form 3', sub: 'Ordinary Secondary · TIE Books' },
-                          { cls: 'Form 4', sub: 'CSEE National Examination' },
-                          { cls: 'Form 5', sub: 'Advanced Level · Combinations' },
-                          { cls: 'Form 6', sub: 'ACSEE National Examination' },
-                        ].map(({ cls, sub }) => {
+                      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                        {['Form 1', 'Form 2', 'Form 3', 'Form 4', 'Form 5', 'Form 6'].map((cls) => {
                           const isExamYear = cls === 'Form 2' || cls === 'Form 4' || cls === 'Form 6';
                           return (
                             <button
                               key={cls}
                               onClick={() => selectClass(cls)}
-                              className={`p-4 rounded-xl text-left flex items-center justify-between transition-all cursor-pointer group ${
+                              className={`py-3 px-2.5 rounded-xl text-center font-black text-sm transition-all cursor-pointer border ${
                                 isExamYear
-                                  ? 'bg-blue-50/70 hover:bg-blue-100/80 border border-blue-300 text-slate-900'
-                                  : 'bg-slate-50/70 hover:bg-blue-50/60 border border-slate-200 hover:border-blue-400 text-slate-900'
+                                  ? 'bg-blue-50/80 hover:bg-blue-100 border-blue-300 text-blue-950'
+                                  : 'bg-slate-50 hover:bg-blue-50 border-slate-200 text-slate-900'
                               }`}
                             >
-                              <div className="min-w-0 pr-2">
-                                <span className="block text-base font-black text-slate-900 group-hover:text-blue-700">
-                                  {cls}
-                                </span>
-                                <span className="block text-[11px] font-medium text-slate-500 truncate mt-0.5">
-                                  {sub}
-                                </span>
-                              </div>
-                              <ChevronRight
-                                className={`w-5 h-5 shrink-0 transition-transform group-hover:translate-x-0.5 ${
-                                  isExamYear ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-600'
-                                }`}
-                              />
+                              {cls}
                             </button>
                           );
                         })}
                       </div>
-                    </div>
                     )}
 
                     {/* Primary School (Standard 1-7) */}
                     {(classTierFilter === 'ALL' || classTierFilter === 'Primary') && (
-                    <div className={`space-y-2.5 ${classTierFilter === 'ALL' ? 'pt-2 border-t border-slate-100' : ''}`}>
-                      <div className="flex items-center justify-between text-xs font-bold text-slate-600">
-                        <span>Primary School (Standard 1 – Standard 7)</span>
-                        <span className="text-slate-400">SFNA &amp; PSLE</span>
-                      </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                        {[
-                          { cls: 'Standard 1', label: 'Standard 1', sub: 'Primary TIE' },
-                          { cls: 'Standard 2', label: 'Standard 2', sub: 'Primary TIE' },
-                          { cls: 'Standard 3', label: 'Standard 3', sub: 'Primary TIE' },
-                          { cls: 'Standard 4', label: 'Standard 4 (SFNA)', sub: 'National Assessment' },
-                          { cls: 'Standard 5', label: 'Standard 5', sub: 'Primary TIE' },
-                          { cls: 'Standard 6', label: 'Standard 6', sub: 'Primary TIE' },
-                          { cls: 'Standard 7', label: 'Standard 7 (PSLE)', sub: 'Primary Leaving Exam' },
-                        ].map(({ cls, label, sub }) => {
-                          const isStd4 = cls === 'Standard 4';
-                          const isStd7 = cls === 'Standard 7';
+                      <div className={`grid grid-cols-3 sm:grid-cols-7 gap-2 ${classTierFilter === 'ALL' ? 'pt-2 border-t border-slate-100' : ''}`}>
+                        {['Standard 1', 'Standard 2', 'Standard 3', 'Standard 4', 'Standard 5', 'Standard 6', 'Standard 7'].map((cls) => {
+                          const shortLabel = cls.replace('Standard ', 'Std ');
+                          const isExam = cls === 'Standard 4' || cls === 'Standard 7';
                           return (
                             <button
                               key={cls}
                               onClick={() => selectClass(cls)}
-                              className={`p-3.5 rounded-xl text-left flex items-center justify-between transition-all cursor-pointer group ${
-                                isStd7
-                                  ? 'col-span-2 bg-blue-50/70 hover:bg-blue-100/80 border border-blue-300 text-slate-900'
-                                  : isStd4
-                                  ? 'bg-amber-50/70 hover:bg-amber-100/80 border border-amber-300 text-slate-900'
-                                  : 'bg-slate-50/70 hover:bg-blue-50/60 border border-slate-200 hover:border-blue-400 text-slate-900'
+                              className={`py-2.5 px-2 rounded-xl text-center font-bold text-xs sm:text-sm transition-all cursor-pointer border ${
+                                isExam
+                                  ? 'bg-amber-50/80 hover:bg-amber-100 border-amber-300 text-amber-950'
+                                  : 'bg-slate-50 hover:bg-blue-50 border-slate-200 text-slate-800'
                               }`}
                             >
-                              <div className="min-w-0 pr-1">
-                                <span className="block text-sm font-bold text-slate-900 group-hover:text-blue-700 truncate">
-                                  {label}
-                                </span>
-                                <span className="block text-[11px] text-slate-500 truncate">{sub}</span>
-                              </div>
-                              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-blue-600 shrink-0" />
+                              {shortLabel}
                             </button>
                           );
                         })}
                       </div>
-                    </div>
                     )}
                   </div>
 
@@ -4941,7 +4861,7 @@ export default function App() {
         </motion.div>
       )}
 
-      {/* DEDICATED TIE BOOKS PAGE */}
+      {/* DEDICATED TIE BOOKS PAGE (PART OF UNIFIED LIBRARY) */}
       {activePage === 'books' && (
         <motion.div
           key="view-books"
@@ -4951,122 +4871,120 @@ export default function App() {
           transition={{ duration: 0.22, ease: 'easeOut' }}
           className="flex-grow bg-slate-50 min-h-screen pb-24"
         >
-          <div className="bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 border-b border-emerald-700 shadow-sm">
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <div className="text-xs font-bold uppercase tracking-wider text-emerald-100">
-                    Unified TIE Curriculum Library
-                  </div>
-                  <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-                    TIE Textbooks &amp; Official Syllabuses
-                  </h1>
-                  <p className="text-xs sm:text-sm font-medium text-emerald-50">
-                    Standard 1–7 &amp; Form 1–6 — Switch between Textbooks and Syllabuses below
-                  </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2 shrink-0">
-                  <div className="inline-flex items-center p-1 rounded-xl bg-slate-950/30 border border-white/20">
-                    <button
-                      type="button"
-                      onClick={() => openBooksPage()}
-                      className="px-3 py-1.5 rounded-lg bg-white text-emerald-950 font-black text-xs cursor-pointer shadow-xs"
-                    >
-                      📘 Textbooks ({availableUploadedBooks.length})
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => openSyllabusPage()}
-                      className="px-3 py-1.5 rounded-lg text-white hover:bg-white/15 font-bold text-xs cursor-pointer"
-                    >
-                      📜 Syllabuses ({availableUploadedSyllabuses.length})
-                    </button>
-                  </div>
+          <section className="py-3 bg-white border-b border-slate-200">
+            <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-2.5">
+              {/* Row 1: Unified Library Switcher + Search Input */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+                <div className="inline-flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 shrink-0">
                   <button
-                    onClick={handleGoBack}
-                    className="px-4 py-2 bg-slate-950 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
+                    type="button"
+                    onClick={() => setActivePage('papers')}
+                    className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-bold text-xs text-slate-700 hover:text-slate-900 hover:bg-white/70 flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
                   >
-                    <ArrowLeft className="w-4 h-4" />
-                    <span>Back</span>
+                    <FileText className="w-3.5 h-3.5" />
+                    <span>Past Papers</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openBooksPage()}
+                    className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-bold text-xs bg-emerald-600 text-white shadow-2xs flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
+                  >
+                    <span>📘 Books ({availableUploadedBooks.length})</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openSyllabusPage()}
+                    className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-bold text-xs text-slate-700 hover:text-slate-900 hover:bg-white/70 flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
+                  >
+                    <span>📜 Syllabus ({availableUploadedSyllabuses.length})</span>
                   </button>
                 </div>
-              </div>
-            </div>
-          </div>
 
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-            <div className="bg-white p-4 sm:p-5 rounded-3xl border border-emerald-300 shadow-sm space-y-4">
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  {(['ALL', 'Primary', 'Secondary', 'Advanced'] as const).map((lvl) => (
-                    <button
-                      key={lvl}
-                      onClick={() => {
-                        setBooksPageLevel(lvl);
-                        setBooksPageSelectedClass('ALL');
-                      }}
-                      className={`px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm whitespace-nowrap shrink-0 cursor-pointer ${
-                        booksPageLevel === lvl
-                          ? 'bg-emerald-600 text-white shadow-sm'
-                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                      }`}
-                    >
-                      {lvl === 'ALL'
-                        ? 'All Levels'
-                        : lvl === 'Primary'
-                        ? 'Primary (Std 1–7)'
-                        : lvl === 'Secondary'
-                        ? 'Secondary (Form 1–4)'
-                        : 'Advanced (Form 5–6)'}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="relative min-w-[240px]">
+                <div className="relative flex-1 max-w-md">
                   <input
                     type="text"
                     value={booksSearchQuery}
                     onChange={(e) => setBooksSearchQuery(e.target.value)}
                     placeholder="Search textbook or subject..."
-                    className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-emerald-600 focus:outline-none text-xs sm:text-sm font-medium bg-slate-50"
+                    className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-300 focus:border-emerald-600 focus:outline-none text-xs sm:text-sm font-medium bg-slate-50"
                   />
-                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                  <Search className="w-4 h-4 text-slate-400 absolute left-2.5 top-2" />
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-100">
-                {['ALL', ...booksLevelClasses].map((c) => (
-                  <button
-                    key={c}
-                    onClick={() => setBooksPageSelectedClass(c)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                      booksPageSelectedClass === c
-                        ? 'bg-slate-900 text-white shadow-sm'
-                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                    }`}
+              {/* Row 2: Simple Class Dropdown + Quick Level Filter + Count */}
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <select
+                    aria-label="Select Class for Textbooks"
+                    value={booksPageSelectedClass}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setBooksPageSelectedClass(val);
+                      if (val === 'ALL') {
+                        setBooksPageLevel('ALL');
+                      } else if (val.startsWith('Standard')) {
+                        setBooksPageLevel('Primary');
+                      } else if (val === 'Form 5' || val === 'Form 6') {
+                        setBooksPageLevel('Advanced');
+                      } else {
+                        setBooksPageLevel('Secondary');
+                      }
+                    }}
+                    className="px-3 py-1.5 rounded-xl border border-slate-300 bg-white text-slate-900 font-bold text-xs cursor-pointer focus:outline-none focus:border-emerald-600"
                   >
-                    {c === 'ALL' ? 'All Classes' : c}
-                  </button>
-                ))}
-              </div>
+                    <option value="ALL">All Classes (Std 1 – Form 6)</option>
+                    <optgroup label="Secondary (Form 1–6)">
+                      {['Form 1', 'Form 2', 'Form 3', 'Form 4', 'Form 5', 'Form 6'].map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Primary (Standard 1–7)">
+                      {['Standard 1', 'Standard 2', 'Standard 3', 'Standard 4', 'Standard 5', 'Standard 6', 'Standard 7'].map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </optgroup>
+                  </select>
 
-              <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-medium text-slate-500 pt-2 border-t border-slate-100 tabular-nums">
-                <span className="font-bold text-emerald-800">
-                  ✅ Showing {availableUploadedBooks.length} Available TIE Books Ready for Instant Read &amp; PDF Download
-                </span>
-                {upcomingPlaceholderBooks.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setShowUpcomingBooks((prev) => !prev)}
-                    className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
-                  >
-                    {showUpcomingBooks
-                      ? `🙈 Hide Coming Soon Placeholders (${upcomingPlaceholderBooks.length})`
-                      : `⏳ Show Coming Soon / Request Books (${upcomingPlaceholderBooks.length})`}
-                  </button>
-                )}
+                  <div className="inline-flex items-center p-0.5 rounded-lg bg-slate-100 border border-slate-200">
+                    {(['ALL', 'Secondary', 'Primary', 'Advanced'] as const).map((lvl) => (
+                      <button
+                        key={lvl}
+                        onClick={() => {
+                          setBooksPageLevel(lvl);
+                          setBooksPageSelectedClass('ALL');
+                        }}
+                        className={`px-2.5 py-1 rounded-md font-bold text-xs whitespace-nowrap shrink-0 cursor-pointer ${
+                          booksPageLevel === lvl
+                            ? 'bg-emerald-600 text-white'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        {lvl === 'ALL' ? 'All' : lvl === 'Primary' ? 'Primary' : lvl === 'Secondary' ? 'O-Level' : 'A-Level'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 text-xs tabular-nums">
+                  <span className="font-bold text-emerald-800">
+                    {availableUploadedBooks.length} Books Ready
+                  </span>
+                  {upcomingPlaceholderBooks.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowUpcomingBooks((prev) => !prev)}
+                      className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] cursor-pointer"
+                    >
+                      {showUpcomingBooks ? 'Hide Request List' : `+ Request Book (${upcomingPlaceholderBooks.length})`}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
+          </section>
+
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 space-y-4">
 
             {/* Available / Uploaded PDFs First */}
             {availableUploadedBooks.length === 0 ? (
@@ -5195,7 +5113,7 @@ export default function App() {
         </motion.div>
       )}
 
-      {/* DEDICATED SYLLABUS PAGE */}
+      {/* DEDICATED SYLLABUS PAGE (PART OF UNIFIED LIBRARY) */}
       {activePage === 'syllabus' && (
         <motion.div
           key="view-syllabus"
@@ -5205,103 +5123,84 @@ export default function App() {
           transition={{ duration: 0.22, ease: 'easeOut' }}
           className="flex-grow bg-slate-50 min-h-screen pb-24"
         >
-          <div className="bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-400 border-b border-amber-600 shadow-sm">
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <div className="text-xs font-bold uppercase tracking-wider text-slate-900">
-                    Unified TIE Curriculum Library
-                  </div>
-                  <h1 className="text-2xl sm:text-3xl font-black text-slate-950 tracking-tight">
-                    Official TIE Syllabuses &amp; Textbooks
-                  </h1>
-                  <p className="text-xs sm:text-sm font-medium text-slate-900">
-                    Primary (Std 1–7), Ordinary Secondary (Form 1–4) &amp; Advanced Level (Form 5–6) — Direct PDF Download
-                  </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2 shrink-0">
-                  <div className="inline-flex items-center p-1 rounded-xl bg-slate-950/15 border border-slate-900/20">
-                    <button
-                      type="button"
-                      onClick={() => openBooksPage()}
-                      className="px-3 py-1.5 rounded-lg text-slate-950 hover:bg-white/50 font-bold text-xs cursor-pointer"
-                    >
-                      📘 Textbooks ({availableUploadedBooks.length})
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => openSyllabusPage()}
-                      className="px-3 py-1.5 rounded-lg bg-slate-950 text-amber-300 font-black text-xs cursor-pointer shadow-xs"
-                    >
-                      📜 Syllabuses ({availableUploadedSyllabuses.length})
-                    </button>
-                  </div>
+          <section className="py-3 bg-white border-b border-slate-200">
+            <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-2.5">
+              {/* Row 1: Unified Library Switcher + Search Input */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+                <div className="inline-flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 shrink-0">
                   <button
-                    onClick={handleGoBack}
-                    className="px-4 py-2 bg-slate-950 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
+                    type="button"
+                    onClick={() => setActivePage('papers')}
+                    className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-bold text-xs text-slate-700 hover:text-slate-900 hover:bg-white/70 flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
                   >
-                    <ArrowLeft className="w-4 h-4" />
-                    <span>Back</span>
+                    <FileText className="w-3.5 h-3.5" />
+                    <span>Past Papers</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openBooksPage()}
+                    className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-bold text-xs text-slate-700 hover:text-slate-900 hover:bg-white/70 flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
+                  >
+                    <span>📘 Books ({availableUploadedBooks.length})</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openSyllabusPage()}
+                    className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-bold text-xs bg-amber-500 text-slate-950 shadow-2xs flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
+                  >
+                    <span>📜 Syllabus ({availableUploadedSyllabuses.length})</span>
                   </button>
                 </div>
-              </div>
-            </div>
-          </div>
 
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-            <div className="bg-white p-4 sm:p-5 rounded-3xl border border-amber-300 shadow-sm space-y-4">
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  {(['ALL', 'Primary', 'Secondary', 'Advanced'] as const).map((lvl) => (
-                    <button
-                      key={lvl}
-                      onClick={() => setSyllabusPageLevel(lvl)}
-                      className={`px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm whitespace-nowrap shrink-0 cursor-pointer ${
-                        syllabusPageLevel === lvl
-                          ? 'bg-amber-500 text-slate-950 shadow-sm'
-                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                      }`}
-                    >
-                      {lvl === 'ALL'
-                        ? 'All Levels'
-                        : lvl === 'Primary'
-                        ? 'Primary (Std 1–7)'
-                        : lvl === 'Secondary'
-                        ? 'Secondary (Form 1–4)'
-                        : 'Advanced (Form 5–6)'}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="relative min-w-[240px]">
+                <div className="relative flex-1 max-w-md">
                   <input
                     type="text"
                     value={syllabusSearchQuery}
                     onChange={(e) => setSyllabusSearchQuery(e.target.value)}
                     placeholder="Search syllabus subject..."
-                    className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-amber-500 focus:outline-none text-xs sm:text-sm font-medium bg-slate-50"
+                    className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-300 focus:border-amber-500 focus:outline-none text-xs sm:text-sm font-medium bg-slate-50"
                   />
-                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                  <Search className="w-4 h-4 text-slate-400 absolute left-2.5 top-2" />
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-medium text-slate-500 pt-2 border-t border-slate-100 tabular-nums">
-                <span className="font-bold text-amber-900">
-                  ✅ {availableUploadedSyllabuses.length} Official Uploaded Syllabuses Ready for Download
-                </span>
-                {upcomingPlaceholderSyllabuses.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setShowUpcomingSyllabuses((prev) => !prev)}
-                    className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
-                  >
-                    {showUpcomingSyllabuses
-                      ? `🙈 Hide Coming Soon Syllabuses (${upcomingPlaceholderSyllabuses.length})`
-                      : `⏳ Show Coming Soon Syllabuses (${upcomingPlaceholderSyllabuses.length})`}
-                  </button>
-                )}
+              {/* Row 2: Compact Level Filter + Count */}
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                <div className="inline-flex items-center p-0.5 rounded-lg bg-slate-100 border border-slate-200">
+                  {(['ALL', 'Secondary', 'Primary', 'Advanced'] as const).map((lvl) => (
+                    <button
+                      key={lvl}
+                      onClick={() => setSyllabusPageLevel(lvl)}
+                      className={`px-2.5 py-1 rounded-md font-bold text-xs whitespace-nowrap shrink-0 cursor-pointer ${
+                        syllabusPageLevel === lvl
+                          ? 'bg-amber-500 text-slate-950'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      {lvl === 'ALL' ? 'All Levels' : lvl === 'Primary' ? 'Primary' : lvl === 'Secondary' ? 'O-Level' : 'A-Level'}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-2 text-xs tabular-nums">
+                  <span className="font-bold text-amber-900">
+                    {availableUploadedSyllabuses.length} Syllabuses Ready
+                  </span>
+                  {upcomingPlaceholderSyllabuses.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowUpcomingSyllabuses((prev) => !prev)}
+                      className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] cursor-pointer"
+                    >
+                      {showUpcomingSyllabuses ? 'Hide Request List' : `+ Request Syllabus (${upcomingPlaceholderSyllabuses.length})`}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
+          </section>
+
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 space-y-4">
 
             {availableUploadedSyllabuses.length === 0 && !showUpcomingSyllabuses ? (
               <div className="py-10 text-center bg-white rounded-3xl border border-slate-200 p-6 space-y-3">
@@ -5547,13 +5446,12 @@ export default function App() {
                         const nextSub = nextSubs.includes(mohaActiveSubject) ? mohaActiveSubject : nextSubs[0];
                         const nextTopics = getSyllabusTopicsForClassSubject(nextCls, nextSub);
                         const firstTopic = nextTopics[0] ? nextTopics[0].replace(/^\d+\.\d+\s*/, '') : 'ALL';
-                        const nextSubTopics = getSubTopicsForMainTopic(nextSub, firstTopic);
-                        const firstSubTopic = nextSubTopics[0] || 'ALL';
+                        setMohaFocusedResourceId('ALL');
                         startAiQuiz(
                           nextCls,
                           nextSub,
                           firstTopic,
-                          firstSubTopic,
+                          'ALL',
                           selectedQuizSourceFilter,
                           true
                         );
@@ -5577,13 +5475,12 @@ export default function App() {
                         const nextSub = e.target.value;
                         const nextTopics = getSyllabusTopicsForClassSubject(mohaActiveClass, nextSub);
                         const firstTopic = nextTopics[0] ? nextTopics[0].replace(/^\d+\.\d+\s*/, '') : 'ALL';
-                        const nextSubTopics = getSubTopicsForMainTopic(nextSub, firstTopic);
-                        const firstSubTopic = nextSubTopics[0] || 'ALL';
+                        setMohaFocusedResourceId('ALL');
                         startAiQuiz(
                           mohaActiveClass,
                           nextSub,
                           firstTopic,
-                          firstSubTopic,
+                          'ALL',
                           selectedQuizSourceFilter,
                           true
                         );
@@ -5605,16 +5502,11 @@ export default function App() {
                       value={selectedQuizTopic}
                       onChange={(e) => {
                         const nextTopic = e.target.value;
-                        const nextSubTopics = getSubTopicsForMainTopic(
-                          mohaActiveSubject,
-                          nextTopic === 'ALL' ? activeSyllabusTopics[0] || '' : nextTopic
-                        );
-                        const firstSubTopic = nextSubTopics[0] || 'ALL';
                         startAiQuiz(
                           mohaActiveClass,
                           mohaActiveSubject,
                           nextTopic,
-                          firstSubTopic,
+                          'ALL',
                           selectedQuizSourceFilter,
                           true
                         );
@@ -6048,35 +5940,29 @@ export default function App() {
       )}
       </AnimatePresence>
 
-      {/* PERSISTENT 5-TAB MOBILE BOTTOM NAVIGATION BAR */}
+      {/* PERSISTENT 4-TAB MOBILE BOTTOM NAVIGATION BAR (WITH UNIFIED LIBRARY ICON) */}
       {activePage !== 'game' && (
         <nav
           aria-label="Mobile Primary Navigation"
-          className="fixed bottom-0 inset-x-0 z-30 bg-[var(--bg-surface-glass)] backdrop-blur-md border-t border-[var(--border-subtle)] px-2 py-1.5 flex items-center justify-around gap-1 lg:hidden shadow-lg"
+          className="fixed bottom-0 inset-x-0 z-30 bg-[var(--bg-surface-glass)] backdrop-blur-md border-t border-[var(--border-subtle)] px-2 py-1.5 flex items-center justify-around gap-1.5 lg:hidden shadow-lg"
         >
           <button
             type="button"
-            onClick={() => resetToStep1()}
-            className={`flex-1 py-1.5 px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold cursor-pointer transition-colors ${
-              activePage === 'papers'
+            onClick={() => {
+              if (activePage !== 'papers' && activePage !== 'books' && activePage !== 'syllabus') {
+                setActivePage('papers');
+              } else {
+                resetToStep1();
+              }
+            }}
+            className={`flex-1 py-1.5 px-2 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[11px] font-bold cursor-pointer transition-colors ${
+              activePage === 'papers' || activePage === 'books' || activePage === 'syllabus'
                 ? 'bg-blue-600 text-white'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <FileText className="w-4 h-4" />
-            <span>Papers</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => openBooksPage()}
-            className={`flex-1 py-1.5 px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold cursor-pointer transition-colors ${
-              activePage === 'books' || activePage === 'syllabus'
-                ? 'bg-emerald-600 text-white'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <span>📚</span>
-            <span>Books &amp; Syllabus</span>
+            <BookOpen className="w-4 h-4" />
+            <span>Library</span>
           </button>
           <button
             type="button"
@@ -6340,7 +6226,13 @@ export default function App() {
                         const nextSub = subs.includes(mohaActiveSubject) ? mohaActiveSubject : subs[0];
                         setMohaActiveSubject(nextSub);
                         setTsSubject(nextSub);
-                        setSelectedQuizTopic('ALL');
+                        setMohaFocusedResourceId('ALL');
+                        const nextTopics = getSyllabusTopicsForClassSubject(newCls, nextSub);
+                        const firstChap = nextTopics[0]?.replace(/^\d+\.\d+\s*/, '').trim() || '';
+                        setSelectedQuizTopic(firstChap || 'ALL');
+                        setSelectedQuizSubTopic('ALL');
+                        setTsTopic(firstChap);
+                        setTsSubTopic(firstChap);
                         setFlashcards(getDefaultFlashcardsForSubject(newCls, nextSub));
                       }}
                       className="bg-transparent text-slate-900 font-bold focus:outline-none cursor-pointer"
@@ -6358,7 +6250,13 @@ export default function App() {
                         const nextSub = e.target.value;
                         setMohaActiveSubject(nextSub);
                         setTsSubject(nextSub);
-                        setSelectedQuizTopic('ALL');
+                        setMohaFocusedResourceId('ALL');
+                        const nextTopics = getSyllabusTopicsForClassSubject(mohaActiveClass, nextSub);
+                        const firstChap = nextTopics[0]?.replace(/^\d+\.\d+\s*/, '').trim() || '';
+                        setSelectedQuizTopic(firstChap || 'ALL');
+                        setSelectedQuizSubTopic('ALL');
+                        setTsTopic(firstChap);
+                        setTsSubTopic(firstChap);
                         setFlashcards(getDefaultFlashcardsForSubject(mohaActiveClass, nextSub));
                       }}
                       className="bg-transparent text-violet-700 font-bold focus:outline-none cursor-pointer max-w-[115px] sm:max-w-[150px] truncate"
