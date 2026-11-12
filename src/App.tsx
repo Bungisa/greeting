@@ -794,17 +794,33 @@ export default function App() {
     }
   });
   const [playStoreSha256, setPlayStoreSha256] = useState<string>(() => {
+    const defaultFingerprints = [
+      'AF:36:16:F9:1A:D7:5F:B0:F4:BC:13:6C:EB:F3:F0:20:C8:B2:F5:2C:27:E7:15:98:08:0B:7D:A2:63:EB:17:84',
+      '0E:F7:F5:2A:AD:EA:10:C4:F9:5E:BE:08:1F:A4:61:EC:15:D0:11:19:D7:36:0B:84:AE:43:F9:85:D1:5D:1C:39',
+      '28:C5:33:47:35:D2:92:50:EA:30:BC:F2:26:AF:A8:FD:DF:B2:75:01:C3:0D:08:E0:4A:CF:EF:93:B1:55:72:9B',
+      'BD:01:CB:07:B7:1E:E8:B5:E0:86:6D:AE:A1:81:9B:CC:A0:F3:49:8E:21:2C:F2:60:0B:3C:B7:07:EC:29:70:FC',
+    ].join(',\n');
     try {
-      return localStorage.getItem('elimika_playstore_sha256') || '';
+      const saved = localStorage.getItem('elimika_playstore_sha256');
+      if (!saved || !saved.includes('AF:36:16:F9:1A:D7:5F:B0')) {
+        localStorage.setItem('elimika_playstore_sha256', defaultFingerprints);
+        return defaultFingerprints;
+      }
+      return saved;
     } catch {
-      return '';
+      return defaultFingerprints;
     }
   });
   const [adsensePubId, setAdsensePubId] = useState<string>(() => {
     try {
-      return localStorage.getItem('elimika_adsense_pub_id') || 'ca-pub-7502193981138651';
+      const saved = localStorage.getItem('elimika_adsense_pub_id');
+      if (!saved || saved === 'ca-pub-7502193981138651') {
+        localStorage.setItem('elimika_adsense_pub_id', 'ca-pub-7814843623545511');
+        return 'ca-pub-7814843623545511';
+      }
+      return saved;
     } catch {
-      return 'ca-pub-7502193981138651';
+      return 'ca-pub-7814843623545511';
     }
   });
   const [profileLogoTheme, setProfileLogoTheme] = useState<'blue_black' | 'blue_white' | 'black_blue'>('blue_black');
@@ -6940,7 +6956,7 @@ export default function App() {
               <div className="space-y-3">
                 <p>
                   <strong>Effective Date:</strong> January 1, 2026 · <strong>Publisher ID:</strong>{' '}
-                  <code>ca-pub-7502193981138651</code>
+                  <code>ca-pub-7814843623545511</code>
                 </p>
                 <p>
                   At <strong>Elimika Tanzania</strong> (<code>https://elimika.online</code>), we respect and protect the privacy of all students, teachers, and parents using our educational platform. This Privacy Policy explains how information is handled when you browse Past Papers, TIE Books, Official Syllabuses, and Teacher Tools.
@@ -7237,10 +7253,15 @@ export default function App() {
                   </div>
 
                   <div className="p-4 rounded-2xl border border-slate-200 bg-white space-y-3">
-                    <div className="font-black text-slate-900">
-                      🔐 Configure Android Package Name &amp; SHA-256 Digital Asset Link
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="font-black text-slate-900">
+                        🔐 Configure Android Package Name &amp; SHA-256 Digital Asset Links (4 Fingerprints Active)
+                      </div>
+                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-black text-[10px]">
+                        ✅ 4 SHA-256 Fingerprints Configured
+                      </span>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div className="grid grid-cols-1 gap-2.5">
                       <div>
                         <label className="font-bold text-slate-700 block mb-1">
                           Android Package Name (Application ID)
@@ -7255,18 +7276,84 @@ export default function App() {
                       </div>
                       <div>
                         <label className="font-bold text-slate-700 block mb-1">
-                          Signing Key SHA-256 Fingerprint
+                          Signing Key SHA-256 Fingerprints (Comma or Newline Separated)
                         </label>
-                        <input
-                          type="text"
+                        <textarea
+                          rows={4}
                           value={playStoreSha256}
                           onChange={(e) => setPlayStoreSha256(e.target.value)}
-                          placeholder="AA:BB:CC:DD:EE:FF:..."
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 font-mono text-xs"
+                          placeholder="AF:36:16:F9:..."
+                          className="w-full px-3 py-2 rounded-xl border border-slate-300 font-mono text-[11px] leading-relaxed"
                         />
                       </div>
                     </div>
-                    <div className="flex items-center justify-end gap-2">
+                    <div className="flex flex-wrap items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const fingerprints = playStoreSha256
+                            .split(/[\n,]+/)
+                            .map((s) => s.replace(/["'\s]/g, '').toUpperCase())
+                            .filter(Boolean);
+                          const pkgs = Array.from(
+                            new Set([playStorePackageName.trim(), 'online.elimika.twa', 'online.elimika.tanzania'].filter(Boolean))
+                          );
+                          const jsonStr = JSON.stringify(
+                            pkgs.map((pkg) => ({
+                              relation: ['delegate_permission/common.handle_all_urls'],
+                              target: {
+                                namespace: 'android_app',
+                                package_name: pkg,
+                                sha256_cert_fingerprints: fingerprints,
+                              },
+                            })),
+                            null,
+                            2
+                          );
+                          navigator.clipboard.writeText(jsonStr);
+                          showToast('📋 Copied assetlinks.json to clipboard!');
+                        }}
+                        className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold cursor-pointer"
+                      >
+                        📋 Copy assetlinks.json
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const fingerprints = playStoreSha256
+                            .split(/[\n,]+/)
+                            .map((s) => s.replace(/["'\s]/g, '').toUpperCase())
+                            .filter(Boolean);
+                          const pkgs = Array.from(
+                            new Set([playStorePackageName.trim(), 'online.elimika.twa', 'online.elimika.tanzania'].filter(Boolean))
+                          );
+                          const jsonStr = JSON.stringify(
+                            pkgs.map((pkg) => ({
+                              relation: ['delegate_permission/common.handle_all_urls'],
+                              target: {
+                                namespace: 'android_app',
+                                package_name: pkg,
+                                sha256_cert_fingerprints: fingerprints,
+                              },
+                            })),
+                            null,
+                            2
+                          );
+                          const blob = new Blob([jsonStr], { type: 'application/json' });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = 'assetlinks.json';
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                          URL.revokeObjectURL(url);
+                          showToast('⬇️ Downloaded assetlinks.json (place inside /.well-known/assetlinks.json)!');
+                        }}
+                        className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold cursor-pointer"
+                      >
+                        ⬇️ Download assetlinks.json
+                      </button>
                       <button
                         type="button"
                         onClick={async () => {
@@ -7673,7 +7760,7 @@ export default function App() {
                       <div>
                         Your <code>https://elimika.online/ads.txt</code> content for Google verification:{' '}
                         <code className="bg-slate-200 px-1.5 py-0.5 rounded text-slate-900 font-bold">
-                          google.com, pub-7502193981138651, DIRECT, f08c47fec0942fa0
+                          google.com, pub-7814843623545511, DIRECT, f08c47fec0942fa0
                         </code>
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
@@ -7697,11 +7784,11 @@ export default function App() {
                       </span>
                     </div>
                     <p className="text-[11px] text-emerald-900 leading-relaxed">
-                      Download or copy your complete standalone <code>index.html</code> for <strong>https://elimika.online</strong> with all Google AdSense verification requirements built in: <code>ca-pub-7502193981138651</code> meta &amp; script tags, rich crawlable static NECTA &amp; TIE Curriculum Study Guides (so AdSense bots never flag &ldquo;Low Value / Thin Content&rdquo;), Privacy Policy with DoubleClick DART cookie disclosure, Terms of Service, Academic Disclaimer, About &amp; Contact modal, Cookie Consent banner, Midnight Plum Light/Dark/System theme switcher, and all 105 TIE Books.
+                      Download or copy your complete standalone <code>index.html</code> for <strong>https://elimika.online</strong> with all Google AdSense verification requirements built in: <code>ca-pub-7814843623545511</code> meta &amp; script tags at the top of <code>&lt;head&gt;</code>, unified <strong>📚 Library</strong> navigation (Past Papers, TIE Books &amp; Syllabuses), compact class selector, rich crawlable static NECTA &amp; TIE Curriculum Study Guides, Privacy Policy with DoubleClick DART cookie disclosure, Terms of Service, Academic Disclaimer, About &amp; Contact modal, Cookie Consent banner, Midnight Plum Light/Dark/System theme switcher, and all 142 TIE Books &amp; Question Banks.
                     </p>
                     <div className="flex flex-wrap items-center gap-2 pt-1">
                       <a
-                        href="/elimika-tanzania-website.html"
+                        href="/elimika-tanzania-website.html?v=20261110"
                         download="index.html"
                         className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs inline-flex items-center gap-1.5 shadow-sm"
                       >
@@ -7711,7 +7798,7 @@ export default function App() {
                         type="button"
                         onClick={async () => {
                           try {
-                            const res = await fetch('/elimika-tanzania-website.html');
+                            const res = await fetch('/elimika-tanzania-website.html?v=20261110', { cache: 'no-store' });
                             const htmlText = await res.text();
                             await navigator.clipboard.writeText(htmlText);
                             showToast('✅ Full updated website index.html code copied to clipboard!');
@@ -7724,7 +7811,7 @@ export default function App() {
                         <span>📋 Copy Full Website HTML Code</span>
                       </button>
                       <a
-                        href="/elimika-tanzania-website.html"
+                        href="/elimika-tanzania-website.html?v=20261110"
                         target="_blank"
                         rel="noreferrer"
                         className="px-3 py-2 rounded-xl bg-white hover:bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold text-xs inline-flex items-center gap-1"

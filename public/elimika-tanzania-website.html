@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="google-adsense-account" content="ca-pub-7814843623545511" />
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7814843623545511"
+     crossorigin="anonymous"></script>
   <title>Elimika TZ | Tanzania Past Papers, TIE Books &amp; Official Syllabus</title>
   <meta name="description" content="Simple, fast access to Tanzanian NECTA past examination papers, marking schemes, official TIE textbooks, and syllabuses for Standard 1–7 and Form 1–6." />
   <link rel="canonical" href="https://elimika.online/" />
@@ -56,10 +59,6 @@
       } catch (e) {}
     })();
   </script>
-
-  <!-- Google AdSense -->
-  <meta name="google-adsense-account" content="ca-pub-7502193981138651" />
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7502193981138651" crossorigin="anonymous"></script>
 
   <script type="application/ld+json">
     {
@@ -456,9 +455,7 @@
       </a>
 
       <nav class="hidden lg:flex items-center gap-4 text-sm font-semibold text-slate-600">
-        <button id="nav-papers" onclick="resetToStep1()" class="text-blue-600 font-bold underline underline-offset-4">Past Papers</button>
-        <button id="nav-books" onclick="openBooksPage()">📚 TIE Books</button>
-        <button id="nav-syllabus" onclick="openSyllabusPage()">📜 Syllabus</button>
+        <button id="nav-library" onclick="resetToStep1()" class="px-3 py-1.5 rounded-xl bg-blue-600 text-white font-bold flex items-center gap-1.5">📚 Library (Papers, Books &amp; Syllabus)</button>
         <a href="#editorial-curriculum-guide" class="hover:text-blue-600">📖 Study Guides</a>
         <button onclick="openLegalModal('about')" class="hover:text-blue-600">ℹ️ About &amp; Contact</button>
         <button onclick="openLegalModal('privacy')" class="hover:text-blue-600">🔒 Privacy</button>
@@ -488,13 +485,13 @@
 
   <!-- DYNAMIC VIEW CONTAINER (PRE-POPULATED WITH CRAWLABLE SEMANTIC HTML FOR GOOGLE ADSENSE & SEARCH BOTS) -->
   <div id="mainViewContainer" class="flex-grow flex flex-col">
-    <section class="pt-5 pb-6 bg-gradient-hero border-b border-slate-200">
-      <div class="max-w-4xl mx-auto px-4 sm:px-6 text-center space-y-3">
+    <section class="pt-4 pb-5 bg-gradient-hero border-b border-slate-200">
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 text-center space-y-2.5">
         <div class="text-xs font-bold text-blue-700 tracking-wide">
           Tanzania National Examinations (NECTA) &amp; TIE Curriculum · Standard 1–7 &amp; Form 1–6
         </div>
-        <h1 class="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight leading-snug">
-          Tanzania NECTA Past Papers, Official TIE Textbooks &amp; National Syllabus Portal
+        <h1 class="text-xl sm:text-3xl font-black text-slate-900 tracking-tight leading-snug">
+          📚 Elimika Library: Past Papers, TIE Books &amp; Syllabus
         </h1>
         <p class="text-xs sm:text-sm text-slate-600 max-w-2xl mx-auto leading-relaxed">
           Free academic revision repository for Tanzanian Primary (Standard 1–7 SFNA &amp; PSLE), Ordinary Secondary (Form 1–4 FTNA &amp; CSEE), and Advanced Secondary (Form 5–6 ACSEE) students and educators.
@@ -503,21 +500,13 @@
     </section>
   </div>
 
-  <!-- PERSISTENT MOBILE BOTTOM NAVIGATION BAR -->
-  <nav id="mobileStickyBar" aria-label="Mobile Primary Navigation" class="fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200 px-2 py-1.5 flex items-center justify-around gap-1 lg:hidden shadow-xl">
-    <button onclick="resetToStep1()" class="flex-1 py-1.5 px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold bg-blue-600 text-white" id="mobNavPapers">
-      <span>📄</span>
-      <span>Papers</span>
-    </button>
-    <button onclick="openBooksPage()" class="flex-1 py-1.5 px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold text-slate-600" id="mobNavBooks">
+  <!-- PERSISTENT MOBILE BOTTOM NAVIGATION BAR (UNIFIED LIBRARY ICON) -->
+  <nav id="mobileStickyBar" aria-label="Mobile Primary Navigation" class="fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200 px-3 py-1.5 flex items-center justify-around gap-2 lg:hidden shadow-xl">
+    <button onclick="resetToStep1()" class="flex-1 py-1.5 px-2 rounded-xl flex items-center justify-center gap-1.5 text-xs font-bold bg-blue-600 text-white" id="mobNavPapers">
       <span>📚</span>
-      <span>TIE Books</span>
+      <span>Library (Papers, Books &amp; Syllabus)</span>
     </button>
-    <button onclick="openSyllabusPage()" class="flex-1 py-1.5 px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold text-slate-600" id="mobNavSyllabus">
-      <span>📜</span>
-      <span>Syllabus</span>
-    </button>
-    <button onclick="openWhatsappModal()" class="flex-1 py-1.5 px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold text-slate-600">
+    <button onclick="openWhatsappModal()" class="py-1.5 px-3 rounded-xl flex items-center justify-center gap-1 text-xs font-bold text-slate-700 bg-slate-100">
       <span>💬</span>
       <span>WhatsApp</span>
     </button>
@@ -652,7 +641,7 @@
           <p>At <strong>Elimika Tanzania</strong> (<a href="https://elimika.online" class="text-blue-600 underline">https://elimika.online</a>), accessible from our web portal and Android/iOS progressive web application, protecting the privacy of our students, teachers, and parents across the United Republic of Tanzania and worldwide is one of our highest priorities.</p>
           <h3 class="text-sm font-black text-slate-900 pt-1">1. Google AdSense &amp; DoubleClick DART Cookie Disclosure</h3>
           <ul class="list-disc pl-5 space-y-1.5">
-            <li><strong>Third-Party Advertising Vendors:</strong> Third-party vendors, including <strong>Google (Google AdSense, Publisher ID: ca-pub-7502193981138651)</strong>, use cookies to serve advertisements based on a user's prior visits to <a href="https://elimika.online" class="text-blue-600 underline">https://elimika.online</a> or other websites on the internet.</li>
+            <li><strong>Third-Party Advertising Vendors:</strong> Third-party vendors, including <strong>Google (Google AdSense, Publisher ID: ca-pub-7814843623545511)</strong>, use cookies to serve advertisements based on a user's prior visits to <a href="https://elimika.online" class="text-blue-600 underline">https://elimika.online</a> or other websites on the internet.</li>
             <li><strong>Advertising Cookies:</strong> Google's use of advertising cookies (including the DoubleClick DART cookie) enables Google and its partners to serve relevant educational and general advertisements to our users based on their visit to Elimika Tanzania and/or other sites on the Internet.</li>
             <li><strong>How to Opt Out of Personalized Advertising:</strong> Users may opt out of personalized advertising at any time by visiting <a href="https://www.google.com/settings/ads" target="_blank" rel="noopener noreferrer" class="text-blue-600 font-bold underline">Google Ads Settings (https://www.google.com/settings/ads)</a> or <a href="https://www.aboutads.info/choices/" target="_blank" rel="noopener noreferrer" class="text-blue-600 font-bold underline">www.aboutads.info</a>.</li>
           </ul>
@@ -709,7 +698,7 @@
       </div>
 
       <div class="px-5 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs">
-        <span class="text-slate-500 font-semibold">Google AdSense Publisher ID: ca-pub-7502193981138651</span>
+        <span class="text-slate-500 font-semibold">Google AdSense Publisher ID: ca-pub-7814843623545511</span>
         <button onclick="closeLegalModal()" class="px-4 py-2 rounded-xl bg-blue-600 text-white font-bold">Done</button>
       </div>
     </div>
@@ -902,7 +891,14 @@
       SEARCH_DEBOUNCE_MS: 200,
       ADMIN_WHATSAPP: '255689511868',
       PLAY_STORE_URL: 'https://play.google.com/store/apps/details?id=online.elimika.twa',
-      IPHONE_INSTALL_URL: 'https://www.elimika.online/?install=iphone'
+      IPHONE_INSTALL_URL: 'https://www.elimika.online/?install=iphone',
+      ANDROID_PACKAGE_NAME: 'online.elimika.twa',
+      SHA256_CERT_FINGERPRINTS: [
+        "AF:36:16:F9:1A:D7:5F:B0:F4:BC:13:6C:EB:F3:F0:20:C8:B2:F5:2C:27:E7:15:98:08:0B:7D:A2:63:EB:17:84",
+        "0E:F7:F5:2A:AD:EA:10:C4:F9:5E:BE:08:1F:A4:61:EC:15:D0:11:19:D7:36:0B:84:AE:43:F9:85:D1:5D:1C:39",
+        "28:C5:33:47:35:D2:92:50:EA:30:BC:F2:26:AF:A8:FD:DF:B2:75:01:C3:0D:08:E0:4A:CF:EF:93:B1:55:72:9B",
+        "BD:01:CB:07:B7:1E:E8:B5:E0:86:6D:AE:A1:81:9B:CC:A0:F3:49:8E:21:2C:F2:60:0B:3C:B7:07:EC:29:70:FC"
+      ]
     };
 
     const TIE_CURRICULUM_SUBJECTS = {
@@ -1029,7 +1025,17 @@
       { id: 'tie-drive-book-102', title: 'ICT Computer Studies F1', form: 'Form 1', subject: 'Computer Science', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/15rOmh17imv9zkPsJL7Wo7PxUTDWIBHyx/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
       { id: 'tie-drive-book-103', title: 'Kiswahili F1', form: 'Form 1', subject: 'Kiswahili', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1LfBotG42DW_gV_L7eBAutmt_ffKWIry_/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
       { id: 'tie-drive-book-104', title: 'MATHEMATICS F1 (TIE 2023 Revised Book)', form: 'Form 1', subject: 'Basic Mathematics', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1g0lE1PZAyD1wjQP_EyjzUJow39caujxn/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
-      { id: 'tie-drive-book-105', title: 'PHYSICS F1', form: 'Form 1', subject: 'Physics', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1mUAUNoLsP0c_kAJ89Uhr0Zl5O13mgyVp/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false }
+      { id: 'tie-drive-book-105', title: 'PHYSICS F1', form: 'Form 1', subject: 'Physics', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1mUAUNoLsP0c_kAJ89Uhr0Zl5O13mgyVp/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
+      { id: 'tie-drive-book-cs-f5-1', title: "Computer Science for Advanced Secondary Schools — Student's Book Form Five (Chapters 1–4 Question Bank)", form: 'Form 5', subject: 'Computer Science', year: '2025', category: 'TIE Book', paperUrl: '/assets/aistudio/computer_f5_bank_of_qns_1950aee2.html', answersUrl: null, isBook: true, isSyllabus: false },
+      { id: 'tie-drive-book-cs-f5-2', title: "Computer Science for Advanced Secondary Schools — Student's Book Form Five (Chapters 4–5 Question Bank)", form: 'Form 5', subject: 'Computer Science', year: '2025', category: 'TIE Book', paperUrl: '/assets/aistudio/computer_f5_bank_of_ques_87e7b403.html', answersUrl: null, isBook: true, isSyllabus: false },
+      { id: 'tie-drive-book-cs-f5-3', title: "Computer Science for Advanced Secondary Schools — Student's Book Form Five (Chapters 5–8 Question Bank)", form: 'Form 5', subject: 'Computer Science', year: '2025', category: 'TIE Book', paperUrl: '/assets/aistudio/computer_f5_bank_of_questions_1e5f4d7b.html', answersUrl: null, isBook: true, isSyllabus: false },
+      { id: 'tie-drive-book-cs-f5-4', title: "Computer Science for Advanced Secondary Schools — Student's Book Form Five (Chapter 8 & Projects Question Bank)", form: 'Form 5', subject: 'Computer Science', year: '2025', category: 'TIE Book', paperUrl: '/assets/aistudio/computer_f5_bank_8d71db45.html', answersUrl: null, isBook: true, isSyllabus: false },
+      { id: 'tie-drive-book-geo-f2-bank', title: "Geography for Secondary Schools — Student's Book Form Two (TIE Comprehensive Question Bank)", form: 'Form 2', subject: 'Geography', year: '2025', category: 'TIE Book', paperUrl: '/assets/aistudio/question_bank_F2_Geo_3cb6195c.html', answersUrl: null, isBook: true, isSyllabus: false },
+      { id: 'tie-drive-book-ics-f1-bank', title: "Information and Computer Studies for Secondary Schools — Student's Book Form One (TIE Comprehensive Question Bank)", form: 'Form 1', subject: 'Computer Science', year: '2025', category: 'TIE Book', paperUrl: '/assets/aistudio/question_bank_70b39640.html', answersUrl: null, isBook: true, isSyllabus: false },
+      { id: 'tie-drive-book-phys-f2-bank-1', title: "Physics for Secondary Schools — Student's Book Form Two (Chapters 1–5 Comprehensive Question Bank)", form: 'Form 2', subject: 'Physics', year: '2025', category: 'TIE Book', paperUrl: '/assets/aistudio/physics_f2_bank_of_questions_001595ec.html', answersUrl: null, isBook: true, isSyllabus: false },
+      { id: 'tie-drive-book-phys-f2-bank-2', title: "Physics for Secondary Schools — Student's Book Form Two (Chapters 6–9 Comprehensive Question Bank)", form: 'Form 2', subject: 'Physics', year: '2025', category: 'TIE Book', paperUrl: '/assets/aistudio/physics_f2_bank_of_qns2_3d5c9410.html', answersUrl: null, isBook: true, isSyllabus: false },
+      { id: 'tie-drive-book-phys-f2-diagrams', title: "Physics for Secondary Schools — Form Two Master Vector Diagrams & Figures Reference (Chapters 1–9)", form: 'Form 2', subject: 'Physics', year: '2025', category: 'TIE Book', paperUrl: '/assets/aistudio/physics_f2_diagrams_a962eff7.html', answersUrl: null, isBook: true, isSyllabus: false },
+      { id: 'tie-drive-book-math-f1-bank', title: "Mathematics for Secondary Schools — Student's Book Form One (2023 Revised Edition Complete Question Bank)", form: 'Form 1', subject: 'Basic Mathematics', year: '2023', category: 'TIE Book', paperUrl: '/assets/aistudio/mathematics_f1_bank_of_qns_ac9bb750.html', answersUrl: null, isBook: true, isSyllabus: false }
     ];
 
     // ==================== HELPERS & NORMALIZERS ====================
@@ -1953,58 +1959,60 @@
         container.innerHTML = `
           <div class="flex-grow bg-slate-50 min-h-screen pb-24">
             <div class="bg-gradient-emerald border-b border-emerald-700 shadow-sm">
-              <div class="max-w-5xl mx-auto px-4 sm:px-6 py-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div class="space-y-1">
-                  <div class="text-xs font-bold uppercase tracking-wider text-emerald-100">Official TIE Textbooks Page</div>
-                  <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">TIE Textbooks (Standard 1–7 &amp; Form 1–6)</h1>
-                  <p class="text-xs sm:text-sm font-medium text-emerald-50">Select your Class and Subject to read or download official TIE Books directly from Google Drive</p>
+              <div class="max-w-5xl mx-auto px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-2.5">
+                  <span class="text-xl">📚</span>
+                  <div>
+                    <h1 class="text-lg sm:text-xl font-black text-white tracking-tight">Library: TIE Books &amp; Syllabuses</h1>
+                    <p class="text-[11px] text-emerald-100">Choose your class or search below</p>
+                  </div>
                 </div>
-                <div class="flex flex-wrap items-center gap-2 shrink-0">
-                  <button onclick="openSyllabusPage()" class="px-3.5 py-2.5 bg-amber-400 text-slate-950 font-bold text-xs rounded-xl">Syllabus Page</button>
-                  <button onclick="handleGoBack()" class="px-4 py-2.5 bg-slate-950 text-white font-bold text-xs rounded-xl">← Back</button>
+                <div class="flex flex-wrap items-center gap-1.5 shrink-0">
+                  <button onclick="resetToStep1()" class="px-3 py-1.5 bg-white/15 hover:bg-white/25 text-white font-bold text-xs rounded-xl">📄 Papers</button>
+                  <button onclick="openBooksPage()" class="px-3 py-1.5 bg-white text-emerald-950 font-bold text-xs rounded-xl">📘 Books</button>
+                  <button onclick="openSyllabusPage()" class="px-3 py-1.5 bg-amber-400 text-slate-950 font-bold text-xs rounded-xl">📜 Syllabus</button>
+                  <button onclick="handleGoBack()" class="px-3 py-1.5 bg-slate-950 text-white font-bold text-xs rounded-xl">← Back</button>
                 </div>
               </div>
             </div>
 
-            <div class="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-              <div class="bg-white p-4 sm:p-5 rounded-3xl border border-emerald-300 shadow-sm space-y-4">
-                <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                  <div class="flex flex-wrap items-center gap-2">
-                    ${['ALL', 'Primary', 'Secondary', 'Advanced'].map(lvl => `
-                      <button onclick="booksPageLevel='${lvl}'; booksPageSelectedClass='ALL'; renderApp();" class="px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm ${booksPageLevel === lvl ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-700'}">
-                        ${lvl === 'ALL' ? 'All Levels' : lvl === 'Primary' ? 'Primary (Std 1–7)' : lvl === 'Secondary' ? 'Secondary (Form 1–4)' : 'Advanced (Form 5–6)'}
-                      </button>
-                    `).join('')}
-                  </div>
-                  <div class="relative min-w-[240px] flex items-center">
-                    <span class="absolute left-3 text-xs pointer-events-none">🔍</span>
-                    <input
-                      id="booksSearchInput"
-                      type="text"
-                      value="${escapeHtml(booksSearchQuery)}"
-                      oninput="handleBooksSearchInput(this.value)"
-                      placeholder="Search textbook (e.g. F2 Math, Physics)..."
-                      class="w-full pl-9 pr-8 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-medium bg-slate-50 focus:outline-none focus:border-emerald-500"
-                    />
-                    <button
-                      id="booksSearchClearBtn"
-                      onclick="handleBooksSearchInput('')"
-                      class="absolute right-2.5 text-slate-400 text-xs p-1 ${booksSearchQuery.trim() ? '' : 'hidden'}"
-                      title="Clear search"
-                    >✕</button>
-                  </div>
-                </div>
-
-                <div class="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-100">
-                  ${['ALL', ...levelClasses].map(c => `
-                    <button onclick="booksPageSelectedClass='${c}'; renderApp();" class="px-3 py-1.5 rounded-xl text-xs font-bold ${booksPageSelectedClass === c ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'}">
-                      ${c === 'ALL' ? 'All Classes' : c}
+            <div class="max-w-5xl mx-auto px-4 sm:px-6 py-4 space-y-4">
+              <div class="bg-white p-3.5 rounded-2xl border border-emerald-300 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+                <div class="flex flex-wrap items-center gap-1.5">
+                  ${['ALL', 'Primary', 'Secondary', 'Advanced'].map(lvl => `
+                    <button onclick="booksPageLevel='${lvl}'; booksPageSelectedClass='ALL'; renderApp();" class="px-3 py-1.5 rounded-xl font-bold text-xs ${booksPageLevel === lvl ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-700'}">
+                      ${lvl === 'ALL' ? 'All' : lvl === 'Primary' ? 'Std 1–7' : lvl === 'Secondary' ? 'Form 1–4' : 'Form 5–6'}
                     </button>
                   `).join('')}
+                  <select
+                    onchange="booksPageSelectedClass=this.value; renderApp();"
+                    class="px-3 py-1.5 rounded-xl border border-slate-300 bg-white text-slate-800 font-bold text-xs"
+                    aria-label="Select Class"
+                  >
+                    <option value="ALL" ${booksPageSelectedClass === 'ALL' ? 'selected' : ''}>All Classes</option>
+                    ${levelClasses.map(c => `<option value="${c}" ${booksPageSelectedClass === c ? 'selected' : ''}>${c}</option>`).join('')}
+                  </select>
+                </div>
+                <div class="relative min-w-[220px] flex items-center">
+                  <span class="absolute left-3 text-xs pointer-events-none">🔍</span>
+                  <input
+                    id="booksSearchInput"
+                    type="text"
+                    value="${escapeHtml(booksSearchQuery)}"
+                    oninput="handleBooksSearchInput(this.value)"
+                    placeholder="Search textbook (e.g. F1 Math, F2 Physics)..."
+                    class="w-full pl-8 pr-7 py-1.5 rounded-xl border border-slate-200 text-xs font-medium bg-slate-50 focus:outline-none focus:border-emerald-500"
+                  />
+                  <button
+                    id="booksSearchClearBtn"
+                    onclick="handleBooksSearchInput('')"
+                    class="absolute right-2 text-slate-400 text-xs p-1 ${booksSearchQuery.trim() ? '' : 'hidden'}"
+                    title="Clear search"
+                  >✕</button>
                 </div>
               </div>
 
-              <div id="booksDynamicContent" class="space-y-6">
+              <div id="booksDynamicContent" class="space-y-4">
                 ${renderBooksDynamicInner()}
               </div>
             </div>
@@ -2028,16 +2036,20 @@
         container.innerHTML = `
           <div class="flex-grow bg-slate-50 min-h-screen pb-24">
             <div class="bg-gradient-amber border-b border-amber-600 shadow-sm">
-              <div class="max-w-5xl mx-auto px-4 sm:px-6 py-6 flex items-center justify-between gap-4">
+              <div class="max-w-5xl mx-auto px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <div class="text-xs font-bold uppercase tracking-wider text-slate-900">Official TIE Syllabus Page</div>
-                  <h1 class="text-2xl sm:text-3xl font-black text-slate-950 tracking-tight">Official TIE Syllabuses</h1>
+                  <h1 class="text-lg sm:text-xl font-black text-slate-950 tracking-tight">📜 Library: Official TIE Syllabuses</h1>
                 </div>
-                <button onclick="handleGoBack()" class="px-4 py-2.5 bg-slate-950 text-white font-bold text-xs rounded-xl">← Back</button>
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <button onclick="resetToStep1()" class="px-3 py-1.5 bg-slate-900/15 text-slate-950 font-bold text-xs rounded-xl">📄 Papers</button>
+                  <button onclick="openBooksPage()" class="px-3 py-1.5 bg-emerald-600 text-white font-bold text-xs rounded-xl">📘 Books</button>
+                  <button onclick="openSyllabusPage()" class="px-3 py-1.5 bg-white text-slate-950 font-bold text-xs rounded-xl">📜 Syllabus</button>
+                  <button onclick="handleGoBack()" class="px-3 py-1.5 bg-slate-950 text-white font-bold text-xs rounded-xl">← Back</button>
+                </div>
               </div>
             </div>
-            <div class="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-              <div class="bg-white p-4 sm:p-5 rounded-3xl border border-amber-300 shadow-sm flex flex-wrap items-center justify-between gap-3">
+            <div class="max-w-5xl mx-auto px-4 sm:px-6 py-4 space-y-4">
+              <div class="bg-white p-3.5 rounded-2xl border border-amber-300 shadow-sm flex flex-wrap items-center justify-between gap-3">
                 <span class="text-xs font-bold text-amber-900">✅ ${uploadedSyllabuses.length} Uploaded Official Syllabuses</span>
                 ${upcomingSyllabuses.length > 0 ? `
                   <button onclick="showUpcomingSyllabuses=!showUpcomingSyllabuses; renderApp();" class="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs">
@@ -2047,17 +2059,17 @@
               </div>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 ${(showUpcomingSyllabuses ? dedicatedSyllabuses : uploadedSyllabuses).map(p => `
-                  <article class="bg-white p-5 rounded-2xl border border-amber-200 shadow-sm flex flex-col justify-between gap-4">
+                  <article class="bg-white p-4 rounded-2xl border border-amber-200 shadow-sm flex flex-col justify-between gap-3">
                     <div>
                       <div class="text-xs font-bold text-amber-800">${escapeHtml(p.category)} · ${escapeHtml(p.form)}</div>
-                      <h3 class="text-base font-bold text-slate-900 mt-1">${escapeHtml(p.title)}</h3>
+                      <h3 class="text-sm sm:text-base font-bold text-slate-900 mt-1">${escapeHtml(p.title)}</h3>
                     </div>
-                    <div class="pt-3 border-t border-slate-100 flex gap-2">
+                    <div class="pt-2.5 border-t border-slate-100 flex gap-2">
                       ${p.paperUrl ? `
-                        <button onclick="openViewer('${p.id}', 'paper')" class="flex-1 px-3.5 py-2 bg-blue-600 text-white text-xs font-bold rounded-xl">📖 Read</button>
-                        <a href="${getDirectDownloadUrl(p.paperUrl)}" target="_blank" rel="noopener noreferrer" class="flex-1 px-3.5 py-2 bg-slate-900 text-white text-xs font-bold rounded-xl text-center">⬇️ Download</a>
+                        <button onclick="openViewer('${p.id}', 'paper')" class="flex-1 px-3 py-2 bg-blue-600 text-white text-xs font-bold rounded-xl">📖 Read</button>
+                        <a href="${getDirectDownloadUrl(p.paperUrl)}" target="_blank" rel="noopener noreferrer" class="flex-1 px-3 py-2 bg-slate-900 text-white text-xs font-bold rounded-xl text-center">⬇️ Download</a>
                       ` : `
-                        <a href="${getRequestPaperWhatsAppUrl(p.form, p.subject, p.title)}" target="_blank" rel="noopener noreferrer" class="flex-1 px-3.5 py-2 bg-amber-50 text-amber-950 border border-amber-300 text-xs font-bold rounded-xl text-center">📩 Request Syllabus on WhatsApp</a>
+                        <a href="${getRequestPaperWhatsAppUrl(p.form, p.subject, p.title)}" target="_blank" rel="noopener noreferrer" class="flex-1 px-3 py-2 bg-amber-50 text-amber-950 border border-amber-300 text-xs font-bold rounded-xl text-center">📩 Request Syllabus on WhatsApp</a>
                       `}
                     </div>
                   </article>
@@ -2070,48 +2082,45 @@
         return;
       }
 
-      // MAIN PAST PAPERS VIEW (STEP 1, 2, 3)
+      // MAIN LIBRARY VIEW (STEP 1, 2, 3)
       container.innerHTML = `
-        <section class="pt-5 pb-6 bg-gradient-hero border-b border-slate-200">
-          <div class="max-w-4xl mx-auto px-4 sm:px-6 text-center space-y-4">
-            <div class="text-xs font-bold text-blue-700 tracking-wide">
-              Tanzania National Examinations (NECTA) &amp; TIE Curriculum · Standard 1–7 &amp; Form 1–6
-            </div>
-            <h1 class="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight leading-snug">
-              Select Class &amp; Subject for <span class="text-blue-600">Past Papers, TIE Books &amp; Syllabus</span>
+        <section class="pt-3.5 pb-4 bg-gradient-hero border-b border-slate-200">
+          <div class="max-w-4xl mx-auto px-4 sm:px-6 text-center space-y-3">
+            <h1 class="text-lg sm:text-2xl font-black text-slate-900 tracking-tight leading-snug">
+              📚 Elimika Library — <span class="text-blue-600">Past Papers, TIE Books &amp; Syllabus</span>
             </h1>
 
-            <div class="relative max-w-2xl mx-auto">
-              <div class="flex items-center bg-white rounded-2xl shadow-sm border border-slate-300 px-3.5 py-2.5">
-                <span class="mr-2.5">🔍</span>
+            <div class="relative max-w-xl mx-auto">
+              <div class="flex items-center bg-white rounded-xl shadow-sm border border-slate-300 px-3 py-2">
+                <span class="mr-2 text-xs">🔍</span>
                 <input
                   id="mainSearchInput"
                   type="text"
                   value="${escapeHtml(searchQuery)}"
                   oninput="handleSearchInput(this.value)"
-                  placeholder="Smart Search (e.g. Form 4 Civics 2025, F4 Math, Std 7 Sayansi)..."
-                  class="w-full text-sm sm:text-base font-medium bg-transparent text-slate-800 focus:outline-none"
+                  placeholder="Search class or subject (e.g. Form 1 Math, Form 2 Physics, Std 7)..."
+                  class="w-full text-xs sm:text-sm font-medium bg-transparent text-slate-800 focus:outline-none"
                 />
                 <button
                   id="mainSearchClearBtn"
                   onclick="handleSearchInput('')"
-                  class="text-slate-400 p-1.5 mr-1 ${searchQuery.trim() ? '' : 'hidden'}"
+                  class="text-slate-400 p-1 mr-1 ${searchQuery.trim() ? '' : 'hidden'}"
                   title="Clear search"
                 >✕</button>
-                <button onclick="startVoiceSearch()" class="p-2 rounded-xl bg-blue-50 text-blue-700 font-bold text-xs shrink-0" title="Voice Search">🎤</button>
+                <button onclick="startVoiceSearch()" class="p-1.5 rounded-lg bg-blue-50 text-blue-700 font-bold text-xs shrink-0" title="Voice Search">🎤</button>
               </div>
             </div>
 
-            <div class="inline-flex flex-wrap items-center justify-center gap-1.5 p-1.5 bg-slate-200/75 rounded-2xl border border-slate-300">
-              <button onclick="resetToStep1()" class="px-4 py-2 rounded-xl font-bold text-xs sm:text-sm bg-blue-600 text-white shadow-sm flex items-center gap-1.5">📄 Past Papers</button>
-              <button onclick="openBooksPage()" class="px-4 py-2 rounded-xl font-bold text-xs sm:text-sm bg-white text-slate-900 border border-slate-200 flex items-center gap-1.5">📚 TIE Books</button>
-              <button onclick="openSyllabusPage()" class="px-4 py-2 rounded-xl font-bold text-xs sm:text-sm bg-white text-slate-900 border border-slate-200 flex items-center gap-1.5">📜 Syllabus</button>
+            <div class="inline-flex flex-wrap items-center justify-center gap-1.5 p-1 bg-slate-200/75 rounded-xl border border-slate-300">
+              <button onclick="resetToStep1()" class="px-3.5 py-1.5 rounded-lg font-bold text-xs bg-blue-600 text-white shadow-sm flex items-center gap-1">📄 Past Papers</button>
+              <button onclick="openBooksPage()" class="px-3.5 py-1.5 rounded-lg font-bold text-xs bg-white text-slate-900 border border-slate-200 flex items-center gap-1">📘 TIE Books</button>
+              <button onclick="openSyllabusPage()" class="px-3.5 py-1.5 rounded-lg font-bold text-xs bg-white text-slate-900 border border-slate-200 flex items-center gap-1">📜 Syllabus</button>
             </div>
           </div>
         </section>
 
-        <main class="flex-grow py-6 pb-24">
-          <div id="papersDynamicContent" class="max-w-4xl mx-auto px-4 sm:px-6 space-y-6">
+        <main class="flex-grow py-4 pb-24">
+          <div id="papersDynamicContent" class="max-w-4xl mx-auto px-4 sm:px-6 space-y-4">
             ${renderPapersDynamicInner()}
           </div>
         </main>

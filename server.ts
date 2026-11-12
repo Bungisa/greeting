@@ -2089,16 +2089,43 @@ app.post('/api/moha/flashcards', async (req, res) => {
 
 // Google Play Store Trusted Web Activity (TWA) Digital Asset Links endpoint
 const ASSETLINKS_CONFIG_PATH = path.join(os.tmpdir(), 'elimika-assetlinks-config.json');
+const DEFAULT_PLAY_STORE_SHA256_FINGERPRINTS: string[] = [
+  'AF:36:16:F9:1A:D7:5F:B0:F4:BC:13:6C:EB:F3:F0:20:C8:B2:F5:2C:27:E7:15:98:08:0B:7D:A2:63:EB:17:84',
+  '0E:F7:F5:2A:AD:EA:10:C4:F9:5E:BE:08:1F:A4:61:EC:15:D0:11:19:D7:36:0B:84:AE:43:F9:85:D1:5D:1C:39',
+  '28:C5:33:47:35:D2:92:50:EA:30:BC:F2:26:AF:A8:FD:DF:B2:75:01:C3:0D:08:E0:4A:CF:EF:93:B1:55:72:9B',
+  'BD:01:CB:07:B7:1E:E8:B5:E0:86:6D:AE:A1:81:9B:CC:A0:F3:49:8E:21:2C:F2:60:0B:3C:B7:07:EC:29:70:FC',
+];
+
+function parseSha256Fingerprints(raw: unknown): string[] {
+  const combined: string[] = [...DEFAULT_PLAY_STORE_SHA256_FINGERPRINTS];
+  const addToken = (token: string) => {
+    const cleaned = token.replace(/["'\s]/g, '').toUpperCase();
+    if (cleaned && cleaned !== '00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00' && !combined.includes(cleaned)) {
+      combined.push(cleaned);
+    }
+  };
+  if (Array.isArray(raw)) {
+    raw.forEach((item) => {
+      if (typeof item === 'string') {
+        item.split(/[\n,]+/).forEach(addToken);
+      }
+    });
+  } else if (typeof raw === 'string') {
+    raw.split(/[\n,]+/).forEach(addToken);
+  }
+  return combined;
+}
+
 let runtimePlayStorePackage = process.env.ANDROID_PACKAGE_NAME || 'online.elimika.twa';
-let runtimePlayStoreSha256 =
-  process.env.ANDROID_SHA256_FINGERPRINT ||
-  '00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00';
+let runtimePlayStoreSha256List: string[] = parseSha256Fingerprints(process.env.ANDROID_SHA256_FINGERPRINT);
 
 try {
   if (fs.existsSync(ASSETLINKS_CONFIG_PATH)) {
     const saved = JSON.parse(fs.readFileSync(ASSETLINKS_CONFIG_PATH, 'utf-8'));
     if (saved.packageName) runtimePlayStorePackage = String(saved.packageName).trim();
-    if (saved.sha256Fingerprint) runtimePlayStoreSha256 = String(saved.sha256Fingerprint).trim();
+    if (saved.sha256Fingerprints || saved.sha256Fingerprint) {
+      runtimePlayStoreSha256List = parseSha256Fingerprints(saved.sha256Fingerprints || saved.sha256Fingerprint);
+    }
   }
 } catch {
   // ignore read error
@@ -2107,25 +2134,28 @@ try {
 app.get('/.well-known/assetlinks.json', (_req, res) => {
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.json([
-    {
+  const packageNames = Array.from(
+    new Set([runtimePlayStorePackage, 'online.elimika.twa', 'online.elimika.tanzania'].filter(Boolean))
+  );
+  res.json(
+    packageNames.map((pkg) => ({
       relation: ['delegate_permission/common.handle_all_urls'],
       target: {
         namespace: 'android_app',
-        package_name: runtimePlayStorePackage,
-        sha256_cert_fingerprints: [runtimePlayStoreSha256],
+        package_name: pkg,
+        sha256_cert_fingerprints: runtimePlayStoreSha256List,
       },
-    },
-  ]);
+    }))
+  );
 });
 
 app.post('/api/playstore/assetlinks', (req, res) => {
-  const { packageName, sha256Fingerprint } = req.body || {};
+  const { packageName, sha256Fingerprint, sha256Fingerprints } = req.body || {};
   if (typeof packageName === 'string' && packageName.trim()) {
     runtimePlayStorePackage = packageName.trim();
   }
-  if (typeof sha256Fingerprint === 'string' && sha256Fingerprint.trim()) {
-    runtimePlayStoreSha256 = sha256Fingerprint.trim().toUpperCase();
+  if (sha256Fingerprints || sha256Fingerprint) {
+    runtimePlayStoreSha256List = parseSha256Fingerprints(sha256Fingerprints || sha256Fingerprint);
   }
   try {
     const dir = path.dirname(ASSETLINKS_CONFIG_PATH);
@@ -2135,7 +2165,7 @@ app.post('/api/playstore/assetlinks', (req, res) => {
       JSON.stringify(
         {
           packageName: runtimePlayStorePackage,
-          sha256Fingerprint: runtimePlayStoreSha256,
+          sha256Fingerprints: runtimePlayStoreSha256List,
         },
         null,
         2
@@ -2148,7 +2178,7 @@ app.post('/api/playstore/assetlinks', (req, res) => {
   res.json({
     ok: true,
     packageName: runtimePlayStorePackage,
-    sha256Fingerprint: runtimePlayStoreSha256,
+    sha256Fingerprints: runtimePlayStoreSha256List,
   });
 });
 
@@ -2273,7 +2303,7 @@ app.post('/api/video-download', async (req, res) => {
 
 app.get('/ads.txt', (_req, res) => {
   res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-  res.send('google.com, pub-7502193981138651, DIRECT, f08c47fec0942fa0\n');
+  res.send('google.com, pub-7814843623545511, DIRECT, f08c47fec0942fa0\n');
 });
 
 app.get('/assets/aistudio/:filename', (req, res) => {
@@ -2292,17 +2322,42 @@ async function startServer() {
   const PORT = Number(process.env.PORT) || 3000;
   const distPath = path.join(__dirname, 'dist');
   const distIndexPath = path.join(distPath, 'index.html');
+  const rootIndexPath = path.join(__dirname, 'index.html');
   const isDevLifecycle = process.env.npm_lifecycle_event === 'dev';
   const isProduction =
-    process.env.NODE_ENV === 'production' ||
-    Boolean(process.env.K_SERVICE) ||
-    process.env.npm_lifecycle_event === 'start' ||
-    (!isDevLifecycle && fs.existsSync(distIndexPath));
+    !isDevLifecycle &&
+    (process.env.NODE_ENV === 'production' || process.env.npm_lifecycle_event === 'start') &&
+    fs.existsSync(distIndexPath);
 
-  if (isProduction && fs.existsSync(distIndexPath)) {
+  app.use(express.static(path.join(__dirname, 'public')));
+
+  if (!isProduction) {
+    const vitePromise = import('vite').then(({ createServer: createViteServer }) =>
+      createViteServer({
+        server: { middlewareMode: true, hmr: false },
+        appType: 'spa',
+      })
+    );
+    app.use(async (req, res, next) => {
+      try {
+        const vite = await vitePromise;
+        return vite.middlewares(req, res, next);
+      } catch (err) {
+        return next(err);
+      }
+    });
+  } else {
     app.use(express.static(distPath));
-    app.get('*', (_req, res) => {
-      res.sendFile(distIndexPath);
+    app.get('*', (_req, res, next) => {
+      if (fs.existsSync(distIndexPath)) {
+        return res.sendFile(distIndexPath, (err) => {
+          if (err) next();
+        });
+      }
+      if (fs.existsSync(rootIndexPath)) {
+        return res.sendFile(rootIndexPath);
+      }
+      return res.status(404).send('Not found');
     });
   }
 
@@ -2316,15 +2371,6 @@ async function startServer() {
       }
     });
   });
-
-  if (!isProduction || !fs.existsSync(distIndexPath)) {
-    const { createServer: createViteServer } = await import('vite');
-    const vite = await createViteServer({
-      server: { middlewareMode: true, hmr: false },
-      appType: 'spa',
-    });
-    app.use(vite.middlewares);
-  }
 }
 
 if (!process.env.VERCEL) {
