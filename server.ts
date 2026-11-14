@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import crypto from 'crypto';
 import express from 'express';
 import fs from 'fs';
 import os from 'os';
@@ -28,10 +29,43 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+// Trust first reverse proxy hop (Cloud Run / Vercel) for accurate client IP rate limiting
+app.set('trust proxy', 1);
+
+function isAllowedCorsOrigin(origin: string | undefined): boolean {
+  if (!origin) return false;
+  try {
+    const parsed = new URL(origin);
+    const host = parsed.hostname.toLowerCase();
+    return (
+      host === 'elimika.online' ||
+      host.endsWith('.elimika.online') ||
+      host === 'elimika.co.tz' ||
+      host.endsWith('.elimika.co.tz') ||
+      host.endsWith('.run.app') ||
+      host.endsWith('.ai.studio') ||
+      host === 'localhost' ||
+      host === '127.0.0.1'
+    );
+  } catch {
+    return false;
+  }
+}
+
 app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const origin = req.headers.origin;
+  if (req.path === '/.well-known/assetlinks.json') {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  } else if (origin && isAllowedCorsOrigin(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   if (req.method === 'OPTIONS') {
     return res.status(204).end();
   }
@@ -39,11 +73,309 @@ app.use((req, res, next) => {
 });
 app.use(express.json({ limit: '15mb' }));
 
+// ==================== SLIDING-WINDOW DISTRIBUTED-READY RATE LIMITER ====================
+interface RateLimitBucket {
+  timestamps: number[];
+  expiresAt: number;
+}
+const rateLimitBuckets = new Map<string, RateLimitBucket>();
+
+function getClientIp(req: express.Request): string {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (typeof forwarded === 'string' && forwarded.trim()) {
+    return forwarded.split(',')[0].trim();
+  }
+  return req.ip || req.socket.remoteAddress || 'unknown';
+}
+
+function createRateLimiter(options: {
+  windowMs: number;
+  maxRequests: number;
+  keyPrefix: string;
+  message?: string;
+}): express.RequestHandler {
+  const { windowMs, maxRequests, keyPrefix, message } = options;
+  return (req, res, next) => {
+    const now = Date.now();
+    // Periodic cleanup of expired buckets to bound memory
+    if (rateLimitBuckets.size > 5000) {
+      for (const [k, v] of rateLimitBuckets.entries()) {
+        if (now > v.expiresAt) rateLimitBuckets.delete(k);
+      }
+    }
+
+    const clientKey = `${keyPrefix}:${getClientIp(req)}`;
+    const existing = rateLimitBuckets.get(clientKey);
+    const windowStart = now - windowMs;
+    const validTimestamps = existing
+      ? existing.timestamps.filter((ts) => ts > windowStart)
+      : [];
+
+    if (validTimestamps.length >= maxRequests) {
+      const oldestInWindow = validTimestamps[0] || now;
+      const retryAfterSeconds = Math.max(1, Math.ceil((oldestInWindow + windowMs - now) / 1000));
+      res.setHeader('Retry-After', String(retryAfterSeconds));
+      res.setHeader('X-RateLimit-Limit', String(maxRequests));
+      res.setHeader('X-RateLimit-Remaining', '0');
+      res.setHeader('X-RateLimit-Reset', String(Math.ceil((oldestInWindow + windowMs) / 1000)));
+      return res.status(429).json({
+        error:
+          message ||
+          `Too many requests. Please wait ${retryAfterSeconds} seconds before trying again.`,
+        retryAfterSeconds,
+      });
+    }
+
+    validTimestamps.push(now);
+    rateLimitBuckets.set(clientKey, {
+      timestamps: validTimestamps,
+      expiresAt: now + windowMs,
+    });
+
+    res.setHeader('X-RateLimit-Limit', String(maxRequests));
+    res.setHeader('X-RateLimit-Remaining', String(Math.max(0, maxRequests - validTimestamps.length)));
+    next();
+  };
+}
+
+const adminLoginRateLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  maxRequests: 5,
+  keyPrefix: 'admin-login',
+  message: 'Too many administrator login attempts. Please wait 15 minutes.',
+});
+
+const aiStandardRateLimiter = createRateLimiter({
+  windowMs: 60 * 1000,
+  maxRequests: 30,
+  keyPrefix: 'ai-standard',
+  message: 'AI tutor rate limit reached (30 requests/minute). Please wait a moment.',
+});
+
+const aiExtractRateLimiter = createRateLimiter({
+  windowMs: 60 * 1000,
+  maxRequests: 10,
+  keyPrefix: 'ai-extract',
+  message: 'Textbook extraction rate limit reached (10 requests/minute). Please wait a moment.',
+});
+
+const videoGenerationRateLimiter = createRateLimiter({
+  windowMs: 10 * 60 * 1000,
+  maxRequests: 5,
+  keyPrefix: 'ai-video',
+  message: 'Video generation rate limit reached (5 videos per 10 minutes).',
+});
+
+const challengeMutationRateLimiter = createRateLimiter({
+  windowMs: 60 * 1000,
+  maxRequests: 20,
+  keyPrefix: 'challenge-mutate',
+  message: 'Challenge submission rate limit reached. Please wait a minute.',
+});
+
+// ==================== SERVER-SIDE ADMINISTRATOR AUTHENTICATION ====================
+const ADMIN_OWNER_EMAIL = 'mohamedshabani751@gmail.com';
+const COMPROMISED_LEGACY_PINS = new Set(['elimika4045']);
+const ADMIN_SESSION_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
+const ADMIN_HMAC_SECRET =
+  process.env.ADMIN_SESSION_SECRET && process.env.ADMIN_SESSION_SECRET.trim().length >= 16
+    ? process.env.ADMIN_SESSION_SECRET.trim()
+    : crypto.randomBytes(32).toString('hex');
+const revokedAdminJtis = new Set<string>();
+
+interface AdminTokenPayload {
+  sub: string;
+  role: 'admin';
+  iat: number;
+  exp: number;
+  jti: string;
+}
+
+function issueAdminSessionToken(identity: string): { token: string; expiresAt: number } {
+  const now = Date.now();
+  const expiresAt = now + ADMIN_SESSION_TTL_MS;
+  const payload: AdminTokenPayload = {
+    sub: identity,
+    role: 'admin',
+    iat: now,
+    exp: expiresAt,
+    jti: crypto.randomBytes(12).toString('hex'),
+  };
+  const payloadB64 = Buffer.from(JSON.stringify(payload), 'utf-8').toString('base64url');
+  const signature = crypto
+    .createHmac('sha256', ADMIN_HMAC_SECRET)
+    .update(payloadB64)
+    .digest('base64url');
+  return {
+    token: `${payloadB64}.${signature}`,
+    expiresAt,
+  };
+}
+
+function verifyAdminSessionToken(rawToken: string | undefined | null): AdminTokenPayload | null {
+  if (!rawToken || typeof rawToken !== 'string') return null;
+  const parts = rawToken.trim().split('.');
+  if (parts.length !== 2) return null;
+  const [payloadB64, providedSig] = parts;
+  if (!payloadB64 || !providedSig) return null;
+
+  const expectedSig = crypto
+    .createHmac('sha256', ADMIN_HMAC_SECRET)
+    .update(payloadB64)
+    .digest('base64url');
+
+  const a = Buffer.from(providedSig, 'utf-8');
+  const b = Buffer.from(expectedSig, 'utf-8');
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf-8')) as AdminTokenPayload;
+    if (
+      parsed.role !== 'admin' ||
+      typeof parsed.exp !== 'number' ||
+      Date.now() > parsed.exp ||
+      !parsed.jti ||
+      revokedAdminJtis.has(parsed.jti)
+    ) {
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function extractAdminTokenFromReq(req: express.Request): string | null {
+  const authHeader = req.headers.authorization;
+  if (typeof authHeader === 'string' && authHeader.toLowerCase().startsWith('bearer ')) {
+    const bearer = authHeader.slice(7).trim();
+    if (bearer) return bearer;
+  }
+  const cookieHeader = req.headers.cookie;
+  if (typeof cookieHeader === 'string') {
+    const cookies = cookieHeader.split(';');
+    for (const c of cookies) {
+      const [name, ...rest] = c.trim().split('=');
+      if (name === 'elimika_admin_session') {
+        return decodeURIComponent(rest.join('='));
+      }
+    }
+  }
+  return null;
+}
+
+const requireAdminAuth: express.RequestHandler = (req, res, next) => {
+  const token = extractAdminTokenFromReq(req);
+  const verified = verifyAdminSessionToken(token);
+  if (!verified) {
+    return res.status(401).json({
+      error: 'Unauthorized: Valid administrator session required.',
+    });
+  }
+  next();
+};
+
+app.post('/api/admin/login', adminLoginRateLimiter, async (req, res) => {
+  const { passphrase, idToken } = (req.body || {}) as {
+    passphrase?: string;
+    idToken?: string;
+  };
+
+  if (typeof passphrase === 'string' && COMPROMISED_LEGACY_PINS.has(passphrase.trim().toLowerCase())) {
+    return res.status(401).json({
+      error: 'Compromised legacy PIN has been revoked. Use your rotated server passphrase or administrator Google account.',
+    });
+  }
+
+  let verifiedIdentity: string | null = null;
+
+  // Method 1: Verify server-only ADMIN_SECRET_PASSPHRASE via constant-time comparison
+  if (typeof passphrase === 'string' && passphrase.trim().length > 0) {
+    const configuredSecret = (process.env.ADMIN_SECRET_PASSPHRASE || '').trim();
+    if (
+      configuredSecret.length >= 8 &&
+      !COMPROMISED_LEGACY_PINS.has(configuredSecret.toLowerCase())
+    ) {
+      const candidateHash = crypto.createHash('sha256').update(passphrase.trim()).digest();
+      const secretHash = crypto.createHash('sha256').update(configuredSecret).digest();
+      if (crypto.timingSafeEqual(candidateHash, secretHash)) {
+        verifiedIdentity = 'admin:passphrase';
+      }
+    }
+  }
+
+  // Method 2: Verify Google OAuth2 / Firebase ID token for mohamedshabani751@gmail.com
+  if (!verifiedIdentity && typeof idToken === 'string' && idToken.trim().length > 20) {
+    try {
+      const tokenRes = await fetch(
+        `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken.trim())}`
+      );
+      if (tokenRes.ok) {
+        const info = (await tokenRes.json()) as {
+          email?: string;
+          email_verified?: string | boolean;
+        };
+        const isEmailVerified = info.email_verified === true || info.email_verified === 'true';
+        if (
+          info.email &&
+          info.email.toLowerCase() === ADMIN_OWNER_EMAIL &&
+          isEmailVerified
+        ) {
+          verifiedIdentity = info.email.toLowerCase();
+        }
+      }
+    } catch {
+      // verification failed
+    }
+  }
+
+  if (!verifiedIdentity) {
+    return res.status(401).json({
+      error:
+        'Invalid administrator credentials. Configure ADMIN_SECRET_PASSPHRASE in server secrets or sign in as the verified owner.',
+    });
+  }
+
+  const { token, expiresAt } = issueAdminSessionToken(verifiedIdentity);
+  const secureFlag = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+  res.setHeader(
+    'Set-Cookie',
+    `elimika_admin_session=${encodeURIComponent(token)}; HttpOnly; SameSite=Strict; Path=/; Max-Age=7200${secureFlag}`
+  );
+  return res.json({
+    ok: true,
+    token,
+    expiresAt,
+  });
+});
+
+app.get('/api/admin/session', (req, res) => {
+  const token = extractAdminTokenFromReq(req);
+  const verified = verifyAdminSessionToken(token);
+  if (!verified) {
+    return res.json({ authenticated: false, expiresAt: null });
+  }
+  return res.json({ authenticated: true, expiresAt: verified.exp });
+});
+
+app.post('/api/admin/logout', (req, res) => {
+  const token = extractAdminTokenFromReq(req);
+  const verified = verifyAdminSessionToken(token);
+  if (verified?.jti) {
+    revokedAdminJtis.add(verified.jti);
+  }
+  res.setHeader(
+    'Set-Cookie',
+    'elimika_admin_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0'
+  );
+  return res.json({ ok: true });
+});
+
 function getGenAIClient(): GoogleGenAI | null {
-  const apiKey =
-    process.env.GEMINI_API_KEY ||
-    process.env.VITE_GEMINI_API_KEY ||
-    process.env.GOOGLE_API_KEY;
+  // Never read VITE_GEMINI_API_KEY so secret keys are never exposed in client bundles
+  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
   if (!apiKey || apiKey === 'MY_GEMINI_API_KEY' || apiKey.trim().length < 8) {
     return null;
   }
@@ -516,15 +848,18 @@ app.get('/api/attached-resources', (_req, res) => {
   res.json({ resources: items });
 });
 
-app.post('/api/attached-resources', async (req, res) => {
-  const body = req.body as Partial<AttachedResourceServerItem>;
-  const title = (body.title || '').trim();
-  const form = (body.form || 'Form 4').trim();
-  const subject = (body.subject || 'Basic Mathematics').trim();
+app.post('/api/attached-resources', requireAdminAuth, async (req, res) => {
+  const body = (req.body || {}) as Partial<AttachedResourceServerItem>;
+  const title = String(body.title || '').trim().slice(0, 300);
+  const form = String(body.form || 'Form 4').trim().slice(0, 60);
+  const subject = String(body.subject || 'Basic Mathematics').trim().slice(0, 120);
   if (!title) {
     return res.status(400).json({ error: 'Resource title is required' });
   }
-  const category = (body.category || 'NECTA').trim();
+  if (body.attachedFileBase64 && String(body.attachedFileBase64).length > 14_000_000) {
+    return res.status(400).json({ error: 'Attached file exceeds maximum size (10 MB).' });
+  }
+  const category = String(body.category || 'NECTA').trim().slice(0, 80);
   const catLower = `${category} ${title}`.toLowerCase();
   const isSyllabus = Boolean(body.isSyllabus || catLower.includes('syllabus') || catLower.includes('muhtasari'));
   const isBook =
@@ -550,7 +885,7 @@ app.post('/api/attached-resources', async (req, res) => {
     title,
     form,
     subject,
-    year: (body.year || new Date().getFullYear().toString()).trim(),
+    year: String(body.year || new Date().getFullYear().toString()).trim().slice(0, 20),
     category: isSyllabus ? 'TIE Syllabus' : isBook ? 'TIE Book' : category,
     paperUrl: body.paperUrl || null,
     answersUrl: body.answersUrl || null,
@@ -587,7 +922,7 @@ app.post('/api/attached-resources', async (req, res) => {
   });
 });
 
-app.delete('/api/attached-resources/:id', (req, res) => {
+app.delete('/api/attached-resources/:id', requireAdminAuth, (req, res) => {
   const { id } = req.params;
   serverAttachedResources.delete(id);
   return res.json({ deleted: true, id });
@@ -1021,7 +1356,7 @@ app.get('/api/question-bank', (req, res) => {
 });
 
 // Upload Textbook PDF / Drive Link / Text & Extract Questions into Persistent Question Bank
-app.post('/api/question-bank/extract', async (req, res) => {
+app.post('/api/question-bank/extract', aiExtractRateLimiter, async (req, res) => {
   try {
     const {
       cls = 'Form 1',
@@ -1033,7 +1368,7 @@ app.post('/api/question-bank/extract', async (req, res) => {
       attachedFileBase64,
       attachedFileName,
       count = 25,
-    } = req.body as {
+    } = (req.body || {}) as {
       cls?: string;
       subject?: string;
       topic?: string;
@@ -1045,8 +1380,19 @@ app.post('/api/question-bank/extract', async (req, res) => {
       count?: number;
     };
 
-    // Also register the textbook in serverAttachedResources if a PDF or URL or content was provided
-    if (attachedFileBase64 || paperUrl || (customContent && customContent.trim().length > 40)) {
+    if (typeof customContent === 'string' && customContent.length > 100_000) {
+      return res.status(400).json({ error: 'Custom content exceeds maximum length (100,000 characters).' });
+    }
+    if (typeof attachedFileBase64 === 'string' && attachedFileBase64.length > 14_000_000) {
+      return res.status(400).json({ error: 'Attached file exceeds maximum size (10 MB).' });
+    }
+
+    // Only register global textbook in serverAttachedResources if caller has a valid admin session
+    const isAdminCaller = Boolean(verifyAdminSessionToken(extractAdminTokenFromReq(req)));
+    if (
+      isAdminCaller &&
+      (attachedFileBase64 || paperUrl || (customContent && customContent.trim().length > 40))
+    ) {
       const resTitle =
         (bookTitle || '').trim() ||
         `Official TIE ${cls} ${subject} Student's Textbook`;
@@ -1072,20 +1418,21 @@ app.post('/api/question-bank/extract', async (req, res) => {
     }
 
     const result = await extractAndStoreQuestionsIntoServerBank({
-      cls,
-      subject,
-      topic,
-      bookTitle,
+      cls: String(cls).slice(0, 60),
+      subject: String(subject).slice(0, 120),
+      topic: String(topic).slice(0, 200),
+      bookTitle: bookTitle ? String(bookTitle).slice(0, 300) : undefined,
       customContent,
       paperUrl,
       attachedFileBase64,
-      count,
+      count: Math.min(35, Math.max(1, Number(count) || 25)),
     });
 
     return res.json({
       addedCount: result.addedCount,
       totalStoredForSubject: result.totalStoredForSubject,
       extractedQuestions: result.extractedQuestions,
+      questions: result.extractedQuestions,
     });
   } catch (err) {
     return res.status(500).json({
@@ -1095,14 +1442,14 @@ app.post('/api/question-bank/extract', async (req, res) => {
 });
 
 // Extract Chapters / Table of Contents from Attached Textbook PDF
-app.post('/api/moha/extract-book-chapters', async (req, res) => {
+app.post('/api/moha/extract-book-chapters', aiStandardRateLimiter, async (req, res) => {
   try {
     const {
       paperUrl = '',
       cls = 'Form 2',
       subject = 'Basic Mathematics',
       customContent = '',
-    } = req.body as {
+    } = (req.body || {}) as {
       paperUrl?: string;
       cls?: string;
       subject?: string;
@@ -1110,7 +1457,7 @@ app.post('/api/moha/extract-book-chapters', async (req, res) => {
     };
 
     const baseTopics = getSyllabusTopicsForClassSubject(cls, subject);
-    const rawText = customContent || '';
+    const rawText = String(customContent || '').slice(0, 100_000);
 
     const extracted = rawText ? extractTextbookChaptersFromText(rawText) : [];
     const merged =
@@ -1129,8 +1476,19 @@ app.post('/api/moha/extract-book-chapters', async (req, res) => {
   }
 });
 
+const ALLOWED_AI_ATTACHMENT_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'application/pdf',
+  'text/plain',
+  'text/csv',
+]);
+
 // Moha AI Chat & Multimodal Textbook / Past Paper Solver Endpoint
-app.post('/api/moha/chat', async (req, res) => {
+app.post('/api/moha/chat', aiStandardRateLimiter, async (req, res) => {
   const {
     prompt,
     cls = 'Form 3',
@@ -1140,8 +1498,8 @@ app.post('/api/moha/chat', async (req, res) => {
     learnedMemory = [],
     siteResources,
     systemPromptContext = '',
-  } = req.body as {
-    prompt: string;
+  } = (req.body || {}) as {
+    prompt?: string;
     cls?: string;
     subject?: string;
     image?: { mimeType: string; base64Data: string; fileName?: string } | null;
@@ -1151,11 +1509,51 @@ app.post('/api/moha/chat', async (req, res) => {
     systemPromptContext?: string;
   };
 
+  if (prompt !== undefined && typeof prompt !== 'string') {
+    return res.status(400).json({ error: 'Invalid prompt format: expected string.' });
+  }
+  if (typeof prompt === 'string' && prompt.length > 4000) {
+    return res.status(400).json({
+      error: 'Prompt exceeds maximum allowed length (4,000 characters). Please shorten your question.',
+    });
+  }
+  if (image && typeof image === 'object') {
+    const mime = String(image.mimeType || '').toLowerCase().trim();
+    if (!ALLOWED_AI_ATTACHMENT_MIME_TYPES.has(mime)) {
+      return res.status(400).json({
+        error: 'Unsupported attachment MIME type. Allowed types: JPEG, PNG, WebP, GIF, PDF, TXT, CSV.',
+      });
+    }
+    if (typeof image.base64Data === 'string' && image.base64Data.length > 14_000_000) {
+      return res.status(400).json({
+        error: 'Attachment exceeds maximum allowed size (10 MB).',
+      });
+    }
+  }
+
+  const sanitizedHistory = Array.isArray(history)
+    ? history.slice(-10).map((h) => ({
+        id: h?.id ? String(h.id).slice(0, 60) : undefined,
+        role: (h?.role === 'user' ? 'user' : 'ai') as 'user' | 'ai',
+        text: String(h?.text || '').slice(0, 3000),
+      }))
+    : [];
+
+  const sanitizedLearnedMemory: LearnedMemoryItem[] = Array.isArray(learnedMemory)
+    ? learnedMemory.slice(0, 20).map((item) => ({
+        cls: String(item?.cls || cls || 'Form 3').slice(0, 60),
+        subject: String(item?.subject || subject || 'Basic Mathematics').slice(0, 120),
+        topic: String(item?.topic || '').slice(0, 200),
+        content: String(item?.content || '').slice(0, 2000),
+        timestamp: String(item?.timestamp || '').slice(0, 60),
+      }))
+    : [];
+
   const userPrompt = (prompt || 'Solve this question step-by-step and show the NECTA Marking Scheme.').trim();
 
   // Check if user is explicitly querying a learned item first
   const lower = userPrompt.toLowerCase();
-  for (const item of learnedMemory) {
+  for (const item of sanitizedLearnedMemory) {
     const itemTopicLower = (item.topic || '').trim().toLowerCase();
     if (!itemTopicLower) continue;
     const topicWords = itemTopicLower.split(/\s+/).filter((w) => w.length >= 3);
@@ -1195,8 +1593,8 @@ app.post('/api/moha/chat', async (req, res) => {
     siteResources
   );
   const learnedContext =
-    learnedMemory.length > 0
-      ? `\n\nTeacher/Student Custom Learned Memory:\n${learnedMemory
+    sanitizedLearnedMemory.length > 0
+      ? `\n\nTeacher/Student Custom Learned Memory:\n${sanitizedLearnedMemory
           .slice(0, 20)
           .map((m) => `- ${m.topic} (${m.cls} ${m.subject}): ${m.content}`)
           .join('\n')}`
@@ -1317,7 +1715,7 @@ ${
       );
 
       const chatCacheKey =
-        history.length <= 2 && !activeInlineFile
+        sanitizedHistory.length <= 2 && !activeInlineFile
           ? `chat:v14:${effectiveCls}:${effectiveSubject}:${isFocusedPastPaper ? focusedRes?.id : 'DIRECT'}:${userPrompt.toLowerCase().slice(0, 220)}`
           : '';
 
@@ -1345,7 +1743,7 @@ CRITICAL RULES FOR ANSWERING:
 4. DIAGRAMS ONLY WHEN ASKED OR NECESSARY: Do NOT include an \`<svg>\` diagram on normal text/essay/grammar/history/calculation questions unless the user asks to draw/sketch/illustrate a diagram or the question specifically requires a geometric figure, graph, circuit, or lab apparatus. If you draw an SVG diagram, give it a specific title for that exact question—NEVER title it "Figure 1.1".
 5. MATHJAX: Format mathematical and scientific equations inside $...$ (inline) or $$...$$ (display).`;
 
-        const recentHistoryParts = history
+        const recentHistoryParts = sanitizedHistory
           .filter((h) => !h.text.includes('official-tie-doc') && h.id !== 'msg-welcome')
           .slice(-4)
           .map((h) => `${h.role === 'user' ? 'User' : 'Moha AI'}: ${h.text.replace(/<!--DIAGRAM_START-->[\s\S]*?<!--DIAGRAM_END-->/g, '').slice(0, 600)}`)
@@ -1462,9 +1860,9 @@ The user has attached an image or document containing examination or textbook qu
     userPrompt,
     effectiveCls,
     effectiveSubject,
-    learnedMemory,
+    sanitizedLearnedMemory,
     enrichedSiteResources,
-    history
+    sanitizedHistory
   );
   return res.json({
     reply: fallbackReply,
@@ -1474,22 +1872,36 @@ The user has attached an image or document containing examination or textbook qu
   });
 });
 
+const ALLOWED_DOC_TYPES = new Set<OfficialDocType>([
+  'lessonplan',
+  'schemeofwork',
+  'exampaper',
+  'blueprint',
+  'markingscheme',
+  'lessonnotes',
+  'logbook',
+]);
+
 // Moha AI Official TIE / PO-RALG / NECTA Document & Lesson Notes Generator Endpoint
-app.post('/api/moha/generate-doc', async (req, res) => {
-  const { type, meta } = req.body as {
-    type: OfficialDocType;
-    meta: TeacherMetadata;
+app.post('/api/moha/generate-doc', aiStandardRateLimiter, async (req, res) => {
+  const { type, meta } = (req.body || {}) as {
+    type?: OfficialDocType;
+    meta?: TeacherMetadata;
   };
 
+  if (!type || !ALLOWED_DOC_TYPES.has(type) || !meta || typeof meta !== 'object') {
+    return res.status(400).json({ error: 'Invalid document generation request payload.' });
+  }
+
   const tbInfo = getTieTextbookChapterContent(
-    meta.cls,
-    meta.subject,
-    `${meta.topic} ${meta.subTopic}`,
+    String(meta.cls || 'Form 3').slice(0, 60),
+    String(meta.subject || 'Basic Mathematics').slice(0, 120),
+    `${String(meta.topic || '').slice(0, 200)} ${String(meta.subTopic || '').slice(0, 200)}`,
     meta.siteResources
   );
 
   const resourceSummary = meta.siteResources
-    ? `Attached Textbook: "${tbInfo.bookTitle}" (Matched Chapter: ${tbInfo.matchedChapter}; Sub-topics: ${tbInfo.subTopicsList.join(', ')}${tbInfo.attachedExcerpt ? `; Excerpt: ${tbInfo.attachedExcerpt.slice(0, 1500)}` : ''}). Uploaded Website Books: ${meta.siteResources.books.map((b) => b.title).join(', ')}. Uploaded Syllabuses: ${meta.siteResources.syllabuses.map((s) => s.title).join(', ')}. Uploaded Past Papers: ${meta.siteResources.papers.map((p) => `${p.title} (${p.year})`).join(', ')}.`
+    ? `Attached Textbook: "${tbInfo.bookTitle}" (Matched Chapter: ${tbInfo.matchedChapter}; Sub-topics: ${tbInfo.subTopicsList.join(', ')}${tbInfo.attachedExcerpt ? `; Excerpt: ${tbInfo.attachedExcerpt.slice(0, 1500)}` : ''}). Uploaded Website Books: ${(meta.siteResources.books || []).map((b) => b.title).join(', ')}. Uploaded Syllabuses: ${(meta.siteResources.syllabuses || []).map((s) => s.title).join(', ')}. Uploaded Past Papers: ${(meta.siteResources.papers || []).map((p) => `${p.title} (${p.year})`).join(', ')}.`
     : `Attached Textbook: "${tbInfo.bookTitle}" (Matched Chapter: ${tbInfo.matchedChapter}; Sub-topics: ${tbInfo.subTopicsList.join(', ')}).`;
 
   const ai = getGenAIClient();
@@ -1647,7 +2059,7 @@ function buildFallbackTopicQuizQuestions(
 }
 
 // Moha AI Interactive Quiz & Game Question Generator Endpoint (integrates specific topic, subTopic & uploaded website books/past papers + Non-Repeating Question Bank)
-app.post('/api/moha/quiz', async (req, res) => {
+app.post('/api/moha/quiz', aiStandardRateLimiter, async (req, res) => {
   const {
     cls = 'Form 1',
     subject = 'Basic Mathematics',
@@ -1659,7 +2071,7 @@ app.post('/api/moha/quiz', async (req, res) => {
     specificResourceTitle,
     excludeSignatures = [],
     variantOffset = 0,
-  } = req.body as {
+  } = (req.body || {}) as {
     cls?: string;
     subject?: string;
     topic?: string;
@@ -1889,7 +2301,7 @@ app.get('/api/challenges/:id', (req, res) => {
 });
 
 // Create a new 'Challenge a Friend' Topic Quiz Code & Link
-app.post('/api/challenges/create', (req, res) => {
+app.post('/api/challenges/create', challengeMutationRateLimiter, (req, res) => {
   const {
     cls = 'Form 3',
     subject = 'Basic Mathematics',
@@ -1899,7 +2311,7 @@ app.post('/api/challenges/create', (req, res) => {
     questions,
     creatorScore,
     creatorTimeSeconds = 45,
-  } = req.body as {
+  } = (req.body || {}) as {
     cls?: string;
     subject?: string;
     topic?: string;
@@ -1911,7 +2323,7 @@ app.post('/api/challenges/create', (req, res) => {
   };
 
   const prefix =
-    subject
+    String(subject)
       .replace(/[^A-Za-z]/g, '')
       .slice(0, 4)
       .toUpperCase() || 'QUIZ';
@@ -1920,18 +2332,18 @@ app.post('/api/challenges/create', (req, res) => {
 
   const quizQuestions =
     Array.isArray(questions) && questions.length > 0
-      ? questions
+      ? questions.slice(0, 25)
       : buildFallbackTopicQuizQuestions(cls, subject, topic);
 
   const leaderboard: ChallengeLeaderboardEntry[] = [];
   if (typeof creatorScore === 'number') {
     leaderboard.push({
       id: `entry-${Date.now()}`,
-      playerName: createdBy.trim() || 'Challenger',
-      school: school.trim() || 'Elimika Secondary',
-      score: creatorScore,
+      playerName: String(createdBy).trim().slice(0, 80) || 'Challenger',
+      school: String(school).trim().slice(0, 120) || 'Elimika Secondary',
+      score: Math.max(0, Math.min(quizQuestions.length, creatorScore)),
       total: quizQuestions.length,
-      percentage: Math.round((creatorScore / Math.max(1, quizQuestions.length)) * 100),
+      percentage: Math.round((Math.max(0, Math.min(quizQuestions.length, creatorScore)) / Math.max(1, quizQuestions.length)) * 100),
       timeSeconds: Math.max(5, Number(creatorTimeSeconds) || 40),
       completedAt: new Date().toISOString().split('T')[0],
     });
@@ -1939,10 +2351,10 @@ app.post('/api/challenges/create', (req, res) => {
 
   const newChallenge: TopicQuizChallenge = {
     id,
-    cls,
-    subject,
-    topic,
-    createdBy: createdBy.trim() || 'Student',
+    cls: String(cls).slice(0, 60),
+    subject: String(subject).slice(0, 120),
+    topic: String(topic).slice(0, 200),
+    createdBy: String(createdBy).trim().slice(0, 80) || 'Student',
     createdAt: new Date().toISOString().split('T')[0],
     questions: quizQuestions,
     leaderboard: sortLeaderboard(leaderboard),
@@ -1953,7 +2365,7 @@ app.post('/api/challenges/create', (req, res) => {
 });
 
 // Submit a score to a Challenge Leaderboard
-app.post('/api/challenges/:id/submit', (req, res) => {
+app.post('/api/challenges/:id/submit', challengeMutationRateLimiter, (req, res) => {
   const code = normalizeChallengeCode(req.params.id);
   const {
     playerName = 'Student',
@@ -1964,7 +2376,7 @@ app.post('/api/challenges/:id/submit', (req, res) => {
     cls = 'Form 3',
     subject = 'Basic Mathematics',
     topic = 'Core Competence',
-  } = req.body as {
+  } = (req.body || {}) as {
     playerName?: string;
     school?: string;
     score?: number;
@@ -1979,10 +2391,10 @@ app.post('/api/challenges/:id/submit', (req, res) => {
   if (!challenge) {
     challenge = {
       id: code,
-      cls,
-      subject,
-      topic,
-      createdBy: playerName,
+      cls: String(cls).slice(0, 60),
+      subject: String(subject).slice(0, 120),
+      topic: String(topic).slice(0, 200),
+      createdBy: String(playerName).slice(0, 80),
       createdAt: new Date().toISOString().split('T')[0],
       questions: buildFallbackTopicQuizQuestions(cls, subject, topic),
       leaderboard: [],
@@ -1990,15 +2402,17 @@ app.post('/api/challenges/:id/submit', (req, res) => {
     challengesStore.set(code, challenge);
   }
 
-  const cleanName = playerName.trim() || 'Anonymous Student';
-  const cleanSchool = school.trim() || 'Elimika Secondary';
-  const pct = Math.round((Number(score) / Math.max(1, Number(total))) * 100);
+  const cleanName = String(playerName).trim().slice(0, 80) || 'Anonymous Student';
+  const cleanSchool = String(school).trim().slice(0, 120) || 'Elimika Secondary';
+  const boundedTotal = Math.max(1, Math.min(100, Number(total) || 20));
+  const boundedScore = Math.max(0, Math.min(boundedTotal, Number(score) || 0));
+  const pct = Math.round((boundedScore / boundedTotal) * 100);
   const newEntry: ChallengeLeaderboardEntry = {
     id: `score-${Date.now()}`,
     playerName: cleanName,
     school: cleanSchool,
-    score: Number(score),
-    total: Number(total),
+    score: boundedScore,
+    total: boundedTotal,
     percentage: pct,
     timeSeconds: Math.max(3, Number(timeSeconds) || 35),
     completedAt: new Date().toISOString().split('T')[0],
@@ -2031,8 +2445,8 @@ app.post('/api/challenges/:id/submit', (req, res) => {
 });
 
 // Moha AI Revision Flashcards Generator Endpoint
-app.post('/api/moha/flashcards', async (req, res) => {
-  const { cls = 'Form 3', subject = 'Basic Mathematics' } = req.body as {
+app.post('/api/moha/flashcards', aiStandardRateLimiter, async (req, res) => {
+  const { cls = 'Form 3', subject = 'Basic Mathematics' } = (req.body || {}) as {
     cls?: string;
     subject?: string;
   };
@@ -2149,14 +2563,62 @@ app.get('/.well-known/assetlinks.json', (_req, res) => {
   );
 });
 
-app.post('/api/playstore/assetlinks', (req, res) => {
-  const { packageName, sha256Fingerprint, sha256Fingerprints } = req.body || {};
-  if (typeof packageName === 'string' && packageName.trim()) {
+const ANDROID_PACKAGE_REGEX = /^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)+$/;
+const SHA256_FINGERPRINT_REGEX = /^([0-9A-F]{2}:){31}[0-9A-F]{2}$/i;
+
+app.post('/api/playstore/assetlinks', requireAdminAuth, (req, res) => {
+  const { packageName, sha256Fingerprint, sha256Fingerprints } = (req.body || {}) as {
+    packageName?: unknown;
+    sha256Fingerprint?: unknown;
+    sha256Fingerprints?: unknown;
+  };
+
+  if (packageName !== undefined) {
+    if (
+      typeof packageName !== 'string' ||
+      packageName.trim().length > 120 ||
+      !ANDROID_PACKAGE_REGEX.test(packageName.trim())
+    ) {
+      return res.status(400).json({
+        error: 'Invalid Android package name format (expected e.g. online.elimika.twa).',
+      });
+    }
     runtimePlayStorePackage = packageName.trim();
   }
-  if (sha256Fingerprints || sha256Fingerprint) {
-    runtimePlayStoreSha256List = parseSha256Fingerprints(sha256Fingerprints || sha256Fingerprint);
+
+  const rawFpInput = sha256Fingerprints ?? sha256Fingerprint;
+  if (rawFpInput !== undefined) {
+    const candidateTokens: string[] = [];
+    if (Array.isArray(rawFpInput)) {
+      rawFpInput.forEach((item) => {
+        if (typeof item === 'string') {
+          item
+            .split(/[\n,]+/)
+            .map((t) => t.replace(/["'\s]/g, '').toUpperCase())
+            .filter(Boolean)
+            .forEach((t) => candidateTokens.push(t));
+        }
+      });
+    } else if (typeof rawFpInput === 'string') {
+      rawFpInput
+        .split(/[\n,]+/)
+        .map((t) => t.replace(/["'\s]/g, '').toUpperCase())
+        .filter(Boolean)
+        .forEach((t) => candidateTokens.push(t));
+    } else {
+      return res.status(400).json({ error: 'Invalid SHA-256 fingerprint format.' });
+    }
+
+    for (const token of candidateTokens) {
+      if (!SHA256_FINGERPRINT_REGEX.test(token)) {
+        return res.status(400).json({
+          error: `Invalid SHA-256 certificate fingerprint: ${token}`,
+        });
+      }
+    }
+    runtimePlayStoreSha256List = parseSha256Fingerprints(rawFpInput);
   }
+
   try {
     const dir = path.dirname(ASSETLINKS_CONFIG_PATH);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -2175,7 +2637,7 @@ app.post('/api/playstore/assetlinks', (req, res) => {
   } catch {
     // ignore write error
   }
-  res.json({
+  return res.json({
     ok: true,
     packageName: runtimePlayStorePackage,
     sha256Fingerprints: runtimePlayStoreSha256List,
@@ -2187,18 +2649,25 @@ app.get('/api/health', (_req, res) => {
 });
 
 // ==================== VEO 3.1 PHOTO-TO-VIDEO 3-STEP ENDPOINTS ====================
-app.post('/api/generate-video', async (req, res) => {
+app.post('/api/generate-video', videoGenerationRateLimiter, async (req, res) => {
   const {
     prompt = 'Animate this image with smooth cinematic motion',
     imageBase64,
     imageMimeType = 'image/png',
     aspectRatio = '16:9',
-  } = req.body as {
+  } = (req.body || {}) as {
     prompt?: string;
     imageBase64?: string;
     imageMimeType?: string;
     aspectRatio?: '16:9' | '9:16';
   };
+
+  if (typeof prompt === 'string' && prompt.length > 1000) {
+    return res.status(400).json({ error: 'Video prompt exceeds maximum length (1,000 characters).' });
+  }
+  if (typeof imageBase64 === 'string' && imageBase64.length > 10_000_000) {
+    return res.status(400).json({ error: 'Video reference image exceeds maximum size.' });
+  }
 
   const validAspect: '16:9' | '9:16' = aspectRatio === '9:16' ? '9:16' : '16:9';
   const ai = getGenAIClient();
@@ -2211,7 +2680,7 @@ app.post('/api/generate-video', async (req, res) => {
   try {
     const operation = await ai.models.generateVideos({
       model: 'veo-3.1-fast-generate-preview',
-      prompt,
+      prompt: String(prompt).slice(0, 1000),
       ...(imageBase64
         ? {
             image: {
@@ -2234,10 +2703,10 @@ app.post('/api/generate-video', async (req, res) => {
   }
 });
 
-app.post('/api/video-status', async (req, res) => {
-  const { operationName } = req.body as { operationName?: string };
-  if (!operationName) {
-    return res.status(400).json({ error: 'Missing operationName' });
+app.post('/api/video-status', aiStandardRateLimiter, async (req, res) => {
+  const { operationName } = (req.body || {}) as { operationName?: string };
+  if (!operationName || typeof operationName !== 'string' || operationName.length > 300) {
+    return res.status(400).json({ error: 'Missing or invalid operationName' });
   }
   const ai = getGenAIClient();
   if (!ai) {
@@ -2255,16 +2724,12 @@ app.post('/api/video-status', async (req, res) => {
   }
 });
 
-app.post('/api/video-download', async (req, res) => {
-  const { operationName } = req.body as { operationName?: string };
-  if (!operationName) {
-    return res.status(400).json({ error: 'Missing operationName' });
+app.post('/api/video-download', aiStandardRateLimiter, async (req, res) => {
+  const { operationName } = (req.body || {}) as { operationName?: string };
+  if (!operationName || typeof operationName !== 'string' || operationName.length > 300) {
+    return res.status(400).json({ error: 'Missing or invalid operationName' });
   }
-  const apiKey =
-    process.env.GEMINI_API_KEY ||
-    process.env.VITE_GEMINI_API_KEY ||
-    process.env.GOOGLE_API_KEY ||
-    '';
+  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
   const ai = getGenAIClient();
   if (!ai || !apiKey) {
     return res.status(400).json({ error: 'Gemini API key not configured' });
@@ -2316,6 +2781,135 @@ app.get('/assets/aistudio/:filename', (req, res) => {
     return res.redirect(302, `https://drive.google.com/file/d/${driveId}/view?usp=drive_link`);
   }
   return res.status(404).send('Not found');
+});
+
+// Direct PDF binary download proxy so mobile & desktop browsers save straight to internal storage
+app.get('/api/download-pdf', async (req, res) => {
+  const rawUrl = typeof req.query.url === 'string' ? req.query.url.trim() : '';
+  const rawFilename = typeof req.query.filename === 'string' ? req.query.filename.trim() : 'Elimika-Document.pdf';
+  const cleanFilename =
+    rawFilename
+      .replace(/[^a-zA-Z0-9_.\- ()]+/g, '_')
+      .replace(/\.pdf$/i, '')
+      .slice(0, 110) + '.pdf';
+
+  if (!rawUrl) {
+    return res.status(400).json({ error: 'Missing PDF URL' });
+  }
+
+  // 1. Check if it maps to a local file in public/
+  if (rawUrl.startsWith('/')) {
+    const cleanRel = rawUrl.replace(/^\/+/, '').split('?')[0];
+    const candidatePath = path.resolve(__dirname, 'public', cleanRel);
+    const publicRoot = path.resolve(__dirname, 'public');
+    if (candidatePath.startsWith(publicRoot) && fs.existsSync(candidatePath) && fs.statSync(candidatePath).isFile()) {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${cleanFilename}"`);
+      return res.sendFile(candidatePath);
+    }
+  }
+
+  // 2. Check if it is a Google Drive URL or legacy mapped Drive ID
+  const driveId = extractDriveFileIdFromUrl(rawUrl);
+  if (driveId) {
+    // Check in-memory cache first
+    const cached = drivePdfCache.get(driveId);
+    if (cached && cached.base64Data) {
+      const cachedBuf = Buffer.from(cached.base64Data, 'base64');
+      if (cachedBuf.byteLength > 100 && cachedBuf.slice(0, 5).toString('ascii') === '%PDF-') {
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${cleanFilename}"`);
+        res.setHeader('Content-Length', String(cachedBuf.byteLength));
+        return res.status(200).end(cachedBuf);
+      }
+    }
+
+    const candidateUrls = [
+      `https://drive.usercontent.google.com/download?id=${encodeURIComponent(driveId)}&export=download&confirm=t`,
+      `https://drive.google.com/uc?export=download&id=${encodeURIComponent(driveId)}&confirm=t`,
+      `https://docs.google.com/document/d/${encodeURIComponent(driveId)}/export?format=pdf`,
+    ];
+
+    for (const dlUrl of candidateUrls) {
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 30000);
+        let upstream = await fetch(dlUrl, {
+          headers: { 'User-Agent': 'Mozilla/5.0' },
+          signal: controller.signal,
+        });
+        const contentType = (upstream.headers.get('content-type') || '').toLowerCase();
+        if (contentType.includes('text/html')) {
+          const html = await upstream.text();
+          const uuidMatch = html.match(/name="uuid"\s+value="([^"]+)"/i);
+          const atMatch = html.match(/name="at"\s+value="([^"]+)"/i);
+          if (uuidMatch && uuidMatch[1]) {
+            let confirmUrl = `https://drive.usercontent.google.com/download?id=${encodeURIComponent(driveId)}&export=download&confirm=t&uuid=${encodeURIComponent(uuidMatch[1])}`;
+            if (atMatch && atMatch[1]) {
+              confirmUrl += `&at=${encodeURIComponent(atMatch[1])}`;
+            }
+            upstream = await fetch(confirmUrl, {
+              headers: { 'User-Agent': 'Mozilla/5.0' },
+              signal: controller.signal,
+            });
+          } else {
+            clearTimeout(timer);
+            continue;
+          }
+        }
+
+        if (!upstream.ok) {
+          clearTimeout(timer);
+          continue;
+        }
+
+        const buf = Buffer.from(await upstream.arrayBuffer());
+        clearTimeout(timer);
+
+        // Strictly verify that the downloaded payload is a real PDF binary (%PDF-) and NEVER HTML
+        if (buf.byteLength < 100 || buf.slice(0, 5).toString('ascii') !== '%PDF-') {
+          continue;
+        }
+
+        if (buf.byteLength <= 8 * 1024 * 1024) {
+          drivePdfCache.set(driveId, {
+            mimeType: 'application/pdf',
+            base64Data: buf.toString('base64'),
+            fetchedAt: Date.now(),
+          });
+        }
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${cleanFilename}"`);
+        res.setHeader('Content-Length', String(buf.byteLength));
+        return res.status(200).end(buf);
+      } catch {
+        // try next candidate
+      }
+    }
+
+    return res.status(422).json({ error: 'Upstream Google Drive file did not return a direct PDF binary.' });
+  }
+
+  // 3. Direct external HTTPS PDF URL
+  if (/^https?:\/\//i.test(rawUrl)) {
+    try {
+      const upstream = await fetch(rawUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+      if (upstream.ok) {
+        const buf = Buffer.from(await upstream.arrayBuffer());
+        if (buf.byteLength > 100 && buf.slice(0, 5).toString('ascii') === '%PDF-') {
+          res.setHeader('Content-Type', 'application/pdf');
+          res.setHeader('Content-Disposition', `attachment; filename="${cleanFilename}"`);
+          res.setHeader('Content-Length', String(buf.byteLength));
+          return res.status(200).end(buf);
+        }
+      }
+    } catch {
+      // ignore error
+    }
+  }
+
+  return res.status(404).json({ error: 'PDF binary resource not found' });
 });
 
 async function startServer() {

@@ -182,7 +182,7 @@ export const IOSInstallGuideModal: React.FC<{
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
             <img
-              src="/assets/aistudio/Golden_Graduation_Cap_Emblem_on_Indigo_Gradient_c53b7e46.png"
+              src="/pwa-192x192.png"
               onError={(e) => {
                 e.currentTarget.onerror = null;
                 e.currentTarget.src = '/pwa-192x192.png';
@@ -319,7 +319,7 @@ export const AndroidPlayStoreModal: React.FC<{
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
             <img
-              src="/assets/aistudio/Golden_Graduation_Cap_Emblem_on_Indigo_Gradient_c53b7e46.png"
+              src="/pwa-192x192.png"
               onError={(e) => {
                 e.currentTarget.onerror = null;
                 e.currentTarget.src = '/pwa-192x192.png';
@@ -501,7 +501,7 @@ export const GetElimikaAppSection: React.FC = () => {
           {/* Left Column: Branding & App Icon */}
           <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-4 max-w-xl">
             <img
-              src="/assets/aistudio/Golden_Graduation_Cap_Emblem_on_Indigo_Gradient_c53b7e46.png"
+              src="/pwa-192x192.png"
               onError={(e) => {
                 e.currentTarget.onerror = null;
                 e.currentTarget.src = '/pwa-192x192.png';

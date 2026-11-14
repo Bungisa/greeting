@@ -1,4 +1,84 @@
 import React, { useEffect, useRef } from 'react';
+import DOMPurify from 'dompurify';
+
+const FORBIDDEN_HTML_TAGS = [
+  'script',
+  'iframe',
+  'object',
+  'embed',
+  'foreignObject',
+  'foreignobject',
+  'form',
+  'input',
+  'button',
+  'textarea',
+  'select',
+  'option',
+  'applet',
+  'meta',
+  'link',
+  'base',
+];
+
+const FORBIDDEN_HTML_ATTRS = [
+  'onerror',
+  'onload',
+  'onclick',
+  'onmouseover',
+  'onmouseout',
+  'onmouseenter',
+  'onmouseleave',
+  'onfocus',
+  'onblur',
+  'onchange',
+  'onsubmit',
+  'onkeydown',
+  'onkeyup',
+  'onkeypress',
+  'onanimationstart',
+  'onanimationend',
+  'ontoggle',
+  'onpointerdown',
+  'onpointerup',
+  'ontouchstart',
+  'ontouchend',
+  'formaction',
+  'srcdoc',
+];
+
+/**
+ * Sanitizes untrusted AI-generated HTML, math markup, and SVG diagrams before rendering via dangerouslySetInnerHTML.
+ * Preserves legitimate HTML tables, KaTeX/MathJax spans, and curriculum SVG diagrams while stripping XSS vectors.
+ */
+export function sanitizeUntrustedHtml(dirtyHtml: string): string {
+  if (!dirtyHtml) return '';
+  let cleaned = String(dirtyHtml);
+
+  // Defense-in-depth regex pass (also works in SSR / Node test environments without a browser DOM)
+  cleaned = cleaned
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<\/?script\b[^>]*>/gi, '')
+    .replace(/<foreignObject\b[^<]*(?:(?!<\/foreignObject>)<[^<]*)*<\/foreignObject>/gi, '')
+    .replace(/<\/?foreignObject\b[^>]*>/gi, '')
+    .replace(/<(iframe|object|embed|applet|meta|base|link|form)\b[^>]*>([\s\S]*?<\/\1>)?/gi, '')
+    .replace(/\s+on[a-zA-Z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+    .replace(/(href|src|xlink:href|action|formaction)\s*=\s*(?:"\s*(?:javascript|vbscript|data:text\/html)[^"]*"|'\s*(?:javascript|vbscript|data:text\/html)[^']*'|(?:\s*(?:javascript|vbscript|data:text\/html)[^\s>]*))/gi, '');
+
+  if (typeof window !== 'undefined' && typeof DOMPurify?.sanitize === 'function') {
+    try {
+      return DOMPurify.sanitize(cleaned, {
+        USE_PROFILES: { html: true, svg: true, svgFilters: true, mathMl: true },
+        FORBID_TAGS: FORBIDDEN_HTML_TAGS,
+        FORBID_ATTR: FORBIDDEN_HTML_ATTRS,
+        ALLOW_DATA_ATTR: false,
+      });
+    } catch {
+      return cleaned;
+    }
+  }
+
+  return cleaned;
+}
 
 declare global {
   interface Window {
@@ -308,10 +388,12 @@ export function renderMathTextToHtml(raw: string): string {
     return renderedMathSnippets[idx] ?? _m;
   });
 
-  return withMathRestored.replace(/@@RENDERED_CODE_(\d+)@@/g, (_m, idxStr) => {
+  const finalHtml = withMathRestored.replace(/@@RENDERED_CODE_(\d+)@@/g, (_m, idxStr) => {
     const idx = Number(idxStr);
     return renderedCodeSnippets[idx] ?? _m;
   });
+
+  return sanitizeUntrustedHtml(finalHtml);
 }
 
 /**

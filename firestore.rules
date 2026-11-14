@@ -21,25 +21,42 @@ service cloud.firestore {
         );
     }
 
-    function isValidDocument(data) {
+    function isTeacher() {
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'teacher';
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 150 && id.matches('^[a-zA-Z0-9_.-]+$');
+    }
+
+    function isValidDocument(data, docId) {
       return data.keys().hasAll(['id', 'cls', 'subject', 'title', 'year', 'paperUrl', 'docType', 'createdAt']) &&
-        data.id is string && data.id.size() > 0 && data.id.size() < 200 &&
+        data.keys().hasOnly(['id', 'cls', 'subject', 'title', 'year', 'paperUrl', 'markingSchemeUrl', 'docType', 'uploadedBy', 'createdAt']) &&
+        data.id is string && data.id == docId && isValidId(data.id) &&
         data.cls is string && data.cls.size() > 0 && data.cls.size() < 60 &&
         data.subject is string && data.subject.size() > 0 && data.subject.size() < 120 &&
         data.title is string && data.title.size() > 0 && data.title.size() < 300 &&
         data.year is string && data.year.size() > 0 && data.year.size() < 20 &&
         data.paperUrl is string && data.paperUrl.size() > 0 && data.paperUrl.size() < 900000 &&
+        (!('markingSchemeUrl' in data) || (data.markingSchemeUrl is string && data.markingSchemeUrl.size() < 900000)) &&
+        (!('uploadedBy' in data) || (data.uploadedBy is string && data.uploadedBy.size() < 120)) &&
         data.docType in ['paper', 'textbook', 'syllabus', 'notes'] &&
         data.createdAt is string && data.createdAt.size() < 60;
     }
 
-    function isValidMockExam(data) {
+    function isValidMockExam(data, attemptId) {
       return data.keys().hasAll(['id', 'uid', 'studentName', 'cls', 'subject', 'totalScore', 'nectaGrade', 'completedAt']) &&
-        data.id is string && data.id.size() > 0 && data.id.size() < 150 &&
+        data.keys().hasOnly(['id', 'uid', 'studentName', 'cls', 'subject', 'sectionAScore', 'sectionBScore', 'sectionCScore', 'totalScore', 'nectaGrade', 'completedAt']) &&
+        data.id is string && data.id == attemptId && isValidId(data.id) &&
         data.uid is string && data.uid == request.auth.uid &&
         data.studentName is string && data.studentName.size() > 0 && data.studentName.size() < 120 &&
         data.cls is string && data.cls.size() > 0 && data.cls.size() < 60 &&
         data.subject is string && data.subject.size() > 0 && data.subject.size() < 120 &&
+        (!('sectionAScore' in data) || (data.sectionAScore is number && data.sectionAScore >= 0 && data.sectionAScore <= 100)) &&
+        (!('sectionBScore' in data) || (data.sectionBScore is number && data.sectionBScore >= 0 && data.sectionBScore <= 100)) &&
+        (!('sectionCScore' in data) || (data.sectionCScore is number && data.sectionCScore >= 0 && data.sectionCScore <= 100)) &&
         data.totalScore is number && data.totalScore >= 0 && data.totalScore <= 100 &&
         data.nectaGrade in ['A', 'B', 'C', 'D', 'E', 'S', 'F'] &&
         data.completedAt is string && data.completedAt.size() < 60;
@@ -47,18 +64,28 @@ service cloud.firestore {
 
     function isValidLeaderboard(data, userId) {
       return data.keys().hasAll(['uid', 'studentName', 'cls', 'xp', 'updatedAt']) &&
-        data.uid is string && data.uid == userId &&
+        data.keys().hasOnly(['uid', 'studentName', 'schoolName', 'cls', 'xp', 'streakDays', 'badgesCount', 'updatedAt']) &&
+        data.uid is string && data.uid == userId && isValidId(data.uid) &&
         data.studentName is string && data.studentName.size() > 0 && data.studentName.size() < 120 &&
+        (!('schoolName' in data) || (data.schoolName is string && data.schoolName.size() < 160)) &&
         data.cls is string && data.cls.size() > 0 && data.cls.size() < 60 &&
         data.xp is number && data.xp >= 0 && data.xp <= 10000000 &&
+        (!('streakDays' in data) || (data.streakDays is number && data.streakDays >= 0 && data.streakDays <= 3650)) &&
+        (!('badgesCount' in data) || (data.badgesCount is number && data.badgesCount >= 0 && data.badgesCount <= 500)) &&
         data.updatedAt is string && data.updatedAt.size() < 60;
     }
 
     function isValidUserProfile(data, userId) {
       return data.keys().hasAll(['uid', 'displayName', 'role', 'updatedAt']) &&
-        data.uid is string && data.uid == userId &&
+        data.keys().hasOnly(['uid', 'displayName', 'email', 'role', 'cls', 'schoolName', 'xp', 'streakDays', 'updatedAt']) &&
+        data.uid is string && data.uid == userId && isValidId(data.uid) &&
         data.displayName is string && data.displayName.size() > 0 && data.displayName.size() < 120 &&
+        (!('email' in data) || (data.email is string && data.email.size() < 180)) &&
         data.role in ['student', 'teacher', 'admin'] &&
+        (!('cls' in data) || (data.cls is string && data.cls.size() < 60)) &&
+        (!('schoolName' in data) || (data.schoolName is string && data.schoolName.size() < 160)) &&
+        (!('xp' in data) || (data.xp is number && data.xp >= 0 && data.xp <= 10000000)) &&
+        (!('streakDays' in data) || (data.streakDays is number && data.streakDays >= 0 && data.streakDays <= 3650)) &&
         data.updatedAt is string && data.updatedAt.size() < 60;
     }
 
@@ -66,20 +93,22 @@ service cloud.firestore {
     // Collection Rules
     // ===============================================================
     match /documents/{docId} {
-      allow get, list: if isAuthenticated();
-      allow create, update: if isAuthenticated() && isValidDocument(request.resource.data);
+      // Preserve legitimate public student read access to educational materials
+      allow get, list: if true;
+      // Only administrators or verified teachers can create/update educational documents
+      allow create, update: if (isAdmin() || isTeacher()) && isValidDocument(request.resource.data, docId);
       allow delete: if isAdmin();
     }
 
     match /mockExams/{attemptId} {
-      allow get, list: if isAuthenticated();
-      allow create: if isAuthenticated() && isValidMockExam(request.resource.data);
-      allow update: if isAuthenticated() && resource.data.uid == request.auth.uid && isValidMockExam(request.resource.data);
+      allow get, list: if isAuthenticated() && (resource.data.uid == request.auth.uid || isAdmin() || isTeacher());
+      allow create: if isAuthenticated() && isValidMockExam(request.resource.data, attemptId);
+      allow update: if isAuthenticated() && resource.data.uid == request.auth.uid && isValidMockExam(request.resource.data, attemptId);
       allow delete: if isAdmin() || (isAuthenticated() && resource.data.uid == request.auth.uid);
     }
 
     match /leaderboard/{userId} {
-      allow get, list: if isAuthenticated();
+      allow get, list: if true;
       allow create, update: if (isOwner(userId) || isAdmin()) && isValidLeaderboard(request.resource.data, userId);
       allow delete: if isAdmin();
     }

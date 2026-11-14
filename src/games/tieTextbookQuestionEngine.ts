@@ -5,7 +5,6 @@ import {
   getSeenSignaturesForClassSubject,
   getStoredBankQuestionsForClassSubject,
   getVariantOffsetForClassSubject,
-  isUploadedTextbookSubject,
   resetSeenQuestionsForClassSubject,
 } from '../utils/questionBankManager';
 
@@ -1113,11 +1112,10 @@ export function buildLevelAccurateTextbookQuestions(
     });
   });
 
-  const hasUploadedBank =
-    storedTextbookQuestions.length > 0 || isUploadedTextbookSubject(normSub);
+  const hasUploadedBank = storedTextbookQuestions.length > 0;
 
   if (!hasUploadedBank) {
-    // Priority B: Curated level-specific TIE textbook questions (only for subjects without an uploaded textbook bank)
+    // Priority B: Curated level-specific TIE textbook questions (only when no stored bank questions exist for this topic)
     exactClassMatches.forEach((seed, idx) => {
       const bookCitation = `📘 Official TIE ${normCls} ${normSub} Student's Book — ${seed.chapter}`;
       const rotated = rotateOpts([...seed.options], seed.correctIndex, idx + 1 + roundOffset);
@@ -1151,7 +1149,7 @@ export function buildLevelAccurateTextbookQuestions(
       });
     });
 
-    // Priority D: Multi-chapter parameterized textbook problems (only for subjects without an uploaded textbook bank)
+    // Priority D: Multi-chapter parameterized textbook problems matching the requested topic
     let variantIdx = 1;
     while (unseenPool.length < 20 && variantIdx <= 40) {
       const v = variantOffset + variantIdx++;
@@ -1196,8 +1194,24 @@ function buildParameterizedLevelProblem(
 ): GameQuestion {
   const sLower = subject.toLowerCase();
   const cLower = cls.toLowerCase();
+  const tLower = (topic || 'ALL').toLowerCase();
   const bookLabel = `📘 Official TIE ${cls} ${subject} Student's Book`;
-  const archetype = v % 5;
+  let archetype = v % 5;
+
+  if (tLower !== 'all') {
+    if (sLower.includes('additional math') && cLower.includes('form 1')) {
+      if (tLower.includes('symmetry')) archetype = 1;
+      else if (tLower.includes('algebra')) archetype = 2;
+      else if (tLower.includes('coordinate')) archetype = 3;
+      else if (tLower.includes('number')) archetype = v % 2 === 0 ? 0 : 4;
+    } else if (sLower.includes('math') || sLower.includes('hisabati')) {
+      if (tLower.includes('algebra') || tLower.includes('equation')) archetype = 0;
+      else if (tLower.includes('ratio') || tLower.includes('profit') || tLower.includes('interest')) archetype = 1;
+      else if (tLower.includes('coordinate') || tLower.includes('gradient')) archetype = 2;
+      else if (tLower.includes('perimeter') || tLower.includes('area') || tLower.includes('geometry')) archetype = 3;
+      else if (tLower.includes('number') || tLower.includes('fraction') || tLower.includes('decimal') || tLower.includes('approx')) archetype = 4;
+    }
+  }
 
   // ============================================================================
   // ADDITIONAL MATHEMATICS PARAMETERIZED MULTI-CHAPTER TEXTBOOK PROBLEMS

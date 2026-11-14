@@ -4,6 +4,17 @@ import './index.css';
 
 if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
+    try {
+      const slimKey = 'elimika_cache_slimmed_v2';
+      if (!localStorage.getItem(slimKey) && 'caches' in window) {
+        caches.keys().then((keys) => {
+          keys.forEach((k) => caches.delete(k));
+        }).catch(() => {});
+        localStorage.setItem(slimKey, '1');
+      }
+    } catch {
+      // ignore storage errors
+    }
     navigator.serviceWorker
       .getRegistrations()
       .then((registrations) => {

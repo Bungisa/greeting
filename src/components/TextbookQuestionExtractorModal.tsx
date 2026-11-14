@@ -12,7 +12,7 @@ import {
   Upload,
   X,
 } from 'lucide-react';
-import { MathText } from '../utils/mathRenderer';
+import { MathText, sanitizeUntrustedHtml } from '../utils/mathRenderer';
 import {
   getSyllabusTopicsForClassSubject,
   PaperRecord,
@@ -213,6 +213,7 @@ export const TextbookQuestionExtractorModal: React.FC<TextbookQuestionExtractorM
         try {
           const attachRes = await fetch('/api/attached-resources', {
             method: 'POST',
+            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               title:
@@ -246,6 +247,7 @@ export const TextbookQuestionExtractorModal: React.FC<TextbookQuestionExtractorM
       const existingSigs = storedQuestions.map((q) => q.signature).slice(0, 400);
       const response = await fetch('/api/question-bank/extract', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           cls: selectedClass,
@@ -709,7 +711,7 @@ export const TextbookQuestionExtractorModal: React.FC<TextbookQuestionExtractorM
                         </div>
                         <div
                           className="w-full overflow-x-auto"
-                          dangerouslySetInnerHTML={{ __html: diagramSpec.svgHtml }}
+                          dangerouslySetInnerHTML={{ __html: sanitizeUntrustedHtml(diagramSpec.svgHtml) }}
                         />
                       </div>
                     )}

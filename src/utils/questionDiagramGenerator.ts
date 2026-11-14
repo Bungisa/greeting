@@ -1,5 +1,6 @@
 import { getPhysicsF2DiagramSvg } from '../data/physicsF2Diagrams.ts';
 import { getMathF1DiagramSvg } from '../data/mathF1Bank.ts';
+import { getAdvMathF6DiagramSvg } from '../data/advMathF6Bank.ts';
 
 export interface QuestionDiagramSpec {
   title: string;
@@ -67,6 +68,10 @@ export function getQuestionDiagramSvg(
   // Check Form 1 Basic Mathematics exact vector SVG diagrams
   const mathF1Diagram = getMathF1DiagramSvg(questionText, _topic, _subTopic);
   if (mathF1Diagram) return mathF1Diagram;
+
+  // Check Form 6 Advanced Mathematics exact vector SVG diagrams
+  const advMathF6Diagram = getAdvMathF6DiagramSvg(questionText, _topic, _subTopic);
+  if (advMathF6Diagram) return advMathF6Diagram;
 
   // Check Form 2 Physics high-precision vector SVG diagrams first when subject is Physics or question has Physics F2 figures
   if (

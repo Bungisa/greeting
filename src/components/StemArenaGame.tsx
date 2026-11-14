@@ -357,8 +357,10 @@ export const StemArenaGame: React.FC<StemArenaGameProps> = ({ onExitGame }) => {
   return (
     <div
       ref={arenaContainerRef}
-      className={`fixed inset-0 ${
-        isFullscreen ? 'z-[100] w-full h-[100dvh]' : 'z-50 w-full h-[100dvh]'
+      className={`fixed inset-x-0 top-0 ${
+        isFullscreen
+          ? 'bottom-0 z-[100] w-full h-[100dvh]'
+          : 'bottom-14 lg:bottom-0 z-50 w-full h-[calc(100dvh-3.5rem)] lg:h-[100dvh]'
       } overflow-hidden bg-[#090d16] select-none touch-manipulation`}
     >
       <canvas

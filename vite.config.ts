@@ -1,6 +1,5 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
-import fs from 'fs';
 import path from 'path';
 import {defineConfig} from 'vite';
 import {VitePWA} from 'vite-plugin-pwa';
@@ -10,22 +9,8 @@ export default defineConfig(() => {
     plugins: [
       react(),
       tailwindcss(),
-      {
-        name: 'exclude-duplicate-aistudio-assets-from-dist',
-        closeBundle() {
-          const dupDir = path.resolve(__dirname, 'dist', 'assets', 'aistudio');
-          if (fs.existsSync(dupDir)) {
-            for (const entry of fs.readdirSync(dupDir)) {
-              if (entry !== 'Golden_Graduation_Cap_Emblem_on_Indigo_Gradient_c53b7e46.png') {
-                fs.rmSync(path.join(dupDir, entry), { recursive: true, force: true });
-              }
-            }
-          }
-        },
-      },
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['icon.svg', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png', 'pwa-maskable-512x512.png', 'assets/aistudio/Golden_Graduation_Cap_Emblem_on_Indigo_Gradient_c53b7e46.png'],
         manifest: {
           id: '/',
           name: 'Elimika Tanzania | Past Papers, TIE Books, Syllabus & Moha AI',
@@ -63,10 +48,21 @@ export default defineConfig(() => {
           skipWaiting: true,
           clientsClaim: true,
           cleanupOutdatedCaches: true,
-          maximumFileSizeToCacheInBytes: 12 * 1024 * 1024,
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+          maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+          globPatterns: ['index.html', 'icon.svg', 'pwa-192x192.png', 'assets/*.css'],
           navigateFallbackDenylist: [/^\/api\//],
           runtimeCaching: [
+            {
+              urlPattern: /\/assets\/.*\.(?:js|css)$/i,
+              handler: 'StaleWhileRevalidate',
+              options: {
+                cacheName: 'elimika-app-bundles',
+                expiration: {
+                  maxEntries: 15,
+                  maxAgeSeconds: 60 * 60 * 24 * 30,
+                },
+              },
+            },
             {
               urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
               handler: 'CacheFirst',
@@ -103,22 +99,9 @@ export default defineConfig(() => {
         },
       }),
     ],
-    define: {
-      __CS_F5_RAW_HTMLS__: JSON.stringify(
-        [
-          'computer_f5_bank_of_qns_1950aee2.html',
-          'computer_f5_bank_of_ques_87e7b403.html',
-          'computer_f5_bank_of_questions_1e5f4d7b.html',
-          'computer_f5_bank_8d71db45.html',
-        ].map((f) => {
-          const p = path.resolve(__dirname, 'public', 'assets', 'aistudio', f);
-          return fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : '';
-        })
-      ),
-    },
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, '.'),
+        '@': path.resolve(import.meta.dirname, '.'),
       },
     },
     server: {

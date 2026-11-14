@@ -1,6 +1,7 @@
 import { COMPUTER_SCIENCE_F5_BANK } from './computerScienceF5Bank.ts';
 import { PHYSICS_F2_BANK } from './physicsF2Bank.ts';
 import { MATH_F1_BANK } from './mathF1Bank.ts';
+import { ADV_MATH_F6_BANK } from './advMathF6Bank.ts';
 
 export interface ExtractedTextbookExerciseSeed {
   id: string;
@@ -7323,6 +7324,7 @@ export const FULL_EXTRACTED_TEXTBOOK_BANK: ExtractedTextbookExerciseSeed[] = [
   ...COMPUTER_SCIENCE_F5_BANK,
   ...PHYSICS_F2_BANK,
   ...MATH_F1_BANK,
+  ...ADV_MATH_F6_BANK,
 ];
 
 

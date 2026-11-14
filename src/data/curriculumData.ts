@@ -1006,12 +1006,14 @@ export const TIE_SYLLABUS_COMPETENCES: Record<string, Record<string, string[]>> 
       'Chapter 12: Integration (Integration by Substitution, By Parts, Partial Fractions, Trigonometric Integrals, Area Under a Curve & Volume of Revolution)',
     ],
     'Form 6': [
-      'Chapter 1: Coordinate Geometry II (Conic Sections: Parabola, Ellipse & Hyperbola; Tangents, Normals, Eccentricity & Polar Coordinates)',
-      'Chapter 2: Vectors (Vectors in 3D Space, Dot/Scalar Product, Cross/Vector Product, Area of Triangle/Parallelogram, Vector Equations of Lines & Planes and Vector Calculus)',
-      'Chapter 3: Complex Numbers (Argand Diagram, Modulus-Argument/Polar Form, Euler Form, De Moivre Theorem, nth Roots of Unity & Loci in the Complex Plane)',
-      'Chapter 4:Probability (Permutations & Combinations, Conditional Probability, Bayes Theorem, Discrete & Continuous Random Variables, Binomial, Poisson & Normal Distributions)',
-      'Chapter 5: Numerical Methods (Errors, Iterative Methods, Newton-Raphson Formula, Secant Method, Trapezoidal Rule & Simpson Rule)',
-      'Chapter 6: Differential Equations (First-Order Separable, Homogeneous, Exact & Linear ODEs; Second-Order Linear ODEs with Constant Coefficients & Real-World Modelling)',
+      'Chapter 1: Coordinate Geometry II (Conic Sections: Parabola, Ellipse & Hyperbola; Tangents, Normals, Parametric Equations, Polar Coordinates & Graphs)',
+      'Chapter 2: Vectors (3D Vector Representation & Magnitude, Ratio Theorem, Dot Product & Projections, Work Done, Cross Product, Area & Vector Calculus)',
+      'Chapter 3: Hyperbolic Functions (Definitions of sinh x, cosh x, tanh x, Identities, Equations, Inverse Hyperbolic Functions, Derivatives, Power Series & Integration)',
+      'Chapter 4: Statistics (Mean by Coding Method, Median, Quartiles, Interquartile Range, Percentiles, Mode, Variance & Standard Deviation of Ungrouped & Grouped Data)',
+      'Chapter 5: Probability (Counting Principles, Permutations, Combinations, Probability Laws, Conditional Probability, Random Variables, Binomial, Poisson & Normal Distributions)',
+      'Chapter 6: Complex Numbers (Imaginary Unit, Operations, Argand Diagram, Modulus & Argument, Complex Polynomial Equations, Polar Form, Loci, De Moivre\'s Theorem & Euler\'s Formula)',
+      'Chapter 7: Differential Equations (Order, Degree & Formulation, First-Order Separable, Homogeneous, Linear & Exact ODEs, Second-Order ODEs & Real-World Applications)',
+      'Chapter 8: Numerical Methods (Errors, Newton-Raphson Formula, Secant Method, Trapezium Rule & Simpson\'s Rule)',
     ],
   },
   'Basic Applied Mathematics (BAM)': {
@@ -1156,7 +1158,6 @@ export const OFFICIAL_ATTACHED_TIE_BOOKS: PaperRecord[] = [
   { id: 'tie-drive-book-65', title: 'Auto Electric', form: 'Form 2', subject: 'General Studies', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1dbahC6Tbzba1T7FuDGCmhX0SMCRK7gL0/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-66', title: 'Leather Goods and Footwears F2', form: 'Form 2', subject: 'General Studies', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/158395mpowtwNNYAjuDUxEcJgJyOFkdgq/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-67', title: 'Arts & Design', form: 'Form 2', subject: 'General Studies', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/16fgdixfMmRJnmYfhIq_msCFoH4xiXkqc/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
-  { id: 'tie-drive-book-68', title: "Biology for Secondary Schools — Student's Book Form Two (TIE Comprehensive Question Bank)", form: 'Form 2', subject: 'Biology', year: '2025', category: 'TIE Book', paperUrl: '/assets/aistudio/question_bank_bios_f2_b5ea2aa5.html', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-68-pdf', title: 'BIOLOGY FORM 2 TIE NEW SYLLABUS', form: 'Form 2', subject: 'Biology', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1A0voCf2A83VvMEEaQONtnyQhuNGBXrX2/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-69', title: 'Geography F2', form: 'Form 2', subject: 'Geography', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1IloB7ZSJzZ1BxkzibrC7uCzaiEsRgC0s/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-70', title: 'Acting F2', form: 'Form 2', subject: 'General Studies', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1uR6zEY6mryLyA8AIwSbYxIT0dotA3aC5/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
@@ -1165,7 +1166,6 @@ export const OFFICIAL_ATTACHED_TIE_BOOKS: PaperRecord[] = [
   { id: 'tie-drive-book-73', title: 'Agromechanics', form: 'Form 2', subject: 'Agriculture', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1n58bAzDBkMX6EM3VrAQQj_eHfh3uwpft/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-74', title: 'Animal Health and Production', form: 'Form 2', subject: 'Agriculture', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1xGo30_Jwid5C1x2SfK_7FXIQ6igs2xz4/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-75', title: 'Book-Keeping Form Two', form: 'Form 2', subject: 'Book-Keeping', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1NFbIZfc0e1UvH8qAipB5Um7B5wGvI4AT/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
-  { id: 'tie-drive-book-76', title: "Chemistry for Secondary Schools — Student's Book Form Two (TIE Comprehensive Question Bank)", form: 'Form 2', subject: 'Chemistry', year: '2025', category: 'TIE Book', paperUrl: '/assets/aistudio/question_bank_chem_f2_4c234b42.html', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-76-pdf', title: 'Chemistry F2 TIE', form: 'Form 2', subject: 'Chemistry', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1h26uIRH4UD5_UrD6CMsfDrQ800OtJlj3/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-77', title: 'Chinese', form: 'Form 2', subject: 'General Studies', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1IlPUOuHFWIPj0IT9kSqoRBCcq_91_3Kj/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-78', title: 'computer science 2', form: 'Form 2', subject: 'Computer Science', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1YWevhyTnKHWCNagX4gpGhI5229L642BC/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
@@ -1196,16 +1196,6 @@ export const OFFICIAL_ATTACHED_TIE_BOOKS: PaperRecord[] = [
   { id: 'tie-drive-book-103', title: 'Kiswahili F1', form: 'Form 1', subject: 'Kiswahili', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1LfBotG42DW_gV_L7eBAutmt_ffKWIry_/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-104', title: 'MATHEMATICS F1 (TIE 2023 Revised Book)', form: 'Form 1', subject: 'Basic Mathematics', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1g0lE1PZAyD1wjQP_EyjzUJow39caujxn/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
   { id: 'tie-drive-book-105', title: 'PHYSICS F1', form: 'Form 1', subject: 'Physics', year: '2025', category: 'TIE Book', paperUrl: 'https://drive.google.com/file/d/1mUAUNoLsP0c_kAJ89Uhr0Zl5O13mgyVp/view?usp=drive_link', answersUrl: null, isBook: true, isSyllabus: false },
-  { id: 'tie-drive-book-cs-f5-1', title: "Computer Science for Advanced Secondary Schools — Student's Book Form Five (Chapters 1–4 Question Bank)", form: 'Form 5', subject: 'Computer Science', year: '2025', category: 'TIE Book', paperUrl: '/assets/aistudio/computer_f5_bank_of_qns_1950aee2.html', answersUrl: null, isBook: true, isSyllabus: false },
-  { id: 'tie-drive-book-cs-f5-2', title: "Computer Science for Advanced Secondary Schools — Student's Book Form Five (Chapters 4–5 Question Bank)", form: 'Form 5', subject: 'Computer Science', year: '2025', category: 'TIE Book', paperUrl: '/assets/aistudio/computer_f5_bank_of_ques_87e7b403.html', answersUrl: null, isBook: true, isSyllabus: false },
-  { id: 'tie-drive-book-cs-f5-3', title: "Computer Science for Advanced Secondary Schools — Student's Book Form Five (Chapters 5–8 Question Bank)", form: 'Form 5', subject: 'Computer Science', year: '2025', category: 'TIE Book', paperUrl: '/assets/aistudio/computer_f5_bank_of_questions_1e5f4d7b.html', answersUrl: null, isBook: true, isSyllabus: false },
-  { id: 'tie-drive-book-cs-f5-4', title: "Computer Science for Advanced Secondary Schools — Student's Book Form Five (Chapter 8 & Projects Question Bank)", form: 'Form 5', subject: 'Computer Science', year: '2025', category: 'TIE Book', paperUrl: '/assets/aistudio/computer_f5_bank_8d71db45.html', answersUrl: null, isBook: true, isSyllabus: false },
-  { id: 'tie-drive-book-geo-f2-bank', title: "Geography for Secondary Schools — Student's Book Form Two (TIE Comprehensive Question Bank)", form: 'Form 2', subject: 'Geography', year: '2025', category: 'TIE Book', paperUrl: '/assets/aistudio/question_bank_F2_Geo_3cb6195c.html', answersUrl: null, isBook: true, isSyllabus: false },
-  { id: 'tie-drive-book-ics-f1-bank', title: "Information and Computer Studies for Secondary Schools — Student's Book Form One (TIE Comprehensive Question Bank)", form: 'Form 1', subject: 'Computer Science', year: '2025', category: 'TIE Book', paperUrl: '/assets/aistudio/question_bank_70b39640.html', answersUrl: null, isBook: true, isSyllabus: false },
-  { id: 'tie-drive-book-phys-f2-bank-1', title: "Physics for Secondary Schools — Student's Book Form Two (Chapters 1–5 Comprehensive Question Bank)", form: 'Form 2', subject: 'Physics', year: '2025', category: 'TIE Book', paperUrl: '/assets/aistudio/physics_f2_bank_of_questions_001595ec.html', answersUrl: null, isBook: true, isSyllabus: false },
-  { id: 'tie-drive-book-phys-f2-bank-2', title: "Physics for Secondary Schools — Student's Book Form Two (Chapters 6–9 Comprehensive Question Bank)", form: 'Form 2', subject: 'Physics', year: '2025', category: 'TIE Book', paperUrl: '/assets/aistudio/physics_f2_bank_of_qns2_3d5c9410.html', answersUrl: null, isBook: true, isSyllabus: false },
-  { id: 'tie-drive-book-phys-f2-diagrams', title: "Physics for Secondary Schools — Form Two Master Vector Diagrams & Figures Reference (Chapters 1–9)", form: 'Form 2', subject: 'Physics', year: '2025', category: 'TIE Book', paperUrl: '/assets/aistudio/physics_f2_diagrams_a962eff7.html', answersUrl: null, isBook: true, isSyllabus: false },
-  { id: 'tie-drive-book-math-f1-bank', title: "Mathematics for Secondary Schools — Student's Book Form One (2023 Revised Edition Complete Question Bank)", form: 'Form 1', subject: 'Basic Mathematics', year: '2023', category: 'TIE Book', paperUrl: '/assets/aistudio/mathematics_f1_bank_of_qns_ac9bb750.html', answersUrl: null, isBook: true, isSyllabus: false },
 ];
 
 export const MOHA_BUILTIN_KNOWLEDGE = [
@@ -4075,6 +4065,7 @@ export function buildContentIntegratedQuizQuestions(
     const subjectMatches =
       seedSubj === normSubj ||
       (normSubj.includes('computer') && seedSubj.includes('computer')) ||
+      (normSubj.includes('advanced math') && seedSubj.includes('advanced math')) ||
       (normSubj === 'mathematics' && seedSubj === 'mathematics') ||
       (normSubj === 'additional mathematics' && seedSubj === 'additional mathematics');
     return classMatches && subjectMatches;

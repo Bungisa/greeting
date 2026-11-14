@@ -1,144 +1,109 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
-:root {
+/* ==========================================================================
+   ELIMIKA TANZANIA — PREMIUM ROYAL BLUE, CRISP WHITE & GOLDEN YELLOW THEME
+   Inspired by Elimika Design System (Light, Dark & System Adaptive)
+   ========================================================================== */
+
+:root,
+html[data-theme="light"] {
   color-scheme: light;
-  /* 2. LIGHT MODE COLOR PALETTE — MIDNIGHT PLUM EDITION */
-  --brand-primary: #24132F;        /* Primary Brand — Midnight Plum */
-  --brand-secondary: #352044;      /* Secondary Brand — Deep Plum */
-  --btn-primary: #7047A3;          /* Primary Buttons — Royal Violet */
-  --btn-primary-hover: #5D398C;    /* Royal Violet Hover */
-  --btn-primary-text: #FFFFFF;     /* Primary Button Text */
-  --accent-secondary: #E9DDF7;     /* Secondary Accent — Soft Lavender */
-  --accent-gold: #B89545;          /* Premium Highlights — Champagne Gold */
-  --bg-canvas: #F8F6FA;            /* Main Background — Soft White */
-  --bg-nav: #24132F;               /* Brand Header / Sidebar — Midnight Plum */
-  --bg-surface: #FFFFFF;           /* Cards and Surfaces — Pure White */
-  --bg-surface-glass: rgba(255, 255, 255, 0.96);
-  --bg-elevated: #F2EDF7;          /* Subtle Lavender Surface */
-  --bg-subtle: #E9DDF7;            /* Soft Lavender Highlight */
-  --text-primary: #28232D;         /* Primary Text — Charcoal */
-  --text-secondary: #524A5B;       /* Readable Secondary Charcoal */
-  --text-muted: #756D7C;           /* Secondary Text — Muted Gray */
-  --border-subtle: #E8E1ED;        /* Borders and Dividers — Light Plum Gray */
-  --border-strong: #D5C8E0;        /* Stronger Plum Gray Border */
-  --color-success: #168568;        /* Success — Green */
-  --color-error: #DC2626;          /* Error — Red */
 
-  --callout-violet-bg: #E9DDF7;
-  --callout-violet-border: #D0B9EC;
-  --callout-violet-text: #24132F;
+  /* 1. Surfaces & Backgrounds */
+  --bg-canvas: #F3F7FC;             /* Soft Ice Blue-White App Canvas */
+  --bg-surface-1: #FFFFFF;          /* Pure Crisp White Card Surface */
+  --bg-surface-2: #EBF2FA;          /* Soft Sky Tint Secondary Surface */
+  --bg-surface-3: #DCE8F7;          /* Interactive Pill / Hover Surface */
+  --bg-surface-glass: rgba(255, 255, 255, 0.95); /* Clean White Glass Header & Bottom Nav */
 
-  --callout-amber-bg: #FAF5E8;
-  --callout-amber-border: #E5D19C;
-  --callout-amber-text: #5C4718;
+  /* 2. Typography Hierarchy */
+  --text-primary: #0F172A;          /* Deep Navy Slate Ink */
+  --text-secondary: #334155;        /* Balanced Slate Body Copy */
+  --text-muted: #64748B;            /* Muted Caption & Metadata */
+  --text-on-brand: #FFFFFF;         /* Crisp White on Brand Accents */
 
-  --callout-emerald-bg: #EBF7F3;
-  --callout-emerald-border: #A5DECDBE;
-  --callout-emerald-text: #0F5C48;
+  /* 3. Brand & Semantic Accents (Royal Blue + Golden Yellow + Emerald) */
+  --brand-primary: #0A3D91;         /* Elimika Royal Navy Blue */
+  --brand-primary-hover: #1D4ED8;   /* Vibrant Royal Blue Hover */
+  --brand-primary-soft: #DBEAFE;    /* Soft Blue Badge Fill */
+  --brand-secondary: #0F2952;       /* Deep Oxford Navy */
+  --brand-gold: #FACC15;            /* Elimika Golden Yellow */
+  --brand-gold-hover: #EAB308;      /* Rich Gold Hover */
 
-  --callout-blue-bg: #E9DDF7;
-  --callout-blue-border: #D0B9EC;
-  --callout-blue-text: #24132F;
+  --accent-emerald: #16A34A;        /* Notes & Books / Success Green */
+  --accent-emerald-soft: #DCFCE7;
+  --accent-amber: #F59E0B;          /* Learning Games / Highlight Amber */
+  --accent-amber-soft: #FEF3C7;
+  --accent-rose: #DC2626;           /* Alert / Danger Coral */
+  --accent-rose-soft: #FEE2E2;
 
-  --callout-rose-bg: #FEF2F2;
-  --callout-rose-border: #FECACA;
-  --callout-rose-text: #991B1B;
+  /* 4. Borders, Dividers & Elevation Shadows */
+  --border-subtle: #E2E8F0;
+  --border-strong: #CBD5E1;
+  --shadow-card: 0 4px 16px -2px rgba(10, 61, 145, 0.07), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
+  --shadow-floating: 0 14px 32px -4px rgba(10, 61, 145, 0.14), 0 4px 12px -2px rgba(15, 23, 42, 0.06);
 }
 
 html.dark,
-:root[data-theme="dark"] {
+html[data-theme="dark"] {
   color-scheme: dark;
-  /* 3. DARK MODE COLOR PALETTE — MIDNIGHT PLUM EDITION */
-  --brand-primary: #24132F;        /* Primary Brand — Midnight Plum */
-  --brand-secondary: #352044;      /* Deep Plum */
-  --bg-canvas: #18101F;            /* Main Background — Deep Night Plum */
-  --bg-nav: #24132F;               /* Sidebar and Navigation — Midnight Plum */
-  --bg-surface: #30223A;           /* Cards and Surfaces — Dark Plum */
-  --bg-surface-glass: rgba(36, 19, 47, 0.96);
-  --bg-elevated: #382844;          /* Elevated Dark Plum Surface */
-  --bg-subtle: #493751;            /* Subtle Plum Gray Surface */
-  --btn-primary: #A78BFA;          /* Primary Buttons — Light Royal Violet */
-  --btn-primary-hover: #C4B5FD;    /* Soft Lavender Hover */
-  --btn-primary-text: #18101F;     /* Deep Night Plum Text on Light Violet */
-  --accent-secondary: #C4B5FD;     /* Secondary Accent — Soft Lavender */
-  --accent-gold: #D6B56D;          /* Premium Highlights — Champagne Gold */
-  --text-primary: #F8F5FC;         /* Primary Text — Soft White */
-  --text-secondary: #DFD6E8;       /* Crisp Lavender White */
-  --text-muted: #C4B8D0;           /* Secondary Text — Lavender Gray */
-  --border-subtle: #493751;        /* Borders and Dividers — Plum Gray */
-  --border-strong: #5E4868;        /* Stronger Plum Gray Border */
-  --color-success: #34D399;        /* Success — Light Green */
-  --color-error: #F87171;          /* Error — Light Red */
 
-  --callout-violet-bg: rgba(167, 139, 250, 0.16);
-  --callout-violet-border: #493751;
-  --callout-violet-text: #F8F5FC;
+  /* 1. Surfaces & Backgrounds (Deep Navy Night Mode) */
+  --bg-canvas: #071124;             /* Deep Midnight Navy Canvas */
+  --bg-surface-1: #0F1E38;          /* Elevated Navy Card Surface */
+  --bg-surface-2: #162A4D;          /* Secondary Navy Surface */
+  --bg-surface-3: #1E3866;          /* Interactive Hover Surface */
+  --bg-surface-glass: rgba(7, 17, 36, 0.96);
 
-  --callout-amber-bg: rgba(214, 181, 109, 0.15);
-  --callout-amber-border: rgba(214, 181, 109, 0.45);
-  --callout-amber-text: #F8F5FC;
+  /* 2. Typography Hierarchy */
+  --text-primary: #F8FAFC;          /* Crisp Alabaster White */
+  --text-secondary: #CBD5E1;        /* Soft Silver-Blue Secondary */
+  --text-muted: #94A3B8;            /* Muted Slate-Blue */
+  --text-on-brand: #FFFFFF;
 
-  --callout-emerald-bg: rgba(52, 211, 153, 0.15);
-  --callout-emerald-border: rgba(52, 211, 153, 0.42);
-  --callout-emerald-text: #F8F5FC;
+  /* 3. Brand & Semantic Accents */
+  --brand-primary: #2563EB;
+  --brand-primary-hover: #3B82F6;
+  --brand-primary-soft: rgba(37, 99, 235, 0.24);
+  --brand-secondary: #1E3A8A;
+  --brand-gold: #FACC15;
+  --brand-gold-hover: #FDE047;
 
-  --callout-blue-bg: rgba(196, 181, 253, 0.16);
-  --callout-blue-border: #493751;
-  --callout-blue-text: #F8F5FC;
+  --accent-emerald: #22C55E;
+  --accent-emerald-soft: rgba(34, 197, 94, 0.2);
+  --accent-amber: #FBBF24;
+  --accent-amber-soft: rgba(251, 191, 36, 0.2);
+  --accent-rose: #F87171;
+  --accent-rose-soft: rgba(248, 113, 113, 0.2);
 
-  --callout-rose-bg: rgba(248, 113, 113, 0.16);
-  --callout-rose-border: rgba(248, 113, 113, 0.45);
-  --callout-rose-text: #FEE2E2;
+  /* 4. Borders, Dividers & Elevation Shadows */
+  --border-subtle: #1E345B;
+  --border-strong: #2D4A7C;
+  --shadow-card: 0 6px 20px -2px rgba(2, 6, 23, 0.65);
+  --shadow-floating: 0 20px 40px -6px rgba(2, 6, 23, 0.85);
 }
 
-@layer base {
-  html,
-  body {
-    width: 100%;
-    max-width: 100%;
-    overflow-x: hidden;
-    overscroll-behavior-x: none;
-    margin: 0;
-    padding: 0;
-    -webkit-text-size-adjust: 100%;
-    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-    background-color: var(--bg-canvas);
-    color: var(--text-primary);
-    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
-  }
-  #root {
-    width: 100%;
-    max-width: 100%;
-    overflow-x: hidden;
-    position: relative;
-  }
-  h1, h2, h3, .font-display {
-    font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
-  }
-  code, pre, .font-mono {
-    font-family: 'JetBrains Mono', monospace;
-  }
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  -webkit-font-smoothing: antialiased;
 }
 
+/* Prevent horizontal page overflow from wide math expressions or tables on mobile */
+mjx-container,
 .katex-display {
   max-width: 100%;
   overflow-x: auto;
   overflow-y: hidden;
-  padding: 2px 0;
 }
 
-.katex {
-  max-width: 100%;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-}
-
-mjx-container {
-  max-width: 100% !important;
-  overflow-x: auto;
-  overflow-y: hidden;
-}
-
+/* Hide scrollbars on horizontal filter pill bars while preserving touch scrolling */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -148,264 +113,82 @@ mjx-container {
 }
 
 /* ==========================================================================
-   LIGHT MODE — MIDNIGHT PLUM PALETTE MAPPING
+   DARK MODE ADAPTATION FOR TAILWIND UTILITY CLASSES
+   (Keeps Light Mode 100% true to the Blue, White & Yellow Design Reference)
    ========================================================================== */
-html:not(.dark) .bg-slate-50,
-html:not(.dark) .bg-slate-50\/80,
-html:not(.dark) .bg-slate-50\/70 {
-  background-color: var(--bg-canvas) !important;
-}
 
-html:not(.dark) .bg-white {
-  background-color: var(--bg-surface) !important;
-}
-
-html:not(.dark) .bg-slate-100,
-html:not(.dark) .bg-slate-100\/80,
-html:not(.dark) .bg-slate-100\/90 {
-  background-color: var(--bg-elevated) !important;
-}
-
-html:not(.dark) .bg-slate-200,
-html:not(.dark) .bg-slate-200\/75 {
-  background-color: var(--accent-secondary) !important;
-}
-
-html:not(.dark) .bg-slate-900,
-html:not(.dark) .bg-slate-950 {
-  background-color: var(--brand-primary) !important;
-}
-
-html:not(.dark) .bg-slate-800 {
-  background-color: var(--brand-secondary) !important;
-}
-
-html:not(.dark) .text-slate-900,
-html:not(.dark) .text-slate-800 {
-  color: var(--text-primary) !important;
-}
-
-html:not(.dark) .text-slate-700,
-html:not(.dark) .text-slate-600,
-html:not(.dark) .text-slate-500 {
-  color: var(--text-muted) !important;
-}
-
-html:not(.dark) .border-slate-100,
-html:not(.dark) .border-slate-200,
-html:not(.dark) .border-slate-200\/80,
-html:not(.dark) .border-slate-200\/70 {
-  border-color: var(--border-subtle) !important;
-}
-
-html:not(.dark) .border-slate-300 {
-  border-color: var(--border-strong) !important;
-}
-
-/* Primary Buttons & Interactive Elements -> Royal Violet (#7047A3) in Light Mode */
-html:not(.dark) .bg-blue-600,
-html:not(.dark) .bg-blue-700,
-html:not(.dark) .bg-violet-600,
-html:not(.dark) .bg-violet-700,
-html:not(.dark) .bg-indigo-600,
-html:not(.dark) .bg-indigo-700 {
-  background-color: var(--btn-primary) !important;
-  color: #FFFFFF !important;
-}
-
-html:not(.dark) .hover\:bg-blue-700:hover,
-html:not(.dark) .hover\:bg-blue-800:hover,
-html:not(.dark) .hover\:bg-violet-700:hover,
-html:not(.dark) .hover\:bg-indigo-700:hover {
-  background-color: var(--brand-secondary) !important;
-  color: #FFFFFF !important;
-}
-
-/* Primary Links & Selected Navigation -> Royal Violet (#7047A3) in Light Mode */
-html:not(.dark) .text-blue-600,
-html:not(.dark) .text-blue-700,
-html:not(.dark) .text-violet-600,
-html:not(.dark) .text-violet-700,
-html:not(.dark) .text-indigo-600,
-html:not(.dark) .text-indigo-700 {
-  color: var(--btn-primary) !important;
-}
-
-html:not(.dark) .text-blue-800,
-html:not(.dark) .text-blue-900,
-html:not(.dark) .text-blue-950,
-html:not(.dark) .text-violet-800,
-html:not(.dark) .text-violet-900,
-html:not(.dark) .text-violet-950 {
-  color: var(--brand-primary) !important;
-}
-
-/* Secondary Accent — Soft Lavender (#E9DDF7) in Light Mode */
-html:not(.dark) .bg-blue-50,
-html:not(.dark) .bg-blue-50\/70,
-html:not(.dark) .bg-blue-100,
-html:not(.dark) .bg-violet-50,
-html:not(.dark) .bg-violet-50\/70,
-html:not(.dark) .bg-violet-100 {
-  background-color: var(--accent-secondary) !important;
-}
-
-html:not(.dark) .border-blue-200,
-html:not(.dark) .border-blue-300,
-html:not(.dark) .border-blue-400,
-html:not(.dark) .border-violet-200,
-html:not(.dark) .border-violet-300 {
-  border-color: var(--border-strong) !important;
-}
-
-html:not(.dark) .hover\:border-blue-400:hover,
-html:not(.dark) .hover\:border-blue-500:hover {
-  border-color: var(--btn-primary) !important;
-}
-
-/* Premium Highlights — Champagne Gold (#B89545) in Light Mode */
-html:not(.dark) .bg-amber-400,
-html:not(.dark) .bg-amber-500 {
-  background-color: var(--accent-gold) !important;
-  color: #FFFFFF !important;
-}
-
-html:not(.dark) .text-amber-400,
-html:not(.dark) .text-amber-300 {
-  color: #E5C678 !important;
-}
-
-html:not(.dark) .text-amber-700,
-html:not(.dark) .text-amber-800,
-html:not(.dark) .text-amber-900,
-html:not(.dark) .text-amber-950 {
-  color: #7A5F22 !important;
-}
-
-html:not(.dark) .bg-amber-50,
-html:not(.dark) .bg-amber-50\/70,
-html:not(.dark) .bg-amber-50\/80,
-html:not(.dark) .bg-amber-100 {
-  background-color: var(--callout-amber-bg) !important;
-}
-
-html:not(.dark) .border-amber-200,
-html:not(.dark) .border-amber-300,
-html:not(.dark) .border-amber-400 {
-  border-color: var(--callout-amber-border) !important;
-}
-
-/* Success — Green (#168568) & Error — Red (#DC2626) in Light Mode */
-html:not(.dark) .bg-emerald-600,
-html:not(.dark) .bg-emerald-700,
-html:not(.dark) .bg-teal-600,
-html:not(.dark) .bg-teal-700 {
-  background-color: var(--color-success) !important;
-  color: #FFFFFF !important;
-}
-
-html:not(.dark) .text-emerald-600,
-html:not(.dark) .text-emerald-700,
-html:not(.dark) .text-emerald-800,
-html:not(.dark) .text-teal-700 {
-  color: var(--color-success) !important;
-}
-
-html:not(.dark) .bg-rose-600,
-html:not(.dark) .bg-red-600 {
-  background-color: var(--color-error) !important;
-  color: #FFFFFF !important;
-}
-
-html:not(.dark) .text-rose-600,
-html:not(.dark) .text-rose-700 {
-  color: var(--color-error) !important;
-}
-
-/* ==========================================================================
-   DARK MODE — MIDNIGHT PLUM PALETTE MAPPING
-   ========================================================================== */
-html.dark .bg-slate-50,
-html.dark .bg-slate-50\/80,
-html.dark .bg-slate-50\/70 {
-  background-color: var(--bg-canvas) !important;
-}
-
-html.dark .bg-white {
-  background-color: var(--bg-surface) !important;
-}
-
+html.dark .bg-white,
 html.dark .bg-white\/95,
 html.dark .bg-white\/90,
-html.dark .bg-white\/80,
-html.dark .bg-white\/90,
-html.dark .bg-white\/95 {
-  background-color: var(--bg-surface-glass) !important;
+html.dark .bg-white\/80 {
+  background-color: var(--bg-surface-1) !important;
 }
 
-html.dark header {
-  background-color: var(--bg-nav) !important;
-  border-color: var(--border-subtle) !important;
-}
-
-html.dark footer {
-  background-color: var(--bg-nav) !important;
-  border-color: var(--border-subtle) !important;
-}
-
-html.dark .bg-slate-900,
-html.dark .bg-slate-950 {
-  background-color: var(--brand-primary) !important;
-}
-
-html.dark .bg-slate-800 {
-  background-color: var(--brand-secondary) !important;
+html.dark .bg-slate-50 {
+  background-color: var(--bg-canvas) !important;
 }
 
 html.dark .bg-slate-100,
-html.dark .bg-slate-100\/80,
-html.dark .bg-slate-100\/90,
-html.dark .bg-slate-50\/90,
-html.dark .bg-slate-50\/80,
-html.dark .bg-slate-50\/70 {
-  background-color: var(--bg-elevated) !important;
+html.dark .bg-slate-200 {
+  background-color: var(--bg-surface-2) !important;
 }
 
-html.dark .bg-slate-200,
-html.dark .bg-slate-200\/75,
-html.dark .hover\:bg-slate-200:hover,
-html.dark .hover\:bg-slate-100:hover {
-  background-color: var(--bg-subtle) !important;
+html.dark .bg-blue-50,
+html.dark .bg-blue-50\/80,
+html.dark .bg-blue-100,
+html.dark .bg-amber-50,
+html.dark .bg-amber-50\/80,
+html.dark .bg-amber-100,
+html.dark .bg-violet-50,
+html.dark .bg-violet-100,
+html.dark .bg-rose-50,
+html.dark .bg-rose-100 {
+  background-color: var(--bg-surface-2) !important;
 }
 
-html.dark .from-white,
-html.dark .from-slate-50,
-html.dark .from-violet-50,
-html.dark .from-blue-50,
-html.dark .from-emerald-50 {
-  --tw-gradient-from: #24132F !important;
-  --tw-gradient-via: #1D1226 !important;
-  --tw-gradient-to: #18101F !important;
-  background-image: linear-gradient(135deg, #24132F 0%, #1D1226 50%, #18101F 100%) !important;
+html.dark .bg-emerald-50,
+html.dark .bg-emerald-100 {
+  background-color: rgba(16, 185, 129, 0.16) !important;
 }
 
-html.dark .via-slate-50,
-html.dark .via-white {
-  --tw-gradient-via: #1D1226 !important;
-}
-
-html.dark .to-slate-100,
-html.dark .to-blue-50,
-html.dark .to-emerald-50,
-html.dark .to-white {
-  --tw-gradient-to: #18101F !important;
-}
-
-/* Primary & Secondary Text in Dark Mode */
 html.dark .text-slate-900,
-html.dark .text-slate-800,
-html.dark .hover\:text-slate-900:hover {
+html.dark .text-slate-800 {
   color: var(--text-primary) !important;
+}
+
+html.dark .text-blue-950,
+html.dark .text-blue-900,
+html.dark .text-blue-800,
+html.dark .text-blue-700 {
+  color: #93C5FD !important;
+}
+
+html.dark .text-emerald-950,
+html.dark .text-emerald-900,
+html.dark .text-emerald-800,
+html.dark .text-emerald-700 {
+  color: #6EE7B7 !important;
+}
+
+html.dark .text-violet-950,
+html.dark .text-violet-900,
+html.dark .text-violet-800,
+html.dark .text-violet-700 {
+  color: #C4B5FD !important;
+}
+
+html.dark .text-amber-950,
+html.dark .text-amber-900,
+html.dark .text-amber-800,
+html.dark .text-amber-700 {
+  color: #FCD34D !important;
+}
+
+html.dark .text-rose-950,
+html.dark .text-rose-900,
+html.dark .text-rose-800,
+html.dark .text-rose-700 {
+  color: #FDA4AF !important;
 }
 
 html.dark .text-slate-700,
@@ -414,238 +197,72 @@ html.dark .text-slate-600 {
 }
 
 html.dark .text-slate-500,
-html.dark .text-slate-400,
-html.dark .text-slate-300 {
+html.dark .text-slate-400 {
   color: var(--text-muted) !important;
 }
 
-/* Primary Buttons in Dark Mode -> Light Royal Violet (#A78BFA) with Deep Plum Text (#18101F) */
-html.dark .bg-blue-600,
-html.dark .bg-blue-700,
-html.dark .bg-violet-600,
-html.dark .bg-violet-700,
-html.dark .bg-indigo-600,
-html.dark .bg-indigo-700 {
-  background-color: var(--btn-primary) !important;
-  color: var(--btn-primary-text) !important;
-}
-
-html.dark .hover\:bg-blue-700:hover,
-html.dark .hover\:bg-violet-700:hover,
-html.dark .hover\:bg-indigo-700:hover {
-  background-color: var(--btn-primary-hover) !important;
-  color: var(--btn-primary-text) !important;
-}
-
-/* Secondary Accent — Soft Lavender (#C4B5FD) in Dark Mode */
-html.dark .text-blue-600,
-html.dark .text-blue-700,
-html.dark .text-blue-800,
-html.dark .text-blue-900,
-html.dark .text-blue-950,
-html.dark .text-violet-600,
-html.dark .text-violet-700,
-html.dark .text-violet-800,
-html.dark .text-violet-900,
-html.dark .text-violet-950,
-html.dark .text-indigo-700,
-html.dark .text-sky-400,
-html.dark .text-sky-300 {
-  color: var(--accent-secondary) !important;
-}
-
-/* Champagne Gold (#D6B56D) Highlights in Dark Mode */
-html.dark .bg-amber-400,
-html.dark .bg-amber-300,
-html.dark .bg-amber-500 {
-  background-color: var(--accent-gold) !important;
-  color: #18101F !important;
-}
-
-html.dark .text-amber-400,
-html.dark .text-amber-300,
-html.dark .text-amber-700,
-html.dark .text-amber-800,
-html.dark .text-amber-900,
-html.dark .text-amber-950 {
-  color: var(--accent-gold) !important;
-}
-
-/* Success (#34D399) & Error (#F87171) in Dark Mode */
-html.dark .bg-emerald-600,
-html.dark .bg-emerald-500,
-html.dark .bg-emerald-400,
-html.dark .bg-teal-600 {
-  background-color: var(--color-success) !important;
-  color: #18101F !important;
-}
-
-html.dark .text-emerald-400,
-html.dark .text-emerald-600,
-html.dark .text-emerald-700,
-html.dark .text-emerald-800,
-html.dark .text-emerald-900,
-html.dark .text-emerald-950,
-html.dark .text-teal-700 {
-  color: var(--color-success) !important;
-}
-
-html.dark .bg-rose-600,
-html.dark .bg-red-600 {
-  background-color: var(--color-error) !important;
-  color: #18101F !important;
-}
-
-html.dark .text-rose-600,
-html.dark .text-rose-700,
-html.dark .text-rose-800,
-html.dark .text-rose-900 {
-  color: var(--color-error) !important;
-}
-
-/* Tinted Callout & Badge Surfaces in Dark Mode */
-html.dark .bg-violet-50,
-html.dark .bg-violet-50\/70,
-html.dark .bg-violet-100,
-html.dark .bg-violet-200 {
-  background-color: var(--callout-violet-bg) !important;
-  color: var(--callout-violet-text) !important;
-}
-
-html.dark .border-violet-200,
-html.dark .border-violet-200\/80,
-html.dark .border-violet-300 {
-  border-color: var(--callout-violet-border) !important;
-}
-
-html.dark .bg-amber-50,
-html.dark .bg-amber-50\/70,
-html.dark .bg-amber-50\/80,
-html.dark .bg-amber-50\/90,
-html.dark .bg-amber-100 {
-  background-color: var(--callout-amber-bg) !important;
-  color: var(--callout-amber-text) !important;
-}
-
-html.dark .border-amber-200,
-html.dark .border-amber-200\/90,
-html.dark .border-amber-300,
-html.dark .border-amber-400 {
-  border-color: var(--callout-amber-border) !important;
-}
-
-html.dark .bg-emerald-50,
-html.dark .bg-emerald-100 {
-  background-color: var(--callout-emerald-bg) !important;
-  color: var(--callout-emerald-text) !important;
-}
-
-html.dark .border-emerald-200,
-html.dark .border-emerald-300,
-html.dark .border-emerald-400 {
-  border-color: var(--callout-emerald-border) !important;
-}
-
-html.dark .bg-blue-50,
-html.dark .bg-blue-50\/70,
-html.dark .bg-blue-100 {
-  background-color: var(--callout-blue-bg) !important;
-  color: var(--callout-blue-text) !important;
-}
-
-html.dark .border-blue-200,
-html.dark .border-blue-200\/80,
-html.dark .border-blue-300,
-html.dark .border-blue-400 {
-  border-color: var(--callout-blue-border) !important;
-}
-
-html.dark .bg-rose-50,
-html.dark .bg-rose-100 {
-  background-color: var(--callout-rose-bg) !important;
-  color: var(--callout-rose-text) !important;
-}
-
-/* Borders & Dividers in Dark Mode — Plum Gray (#493751) */
 html.dark .border-slate-100,
 html.dark .border-slate-200,
-html.dark .border-slate-200\/80,
-html.dark .border-slate-200\/70,
-html.dark .border-slate-700,
-html.dark .border-slate-800 {
+html.dark .border-slate-300,
+html.dark .border-blue-200,
+html.dark .border-blue-300,
+html.dark .border-amber-200,
+html.dark .border-amber-300,
+html.dark .border-emerald-200,
+html.dark .border-emerald-300,
+html.dark .border-violet-200 {
   border-color: var(--border-subtle) !important;
 }
 
-html.dark .border-slate-300 {
-  border-color: var(--border-strong) !important;
-}
-
-html.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]),
-html.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
-  border-color: var(--border-subtle) !important;
-}
-
-/* Form Controls in Both Themes */
-html:not(.dark) input:not([type="range"]),
-html:not(.dark) select,
-html:not(.dark) textarea {
-  border-color: var(--border-subtle);
-  color: var(--text-primary);
-}
-
-html.dark input:not([type="range"]),
+html.dark input:not([type="checkbox"]):not([type="radio"]),
 html.dark select,
 html.dark textarea {
-  background-color: var(--bg-elevated) !important;
-  color: var(--text-primary) !important;
-  border-color: var(--border-subtle) !important;
-}
-
-html.dark input::placeholder,
-html.dark textarea::placeholder {
-  color: var(--text-muted) !important;
-}
-
-/* Official TIE Document Tables & Print Previews */
-.official-tie-doc {
-  background: var(--bg-surface);
+  background-color: var(--bg-surface-2);
   color: var(--text-primary);
-  padding: 16px;
-  border: 2px solid var(--border-strong);
-  border-radius: 8px;
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: 11.5px;
-  line-height: 1.45;
-  overflow-x: auto;
-  margin-top: 8px;
+  border-color: var(--border-strong);
 }
 
-.official-tie-doc table {
+html.dark input.bg-transparent,
+html.dark select.bg-transparent {
+  background-color: transparent !important;
+  border-color: transparent !important;
+}
+
+/* ==========================================================================
+   PRINTABLE TEACHER STUDIO & EXAM PAPER DOCUMENT STYLING
+   Always renders clean, ink-friendly white paper for PDF export
+   ========================================================================== */
+
+#msg-body-studio-preview,
+.printable-paper-sheet {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+#msg-body-studio-preview *,
+.printable-paper-sheet * {
+  color: #0f172a;
+}
+
+#msg-body-studio-preview table,
+.printable-paper-sheet table {
   width: 100%;
   border-collapse: collapse;
-  margin-bottom: 10px;
+  background-color: #ffffff !important;
 }
 
-.official-tie-doc th,
-.official-tie-doc td {
-  border: 1px solid var(--border-strong);
+#msg-body-studio-preview th,
+#msg-body-studio-preview td,
+.printable-paper-sheet th,
+.printable-paper-sheet td {
+  border: 1px solid #334155 !important;
   padding: 6px 8px;
-  text-align: left;
-  vertical-align: top;
-  color: var(--text-primary);
+  color: #0f172a !important;
+  background-color: #ffffff !important;
 }
 
-.official-tie-doc th {
-  background-color: var(--bg-elevated);
-  color: var(--text-primary);
+#msg-body-studio-preview th,
+.printable-paper-sheet th {
+  background-color: #f1f5f9 !important;
   font-weight: 800;
-  text-transform: uppercase;
-  font-size: 10px;
-}
-
-/* Interactive SVG Diagrams in Dark Mode - keep textbook diagrams crisp & legible */
-html.dark .moha-svg-diagram {
-  background-color: var(--bg-elevated) !important;
-  border-color: var(--border-subtle) !important;
-  color: var(--text-primary) !important;
 }

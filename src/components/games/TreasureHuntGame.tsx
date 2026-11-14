@@ -38,7 +38,6 @@ import {
   GameQuestion,
   GameSourceFilter,
   PLAY_CLASSES,
-  PLAY_SUBJECTS,
   TREASURE_ADVENTURE_WORLDS,
   TreasureAdventureWorld,
   TreasureCheckpoint,
@@ -104,11 +103,9 @@ export const TreasureHuntGame: React.FC<TreasureHuntGameProps> = ({
 
   const [progress, setProgress] = useState<ElimikaPlayProgress>(() => loadPlayProgress());
   const [selectedWorldId, setSelectedWorldId] = useState<string>(TREASURE_ADVENTURE_WORLDS[0].id);
-  const [selectedClass, setSelectedClass] = useState<string>(
-    PLAY_CLASSES.includes(initialClass as never) ? initialClass : 'Form 1'
-  );
+  const [selectedClass, setSelectedClass] = useState<string>(initialClass || 'Form 1');
   const [selectedSubject, setSelectedSubject] = useState<string>(
-    PLAY_SUBJECTS.includes(initialSubject as never) ? initialSubject : 'Basic Mathematics'
+    initialSubject || 'Basic Mathematics'
   );
   const [selectedTopic, setSelectedTopic] = useState<string>(initialTopic || 'ALL');
   const [sourceFilter, setSourceFilter] = useState<GameSourceFilter>('BOOK');
@@ -117,6 +114,21 @@ export const TreasureHuntGame: React.FC<TreasureHuntGameProps> = ({
   const [isGeneratingAiQuestions, setIsGeneratingAiQuestions] = useState<boolean>(false);
   const [aiQuestionsOverride, setAiQuestionsOverride] = useState<GameQuestion[] | null>(null);
   const [bankRefreshTick, setBankRefreshTick] = useState<number>(0);
+
+  useEffect(() => {
+    if (initialClass) setSelectedClass(initialClass);
+    if (initialSubject) setSelectedSubject(initialSubject);
+    if (initialTopic) setSelectedTopic(initialTopic);
+    setAiQuestionsOverride(null);
+  }, [initialClass, initialSubject, initialTopic]);
+
+  useEffect(() => {
+    setAiQuestionsOverride(null);
+    setSelectedOptionIdx(null);
+    setFeedbackState('idle');
+    setAttemptCount(0);
+    setHintVisible(false);
+  }, [selectedClass, selectedSubject, selectedTopic]);
 
   // Launch directly into the 3D Island World so there's no boring text wall
   const [phase, setPhase] = useState<HuntPhase>('EXPLORING');
@@ -519,7 +531,7 @@ export const TreasureHuntGame: React.FC<TreasureHuntGameProps> = ({
   return (
     <div
       ref={rootContainerRef}
-      className="fixed inset-0 z-50 w-full h-[100dvh] bg-slate-950 text-slate-100 overflow-hidden select-none flex flex-col touch-manipulation"
+      className="fixed inset-x-0 top-0 bottom-14 lg:bottom-0 z-50 w-full h-[calc(100dvh-3.5rem)] lg:h-[100dvh] bg-slate-950 text-slate-100 overflow-hidden select-none flex flex-col touch-manipulation"
     >
       {/* ==================== FULL-SCREEN 3D ISLAND ARCHIPELAGO ==================== */}
       <div className="relative flex-1 w-full h-full overflow-hidden">
@@ -560,27 +572,79 @@ export const TreasureHuntGame: React.FC<TreasureHuntGameProps> = ({
               <span className="hidden sm:inline">Exit</span>
             </button>
 
-            <div className="px-2 sm:px-2.5 py-1 rounded-xl bg-slate-900/90 border border-amber-500/30 flex items-center gap-1.5">
+            <div className="px-2 sm:px-2.5 py-1 rounded-xl bg-slate-900/90 border border-amber-500/30 flex flex-wrap items-center gap-1.5 text-[11px] sm:text-xs">
               <Compass className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span className="text-[11px] sm:text-sm font-black text-amber-400 whitespace-nowrap">
-                Treasure Hunt
-              </span>
-              <span className="text-[11px] font-bold text-slate-300 hidden md:inline">
-                {selectedClass} · {selectedSubject}
-              </span>
+              <select
+                aria-label="Select Class"
+                value={selectedClass}
+                onChange={(e) => {
+                  const nextCls = e.target.value;
+                  setSelectedClass(nextCls);
+                  const nextSubs = getAvailableSubjectsForClass(nextCls, allPapers);
+                  if (!nextSubs.includes(selectedSubject)) {
+                    setSelectedSubject(nextSubs[0] || 'Basic Mathematics');
+                  }
+                  setSelectedTopic('ALL');
+                  setAiQuestionsOverride(null);
+                }}
+                className="bg-transparent text-amber-400 font-black focus:outline-none cursor-pointer"
+              >
+                {PLAY_CLASSES.map((c) => (
+                  <option key={c} value={c} className="bg-slate-900 text-white">
+                    {c}
+                  </option>
+                ))}
+              </select>
+              <span className="text-slate-500">·</span>
+              <select
+                aria-label="Select Subject"
+                value={selectedSubject}
+                onChange={(e) => {
+                  setSelectedSubject(e.target.value);
+                  setSelectedTopic('ALL');
+                  setAiQuestionsOverride(null);
+                }}
+                className="bg-transparent text-emerald-300 font-black focus:outline-none cursor-pointer max-w-[125px] sm:max-w-[165px] truncate"
+              >
+                {availableSubjects.map((s) => (
+                  <option key={s} value={s} className="bg-slate-900 text-white">
+                    {s}
+                  </option>
+                ))}
+              </select>
+              <span className="text-slate-500">·</span>
+              <select
+                aria-label="Select Topic or Chapter"
+                value={selectedTopic}
+                onChange={(e) => {
+                  setSelectedTopic(e.target.value);
+                  setAiQuestionsOverride(null);
+                }}
+                className="bg-transparent text-white font-black focus:outline-none cursor-pointer max-w-[135px] sm:max-w-[200px] truncate"
+                title="Change Topic / Chapter"
+              >
+                <option value="ALL" className="bg-slate-900 text-white">
+                  All Topics ({availableTopics.length})
+                </option>
+                {availableTopics.map((t) => (
+                  <option key={t} value={t} className="bg-slate-900 text-white">
+                    {t}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <button
               onClick={() => setPhase('SETUP')}
               className="px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-amber-300 text-[11px] sm:text-xs font-bold flex items-center gap-1 cursor-pointer border border-amber-400/30"
-              title="Change World, Class, or Subject"
+              title="Change World, Class, Subject, or Topic"
             >
               <Settings className="w-3.5 h-3.5" />
               <span className="hidden xs:inline sm:inline">Setup</span>
             </button>
 
             <div
-              className="hidden sm:flex px-2.5 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 text-xs font-black items-center gap-1.5 border border-emerald-400/40"
+              className="hidden lg:flex px-2.5 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 text-xs font-black items-center gap-1.5 border border-emerald-400/40"
               title="Non-Repeating Textbook Question Bank Active"
             >
               <BookOpen className="w-3.5 h-3.5 text-emerald-400" />
@@ -838,9 +902,9 @@ export const TreasureHuntGame: React.FC<TreasureHuntGameProps> = ({
         {phase === 'EXPLORING' && activeCheckpointModalIdx !== null && activeCp && (
           <div className="absolute inset-0 z-30 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
             <div className="w-full max-w-lg bg-slate-900/95 border-2 border-amber-400/80 rounded-3xl p-5 sm:p-6 space-y-4 shadow-2xl">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
+              <div className="flex items-start justify-between gap-2 border-b border-slate-800 pb-3">
+                <div className="space-y-1.5 flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className="px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950 font-black text-xs">
                       STAGE #{activeCheckpointModalIdx + 1} · Q{checkpointSubQuestionIdx + 1}/
                       {totalSubQns}
@@ -849,13 +913,31 @@ export const TreasureHuntGame: React.FC<TreasureHuntGameProps> = ({
                       {activeCp.title}
                     </h3>
                   </div>
-                  <div className="text-[11px] font-bold text-amber-300">
-                    {currentQuestion.sourceLabel}
+                  <div className="flex flex-wrap items-center gap-2 text-[11px]">
+                    <span className="font-bold text-amber-300 truncate">
+                      {currentQuestion.sourceLabel}
+                    </span>
+                    <select
+                      aria-label="Change Question Topic"
+                      value={selectedTopic}
+                      onChange={(e) => {
+                        setSelectedTopic(e.target.value);
+                        setAiQuestionsOverride(null);
+                      }}
+                      className="bg-slate-800 text-emerald-300 font-bold rounded-lg px-2 py-0.5 border border-slate-700 focus:outline-none cursor-pointer max-w-[210px] truncate"
+                    >
+                      <option value="ALL">Topic: All Chapters</option>
+                      {availableTopics.map((t) => (
+                        <option key={t} value={t}>
+                          Topic: {t}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
                 <button
                   onClick={() => setActiveCheckpointModalIdx(null)}
-                  className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer"
+                  className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer shrink-0"
                 >
                   <X className="w-4 h-4" />
                 </button>
