@@ -13,11 +13,13 @@ import {
   Sparkles,
   Star,
   Trophy,
+  Users,
   Wrench,
 } from 'lucide-react';
 import { StemArenaGame } from './StemArenaGame';
 import { TreasureHuntGame } from './games/TreasureHuntGame';
 import { EscapeClassroomGame } from '../games/EscapeClassroomGame';
+import { TugOfWarGame } from '../games/TugOfWarGame';
 import {
   ElimikaPlayProgress,
   getAvailableSubjectsForClass,
@@ -37,7 +39,8 @@ export type PlayGameRoute =
   | 'treasure_hunt'
   | 'treasure_hunt_live'
   | 'escape_classroom'
-  | 'stem_arena';
+  | 'stem_arena'
+  | 'tug_of_war';
 
 interface ElimikaPlayHubProps {
   initialRoute?: PlayGameRoute;
@@ -161,6 +164,7 @@ export const ElimikaPlayHub: React.FC<ElimikaPlayHubProps> = ({
         treasure_hunt_live: '#treasure-hunt-live',
         escape_classroom: '#escape-classroom',
         stem_arena: '#stem-arena',
+        tug_of_war: '#tug-of-war',
       };
       window.history.replaceState(null, '', hashMap[route]);
     }
@@ -238,6 +242,21 @@ export const ElimikaPlayHub: React.FC<ElimikaPlayHubProps> = ({
     return (
       <div className="pb-16 lg:pb-0">
         <EscapeClassroomGame
+          initialClass={selectedLaunchClass}
+          initialSubject={selectedLaunchSubject}
+          initialTopic={selectedLaunchTopic}
+          allPapers={allPapers}
+          onExitToHub={() => navigateToGame('hub')}
+          onProgressUpdate={(p) => setProgress(p)}
+        />
+      </div>
+    );
+  }
+
+  if (activeRoute === 'tug_of_war') {
+    return (
+      <div className="pb-16 lg:pb-0">
+        <TugOfWarGame
           initialClass={selectedLaunchClass}
           initialSubject={selectedLaunchSubject}
           initialTopic={selectedLaunchTopic}
@@ -836,6 +855,32 @@ export const ElimikaPlayHub: React.FC<ElimikaPlayHubProps> = ({
               >
                 <Gamepad2 className="w-4 h-4" />
                 <span>Play Math Arena →</span>
+              </button>
+            </div>
+          </div>
+
+          {/* GAME 5: ELIMIKA TUG OF WAR (3D Team Blue vs Team Orange Sports Arena) */}
+          <div className="sm:col-span-2 bg-gradient-to-r from-[#1D4ED8] via-[#0F172A] to-[#EA580C] text-white rounded-3xl p-5 sm:p-6 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-2 border-amber-400/50">
+            <div className="space-y-1.5 max-w-2xl">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 font-black text-[11px]">
+                <Users className="w-3.5 h-3.5" /> NEW · 3D Sports Arena · Team Blue vs Team Orange
+              </span>
+              <h2 className="text-xl sm:text-2xl font-black tracking-tight">
+                Elimika Tug of War
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
+                Compete in Two-Team Classroom Mode, Player vs Smart AI, Quick Play, or Teacher Controlled Mode! Answer {selectedLaunchClass} {selectedLaunchSubject} questions (MCQ, True/False &amp; Numerical) to heave the 3D braided rope across the winning line.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0">
+              <button
+                type="button"
+                onClick={() => navigateToGame('tug_of_war')}
+                className="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer shadow-lg"
+              >
+                <Trophy className="w-4 h-4" />
+                <span>Play 3D Tug of War →</span>
               </button>
             </div>
           </div>

@@ -120,6 +120,7 @@ interface EscapeClassroom3DSceneProps {
   isEscaped: boolean;
   externalMoveDir: { x: number; z: number };
   walkToStationTrigger: { id: RoomStationId; seq: number } | null;
+  cameraRotateTrigger?: { deltaAngle: number; seq: number } | null;
   onArriveAtStation: (id: RoomStationId) => void;
   onNearStationChange: (id: RoomStationId | null) => void;
 }
@@ -359,6 +360,7 @@ export const EscapeClassroom3DScene: React.FC<EscapeClassroom3DSceneProps> = ({
   isEscaped,
   externalMoveDir,
   walkToStationTrigger,
+  cameraRotateTrigger = null,
   onArriveAtStation,
   onNearStationChange,
 }) => {
@@ -382,7 +384,18 @@ export const EscapeClassroom3DScene: React.FC<EscapeClassroom3DSceneProps> = ({
   verifiedSpecimensRef.current = verifiedSpecimensCount;
 
   const cameraModeRef = useRef<CameraViewMode>(cameraMode);
-  cameraModeRef.current = cameraMode;
+  const prevCameraModeRef = useRef<CameraViewMode>(cameraMode);
+  const modePresetTransitionRef = useRef<number>(0);
+  if (cameraModeRef.current !== cameraMode) {
+    cameraModeRef.current = cameraMode;
+    modePresetTransitionRef.current = 0.55;
+  }
+
+  const pendingRotateDeltaRef = useRef<number>(0);
+  useEffect(() => {
+    if (!cameraRotateTrigger) return;
+    pendingRotateDeltaRef.current += cameraRotateTrigger.deltaAngle;
+  }, [cameraRotateTrigger]);
 
   const isModalOpenRef = useRef<boolean>(isModalOpen);
   isModalOpenRef.current = isModalOpen;
@@ -567,11 +580,27 @@ export const EscapeClassroom3DScene: React.FC<EscapeClassroom3DSceneProps> = ({
     floorMesh.name = 'walkable_floor';
     roomGroup.add(floorMesh);
 
-    // Walls (Back, Left, Right)
-    const wallMat = new THREE.MeshStandardMaterial({
+    // Walls (Back, Left, Right) with independent materials so any wall between the camera and the room automatically fades to transparent cutaway!
+    const backWallMat = new THREE.MeshStandardMaterial({
       color: 0x1e293b,
       roughness: 0.7,
       metalness: 0.08,
+      transparent: true,
+      opacity: 1.0,
+    });
+    const leftWallMat = new THREE.MeshStandardMaterial({
+      color: 0x1e293b,
+      roughness: 0.7,
+      metalness: 0.08,
+      transparent: true,
+      opacity: 1.0,
+    });
+    const rightWallMat = new THREE.MeshStandardMaterial({
+      color: 0x1e293b,
+      roughness: 0.7,
+      metalness: 0.08,
+      transparent: true,
+      opacity: 1.0,
     });
     const trimMat = new THREE.MeshStandardMaterial({
       color: 0x334155,
@@ -579,20 +608,31 @@ export const EscapeClassroom3DScene: React.FC<EscapeClassroom3DSceneProps> = ({
       metalness: 0.3,
     });
 
-    const backWall = new THREE.Mesh(new THREE.BoxGeometry(14.6, 5.2, 0.35), wallMat);
+    const backWall = new THREE.Mesh(new THREE.BoxGeometry(14.6, 5.2, 0.35), backWallMat);
     backWall.position.set(0, 2.6, -6.1);
     backWall.receiveShadow = true;
     roomGroup.add(backWall);
 
-    const leftWall = new THREE.Mesh(new THREE.BoxGeometry(0.35, 5.2, 12.4), wallMat);
+    const leftWall = new THREE.Mesh(new THREE.BoxGeometry(0.35, 5.2, 12.4), leftWallMat);
     leftWall.position.set(-7.1, 2.6, 0);
     leftWall.receiveShadow = true;
     roomGroup.add(leftWall);
 
-    const rightWall = new THREE.Mesh(new THREE.BoxGeometry(0.35, 5.2, 12.4), wallMat);
-    rightWall.position.set(7.1, 2.6, 0);
-    rightWall.receiveShadow = true;
-    roomGroup.add(rightWall);
+    // Split Right Wall around the Exit Doorway (z = 1.25 to 3.55, y = 0 to 3.7) so opening the door reveals the Serengeti outside!
+    const rightWallNorth = new THREE.Mesh(new THREE.BoxGeometry(0.35, 5.2, 7.45), rightWallMat);
+    rightWallNorth.position.set(7.1, 2.6, -2.475);
+    rightWallNorth.receiveShadow = true;
+    roomGroup.add(rightWallNorth);
+
+    const rightWallSouth = new THREE.Mesh(new THREE.BoxGeometry(0.35, 5.2, 2.65), rightWallMat);
+    rightWallSouth.position.set(7.1, 2.6, 4.875);
+    rightWallSouth.receiveShadow = true;
+    roomGroup.add(rightWallSouth);
+
+    const rightWallLintel = new THREE.Mesh(new THREE.BoxGeometry(0.35, 1.5, 2.3), rightWallMat);
+    rightWallLintel.position.set(7.1, 4.45, 2.4);
+    rightWallLintel.receiveShadow = true;
+    roomGroup.add(rightWallLintel);
 
     // Baseboards
     const backTrim = new THREE.Mesh(new THREE.BoxGeometry(14.4, 0.25, 0.42), trimMat);
@@ -1090,6 +1130,322 @@ export const EscapeClassroom3DScene: React.FC<EscapeClassroom3DSceneProps> = ({
       headPivot.add(pupil);
     });
 
+    // Cool Safari Sunglasses & Happy Smile (activated when riding the Serengeti Safari Cruiser!)
+    const sunglassesGroup = new THREE.Group();
+    sunglassesGroup.visible = false;
+    headPivot.add(sunglassesGroup);
+    const frameMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.2, metalness: 0.8 });
+    const lensMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, emissive: 0xd97706, emissiveIntensity: 0.35, roughness: 0.1, metalness: 0.9 });
+    const bridgeBar = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.04, 0.04), frameMat);
+    bridgeBar.position.set(0, 0.27, 0.235);
+    sunglassesGroup.add(bridgeBar);
+    [-0.11, 0.11].forEach((lx) => {
+      const lens = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.11, 0.04), lensMat);
+      lens.position.set(lx, 0.24, 0.235);
+      sunglassesGroup.add(lens);
+    });
+    const smileMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(0.18, 0.045, 0.03),
+      new THREE.MeshBasicMaterial({ color: 0xffffff })
+    );
+    smileMesh.position.set(0, 0.11, 0.225);
+    sunglassesGroup.add(smileMesh);
+
+    // ==================== 3D SERENGETI NATIONAL PARK & 4x4 SAFARI CRUISER OUTSIDE DOOR ====================
+    const serengetiGroup = new THREE.Group();
+    scene.add(serengetiGroup);
+
+    // Golden Savanna Grassland Plane extending eastward outside the door (x = 7 to 110)
+    const savannaGround = new THREE.Mesh(
+      new THREE.PlaneGeometry(110, 80),
+      new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.88, metalness: 0.04 })
+    );
+    savannaGround.rotation.x = -Math.PI / 2;
+    savannaGround.position.set(62, -0.01, 2.4);
+    savannaGround.receiveShadow = !isSoftwareGl;
+    serengetiGroup.add(savannaGround);
+
+    // Red-Ochre Dusty Safari Road leading straight from the classroom Exit Door into the Serengeti
+    const safariRoad = new THREE.Mesh(
+      new THREE.PlaneGeometry(105, 4.2),
+      new THREE.MeshStandardMaterial({ color: 0x9a3412, roughness: 0.92, metalness: 0.02 })
+    );
+    safariRoad.rotation.x = -Math.PI / 2;
+    safariRoad.position.set(59.5, 0.015, 2.4);
+    safariRoad.receiveShadow = !isSoftwareGl;
+    serengetiGroup.add(safariRoad);
+
+    // Wooden "WELCOME TO SERENGETI NATIONAL PARK" Arch Gate at x = 16.5
+    const gateGroup = new THREE.Group();
+    gateGroup.position.set(16.5, 0, 2.4);
+    const woodLogMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.75 });
+    [-2.3, 2.3].forEach((gz) => {
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.26, 4.8, 12), woodLogMat);
+      post.position.set(0, 2.4, gz);
+      gateGroup.add(post);
+    });
+    const gateBeam = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.95, 5.4), woodLogMat);
+    gateBeam.position.set(0, 4.6, 0);
+    gateGroup.add(gateBeam);
+
+    const gateCanvas = document.createElement('canvas');
+    gateCanvas.width = 512;
+    gateCanvas.height = 128;
+    const gCtx = gateCanvas.getContext('2d')!;
+    gCtx.fillStyle = '#451a03';
+    gCtx.fillRect(0, 0, 512, 128);
+    gCtx.strokeStyle = '#fbbf24';
+    gCtx.lineWidth = 6;
+    gCtx.strokeRect(6, 6, 500, 116);
+    gCtx.fillStyle = '#fef08a';
+    gCtx.font = '900 28px Inter, system-ui, sans-serif';
+    gCtx.textAlign = 'center';
+    gCtx.fillText('🦁 SERENGETI NATIONAL PARK', 256, 56);
+    gCtx.fillStyle = '#34d399';
+    gCtx.font = '700 20px Inter, system-ui, sans-serif';
+    gCtx.fillText('TANZANIA • VIP STUDENT SAFARI', 256, 96);
+    const gateTex = new THREE.CanvasTexture(gateCanvas);
+    gateTex.colorSpace = THREE.SRGBColorSpace;
+    const gateSignMat = new THREE.MeshBasicMaterial({ map: gateTex, side: THREE.DoubleSide });
+    const gateSignFront = new THREE.Mesh(new THREE.PlaneGeometry(4.8, 0.85), gateSignMat);
+    gateSignFront.rotation.y = -Math.PI / 2;
+    gateSignFront.position.set(-0.24, 4.6, 0);
+    gateGroup.add(gateSignFront);
+    serengetiGroup.add(gateGroup);
+
+    // Golden Serengeti Sunset Sun on the Horizon
+    const sunOrb = new THREE.Mesh(
+      new THREE.SphereGeometry(6.5, 24, 24),
+      new THREE.MeshBasicMaterial({ color: 0xfbbf24 })
+    );
+    sunOrb.position.set(98, 13, 2.4);
+    serengetiGroup.add(sunOrb);
+
+    // 8 Composite 3D Flat-Top Umbrella Acacia Trees along the Serengeti Safari Route
+    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5c2d0c, roughness: 0.8 });
+    const canopyMat1 = new THREE.MeshStandardMaterial({ color: 0x3f6212, roughness: 0.7 });
+    const canopyMat2 = new THREE.MeshStandardMaterial({ color: 0x4d7c0f, roughness: 0.65 });
+    const acaciaCoords: Array<[number, number, number]> = [
+      [14, -3.5, 1.0],
+      [21, 7.2, 1.15],
+      [28, -4.8, 0.95],
+      [35, 6.5, 1.2],
+      [43, -4.2, 1.1],
+      [51, 7.0, 1.05],
+      [60, -5.0, 1.25],
+      [68, 6.8, 1.0],
+    ];
+    acaciaCoords.forEach(([ax, az, sc]) => {
+      const tree = new THREE.Group();
+      tree.position.set(ax, 0, az);
+      tree.scale.setScalar(sc);
+      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.32, 3.6, 10), trunkMat);
+      trunk.position.set(0, 1.8, 0);
+      trunk.rotation.z = 0.08;
+      tree.add(trunk);
+      const branchL = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.15, 1.8, 8), trunkMat);
+      branchL.position.set(-0.55, 3.8, 0.2);
+      branchL.rotation.z = 0.65;
+      tree.add(branchL);
+      const branchR = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.15, 1.6, 8), trunkMat);
+      branchR.position.set(0.55, 3.6, -0.2);
+      branchR.rotation.z = -0.6;
+      tree.add(branchR);
+      const flatTop1 = new THREE.Mesh(new THREE.CylinderGeometry(2.6, 1.9, 0.42, 14), canopyMat1);
+      flatTop1.position.set(-0.4, 4.45, 0.1);
+      tree.add(flatTop1);
+      const flatTop2 = new THREE.Mesh(new THREE.CylinderGeometry(2.1, 1.5, 0.36, 14), canopyMat2);
+      flatTop2.position.set(0.65, 4.15, -0.2);
+      tree.add(flatTop2);
+      serengetiGroup.add(tree);
+    });
+
+    // 4 Animated 3D Serengeti Giraffes along the trail (with swaying necks!)
+    const giraffeNeckPivots: THREE.Group[] = [];
+    const giraffeMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.6 });
+    const giraffeSpotMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.7 });
+    const giraffeCoords: Array<[number, number, number]> = [
+      [24, -2.6, 0.4],
+      [38, 5.4, -0.5],
+      [54, -2.8, 0.3],
+      [64, 5.6, -0.4],
+    ];
+    giraffeCoords.forEach(([gx, gz, rotY]) => {
+      const gGroup = new THREE.Group();
+      gGroup.position.set(gx, 0, gz);
+      gGroup.rotation.y = rotY;
+      const gBody = new THREE.Mesh(new THREE.BoxGeometry(1.35, 0.75, 0.62), giraffeMat);
+      gBody.position.set(0, 1.85, 0);
+      gGroup.add(gBody);
+      const gSpot = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.45, 0.65), giraffeSpotMat);
+      gSpot.position.set(0, 1.88, 0);
+      gGroup.add(gSpot);
+      [
+        [-0.48, -0.2],
+        [-0.48, 0.2],
+        [0.48, -0.2],
+        [0.48, 0.2],
+      ].forEach(([lx, lz]) => {
+        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.06, 1.7, 8), giraffeMat);
+        leg.position.set(lx, 0.85, lz);
+        gGroup.add(leg);
+      });
+      const neckPivot = new THREE.Group();
+      neckPivot.position.set(0.55, 2.1, 0);
+      const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.22, 2.2, 10), giraffeMat);
+      neck.position.set(0.35, 0.95, 0);
+      neck.rotation.z = -0.32;
+      neckPivot.add(neck);
+      const gHead = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.26, 0.24), giraffeMat);
+      gHead.position.set(0.78, 1.98, 0);
+      neckPivot.add(gHead);
+      gGroup.add(neckPivot);
+      giraffeNeckPivots.push(neckPivot);
+      serengetiGroup.add(gGroup);
+    });
+
+    // ==================== COMPOSITE 10-PART 3D 4x4 OPEN-ROOF SAFARI LAND CRUISER ====================
+    const safariCarGroup = new THREE.Group();
+    safariCarGroup.position.set(11.4, 0, 2.4);
+    serengetiGroup.add(safariCarGroup);
+
+    const safariBodyMat = new THREE.MeshStandardMaterial({
+      color: 0xd6d3d1,
+      roughness: 0.32,
+      metalness: 0.35,
+    });
+    const safariStripeMat = new THREE.MeshStandardMaterial({
+      color: 0x15803d,
+      roughness: 0.4,
+      metalness: 0.2,
+    });
+    const darkMetalMat = new THREE.MeshStandardMaterial({
+      color: 0x1e293b,
+      roughness: 0.35,
+      metalness: 0.75,
+    });
+    const canopyFabricMat = new THREE.MeshStandardMaterial({
+      color: 0xa16207,
+      roughness: 0.75,
+      metalness: 0.05,
+    });
+
+    const carChassis = new THREE.Group();
+    safariCarGroup.add(carChassis);
+
+    // 1. Lower 4x4 Body Hull & Side Doors
+    const mainHull = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.82, 1.72), safariBodyMat);
+    mainHull.position.set(0, 0.78, 0);
+    mainHull.castShadow = !isSoftwareGl;
+    carChassis.add(mainHull);
+
+    // 2. Green Serengeti Safari Stripe along both sides
+    const sideStripe = new THREE.Mesh(new THREE.BoxGeometry(3.54, 0.22, 1.76), safariStripeMat);
+    sideStripe.position.set(0, 0.82, 0);
+    carChassis.add(sideStripe);
+
+    // 3. Front Engine Hood
+    const frontHood = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.25, 1.62), safariBodyMat);
+    frontHood.position.set(1.1, 1.24, 0);
+    carChassis.add(frontHood);
+
+    // 4. Rugged Steel Front Bull-Bar Bumper & Grille
+    const bullBar = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.65, 1.78), darkMetalMat);
+    bullBar.position.set(1.82, 0.72, 0);
+    carChassis.add(bullBar);
+
+    // 5. Glowing LED Safari Headlights
+    const headlightMat = new THREE.MeshStandardMaterial({
+      color: 0xfef08a,
+      emissive: 0xfacc15,
+      emissiveIntensity: 1.2,
+    });
+    [-0.58, 0.58].forEach((hz) => {
+      const hLight = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.08, 16), headlightMat);
+      hLight.rotation.z = Math.PI / 2;
+      hLight.position.set(1.78, 0.92, hz);
+      carChassis.add(hLight);
+    });
+
+    // 6. Windshield Frame & Glass
+    const windshieldGlass = new THREE.Mesh(
+      new THREE.BoxGeometry(0.08, 0.72, 1.56),
+      new THREE.MeshStandardMaterial({
+        color: 0x38bdf8,
+        transparent: true,
+        opacity: 0.42,
+        roughness: 0.1,
+        metalness: 0.8,
+        depthWrite: false,
+      })
+    );
+    windshieldGlass.position.set(0.55, 1.56, 0);
+    windshieldGlass.rotation.z = 0.22;
+    carChassis.add(windshieldGlass);
+
+    // 7. Open-Top Safari Viewing Roof Canopy on 4 Roll-Bar Pillars (with open roof hatch where the student stands!)
+    [
+      [-1.35, -0.74],
+      [-1.35, 0.74],
+      [0.35, -0.74],
+      [0.35, 0.74],
+    ].forEach(([px, pz]) => {
+      const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 1.15, 8), darkMetalMat);
+      pillar.position.set(px, 1.72, pz);
+      carChassis.add(pillar);
+    });
+    // Pop-up roof shade bars (leaving the center open so the student stands up enjoying the view!)
+    const roofFrontRim = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.1, 1.68), canopyFabricMat);
+    roofFrontRim.position.set(0.32, 2.32, 0);
+    carChassis.add(roofFrontRim);
+    const roofBackRim = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.1, 1.68), canopyFabricMat);
+    roofBackRim.position.set(-1.28, 2.32, 0);
+    carChassis.add(roofBackRim);
+
+    // 8. Rear-Mounted Spare Off-Road Tire
+    const tireMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.85 });
+    const rimMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.8, roughness: 0.25 });
+    const spareTire = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.26, 20), tireMat);
+    spareTire.rotation.z = Math.PI / 2;
+    spareTire.position.set(-1.86, 0.95, 0);
+    carChassis.add(spareTire);
+
+    // 9. 4 Spinning Off-Road All-Terrain Wheels
+    const safariWheels: THREE.Group[] = [];
+    [
+      [1.08, -0.88],
+      [1.08, 0.88],
+      [-1.08, -0.88],
+      [-1.08, 0.88],
+    ].forEach(([wx, wz]) => {
+      const wGroup = new THREE.Group();
+      wGroup.position.set(wx, 0.44, wz);
+      const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.44, 0.44, 0.32, 20), tireMat);
+      tire.rotation.x = Math.PI / 2;
+      wGroup.add(tire);
+      const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.34, 12), rimMat);
+      rim.rotation.x = Math.PI / 2;
+      wGroup.add(rim);
+      const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.08, 0.36), darkMetalMat);
+      wGroup.add(spoke);
+      safariCarGroup.add(wGroup);
+      safariWheels.push(wGroup);
+    });
+
+    // 10. Savanna Dust Trail Puffs behind Rear Tires
+    const dustPuffs: THREE.Mesh[] = [];
+    const dustMat = new THREE.MeshBasicMaterial({
+      color: 0xfde68a,
+      transparent: true,
+      opacity: 0.0,
+    });
+    for (let i = 0; i < 6; i++) {
+      const puff = new THREE.Mesh(new THREE.SphereGeometry(0.28, 10, 10), dustMat.clone());
+      puff.position.set(-2.2 - i * 0.45, 0.25, (i % 2 === 0 ? -1 : 1) * 0.65);
+      safariCarGroup.add(puff);
+      dustPuffs.push(puff);
+    }
+
     // Left & Right Arms
     const leftArmPivot = new THREE.Group();
     leftArmPivot.position.set(-0.38, 1.42, 0);
@@ -1229,10 +1585,12 @@ export const EscapeClassroom3DScene: React.FC<EscapeClassroom3DSceneProps> = ({
     const _overviewTarget = new THREE.Vector3(0, 0.8, -0.8);
     const _pulseColor = new THREE.Color();
     const _baseColor = new THREE.Color();
+    const _sunsetSkyColor = new THREE.Color(0x7c2d12);
 
     // ==================== MAIN ANIMATION LOOP ====================
     const clock = new THREE.Clock();
     let walkCycle = 0;
+    let escapeStartTime = -1;
     let currentNearestId: RoomStationId | null = null;
     let rafId = 0;
     let disposed = false;
@@ -1640,21 +1998,111 @@ export const EscapeClassroom3DScene: React.FC<EscapeClassroom3DSceneProps> = ({
         goldenKeyGroup.position.y = 1.65 + Math.sin(elapsed * 3.5) * 0.08;
       }
 
-      // Character Limb & Body Animation
+      // Animate Serengeti Giraffes gently swaying their long necks
+      giraffeNeckPivots.forEach((np, gIdx) => {
+        np.rotation.z = Math.sin(elapsed * 1.6 + gIdx * 1.4) * 0.08;
+      });
+
+      // Character Limb & Body Animation + 3-Stage Serengeti Safari Getaway Sequence!
       if (isEscapedRef.current) {
-        // Door swings open and character celebrates!
+        if (escapeStartTime < 0) {
+          escapeStartTime = elapsed;
+        }
+        const escT = elapsed - escapeStartTime;
+
+        // Warm up sky & key light into a golden Serengeti sunset!
+        scene.background = _sunsetSkyColor;
+        if (scene.fog && (scene.fog as THREE.FogExp2).color) {
+          (scene.fog as THREE.FogExp2).color.copy(_sunsetSkyColor);
+          (scene.fog as THREE.FogExp2).density = 0.012;
+        }
+        keyLight.color.setHex(0xfde68a);
+        keyLight.intensity = 2.4;
+
+        // 1. Swing Exit Door wide open outward toward the courtyard
         doorHingePivot.rotation.y = THREE.MathUtils.lerp(
           doorHingePivot.rotation.y,
-          -Math.PI * 0.62,
-          dt * 4
+          Math.PI * 0.68,
+          dt * 5
         );
         doorPanelMat.color.setHex(0x059669);
-        bodyRig.position.y = Math.abs(Math.sin(elapsed * 7)) * 0.28;
-        leftArmPivot.rotation.x = Math.PI * 0.85 + Math.sin(elapsed * 10) * 0.25;
-        rightArmPivot.rotation.x = Math.PI * 0.85 - Math.sin(elapsed * 10) * 0.25;
-        leftLegPivot.rotation.x = Math.sin(elapsed * 7) * 0.25;
-        rightLegPivot.rotation.x = -Math.sin(elapsed * 7) * 0.25;
+        playerRing.visible = false;
+
+        if (escT < 1.6) {
+          // STAGE 1 (0.0s -> 1.6s): Student sprints out through the open classroom door toward the waiting Safari Cruiser!
+          const runProgress = THREE.MathUtils.clamp(escT / 1.6, 0, 1);
+          playerGroup.position.x = THREE.MathUtils.lerp(4.8, 10.2, runProgress);
+          playerGroup.position.z = THREE.MathUtils.lerp(playerGroup.position.z, 2.4, dt * 8);
+          playerGroup.position.y = 0;
+          playerGroup.rotation.y = Math.PI / 2; // Facing +X toward the Safari Cruiser
+
+          const runSwing = Math.sin(elapsed * 18) * 0.85;
+          leftLegPivot.rotation.x = runSwing;
+          rightLegPivot.rotation.x = -runSwing;
+          leftArmPivot.rotation.x = -runSwing * 0.9;
+          rightArmPivot.rotation.x = runSwing * 0.9;
+          bodyRig.position.y = Math.abs(Math.cos(elapsed * 18)) * 0.14;
+        } else if (escT < 2.4) {
+          // STAGE 2 (1.6s -> 2.4s): Joyful high jump into the open-roof 4x4 Safari Land Cruiser!
+          const jumpP = THREE.MathUtils.clamp((escT - 1.6) / 0.8, 0, 1);
+          playerGroup.position.x = THREE.MathUtils.lerp(10.2, safariCarGroup.position.x - 0.35, jumpP);
+          playerGroup.position.z = 2.4;
+          playerGroup.position.y =
+            THREE.MathUtils.lerp(0, 0.76, jumpP) + Math.sin(jumpP * Math.PI) * 1.15;
+          playerGroup.rotation.y = Math.PI / 2;
+          sunglassesGroup.visible = true;
+
+          leftArmPivot.rotation.x = Math.PI * 0.95;
+          rightArmPivot.rotation.x = Math.PI * 0.95;
+          leftLegPivot.rotation.x = -0.35;
+          rightLegPivot.rotation.x = 0.35;
+        } else {
+          // STAGE 3 (2.4s+): Riding the 4x4 Safari Land Cruiser through the Serengeti enjoying the wildlife!
+          const driveT = escT - 2.4;
+          const driveSpeed = 6.2;
+          // Loop smoothly along the scenic Serengeti corridor (x = 11.4 -> 72)
+          const carX = 11.4 + ((driveT * driveSpeed) % 60);
+          safariCarGroup.position.x = carX;
+          safariCarGroup.position.z = 2.4 + Math.sin(driveT * 1.3) * 0.28;
+
+          // Realistic off-road 4x4 suspension bounce & wheel spin
+          carChassis.position.y = Math.sin(elapsed * 15) * 0.035;
+          carChassis.rotation.z = Math.sin(elapsed * 8) * 0.015;
+          safariWheels.forEach((w) => {
+            w.rotation.z -= driveSpeed * dt * 1.9;
+          });
+
+          // Animate golden savanna dust trail behind rear tires
+          dustPuffs.forEach((puff, idx) => {
+            const pMat = puff.material as THREE.MeshBasicMaterial;
+            const cycle = (elapsed * 3.2 + idx * 0.35) % 1;
+            puff.position.x = -2.0 - cycle * 2.6;
+            puff.position.y = 0.22 + cycle * 0.65;
+            puff.scale.setScalar(0.6 + cycle * 1.35);
+            pMat.opacity = (1 - cycle) * 0.45;
+          });
+
+          // Student stands happily through the open safari roof wearing sunglasses, waving & admiring the giraffes!
+          sunglassesGroup.visible = true;
+          playerGroup.position.x = safariCarGroup.position.x - 0.35;
+          playerGroup.position.z = safariCarGroup.position.z;
+          playerGroup.position.y = 0.76 + carChassis.position.y;
+          // Angle student slightly toward the camera/scenery so the player sees their sunglasses & waving!
+          playerGroup.rotation.y = Math.PI * 0.38 + Math.sin(elapsed * 1.5) * 0.25;
+
+          bodyRig.position.y = Math.abs(Math.sin(elapsed * 7)) * 0.12;
+          // Right arm raised high waving in celebration; left arm steady or pumping with joy
+          rightArmPivot.rotation.x = Math.PI * 0.92 + Math.sin(elapsed * 9) * 0.38;
+          leftArmPivot.rotation.x = Math.PI * 0.78 - Math.sin(elapsed * 9) * 0.25;
+          leftLegPivot.rotation.x = 0;
+          rightLegPivot.rotation.x = 0;
+          // Head turns left and right admiring the Serengeti giraffes and acacia trees!
+          headPivot.rotation.y = Math.sin(elapsed * 2.4) * 0.52;
+        }
       } else if (isMoving) {
+        escapeStartTime = -1;
+        sunglassesGroup.visible = false;
+        playerRing.visible = true;
         walkCycle += dt * 11;
         const swing = Math.sin(walkCycle) * 0.65;
         leftLegPivot.rotation.x = swing;
@@ -1664,6 +2112,9 @@ export const EscapeClassroom3DScene: React.FC<EscapeClassroom3DSceneProps> = ({
         bodyRig.position.y = Math.abs(Math.cos(walkCycle)) * 0.09;
         headPivot.rotation.y = THREE.MathUtils.lerp(headPivot.rotation.y, 0, dt * 8);
       } else {
+        escapeStartTime = -1;
+        sunglassesGroup.visible = false;
+        playerRing.visible = true;
         // Expressive "wants to escape" idle animation: breathing + looking toward highlighted station
         leftLegPivot.rotation.x = THREE.MathUtils.lerp(leftLegPivot.rotation.x, 0, dt * 8);
         rightLegPivot.rotation.x = THREE.MathUtils.lerp(rightLegPivot.rotation.x, 0, dt * 8);
@@ -1699,7 +2150,33 @@ export const EscapeClassroom3DScene: React.FC<EscapeClassroom3DSceneProps> = ({
         onNearChangeRef.current(closestId);
       }
 
-      // Camera mode choreography (automatically pulls back on narrow portrait phone screens)
+      // Smart Auto-Cutaway Classroom Walls: when the user rotates the 3D camera behind any wall, fade that wall so they can see the other side clearly!
+      const targetBackOpacity = camera.position.z < -4.2 ? 0.14 : 1.0;
+      backWallMat.opacity = THREE.MathUtils.lerp(backWallMat.opacity, targetBackOpacity, dt * 10);
+      backWallMat.depthWrite = backWallMat.opacity > 0.85;
+
+      const targetLeftOpacity = camera.position.x < -5.2 ? 0.14 : 1.0;
+      leftWallMat.opacity = THREE.MathUtils.lerp(leftWallMat.opacity, targetLeftOpacity, dt * 10);
+      leftWallMat.depthWrite = leftWallMat.opacity > 0.85;
+
+      const targetRightOpacity = !isEscapedRef.current && camera.position.x > 5.2 ? 0.14 : 1.0;
+      rightWallMat.opacity = THREE.MathUtils.lerp(rightWallMat.opacity, targetRightOpacity, dt * 10);
+      rightWallMat.depthWrite = rightWallMat.opacity > 0.85;
+
+      // Apply on-screen Rotate Left / Rotate Right button steps smoothly around current target
+      if (Math.abs(pendingRotateDeltaRef.current) > 0.001) {
+        const step = pendingRotateDeltaRef.current * Math.min(1, dt * 10);
+        pendingRotateDeltaRef.current -= step;
+        const offsetX = camera.position.x - controls.target.x;
+        const offsetZ = camera.position.z - controls.target.z;
+        const cosA = Math.cos(step);
+        const sinA = Math.sin(step);
+        camera.position.x = controls.target.x + offsetX * cosA - offsetZ * sinA;
+        camera.position.z = controls.target.z + offsetX * sinA + offsetZ * cosA;
+      }
+
+      // Flexible 360° Camera Choreography:
+      // Preserves user's drag/orbit rotation angle in ALL modes so they can always spin 360° to see any side!
       const mode = cameraModeRef.current;
       const aspect = camera.aspect || 1;
       const portraitZoomOut =
@@ -1707,28 +2184,77 @@ export const EscapeClassroom3DScene: React.FC<EscapeClassroom3DSceneProps> = ({
           ? THREE.MathUtils.clamp(1 / Math.max(0.45, aspect * 0.88), 1.18, 2.05)
           : 1.0;
 
-      if (mode === 'chase') {
-        _desiredCamPos.set(
-          THREE.MathUtils.clamp(playerGroup.position.x * 0.65, -4.5, 4.5),
-          5.2 * (1 + (portraitZoomOut - 1) * 0.72),
-          Math.min(7.8 * portraitZoomOut, playerGroup.position.z + 5.2 * portraitZoomOut)
-        );
-        camera.position.lerp(_desiredCamPos, dt * 4.5);
-        _lookTarget.set(
-          playerGroup.position.x * 0.8,
-          1.35,
-          playerGroup.position.z - 1.5
-        );
-        controls.target.lerp(_lookTarget, dt * 6);
+      if (isEscapedRef.current) {
+        const escT = Math.max(0, elapsed - escapeStartTime);
+        if (escT < 2.4) {
+          // Initial breakout transition: follow student sprinting out the open door into the 4x4 Safari Cruiser
+          _desiredCamPos.set(
+            playerGroup.position.x + 4.4 * portraitZoomOut,
+            3.2 * (1 + (portraitZoomOut - 1) * 0.3),
+            playerGroup.position.z + 4.4 * portraitZoomOut
+          );
+          _lookTarget.set(playerGroup.position.x, 1.6, 2.4);
+          camera.position.lerp(_desiredCamPos, dt * 4.5);
+          controls.target.lerp(_lookTarget, dt * 6);
+        } else {
+          // Riding the Safari Cruiser: carry the camera smoothly along with the moving 4x4 while letting the user rotate 360° around the car!
+          _lookTarget.set(safariCarGroup.position.x - 0.1, 1.75, safariCarGroup.position.z);
+          if (modePresetTransitionRef.current > 0) {
+            modePresetTransitionRef.current = Math.max(0, modePresetTransitionRef.current - dt);
+            if (mode === 'overview') {
+              _desiredCamPos.set(
+                safariCarGroup.position.x - 7.5,
+                6.8 * portraitZoomOut,
+                safariCarGroup.position.z + 8.5 * portraitZoomOut
+              );
+            } else {
+              _desiredCamPos.set(
+                safariCarGroup.position.x + 4.6 * portraitZoomOut,
+                2.75 * (1 + (portraitZoomOut - 1) * 0.25),
+                safariCarGroup.position.z + 4.2 * portraitZoomOut
+              );
+            }
+            camera.position.lerp(_desiredCamPos, dt * 6);
+          }
+          const prevTx = controls.target.x;
+          const prevTy = controls.target.y;
+          const prevTz = controls.target.z;
+          controls.target.lerp(_lookTarget, Math.min(1, dt * 10));
+          camera.position.x += controls.target.x - prevTx;
+          camera.position.y += controls.target.y - prevTy;
+          camera.position.z += controls.target.z - prevTz;
+        }
+        controls.update();
+      } else if (mode === 'chase') {
+        _lookTarget.set(playerGroup.position.x * 0.85, 1.35, playerGroup.position.z * 0.85);
+        if (modePresetTransitionRef.current > 0) {
+          modePresetTransitionRef.current = Math.max(0, modePresetTransitionRef.current - dt);
+          _desiredCamPos.set(
+            THREE.MathUtils.clamp(playerGroup.position.x * 0.65, -4.5, 4.5),
+            5.2 * (1 + (portraitZoomOut - 1) * 0.72),
+            Math.min(7.8 * portraitZoomOut, playerGroup.position.z + 5.2 * portraitZoomOut)
+          );
+          camera.position.lerp(_desiredCamPos, dt * 6);
+        }
+        const prevTx = controls.target.x;
+        const prevTy = controls.target.y;
+        const prevTz = controls.target.z;
+        controls.target.lerp(_lookTarget, Math.min(1, dt * 8));
+        camera.position.x += controls.target.x - prevTx;
+        camera.position.y += controls.target.y - prevTy;
+        camera.position.z += controls.target.z - prevTz;
         controls.update();
       } else if (mode === 'overview') {
-        _desiredCamPos.set(
-          _overviewPos.x,
-          _overviewPos.y * (1 + (portraitZoomOut - 1) * 0.65),
-          _overviewPos.z * portraitZoomOut
-        );
-        camera.position.lerp(_desiredCamPos, dt * 4);
-        controls.target.lerp(_overviewTarget, dt * 5);
+        if (modePresetTransitionRef.current > 0) {
+          modePresetTransitionRef.current = Math.max(0, modePresetTransitionRef.current - dt);
+          _desiredCamPos.set(
+            _overviewPos.x,
+            _overviewPos.y * (1 + (portraitZoomOut - 1) * 0.65),
+            _overviewPos.z * portraitZoomOut
+          );
+          camera.position.lerp(_desiredCamPos, dt * 6);
+          controls.target.lerp(_overviewTarget, dt * 6);
+        }
         controls.update();
       } else {
         controls.update();

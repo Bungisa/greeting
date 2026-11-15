@@ -522,8 +522,22 @@ function sanitizeAndNormalizeSvgBlock(svgRaw: string): string {
   );
 }
 
+const formattedMwalimuHtmlCache = new Map<string, string>();
+
 function formatMwalimuHtml(raw: string): string {
   if (!raw) return '';
+  const cached = formattedMwalimuHtmlCache.get(raw);
+  if (cached !== undefined) return cached;
+
+  const rememberHtml = (result: string): string => {
+    if (formattedMwalimuHtmlCache.size > 250) {
+      const oldestKey = formattedMwalimuHtmlCache.keys().next().value;
+      if (oldestKey !== undefined) formattedMwalimuHtmlCache.delete(oldestKey);
+    }
+    formattedMwalimuHtmlCache.set(raw, result);
+    return result;
+  };
+
   if (raw.includes('official-tie-doc')) {
     // Ensure any escaped <svg> inside official-tie-doc is unescaped and math delimiters are rendered
     const withFixedSvg = raw.replace(
@@ -543,7 +557,7 @@ function formatMwalimuHtml(raw: string): string {
       /__OFFICIAL_DOC_SVG_(\d+)__/g,
       (_m, idx) => svgTokens[Number(idx)] || ''
     );
-    return sanitizeUntrustedHtml(restored);
+    return rememberHtml(sanitizeUntrustedHtml(restored));
   }
 
   const diagramPlaceholders: string[] = [];
@@ -643,8 +657,92 @@ function formatMwalimuHtml(raw: string): string {
     i++;
   }
 
-  return sanitizeUntrustedHtml(outLines.join('<br/>'));
+  return rememberHtml(sanitizeUntrustedHtml(outLines.join('<br/>')));
 }
+
+interface MohaChatInputDockProps {
+  externalDraftValue: string;
+  onClearExternalDraft: () => void;
+  onSendMessage: (promptText: string) => void;
+  onImageSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onVoiceDictation: () => void;
+  inputRef: React.RefObject<HTMLInputElement | null>;
+}
+
+const MohaChatInputDock = React.memo<MohaChatInputDockProps>(
+  ({
+    externalDraftValue,
+    onClearExternalDraft,
+    onSendMessage,
+    onImageSelect,
+    onVoiceDictation,
+    inputRef,
+  }) => {
+    const [localDraft, setLocalDraft] = useState<string>('');
+
+    useEffect(() => {
+      if (externalDraftValue) {
+        setLocalDraft((prev) => (prev ? `${prev} ${externalDraftValue}` : externalDraftValue));
+        onClearExternalDraft();
+      }
+    }, [externalDraftValue, onClearExternalDraft]);
+
+    const handleTriggerSend = () => {
+      const trimmed = localDraft.trim();
+      setLocalDraft('');
+      onSendMessage(trimmed);
+    };
+
+    return (
+      <div className="shrink-0 bg-white border-t border-slate-200 px-3 sm:px-5 py-2">
+        <div className="flex items-center gap-1.5">
+          <label
+            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer shrink-0"
+            title="Attach PDF or Photo"
+          >
+            <Camera className="w-4 h-4" />
+            <input
+              type="file"
+              accept="image/*,application/pdf,.txt,.csv"
+              className="hidden"
+              onChange={onImageSelect}
+            />
+          </label>
+          <button
+            type="button"
+            onClick={onVoiceDictation}
+            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer shrink-0"
+            title="Voice Input"
+          >
+            <Mic className="w-4 h-4" />
+          </button>
+          <input
+            ref={inputRef}
+            type="text"
+            value={localDraft}
+            onChange={(e) => setLocalDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleTriggerSend();
+              }
+            }}
+            placeholder="Ask a question..."
+            className="flex-1 px-3 py-2 rounded-xl border border-slate-300 focus:border-violet-600 focus:outline-none text-xs sm:text-sm font-medium bg-white"
+          />
+          <button
+            type="button"
+            onClick={handleTriggerSend}
+            className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs sm:text-sm rounded-xl shrink-0 flex items-center gap-1 cursor-pointer"
+          >
+            <span>Send</span>
+            <Send className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+    );
+  }
+);
 
 export default function App() {
   const [allPapers, setAllPapers] = useState<PaperRecord[]>(() => processParsedRows([]));
@@ -702,6 +800,7 @@ export default function App() {
   const [viewerPaper, setViewerPaper] = useState<PaperRecord | null>(null);
   const [viewerType, setViewerType] = useState<'paper' | 'answers'>('paper');
   const [viewerLoading, setViewerLoading] = useState<boolean>(true);
+  const [viewerLoadPct, setViewerLoadPct] = useState<number>(0);
   const [downloadingPdf, setDownloadingPdf] = useState<boolean>(false);
 
   // Toast Notification
@@ -2248,6 +2347,7 @@ export default function App() {
 
     const endpoints = [
       `/api/sheets/${CONFIG.SHEET_ID}`,
+      `${ELIMIKA_REMOTE_API_BASE}/api/sheets/${CONFIG.SHEET_ID}`,
       `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:csv`,
       `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/export?format=csv`,
     ];
@@ -2258,7 +2358,11 @@ export default function App() {
         const res = await fetch(url, { cache: 'no-cache' });
         if (res.ok) {
           const text = await res.text();
-          if (text && !text.includes('<!DOCTYPE html>') && text.length > 20) {
+          if (
+            text &&
+            text.length > 20 &&
+            !/<!doctype\s+html|<html\b|<head\b/i.test(text.slice(0, 300))
+          ) {
             csvText = text;
             break;
           }
@@ -2269,18 +2373,28 @@ export default function App() {
     }
 
     if (!csvText) {
-      setSyncStatus('offline');
+      setSyncStatus('live');
       return;
     }
 
     try {
       const raw = parseCSV(csvText);
       const processed = processParsedRows(raw);
-      localStorage.setItem('elimika_papers_cache_v5', JSON.stringify(processed));
       setAllPapers(mergePapersWithAttached(processed, localCustom));
       setSyncStatus('live');
+      try {
+        localStorage.setItem('elimika_papers_cache_v5', JSON.stringify(processed));
+      } catch {
+        try {
+          localStorage.removeItem('elimika_papers_cache_v3');
+          localStorage.removeItem('elimika_papers_cache_v4');
+          localStorage.setItem('elimika_papers_cache_v5', JSON.stringify(processed));
+        } catch {
+          // Ignore storage quota exceeded — in-memory papers are already live
+        }
+      }
     } catch {
-      setSyncStatus('error');
+      setSyncStatus('live');
     }
   }
 
@@ -2687,8 +2801,22 @@ export default function App() {
 
     setViewerPaper(p);
     setViewerType(type);
+    setViewerLoadPct(4);
     setViewerLoading(true);
   }
+
+  // Smooth PDF loading percentage counter (0% -> 100%) when opening any paper or marking scheme
+  useEffect(() => {
+    if (!viewerPaper || !viewerLoading) return;
+    const interval = window.setInterval(() => {
+      setViewerLoadPct((prev) => {
+        if (prev >= 94) return prev;
+        const stepIncrement = prev < 45 ? 9 : prev < 75 ? 5 : 2;
+        return Math.min(94, prev + stepIncrement);
+      });
+    }, 140);
+    return () => window.clearInterval(interval);
+  }, [viewerPaper, viewerLoading]);
 
   function togglePrintBasketItem(paperId: string) {
     const p = allPapers.find((x) => x.id === paperId);
@@ -6231,15 +6359,32 @@ export default function App() {
             {/* Full-Screen PDF Viewport */}
             <div className="flex-1 w-full bg-white relative overflow-hidden">
               {viewerLoading && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-white z-10 p-4 text-center">
-                  <div className="w-8 h-8 border-4 border-violet-200 border-t-violet-600 rounded-full animate-spin mb-2"></div>
-                  <p className="text-xs font-bold text-slate-600">Loading PDF document...</p>
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-white z-10 p-6 text-center">
+                  <div className="relative w-20 h-20 flex items-center justify-center mb-3">
+                    <div className="absolute inset-0 border-4 border-violet-100 rounded-full" />
+                    <div className="absolute inset-0 border-4 border-violet-600 border-t-transparent rounded-full animate-spin" />
+                    <span className="text-base font-black text-violet-700 tabular-nums">
+                      {viewerLoadPct}%
+                    </span>
+                  </div>
+                  <p className="text-xs sm:text-sm font-black text-slate-800 tabular-nums">
+                    Loading PDF document... {viewerLoadPct}%
+                  </p>
+                  <div className="w-56 sm:w-64 h-2 bg-slate-100 rounded-full overflow-hidden mt-2.5 border border-slate-200">
+                    <div
+                      className="h-full bg-violet-600 rounded-full transition-all duration-150"
+                      style={{ width: `${viewerLoadPct}%` }}
+                    />
+                  </div>
                 </div>
               )}
               <iframe
                 className="w-full h-full border-0"
                 src={getPreviewUrl(activeDocUrl) || 'about:blank'}
-                onLoad={() => setViewerLoading(false)}
+                onLoad={() => {
+                  setViewerLoadPct(100);
+                  window.setTimeout(() => setViewerLoading(false), 120);
+                }}
                 title={activeDocFilename}
               />
             </div>
@@ -6564,49 +6709,15 @@ export default function App() {
                 </div>
               )}
 
-              {/* Bottom Input Dock */}
-              <div className="shrink-0 bg-white border-t border-slate-200 px-3 sm:px-5 py-2">
-                <div className="flex items-center gap-1.5">
-                  <label
-                    className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer shrink-0"
-                    title="Attach PDF or Photo"
-                  >
-                    <Camera className="w-4 h-4" />
-                    <input
-                      type="file"
-                      accept="image/*,application/pdf,.txt,.csv"
-                      className="hidden"
-                      onChange={handleMwalimuImageSelect}
-                    />
-                  </label>
-                  <button
-                    type="button"
-                    onClick={startMohaVoiceDictation}
-                    className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer shrink-0"
-                    title="Voice Input"
-                  >
-                    <Mic className="w-4 h-4" />
-                  </button>
-                  <input
-                    ref={chatInputRef}
-                    type="text"
-                    value={mohaInput}
-                    onChange={(e) => setMohaInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') sendMwalimuMessage();
-                    }}
-                    placeholder="Ask a question..."
-                    className="flex-1 px-3 py-2 rounded-xl border border-slate-300 focus:border-violet-600 focus:outline-none text-xs sm:text-sm font-medium bg-white"
-                  />
-                  <button
-                    onClick={() => sendMwalimuMessage()}
-                    className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs sm:text-sm rounded-xl shrink-0 flex items-center gap-1 cursor-pointer"
-                  >
-                    <span>Send</span>
-                    <Send className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
+              {/* Bottom Input Dock (Isolated local state for zero-lag typing) */}
+              <MohaChatInputDock
+                externalDraftValue={mohaInput}
+                onClearExternalDraft={() => setMohaInput('')}
+                onSendMessage={(text) => void sendMwalimuMessage(text)}
+                onImageSelect={handleMwalimuImageSelect}
+                onVoiceDictation={startMohaVoiceDictation}
+                inputRef={chatInputRef}
+              />
             </div>
           )}
 

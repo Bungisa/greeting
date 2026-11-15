@@ -113,6 +113,21 @@ class GameSoundEngine {
     });
   }
 
+  public playRopePull(): void {
+    // Low rhythmic rope heave & tension sound
+    this.playNote(130.81, 0.14, 'triangle', 0, 0.22); // C3 heave
+    this.playNote(164.81, 0.16, 'sine', 0.07, 0.2); // E3 strain
+    this.playNote(196.0, 0.2, 'triangle', 0.15, 0.22); // G3 pull
+  }
+
+  public playCrowdCheer(): void {
+    // Uplifting stadium crowd fanfare chord burst
+    const chord = [523.25, 659.25, 783.99, 987.77, 1046.5];
+    chord.forEach((freq, idx) => {
+      this.playNote(freq, 0.28, 'triangle', idx * 0.04, 0.16);
+    });
+  }
+
   public startBackgroundMusic(theme: 'adventure' | 'mystery' = 'adventure'): void {
     if (this.muted || this.musicPlaying) return;
     this.musicPlaying = true;

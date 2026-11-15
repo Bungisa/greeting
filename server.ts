@@ -588,7 +588,11 @@ app.get('/api/sheets/:sheetId', async (req, res) => {
       });
       if (response.ok) {
         const text = await response.text();
-        if (text && !text.includes('<!DOCTYPE html>') && text.length > 20) {
+        if (
+          text &&
+          text.length > 20 &&
+          !/<!doctype\s+html|<html\b|<head\b/i.test(text.slice(0, 300))
+        ) {
           res.setHeader('Content-Type', 'text/csv; charset=utf-8');
           return res.send(text);
         }

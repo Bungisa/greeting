@@ -34,6 +34,8 @@ import {
   Check,
   AlertTriangle,
   ArrowLeft,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react';
 import { MathText } from '../utils/mathRenderer';
 import { PaperRecord, getSubTopicsForMainTopic } from '../data/curriculumData';
@@ -97,13 +99,43 @@ export const EscapeClassroomGame: React.FC<EscapeClassroomGameProps> = ({
 
   // Start directly inside the 3D room so the student can immediately walk & click 3D locks
   const [gameState, setGameState] = useState<'SETUP' | 'PLAYING' | 'ESCAPED' | 'TIME_UP'>('PLAYING');
+  const [showEscapeSummaryModal, setShowEscapeSummaryModal] = useState<boolean>(false);
   const [activeStation, setActiveStation] = useState<RoomStationId>('chalkboard');
   const [nearStation, setNearStation] = useState<RoomStationId | null>('chalkboard');
   const [isStationModalOpen, setIsStationModalOpen] = useState<boolean>(false);
   const [cameraMode, setCameraMode] = useState<CameraViewMode>('chase');
   const [externalMoveDir, setExternalMoveDir] = useState<{ x: number; z: number }>({ x: 0, z: 0 });
   const [walkTrigger, setWalkTrigger] = useState<{ id: RoomStationId; seq: number } | null>(null);
+  const [cameraRotateTrigger, setCameraRotateTrigger] = useState<{
+    deltaAngle: number;
+    seq: number;
+  } | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  const gameContainerRef = useRef<HTMLDivElement | null>(null);
   const [soundMuted, setSoundMuted] = useState<boolean>(() => soundEngine.isMuted());
+
+  const handleRotateCamera = (deltaAngle: number) => {
+    setCameraRotateTrigger((prev) => ({
+      deltaAngle,
+      seq: (prev?.seq || 0) + 1,
+    }));
+  };
+
+  const handleToggleFullscreen = () => {
+    setIsFullscreen((prev) => {
+      const next = !prev;
+      try {
+        if (next && gameContainerRef.current?.requestFullscreen) {
+          gameContainerRef.current.requestFullscreen().catch(() => {});
+        } else if (!next && document.fullscreenElement && document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        }
+      } catch {
+        // Fallback to CSS fixed fullscreen
+      }
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (initialClass) setSelectedClass(initialClass);
@@ -730,6 +762,7 @@ export const EscapeClassroomGame: React.FC<EscapeClassroomGameProps> = ({
     ) {
       soundEngine.playVictory();
       setIsStationModalOpen(false);
+      setShowEscapeSummaryModal(false);
       setGameState('ESCAPED');
       const timeBonusXp = timeLeft * 2;
       const totalEarned = 300 + timeBonusXp + sessionXpEarned;
@@ -810,9 +843,16 @@ export const EscapeClassroomGame: React.FC<EscapeClassroomGameProps> = ({
   ];
 
   return (
-    <div className="bg-slate-950 rounded-3xl border border-slate-800/90 shadow-2xl overflow-hidden text-white">
+    <div
+      ref={gameContainerRef}
+      className={
+        isFullscreen
+          ? 'fixed inset-0 z-[120] w-screen h-[100dvh] bg-slate-950 flex flex-col overflow-hidden text-white'
+          : 'bg-slate-950 rounded-3xl border border-slate-800/90 shadow-2xl overflow-hidden text-white flex flex-col'
+      }
+    >
       {/* COMPACT TOP BAR: ROOM TITLE, SUBJECT PILL, STREAK, FRESH SET, TIMER & SETUP */}
-      <div className="bg-slate-900/95 border-b border-slate-800 px-3 sm:px-5 py-2.5 flex flex-wrap items-center justify-between gap-2">
+      <div className="bg-slate-900/95 border-b border-slate-800 px-3 sm:px-5 py-2 flex flex-wrap items-center justify-between gap-2 shrink-0">
         <div className="flex items-center gap-2.5">
           {onExitToHub && (
             <button
@@ -953,6 +993,21 @@ export const EscapeClassroomGame: React.FC<EscapeClassroomGameProps> = ({
             <SlidersHorizontal className="w-3.5 h-3.5 text-sky-400" />
             <span>{gameState === 'SETUP' ? 'Back to 3D Room' : 'Change Topic'}</span>
           </button>
+
+          {/* Fullscreen Toggle Button */}
+          <button
+            type="button"
+            onClick={handleToggleFullscreen}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-sky-300 text-xs font-extrabold transition cursor-pointer"
+            title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen 3D View'}
+          >
+            {isFullscreen ? (
+              <Minimize2 className="w-3.5 h-3.5" />
+            ) : (
+              <Maximize2 className="w-3.5 h-3.5" />
+            )}
+            <span>{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</span>
+          </button>
         </div>
       </div>
 
@@ -1040,7 +1095,11 @@ export const EscapeClassroomGame: React.FC<EscapeClassroomGameProps> = ({
       </div>
 
       {/* ==================== MAIN FULL-BLEED 3D CLASSROOM VIEWPORT ==================== */}
-      <div className="relative w-full h-[540px] sm:h-[620px] lg:h-[670px] bg-slate-950 overflow-hidden">
+      <div
+        className={`relative w-full bg-slate-950 overflow-hidden ${
+          isFullscreen ? 'flex-1 min-h-0' : 'h-[540px] sm:h-[620px] lg:h-[670px]'
+        }`}
+      >
         <EscapeClassroom3DScene
           roomThemeId={currentRoom.id}
           activeStation={activeStation}
@@ -1055,16 +1114,17 @@ export const EscapeClassroomGame: React.FC<EscapeClassroomGameProps> = ({
           isEscaped={gameState === 'ESCAPED'}
           externalMoveDir={externalMoveDir}
           walkToStationTrigger={walkTrigger}
+          cameraRotateTrigger={cameraRotateTrigger}
           onArriveAtStation={handleArriveAtStation}
           onNearStationChange={(id) => setNearStation(id)}
         />
 
-        {/* TOP-LEFT CAMERA VIEW SWITCHER (SOLID HIGH-CONTRAST SURFACE, NO BACKDROP-BLUR OVER WEBGL) */}
-        <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 bg-slate-950/92 border border-slate-700/80 rounded-xl p-1 shadow-lg">
+        {/* TOP-LEFT CAMERA VIEW SWITCHER + 360° ROTATE LEFT/RIGHT BUTTONS */}
+        <div className="absolute top-3 left-3 z-10 flex flex-wrap items-center gap-1.5 bg-slate-950/92 border border-slate-700/80 rounded-xl p-1 shadow-lg max-w-[68vw] sm:max-w-none">
           {(
             [
-              { id: 'chase', label: 'Follow Student' },
-              { id: 'overview', label: 'Room Map' },
+              { id: 'chase', label: 'Follow' },
+              { id: 'overview', label: 'Map View' },
               { id: 'orbit', label: 'Free 360°' },
             ] as Array<{ id: CameraViewMode; label: string }>
           ).map((cam) => (
@@ -1081,17 +1141,34 @@ export const EscapeClassroomGame: React.FC<EscapeClassroomGameProps> = ({
               {cam.label}
             </button>
           ))}
+          <div className="h-4 w-px bg-slate-700 mx-0.5" />
+          <button
+            type="button"
+            onClick={() => handleRotateCamera(-Math.PI / 3)}
+            className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-amber-400 hover:text-slate-950 text-amber-300 text-[11px] font-black transition cursor-pointer"
+            title="Rotate Camera Left (See Other Side)"
+          >
+            ↺ Left
+          </button>
+          <button
+            type="button"
+            onClick={() => handleRotateCamera(Math.PI / 3)}
+            className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-amber-400 hover:text-slate-950 text-amber-300 text-[11px] font-black transition cursor-pointer"
+            title="Rotate Camera Right (See Other Side)"
+          >
+            ↻ Right
+          </button>
         </div>
 
-        {/* TOP-RIGHT NEXT ACTION PILL BUTTON */}
-        <div className="absolute top-3 right-3 z-10">
+        {/* TOP-RIGHT NEXT ACTION PILL BUTTON + QUICK FULLSCREEN ICON */}
+        <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
           <button
             type="button"
             onClick={() => commandWalkToStation(recommendedNextStation)}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs shadow-xl shadow-amber-500/25 transition cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs shadow-xl shadow-amber-500/25 transition cursor-pointer"
           >
             <Footprints className="w-4 h-4" />
-            <span>
+            <span className="hidden sm:inline">
               {!lock1Solved
                 ? 'Walk to Lock #1 (Chalkboard)'
                 : !lock2Solved
@@ -1102,6 +1179,19 @@ export const EscapeClassroomGame: React.FC<EscapeClassroomGameProps> = ({
                 ? 'Walk to Lock #4 (Logic Board)'
                 : 'Walk to Exit Door Keypad!'}
             </span>
+            <span className="sm:hidden">Next Lock</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleToggleFullscreen}
+            className="p-2 rounded-xl bg-slate-950/92 hover:bg-slate-800 border border-slate-700 text-sky-300 shadow-xl transition cursor-pointer"
+            title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen 3D Mode'}
+          >
+            {isFullscreen ? (
+              <Minimize2 className="w-4 h-4" />
+            ) : (
+              <Maximize2 className="w-4 h-4" />
+            )}
           </button>
         </div>
 
@@ -2093,10 +2183,63 @@ export const EscapeClassroomGame: React.FC<EscapeClassroomGameProps> = ({
           </div>
         )}
 
+        {/* ==================== 3D SERENGETI SAFARI RIDE FLOATING DOCK ==================== */}
+        {gameState === 'ESCAPED' && !showEscapeSummaryModal && (
+          <div className="absolute inset-x-0 bottom-3 z-30 px-3 flex justify-center pointer-events-none">
+            <div className="pointer-events-auto max-w-2xl w-full bg-slate-950/90 border-2 border-amber-400/70 rounded-2xl p-3 sm:p-4 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="flex items-center gap-3 text-center sm:text-left">
+                <div className="w-10 h-10 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-black text-lg shrink-0 shadow">
+                  🦁
+                </div>
+                <div>
+                  <div className="text-xs sm:text-sm font-black text-amber-300">
+                    Classroom Escaped! Serengeti Safari Vacation Unlocked
+                  </div>
+                  <div className="text-[11px] text-slate-300">
+                    Riding the open-roof 4×4 Safari Land Cruiser past Serengeti giraffes &amp; acacia trees!
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundEngine.playVictory();
+                    setCameraMode((prev) => (prev === 'overview' ? 'chase' : 'overview'));
+                  }}
+                  className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-amber-300 font-bold text-xs cursor-pointer"
+                >
+                  🎥 {cameraMode === 'overview' ? 'Front Action Cam' : 'Drone Safari Cam'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowEscapeSummaryModal(true)}
+                  className="px-4 py-2 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-black text-xs cursor-pointer shadow-lg flex items-center gap-1.5"
+                >
+                  <Trophy className="w-4 h-4" />
+                  View Escape Report &amp; Answers
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ==================== ESCAPED VICTORY & REVISION MASTERY SCROLL OVERLAY ==================== */}
-        {gameState === 'ESCAPED' && (
+        {gameState === 'ESCAPED' && showEscapeSummaryModal && (
           <div className="absolute inset-0 z-30 bg-slate-950/92 p-4 sm:p-6 overflow-y-auto flex items-center justify-center">
             <div className="max-w-3xl w-full bg-slate-900 border-2 border-emerald-500/60 rounded-3xl p-5 sm:p-7 shadow-2xl space-y-5 my-auto max-h-[94%] overflow-y-auto">
+              <div className="flex items-center justify-between">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 text-xs font-extrabold">
+                  🦁 Serengeti Safari Unlocked
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowEscapeSummaryModal(false)}
+                  className="px-3.5 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs cursor-pointer"
+                >
+                  🚗 Back to 3D Safari Ride
+                </button>
+              </div>
               <div className="text-center space-y-2">
                 <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 mx-auto flex items-center justify-center text-slate-950 shadow-xl">
                   <Trophy className="w-7 h-7" />
