@@ -266,3 +266,145 @@ html.dark select.bg-transparent {
   background-color: #f1f5f9 !important;
   font-weight: 800;
 }
+
+/* ==========================================================================
+   TIE SCHEME OF WORK (2027) MATRIX SHEET & LANDSCAPE PDF PRINT ENGINE
+   ========================================================================== */
+
+.tie-sheet-container,
+html.dark .tie-sheet-container {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+#schemeDoc,
+html.dark #schemeDoc {
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 12pt;
+  color: #000000 !important;
+  background-color: #ffffff !important;
+}
+
+.tie-doc-title {
+  text-align: center;
+  font-weight: bold;
+  text-transform: uppercase;
+  line-height: 1.35;
+  margin-bottom: 12px;
+  color: #000000 !important;
+}
+
+.tie-doc-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+  font-weight: bold;
+  font-size: 11pt;
+  margin-bottom: 12px;
+  color: #000000 !important;
+}
+
+table.tie-scheme {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 10pt;
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+table.tie-scheme th,
+table.tie-scheme td,
+html.dark table.tie-scheme th,
+html.dark table.tie-scheme td {
+  border: 1px solid #000000 !important;
+  padding: 5px 6px;
+  vertical-align: top;
+  text-align: left;
+  color: #000000 !important;
+  background-color: #ffffff;
+}
+
+table.tie-scheme th,
+html.dark table.tie-scheme th {
+  background-color: #f1f5f9 !important;
+  text-align: center;
+  font-weight: bold;
+}
+
+table.tie-scheme td.tie-break-row,
+html.dark table.tie-scheme td.tie-break-row {
+  background-color: #e2e8f0 !important;
+  text-align: center !important;
+  font-weight: bold;
+  padding: 7px !important;
+}
+
+table.tie-scheme tr.tie-revision-row td,
+html.dark table.tie-scheme tr.tie-revision-row td {
+  background-color: #fefce8 !important;
+}
+
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 1cm;
+  }
+
+  body.tie-scheme-print-mode,
+  html:has(body.tie-scheme-print-mode) {
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  body.tie-scheme-print-mode .no-print,
+  body.tie-scheme-print-mode header,
+  body.tie-scheme-print-mode nav {
+    display: none !important;
+  }
+
+  body.tie-scheme-print-mode .tie-print-unlock {
+    position: static !important;
+    inset: auto !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  body.tie-scheme-print-mode .tie-scheme-layout {
+    display: block !important;
+  }
+
+  body.tie-scheme-print-mode .tie-sheet-container {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    border-radius: 0 !important;
+  }
+
+  body.tie-scheme-print-mode #schemeDoc {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  body.tie-scheme-print-mode table.tie-scheme thead {
+    display: table-header-group;
+  }
+
+  body.tie-scheme-print-mode table.tie-scheme tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
+

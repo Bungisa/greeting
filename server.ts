@@ -6,7 +6,6 @@ import os from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { GenerateVideosOperation, GoogleGenAI, ThinkingLevel, Type } from '@google/genai';
-import { getDocumentProxy } from 'unpdf';
 import {
   buildContentIntegratedQuizQuestions,
   buildInstantOfficialDocument,
@@ -653,6 +652,7 @@ async function extractBase64PdfText(base64Data?: string, queryText = ''): Promis
     if (uint8.byteLength < 100 || Buffer.from(uint8.slice(0, 5)).toString('ascii') !== '%PDF-') {
       return '';
     }
+    const { getDocumentProxy } = await import('unpdf');
     const pdf = await getDocumentProxy(uint8);
     const maxPagesToScan = Math.min(pdf.numPages, 60);
     const pages: string[] = [];
@@ -784,6 +784,7 @@ async function extractGoogleDrivePdfText(
     }
     try {
       const uint8 = new Uint8Array(Buffer.from(inlinePdf.base64Data, 'base64'));
+      const { getDocumentProxy } = await import('unpdf');
       const pdf = await getDocumentProxy(uint8);
       const maxPagesToScan = Math.min(pdf.numPages, 35);
       const pages: string[] = [];

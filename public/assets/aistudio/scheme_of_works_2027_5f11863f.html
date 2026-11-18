@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TIE All-Subjects Master Scheme of Work Generator (Atomic + Auto-Revision)</title>
+  <style>
+    :root {
+      --navy: #0f172a;
+      --blue: #1d4ed8;
+      --teal: #0d9488;
+      --amber: #d97706;
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --border: #cbd5e1;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--navy);
+      padding: 16px;
+    }
+    .header-bar {
+      max-width: 1580px;
+      margin: 0 auto 16px auto;
+      background: linear-gradient(135deg, #0f172a, #1e3a8a);
+      color: #fff;
+      padding: 14px 22px;
+      border-radius: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .header-bar h1 { font-size: 1.18rem; font-weight: 700; }
+    .header-bar p { font-size: 0.79rem; color: #93c5fd; margin-top: 2px; }
+    .btn-group { display: flex; gap: 8px; }
+    .btn {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.82rem;
+      cursor: pointer;
+    }
+    .btn-word { background: #2563eb; color: #fff; }
+    .btn-print { background: var(--teal); color: #fff; }
+
+    .layout {
+      max-width: 1580px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 430px 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+    .control-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+    }
+    .sec-head {
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: var(--blue);
+      text-transform: uppercase;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 5px;
+      margin: 12px 0 8px 0;
+    }
+    .sec-head:first-child { margin-top: 0; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .field { margin-bottom: 8px; }
+    label { display: block; font-size: 0.74rem; font-weight: 600; color: #334155; margin-bottom: 3px; }
+    input, select {
+      width: 100%;
+      padding: 6px 9px;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      font-size: 0.81rem;
+    }
+    .topic-list {
+      list-style: none;
+      max-height: 440px;
+      overflow-y: auto;
+      margin-top: 8px;
+    }
+    .topic-row {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-left: 4px solid var(--blue);
+      border-radius: 6px;
+      padding: 7px 9px;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .topic-title { flex: 1; font-size: 0.74rem; }
+    .topic-title strong { display: block; color: var(--navy); margin-bottom: 2px; }
+    .order-btns { display: flex; gap: 3px; }
+    .sm-btn {
+      padding: 3px 6px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      background: #fff;
+      border: 1px solid #94a3b8;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .sm-btn:hover { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+    .sheet-container {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 24px;
+      overflow-x: auto;
+    }
+    #schemeDoc {
+      font-family: 'Times New Roman', Times, serif;
+      font-size: 12pt;
+      color: #000;
+    }
+    .doc-title {
+      text-align: center;
+      font-weight: bold;
+      text-transform: uppercase;
+      line-height: 1.35;
+      margin-bottom: 12px;
+    }
+    .doc-meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px;
+      font-weight: bold;
+      font-size: 11pt;
+      margin-bottom: 12px;
+    }
+    table.tie-scheme {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: 'Times New Roman', Times, serif;
+      font-size: 10pt;
+    }
+    table.tie-scheme th, table.tie-scheme td {
+      border: 1px solid #000;
+      padding: 5px 6px;
+      vertical-align: top;
+      text-align: left;
+    }
+    table.tie-scheme th {
+      background: #f1f5f9;
+      text-align: center;
+      font-weight: bold;
+    }
+    .break-row {
+      background: #e2e8f0;
+      text-align: center !important;
+      font-weight: bold;
+      padding: 7px !important;
+    }
+    .revision-row td {
+      background: #fefce8;
+    }
+    @media print {
+      body { background: #fff; padding: 0; }
+      .no-print { display: none !important; }
+      .layout { display: block; }
+      .sheet-container { border: none; padding: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="header-bar no-print">
+  <div>
+    <h1>TIE All-Subjects Master Scheme of Work Generator (Atomic Activities + Exam Revision)</h1>
+    <p>All 8 Subjects • Separate (a), (b), (c), (d) Activities • Zero Repetition • Auto-Fills Remaining 1–2 Months with Exam Revision</p>
+  </div>
+  <div class="btn-group">
+    <button class="btn btn-word" onclick="downloadWord()">📄 Download MS Word (.doc)</button>
+    <button class="btn btn-print" onclick="window.print()">🖨️ Print / Save PDF</button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="control-card no-print">
+    <div class="sec-head">1. Select Subject, Class &amp; Revision Window</div>
+    <div class="field">
+      <label>TIE Subject (All 8 Uploaded Syllabi)</label>
+      <select id="subjectSelector" onchange="onSubjectChange()">
+        <option value="COMPUTER SCIENCE">Computer Science (Form I – IV)</option>
+        <option value="BASIC MATHEMATICS">Basic Mathematics (Form I – IV)</option>
+        <option value="ADDITIONAL MATHEMATICS">Additional Mathematics (Form III – IV)</option>
+        <option value="CHEMISTRY">Chemistry (Form I – IV)</option>
+        <option value="GEOGRAPHY">Geography (Form I – IV)</option>
+        <option value="HISTORY">History (Form I – IV)</option>
+        <option value="BUSINESS STUDIES">Business Studies (Form I – IV)</option>
+        <option value="BOOK-KEEPING">Book-keeping (Form I – IV)</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Form Level</label>
+      <select id="formSelector" onchange="loadFormSyllabus()"></select>
+    </div>
+    <div class="grid-2">
+      <div class="field">
+        <label>Name of School</label>
+        <input type="text" id="schoolName" value="...................................." oninput="renderTable()" />
+      </div>
+      <div class="field">
+        <label>Teacher's Name</label>
+        <input type="text" id="teacherName" value="...................................." oninput="renderTable()" />
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="field">
+        <label>Year</label>
+        <input type="number" id="yearVal" value="2026" oninput="renderTable()" />
+      </div>
+      <div class="field">
+        <label>Periods Per Week</label>
+        <input type="number" id="ppwVal" value="2" min="1" max="12" oninput="renderTable()" />
+      </div>
+    </div>
+    <div class="field">
+      <label>End-of-Year Exam Revision Reserve (Oct / Nov)</label>
+      <select id="revisionMode" onchange="renderTable()">
+        <option value="auto4" selected>Reserve At Least 1 Month (4 Weeks in November) for Exam Revision</option>
+        <option value="auto8">Reserve At Least 2 Months (8 Weeks in Oct &amp; Nov) for Exam Revision</option>
+        <option value="natural">Fill Only Remaining Unallocated Weeks with Exam Revision</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>
+        <input type="checkbox" id="orientToggle" onchange="renderTable()" style="width:auto; margin-right:5px;" />
+        Include Form 1 Orientation Course (Jan W2 – Feb W2)
+      </label>
+    </div>
+
+    <div class="sec-head">2. Reorder Atomic Learning Activities</div>
+    <p style="font-size:0.73rem; color:#475569; margin-bottom:6px;">
+      Every single <strong>(a), (b), (c)...</strong> activity is separate. Reorder with <strong>1st</strong>, <strong>↑</strong>, or <strong>↓</strong>.
+    </p>
+    <ul class="topic-list" id="topicQueue"></ul>
+  </aside>
+
+  <main class="sheet-container">
+    <div id="schemeDoc"></div>
+  </main>
+</div>
+
+<script>
+// Helper to build atomic activity objects cleanly
+function A(code, title, mainComp, specComp, mainAct, specActs, periods, methods, resources, assessment) {
+  return { code, title, mainComp, specComp, mainAct, specActs, periods, methods, resources, assessment };
+}
+
+const ALL_SYLLABI = {
+  "COMPUTER SCIENCE": {
+    "FORM ONE": {
+      ppw: 2, orient: true,
+      book: "Tanzania Institute of Education. (2023). Computer Science for Secondary Schools Student's Book Form One. TIE.",
+      activities: [
+        A("1.1(a)", "Concept of Computer Science", "1.0 Demonstrate mastery of the basic Concepts of Computer Science", "1.1 Demonstrate an understanding of the concept of Computer Science", "(a) Describe the concept of Computer Science (meaning, importance, application)", ["i. Describe the meaning, importance, and applications of Computer Science in daily life."], 4, "Brainstorming, Think-Ink-Pair-Share (TIPS)", "Handouts with contents of Computer Science concepts", "Oral questions, Quizzes, Presentations"),
+        A("1.1(b)", "Fields Related to Computer Science", "1.0 Demonstrate mastery of the basic Concepts of Computer Science", "1.1 Demonstrate an understanding of the concept of Computer Science", "(b) Describe fields related to Computer Science (IT, ICT, IS, Computer Engineering)", ["i. Differentiate and describe fields related to Computer Science (IT, ICT, IS, Computer Engineering)."], 4, "Question and answer, Guest speaker, Case study", "Handouts with contents of Computer Science concepts", "Case study questions, Quizzes"),
+        A("1.2(a)", "Describe Computer Systems", "1.0 Demonstrate mastery of the basic Concepts of Computer Science", "1.2 Demonstrate an understanding of computer systems", "(a) Describe computer systems (Meaning, types, functions, and significance)", ["i. Explain the meaning, types, functions, and significance of computer systems."], 6, "Questions and answers, Group discussion", "Computer, Hand-out, Flip board, digital podium, electronic blackboard", "Oral questions, Quizzes, Written exercises"),
+        A("1.2(b)", "Describe Computer Hardware", "1.0 Demonstrate mastery of the basic Concepts of Computer Science", "1.2 Demonstrate an understanding of computer systems", "(b) Describe computer hardware (meaning, components, functions, computer generation)", ["i. Describe computer hardware components, functions, and computer generations.", "ii. Connect different parts of a computer system practically."], 8, "Small groups, Demonstration, Practical work", "Computer, printer, scanner, camera, projector, flash disk, hard disk, memory card, motherboard", "Practical hardware connection check, Quizzes"),
+        A("1.2(c)", "Describe Computer Software", "1.0 Demonstrate mastery of the basic Concepts of Computer Science", "1.2 Demonstrate an understanding of computer systems", "(c) Describe computer software (meaning, types, functions)", ["i. Classify system and application software and explain their functions."], 6, "TIPS, Demonstration", "Computer, printer, scanner, projector, flash disk, memory card, hard disk", "Software classification exercises, Quizzes"),
+        A("1.2(d)", "Principles of Computer System Handling", "1.0 Demonstrate mastery of the basic Concepts of Computer Science", "1.2 Demonstrate an understanding of computer systems", "(d) Describe and observe principles of computer system handling (safety measures, management, cleanliness, data backup and utilities)", ["i. Practice computer safety measures, cleanliness, data backup, and utility management."], 8, "Group discussion, Demonstration, Practical work", "Computer, printer, scanner, projector, flash disk, hard disk", "Practical handling observation, Terminal Exam"),
+        A("1.3(a)", "Install Simple Computer Software", "1.0 Demonstrate mastery of the basic Concepts of Computer Science", "1.3 Demonstrate mastery of maintenance and troubleshooting of computer system", "(a) Install simple computer software", ["i. Perform step-by-step installation of simple computer software."], 3, "Demonstration, Practical work", "Computer, CDs/flash drives with software, hand-out", "Practical software installation test"),
+        A("1.3(b)", "Organise Computer Files in OS", "1.0 Demonstrate mastery of the basic Concepts of Computer Science", "1.3 Demonstrate mastery of maintenance and troubleshooting of computer system", "(b) Organise computer files in different operating systems (Windows, Linux, etc.)", ["i. Create, rename, move, and organise files and folders in Windows and Linux."], 3, "Demonstration, Practical work", "Computer installed with Windows/Linux, hand-out, simulated videos", "Practical file organisation check"),
+        A("2.1(a)", "Steps in Solving a Problem Using Computers", "2.0 Demonstrate mastery of the basic principles of Computer Science", "2.1 Demonstrate mastery of the basic principles in problem solving (concept of problem solving, steps of problem solving, concept of algorithms)", "(a) Describe the steps in solving a problem using computers", ["i. Identify problem requirements and describe systematic steps for solving problems using computers."], 8, "Brainstorming, Group discussion", "Computer, smartphone, tablets, problem-solving handouts", "Problem decomposition exercises, Quizzes"),
+        A("2.1(b)", "Basic Principle of Algorithms", "2.0 Demonstrate mastery of the basic principles of Computer Science", "2.1 Demonstrate mastery of the basic principles in problem solving (concept of problem solving, steps of problem solving, concept of algorithms)", "(b) Demonstrate an understanding of basic principle of algorithms", ["i. Explain the concept, characteristics, and tracing of algorithms in addressing problems."], 10, "Brainstorming, Demonstration", "Computer, smartphone, tablets, algorithm handouts", "Algorithm tracing exercises, Midterm Test"),
+        A("2.1(c)", "Design Algorithms Using Flowcharts & Pseudocode", "2.0 Demonstrate mastery of the basic principles of Computer Science", "2.1 Demonstrate mastery of the basic principles in problem solving (concept of problem solving, steps of problem solving, concept of algorithms)", "(c) Design and present a single algorithm using flow charts and pseudocode", ["i. Construct standard flowcharts and write structured pseudocode to represent algorithms."], 12, "Demonstration, Practical design work", "Computer, smartphone, tablets, flowchart templates", "Flowchart & pseudocode design assignments")
+      ]
+    },
+    "FORM TWO": {
+      ppw: 2, orient: false,
+      book: "Tanzania Institute of Education. (2023). Computer Science for Secondary Schools Student's Book Form Two. TIE.",
+      activities: [
+        A("1.5(a)", "Concept of Internet & Cyber Security", "1.0 Demonstrate mastery of the basic Concepts of Computer Science", "1.5 Demonstrate mastery of the Internet, and basics of cyber security", "(a) Describe the concept of internet and cyber security (ethics, security, and privacy)", ["i. Describe the concept of the Internet, cyber security, ethics, and online privacy."], 4, "Group discussion, Case study", "Projector, computer, Hand-out, TV, Smart board, Internet connectivity", "Oral questions, Quizzes"),
+        A("1.5(b)", "Use Internet Services", "1.0 Demonstrate mastery of the basic Concepts of Computer Science", "1.5 Demonstrate mastery of the Internet, and basics of cyber security", "(b) Use Internet services (searching information, www, electronic mail)", ["i. Use search engines, the World Wide Web (WWW), and electronic mail practically."], 4, "Practical work", "Computer with Internet connectivity", "Practical Internet & email lab check"),
+        A("1.5(c)", "Cyber Security Threats & Countermeasures", "1.0 Demonstrate mastery of the basic Concepts of Computer Science", "1.5 Demonstrate mastery of the Internet, and basics of cyber security", "(c) Understand cyber security threats and related counter measures", ["i. Elaborate cyber security threats (malware, phishing, hacking) and related countermeasures."], 4, "TIPS, Case study", "Projector, computer, cyber security case studies", "Case study questions, Quizzes"),
+        A("1.5(d)", "Evaluate Ethical Issues & Principles of Cyber Security", "1.0 Demonstrate mastery of the basic Concepts of Computer Science", "1.5 Demonstrate mastery of the Internet, and basics of cyber security", "(d) Evaluate ethical issues, related principles, and practices of cyber security", ["i. Evaluate ethical issues, policies, and privacy principles governing cyber security."], 4, "Case study, Group discussion", "Projector, computer, policy handouts", "Case study evaluation report"),
+        A("1.5(e)", "Apply Basic Cyber Security Measures", "1.0 Demonstrate mastery of the basic Concepts of Computer Science", "1.5 Demonstrate mastery of the Internet, and basics of cyber security", "(e) Apply basic cyber security measures (passwords, safe browsing, netiquette)", ["i. Set strong passwords, configure safe browsing, and apply netiquette guidelines."], 4, "Case study, Practical work", "Projectors, computers, Internet connectivity", "Practical security check, Midterm Test"),
+        A("2.2(a)", "Concept of Programming Language", "2.0 Demonstrate mastery of the basic principles of Computer Science", "2.2 Demonstrate an understanding of basic principles of computer programming (using an appropriate structured programming language such as C, python, etc.)", "(a) Describe concept of programming language (categories, paradigm, generic structures)", ["i. Explain categories, paradigms, and generic structures of programming languages."], 6, "TIPS, Question and answer, Group discussion", "Computer installed with programming tools", "Oral questions, Quizzes"),
+        A("2.2(b)", "Describe Programming Tools", "2.0 Demonstrate mastery of the basic principles of Computer Science", "2.2 Demonstrate an understanding of basic principles of computer programming (using an appropriate structured programming language such as C, python, etc.)", "(b) Describe programming tools (compiler/interpreter, text editor, IDE, Debugger)", ["i. Describe the functions of compilers, interpreters, text editors, IDEs, and debuggers."], 6, "Group discussion", "Computer installed with programming tools", "Quizzes, Written exercises"),
+        A("2.2(c)", "Install & Configure Programming Language", "2.0 Demonstrate mastery of the basic principles of Computer Science", "2.2 Demonstrate an understanding of basic principles of computer programming (using an appropriate structured programming language such as C, python, etc.)", "(c) Install and configure the selected programming language (compiler/interpreter, text editor, IDE, Debugger)", ["i. Install and configure the compiler/interpreter, text editor, and IDE for C or Python."], 6, "Demonstration, Practical work", "Computer installed with programming tools", "Practical IDE setup check"),
+        A("2.2(d)", "Write, Compile/Run & Debug a Simple Program", "2.0 Demonstrate mastery of the basic principles of Computer Science", "2.2 Demonstrate an understanding of basic principles of computer programming (using an appropriate structured programming language such as C, python, etc.)", "(d) Use programming tools of selected programming language to write a program (compile/run and debug a simple program)", ["i. Write, compile/run, and test a simple program using the configured programming tools."], 8, "Practical work, Demonstration", "Computer installed with programming tools", "Practical program compilation check, Terminal Exam"),
+        A("2.2(e)", "Use Variables, Constants, Data Types & Operators", "2.0 Demonstrate mastery of the basic principles of Computer Science", "2.2 Demonstrate an understanding of basic principles of computer programming (using an appropriate structured programming language such as C, python, etc.)", "(e) Use variables, constants, and data types of a selected programming language in a program (operators and expressions)", ["i. Declare and use variables, constants, data types, operators, and expressions in programs."], 8, "Practical work", "Computer installed with programming tools", "Practical coding exercises, Quizzes"),
+        A("2.2(f)", "Write Programs Employing Branching", "2.0 Demonstrate mastery of the basic principles of Computer Science", "2.2 Demonstrate an understanding of basic principles of computer programming (using an appropriate structured programming language such as C, python, etc.)", "(f) Use syntax and constructs of the selected programming language to write programs branching", ["i. Write structured programs using conditional branching constructs (if, if-else, nested if, switch)."], 10, "Practical work", "Computer installed with programming tools", "Branching coding exercises, Quizzes"),
+        A("2.2(g)", "Debugging Computer Programs", "2.0 Demonstrate mastery of the basic principles of Computer Science", "2.2 Demonstrate an understanding of basic principles of computer programming (using an appropriate structured programming language such as C, python, etc.)", "(g) Debugging computer programs", ["i. Identify syntax and logical errors and debug computer programs."], 6, "Demonstration, Practical work", "Computer installed with programming tools", "Practical debugging lab test")
+      ]
+    },
+    "FORM THREE": {
+      ppw: 2, orient: false,
+      book: "Tanzania Institute of Education. (2023). Computer Science for Secondary Schools Student's Book Form Three. TIE.",
+      activities: [
+        A("2.3(a)", "Concept of Digital Data Representation", "2.0 Demonstrate mastery of the basic principles of Computer Science", "2.3 Demonstrate an understanding of the basic principles of computer architecture", "(a) Describe the concept of data representation (digital data, number systems, data type, character coding (UNICODE and ASCII))", ["i. Describe digital data representation, number systems, data types, and UNICODE/ASCII coding."], 2, "Question-and-answer, TIPS, Small group discussion", "Handouts with standard ASCII/UNICODE codes", "Oral questions, Quizzes"),
+        A("2.3(b)", "Represent Numbers in Different Number Systems", "2.0 Demonstrate mastery of the basic principles of Computer Science", "2.3 Demonstrate an understanding of the basic principles of computer architecture", "(b) Represent numbers in different number systems (binary, octal, decimal, and hexadecimal)", ["i. Represent numbers in binary, octal, decimal, and hexadecimal number systems."], 2, "Demonstration", "Handouts with standard codes", "Number representation exercises"),
+        A("2.3(c)", "Convert Numbers Between Number Systems", "2.0 Demonstrate mastery of the basic principles of Computer Science", "2.3 Demonstrate an understanding of the basic principles of computer architecture", "(c) Convert numbers from one system to another (binary, decimal, and hexadecimal)", ["i. Convert numbers accurately between binary, octal, decimal, and hexadecimal systems."], 4, "Demonstration, Practice", "Handouts with standard codes", "Number conversion quiz"),
+        A("2.3(d)", "Perform Binary Arithmetic Operations", "2.0 Demonstrate mastery of the basic principles of Computer Science", "2.3 Demonstrate an understanding of the basic principles of computer architecture", "(d) Perform arithmetic operations (addition and subtraction) using binary numbers", ["i. Perform binary addition and subtraction operations."], 2, "Demonstration, Practice", "Handouts with standard codes", "Binary arithmetic test"),
+        A("2.2(a)", "Write Programs Using Iteration, Functions, Arrays & Strings", "2.0 Demonstrate mastery of the basic principles of Computer Science", "2.2 Demonstrate an understanding of basic principles of computer programming (using an appropriate structured programming language such as C, python, etc.)", "(a) Use the syntax and constructs of selected programming language to write program (iteration, functions, array, and string)", ["i. Write structured programs using iteration/loops (for, while) and modular functions.", "ii. Declare and manipulate arrays and strings in programs."], 12, "Demonstration, Practical coding work", "Computer installed with programming tools (C / Python IDE)", "Practical coding assignments"),
+        A("2.2(b)", "Use Scope of Variable in a Program", "2.0 Demonstrate mastery of the basic principles of Computer Science", "2.2 Demonstrate an understanding of basic principles of computer programming (using an appropriate structured programming language such as C, python, etc.)", "(b) Use scope of variable in a program", ["i. Apply local and global variable scope rules in modular computer programs."], 6, "Demonstration, Practical work", "Computer installed with programming tools", "Variable scope coding exercises"),
+        A("2.2(c)", "Test and Debug Programs (Iteration, Arrays, Strings, Functions)", "2.0 Demonstrate mastery of the basic principles of Computer Science", "2.2 Demonstrate an understanding of basic principles of computer programming (using an appropriate structured programming language such as C, python, etc.)", "(c) Test and Debug computer program that employs iteration, array, string, branching and functions", ["i. Test with sample datasets and debug programs employing iteration, arrays, strings, branching, and functions."], 8, "Demonstration, Practical debugging lab", "Computer installed with programming tools", "Practical debugging test, Terminal Exam"),
+        A("2.2(d)", "Appraise the Utility of Developed Programs", "2.0 Demonstrate mastery of the basic principles of Computer Science", "2.2 Demonstrate an understanding of basic principles of computer programming (using an appropriate structured programming language such as C, python, etc.)", "(d) Appraise the utility of the developed program", ["i. Evaluate the efficacy, efficiency, and utility of developed software applications."], 4, "Questions and answers", "Computer installed with programming tools", "Program appraisal rubric"),
+        A("2.4(a)", "Concept of Computer Network", "2.0 Demonstrate mastery of the basic principles of Computer Science", "2.4 Demonstrate an understanding of the basics of computer networks", "(a) Describe the concept of computer network (meaning, mode, media, components, etc.)", ["i. Describe computer network concepts, transmission modes, media, and components."], 2, "Brainstorming, Demonstration", "Computer with installed internet, network cables, network card", "Oral questions, Quizzes"),
+        A("2.4(b)", "Design a Simple Computer Network Topology", "2.0 Demonstrate mastery of the basic principles of Computer Science", "2.4 Demonstrate an understanding of the basics of computer networks", "(b) Design a simple computer network involving a typical topology", ["i. Design a simple computer network diagram involving star, bus, or ring topologies."], 4, "Demonstration, Design practice", "Computer with network simulation tools", "Network topology design assignment"),
+        A("2.4(c)", "Create a Computer Network Involving Typical Topology", "2.0 Demonstrate mastery of the basic principles of Computer Science", "2.4 Demonstrate an understanding of the basics of computer networks", "(c) Create a computer network involving typical topology", ["i. Configure transmission media and devices to create a working local area network."], 4, "Demonstration, Practical work", "Computer with installed internet, network cables, switch, network card", "Practical network setup test"),
+        A("3.1(a)", "Concept of Data and Information", "3.0 Demonstrate mastery of the basic principles of data management", "3.1 Demonstrate the mastery of basic principles of databases and database management systems", "(a) Describe the concept of data and information", ["i. Describe the concepts of data and information and their relationship."], 4, "Brainstorming, TIPS", "Computer installed with data management tools", "Oral questions, Quizzes"),
+        A("3.1(b)", "Manage Simple Data", "3.0 Demonstrate mastery of the basic principles of data management", "3.1 Demonstrate the mastery of basic principles of databases and database management systems", "(b) Manage simple data (create, store, retrieve, check data quality)", ["i. Create, store, retrieve, and check the quality of simple data records."], 4, "Demonstration, Practical work", "Computer installed with data management tools", "Practical data management check"),
+        A("3.1(c)", "Concept of Database and DBMS", "3.0 Demonstrate mastery of the basic principles of data management", "3.1 Demonstrate the mastery of basic principles of databases and database management systems", "(c) Describe the concept of database and database management system", ["i. Elaborate the concepts of relational databases and Database Management Systems (DBMS)."], 4, "Brainstorming, Group discussion", "Computer installed with DBMS tools", "Written exercises, Quizzes"),
+        A("3.1(d)", "Design a Database", "3.0 Demonstrate mastery of the basic principles of data management", "3.1 Demonstrate the mastery of basic principles of databases and database management systems", "(d) Design a database", ["i. Design database tables, fields, data types, keys, and relationships."], 4, "Demonstration, Practical work", "Computer installed with database design tools", "Database design schema check"),
+        A("3.1(e)", "Create a Database Using Selected Software (MS Access)", "3.0 Demonstrate mastery of the basic principles of data management", "3.1 Demonstrate the mastery of basic principles of databases and database management systems", "(e) Create a database using selected software (e.g., MS-Access)", ["i. Create tables, queries, forms, and reports using MS Access or selected DBMS software."], 4, "Practical work", "Computer installed with MS Access / DBMS", "Form III Database Project")
+      ]
+    },
+    "FORM FOUR": {
+      ppw: 2, orient: false,
+      book: "Tanzania Institute of Education. (2023). Computer Science for Secondary Schools Student's Book Form Four. TIE.",
+      activities: [
+        A("1.4(a)", "Maintain Computer Systems", "1.0 Demonstrate mastery of the basic Concepts of Computer Science", "1.4 Demonstrate mastery of systems administration", "(a) Maintain computer systems desktop, laptop, tablets, mobile (create, delete/disable user account, create, modify, and reset password, user support, peripherals)", ["i. Explain system administrator roles and maintain user accounts, passwords, and peripherals."], 4, "TIPS, Practical work", "Projector, Computer (desktop, laptop, tablets, mobile), Internet connectivity", "Practical system maintenance test"),
+        A("1.4(b)", "Apply Troubleshooting Tools and Techniques", "1.0 Demonstrate mastery of the basic Concepts of Computer Science", "1.4 Demonstrate mastery of systems administration", "(b) Apply troubleshooting tools and techniques", ["i. Apply diagnostic and troubleshooting tools to resolve system faults."], 3, "Demonstration, Practical work", "Computer, diagnostic tools", "Troubleshooting practical check"),
+        A("1.4(c)", "Use Selected OS for System Administration", "1.0 Demonstrate mastery of the basic Concepts of Computer Science", "1.4 Demonstrate mastery of systems administration", "(c) Use selected OS to Perform system administration tasks", ["i. Perform routine system administration duties in Windows or Linux OS."], 3, "Demonstration, Practical work", "Computer installed with Windows/Linux", "Practical OS administration test"),
+        A("2.5(a)", "Background of HTML, CSS & JavaScript", "2.0 Demonstrate mastery of the basic principles of Computer Science", "2.5 Demonstrate mastery of basic principles of web development (HTML, CSS, and JavaScript)", "(a) Describe the background of HTML and selected programming languages (CSS, JavaScript)", ["i. Explain the background and roles of HTML, CSS, and JavaScript in web development."], 4, "Brainstorming, TIPS", "Computer installed with web programming tools", "Oral questions, Quizzes"),
+        A("2.5(b)", "Install and Configure CSS & JS Interpreter", "2.0 Demonstrate mastery of the basic principles of Computer Science", "2.5 Demonstrate mastery of basic principles of web development (HTML, CSS, and JavaScript)", "(b) Install and configure the CSS and JavaScript interpreter (e.g., a web browser)", ["i. Install and configure code editors and web browser developer tools."], 4, "Demonstration, Practical work", "Computer with web browser and editor", "Practical setup check"),
+        A("2.5(c)", "Create Webpages Using HTML, CSS & JavaScript", "2.0 Demonstrate mastery of the basic principles of Computer Science", "2.5 Demonstrate mastery of basic principles of web development (HTML, CSS, and JavaScript)", "(c) Create webpages using HTML and CSS, JavaScript", ["i. Build static and interactive webpages using HTML structure, CSS styling, and JavaScript."], 14, "Demonstration, Practical coding work", "Computer installed with web programming tools", "Webpage development project, Terminal Exam"),
+        A("2.5(d)", "Publish Website", "2.0 Demonstrate mastery of the basic principles of Computer Science", "2.5 Demonstrate mastery of basic principles of web development (HTML, CSS, and JavaScript)", "(d) Publish website", ["i. Deploy and publish a developed website to a local or online host."], 4, "Demonstration, Practical deployment", "Computer with Internet connectivity", "Website publishing check"),
+        A("2.5(e)", "Appraise Published Website", "2.0 Demonstrate mastery of the basic principles of Computer Science", "2.5 Demonstrate mastery of basic principles of web development (HTML, CSS, and JavaScript)", "(e) Appraise the published website", ["i. Evaluate the published website for usability, responsiveness, and functionality."], 4, "Demonstration, Questions and answers", "Computer with web browser", "Website appraisal rubric"),
+        A("2.6(a)", "Create Mobile App Using Selected Program Syntax", "2.0 Demonstrate mastery of the basic principles of Computer Science", "2.6 Demonstrate mastery of basic principles of mobile App", "(a) Create mobile App using the syntax of the selected program", ["i. Write, test, and modify code to create a functional mobile App."], 12, "Demonstration, Practical app coding", "Computer installed with mobile App programming tools", "Mobile App practical coding assessment"),
+        A("2.6(b)", "Publish Mobile Apps", "2.0 Demonstrate mastery of the basic principles of Computer Science", "2.6 Demonstrate mastery of basic principles of mobile App", "(b) Publish Mobile Apps", ["i. Package and publish the mobile App for deployment."], 4, "Demonstration, Practical work", "Computer installed with mobile App tools", "Mobile App publishing check"),
+        A("2.6(c)", "Appraise Efficacy of Published Mobile Apps", "2.0 Demonstrate mastery of the basic principles of Computer Science", "2.6 Demonstrate mastery of basic principles of mobile App", "(c) Appraise the efficacy of the published Mobile Apps", ["i. Appraise the utility and performance of the developed mobile App."], 4, "Questions and answers", "Computer/mobile device", "Mobile App appraisal presentation"),
+        A("3.2(a)", "Describe Principles of Data Analysis", "3.0 Demonstrate mastery of the basic principles of data management", "3.2 Demonstrate the mastery of the basic principles of data analysis (data collection, pre-processing, processing, visualization, interpretation)", "(a) Describe principles of data analysis (data collection, pre-processing, processing, visualization, interpretation)", ["i. Explain data collection, pre-processing, processing, visualization, and interpretation."], 4, "Questions and answers", "Computer installed with data analysis tools, projector", "Oral questions, Quizzes"),
+        A("3.2(b)", "Analyse Simple Data Using Selected Tools (SPSS / Excel)", "3.0 Demonstrate mastery of the basic principles of data management", "3.2 Demonstrate the mastery of the basic principles of data analysis (data collection, pre-processing, processing, visualization, interpretation)", "(b) Analysis simple data using selected tools (e.g., SPSS, Excel, etc.)", ["i. Perform practical data analysis and visualization on datasets using Excel or SPSS."], 6, "Practical work", "Computer installed with Excel/SPSS, projector", "Practical data analysis report")
+      ]
+    }
+  },
+
+  "BASIC MATHEMATICS": {
+    "FORM ONE": {
+      ppw: 5, orient: true,
+      book: "Tanzania Institute of Education. (2023). Basic Mathematics for Secondary Schools Student's Book Form One. TIE.",
+      activities: [
+        A("1.1(a)", "Basic Concepts of Mathematics", "1.0 Demonstrate mastery of mathematical language", "1.1 Use numerical skills in different contexts", "(a) Explain the basic concepts of Mathematics (Meaning of mathematics, branches of mathematics, relationship between mathematics and other subjects, importance of mathematics)", ["i. Discuss the meaning, branches, relationship with other subjects, and importance of Mathematics in daily life."], 5, "Group discussion, Brainstorming, Jigsaw", "Charts of relationships between mathematics and other fields, Math Games and Apps", "Oral questions, Quizzes"),
+        A("1.1(b1)", "Concept of Rational, Irrational & Real Numbers", "1.0 Demonstrate mastery of mathematical language", "1.1 Use numerical skills in different contexts", "(b) Explain the concept of rational, irrational, and real numbers", ["i. Relate fractions, decimals, and percentages to rational numbers and explore irrational and real numbers in real-life contexts."], 10, "Observation, Problem solving, Exploration", "Calculator, Charts of real numbers, ruler, tape measure, graph papers", "Written exercises, Quizzes"),
+        A("1.1(b2)", "Convert Repeating Decimals into Fractions", "1.0 Demonstrate mastery of mathematical language", "1.1 Use numerical skills in different contexts", "(b) Convert repeating/recurring decimals into fractions and vice versa", ["i. Identify repeating/recurring decimals and convert them into fractions and vice versa."], 5, "Problem solving, Presentations", "Calculator, Charts of real numbers", "Exercises, Quizzes, Homework"),
+        A("1.1(c)", "Represent Rational Numbers on a Number Line", "1.0 Demonstrate mastery of mathematical language", "1.1 Use numerical skills in different contexts", "(c) Represent rational numbers on a number line", ["i. Draw number lines, locate rational numbers, and perform calculations based on real-life scenarios."], 5, "Group discussion, Problem solving", "Ruler, tape measure, graph papers, number line chart", "Number line exercises, Quizzes"),
+        A("1.1(d)-(e)", "Inequalities, Absolute Values & Importance of Numbers", "1.0 Demonstrate mastery of mathematical language", "1.1 Use numerical skills in different contexts", "(d) Explain the concept of inequalities and absolute values of real numbers\n(e) Describe the importance of numbers in real-life situations", ["i. Explore inequalities and absolute values of real numbers and describe the importance of numbers in real life."], 5, "Intuitive approach, Brainstorming", "Number line charts, graphing tools, real objects", "Exercises, Quizzes, Midterm Test"),
+        A("1.2(a)", "Concept of Ratios and Proportions", "1.0 Demonstrate mastery of mathematical language", "1.2 Use ratios and proportions in daily life", "(a) Explain the concept of ratios and proportions", ["i. Discuss real-life scenarios involving ratios and proportions and their relationship to other subjects."], 16, "Group discussion, Jigsaw, Presentations", "Money, charts of real-life scenarios, interest calculators, bank statements", "Oral questions, Quizzes"),
+        A("1.2(b)", "Solve Ratio and Proportion Problems", "1.0 Demonstrate mastery of mathematical language", "1.2 Use ratios and proportions in daily life", "(b) Solve ratio and proportion problems", ["i. Divide quantities into proportional parts and solve real-world ratio and proportion problems."], 20, "Think-ink-pair-share, Problem solving", "Calculator, Charts of real numbers, graph papers", "Written exercises, Quizzes"),
+        A("2.1(a)-(b)", "Concept of Approximations & Rounding Off", "2.0 Demonstrate mastery of basic concepts in geometry and algebra", "2.1 Use geometry, approximations, relations and functions in various contexts", "(a) Explain the concept of approximations (rounding off, significant figures, and decimal places)\n(b) Round off numbers and estimate values of expressions", ["i. Explore approximations, round off numbers, and estimate values of mathematical expressions."], 14, "Brainstorming, Think-ink-pair-share, Group discussion", "Charts of a number line, estimation jars, estimation games", "Exercises, Quizzes, Terminal Exam"),
+        A("2.1(c)-(d)", "Significant Figures, Decimal Places & Measurements", "2.0 Demonstrate mastery of basic concepts in geometry and algebra", "2.1 Use geometry, approximations, relations and functions in various contexts", "(c) Approximate numbers to the required significant figures and decimal places\n(d) Use approximations in computations and measurements of quantities in various contexts", ["i. Approximate numbers to required significant figures and decimal places and apply them in computations and measurements."], 20, "Jigsaw, Problem solving", "Charts of a number line, estimation jars, measuring tools", "Written exercises, Quizzes"),
+        A("2.2(a)-(b)", "Basic Tenets of Algebra & Modeling Word Problems", "2.0 Demonstrate mastery of basic concepts in geometry and algebra", "2.2 Use algebra and matrices in problem solving", "(a) Explore the basic tenets of algebra (algebraic expressions and equations, linear simultaneous equations of two unknowns, inequalities in one unknown)\n(b) Use algebraic expressions to model situations (word problems into algebraic expressions and equations)", ["i. Simplify algebraic expressions and translate word problems into linear algebraic equations."], 20, "Group discussion, Visual representations, Problem solving", "Beam balance, MATLAB, GeoGebra, real objects, Algebra animations", "Algebraic modeling exercises, Quizzes"),
+        A("2.2(c)-(d)", "Solve Simultaneous Equations & Inequalities in One Unknown", "2.0 Demonstrate mastery of basic concepts in geometry and algebra", "2.2 Use algebra and matrices in problem solving", "(c) Solve simultaneous equations using substitution and elimination methods\n(d) Solve inequalities in one unknown", ["i. Solve linear simultaneous equations using substitution and elimination methods and solve linear inequalities in one unknown."], 25, "Think-ink-pair-share, Group discussion", "Number line chart, graphing calculator, Beam balance, GeoGebra", "Simultaneous equations & inequalities test"),
+        A("3.1(a)-(c)", "Coordinate Geometry, Gradient & Equation of a Straight Line", "3.0 Demonstrate mastery of basic concepts in coordinate geometry, trigonometry, circles, vectors, probability and statistics", "3.1 Use basic coordinate geometry, trigonometry and vectors skills in daily life", "(a) Explore the basic tenets of coordinate geometry\n(b) Find the gradient/slope of a line\n(c) Determine the equation of a straight line and draw its graph", ["i. Find the gradient/slope of a line, determine the equation of a straight line, and draw its graph."], 15, "Collaborative learning, Problem solving, Visual representation", "GeoGebra, MATLAB, Maple, Mathematica, graph papers", "Coordinate geometry exercises, Quizzes"),
+        A("3.1(d)-(e)", "Solve Simultaneous Equations Graphically & With Software", "3.0 Demonstrate mastery of basic concepts in coordinate geometry, trigonometry, circles, vectors, probability and statistics", "3.1 Use basic coordinate geometry, trigonometry and vectors skills in daily life", "(d) Solve linear simultaneous equations graphically\n(e) Use mathematical software to solve and draw graphs of simultaneous equations", ["i. Solve linear simultaneous equations graphically on graph paper and using mathematical software (Excel, GeoGebra, MATLAB)."], 15, "Visual representation, Group discussion, Use of technology", "GeoGebra, Excel, MATLAB, graph papers", "Practical graphing assignments")
+      ]
+    },
+    "FORM TWO": {
+      ppw: 5, orient: false,
+      book: "Tanzania Institute of Education. (2023). Basic Mathematics for Secondary Schools Student's Book Form Two. TIE.",
+      activities: [
+        A("1.1(a)-(b)", "Concepts & Problems on Rates and Variations", "1.0 Demonstrate mastery of mathematical language", "1.1 Use rates and variations in different contexts", "(a) Describe the concepts of rates and variations\n(b) Solve problems on rates and variations", ["i. Explore and solve real-life problems involving rates and direct, inverse, and joint variations."], 11, "Exploration, Group discussion", "Mathematical sets, calculators, charts of real-life scenarios, graph papers", "Written exercises, Quizzes"),
+        A("2.1(a)-(b)", "Similarities, Congruence & Properties of Similar Triangles", "2.0 Demonstrate mastery of basic concepts in geometry and algebra", "2.1 Use geometry, approximations, relations and functions in various contexts", "(a) Describe the concepts of geometry (similarities and congruence)\n(b) Recognize properties of similar triangles", ["i. Explore congruent and similar figures using manipulatives and recognize properties of similar triangles."], 22, "Exploration, Group discussion, Visual representation, Jigsaw", "Mathematical sets, graph papers, pattern blocks, tangrams, geoboards", "Geometry exercises, Quizzes"),
+        A("2.1(c)", "Postulates, Proofs & Theorems of Congruent Triangles", "2.0 Demonstrate mastery of basic concepts in geometry and algebra", "2.1 Use geometry, approximations, relations and functions in various contexts", "(c) Explain postulates, proofs, and theorems of congruent triangles", ["i. Discuss and apply postulates, proofs, and theorems of congruent triangles."], 20, "Group discussion, Deductive proof practice", "Mathematical sets, graph papers, congruence simulations", "Geometric proof test, Midterm Exam"),
+        A("2.2(a)-(b)", "Binary Operations & Solving Quadratic Equations", "2.0 Demonstrate mastery of basic concepts in geometry and algebra", "2.2 Use algebra and matrices in problem solving", "(a) Explore the basic tenets of algebra (binary operations, quadratic expressions and equations, radicals, exponents, and logarithms)\n(b) Solve quadratic equations by using different methods (factorisation, Completing the square, and quadratic formula)", ["i. Apply binary operations and solve quadratic equations graphically, with technology, and by factorisation, completing the square, and quadratic formula."], 33, "Jigsaw, Graphical methods, Use of technology, Problem solving, Group discussion", "Calculators, GeoGebra, MATLAB, graph papers", "Quadratic equations test, Terminal Exam"),
+        A("2.2(c)-(d)", "Laws of Exponents & Standard Form", "2.0 Demonstrate mastery of basic concepts in geometry and algebra", "2.2 Use algebra and matrices in problem solving", "(c) Identify and use laws of exponents involving positive, negative, and zero exponents\n(d) Write numbers in standard form", ["i. Apply multiplication, division, power, and zero-index laws of exponents and write numbers in standard form."], 18, "Group discussion, Problem solving", "Calculators, number charts, exponent rule posters, animations", "Exponents & standard form quizzes"),
+        A("2.2(e)-(f)", "Laws of Logarithms, Radicals & Rationalizing Denominators", "2.0 Demonstrate mastery of basic concepts in geometry and algebra", "2.2 Use algebra and matrices in problem solving", "(e) Use laws of logarithms to solve problems\n(f) Perform operations on radicals and rationalize the denominators", ["i. Use laws of logarithms to solve problems and perform operations on radicals including rationalizing denominators."], 17, "Interactive discussion, Problem solving", "Calculators, logarithm charts, visual aids", "Logarithms & radicals test"),
+        A("2.3(a)-(c)", "Basic Tenets of Sets, Types of Sets & Subsets", "2.0 Demonstrate mastery of basic concepts in geometry and algebra", "2.3 Use sets, sequences and series in problem solving", "(a) Explore the basic tenets of sets\n(b) Distinguish among different types of sets\n(c) Compare sets (subsets and universal sets)", ["i. Distinguish universal, equal, null, finite, infinite, equivalent, and disjoint sets, and compare subsets."], 12, "Exploration, Jigsaw, Group discussion", "Real objects, set simulations, charts of sets, playing cards", "Set classification exercises, Quizzes"),
+        A("2.3(d)-(f)", "Set Operations, Venn Diagrams & Cardinality", "2.0 Demonstrate mastery of basic concepts in geometry and algebra", "2.3 Use sets, sequences and series in problem solving", "(d) Perform operations with sets (union, intersection, and complement of a set)\n(e) Represent two sets in a Venn diagram\n(f) Find the number of elements in a set", ["i. Perform union, intersection, and complement set operations, draw two-set Venn diagrams, and find the number of elements."], 12, "Group discussion, Visual representation", "Real objects, set simulations, charts of sets, coloured chalks", "Venn diagram problem sets"),
+        A("3.1(a)-(b)", "Trigonometric Ratios & Special Angles", "3.0 Demonstrate mastery of basic concepts in coordinate geometry, trigonometry, circles, vectors, probability, and statistics", "3.1 Use basic coordinate geometry, trigonometry and vectors skills in daily life", "(a) Explore the basic tenets of trigonometry\n(b) Determine trigonometric ratios of angles and special angles", ["i. Determine sine, cosine, and tangent ratios of acute angles and special angles (30°, 45°, 60°)."], 15, "Exploration, Group discussion", "Geometry animations, GeoGebra, MATLAB, graph paper, mathematical set", "Trigonometric ratios quiz"),
+        A("3.1(c)", "Angles of Elevation and Depression", "3.0 Demonstrate mastery of basic concepts in coordinate geometry, trigonometry, circles, vectors, probability, and statistics", "3.1 Use basic coordinate geometry, trigonometry and vectors skills in daily life", "(c) Calculate angles of elevation and depression", ["i. Solve real-life height and distance problems involving angles of elevation and depression."], 15, "Jigsaw, Problem solving", "Geometry animations, GeoGebra, mathematical set", "Elevation & depression exercises")
+      ]
+    },
+    "FORM THREE": {
+      ppw: 7, orient: false,
+      book: "Tanzania Institute of Education. (2023). Basic Mathematics for Secondary Schools Student's Book Form Three. TIE.",
+      activities: [
+        A("1.1(a)-(b)", "Concepts, Domain & Range of Relations and Functions", "1.0 Demonstrate mastery of basic concepts in geometry and algebra", "1.1 Use geometry, approximations, relations and functions in various contexts", "(a) Describe the concepts of relations and functions (linear and quadratic)\n(b) Find the domain and range of relations and functions", ["i. Describe types of relations and functions and determine their domain and range from mappings, tables, and graphs."], 28, "Collaborative learning, Exploration, Visual representation, Project, Jigsaw", "Function animation, graph boards and papers, calculators, GeoGebra", "Domain & range exercises, Project report"),
+        A("1.1(c)-(d)", "Inverses & Graphs of Relations and Functions", "1.0 Demonstrate mastery of basic concepts in geometry and algebra", "1.1 Use geometry, approximations, relations and functions in various contexts", "(c) Find the inverses of relations and functions\n(d) Draw graphs of relations and functions", ["i. Find inverses and draw graphs of linear and quadratic relations and functions manually and using technology."], 30, "Problem solving, Visual representation, Use of technology", "Graph boards and papers, graphing calculators, MATLAB, GeoGebra", "Graphing test, Midterm Exam"),
+        A("1.2(a)", "Linear Programming (Constraints, Objective Functions & Optimal Solutions)", "1.0 Demonstrate mastery of basic concepts in geometry and algebra", "1.2 Use algebra and matrices in problem solving", "Explore the basic tenets of algebra (linear programming: constraints, objective functions, and optimal solution)", ["i. Formulate linear constraints and objective functions from word problems.", "ii. Graph feasible regions and determine optimal solutions manually and using Excel/MATLAB/GeoGebra."], 78, "Jigsaw, Graphical methods, Use of technology, Problem solving", "Graph boards and papers, calculators, Excel, MATLAB, GeoGebra", "Linear programming exercises, Terminal Exam"),
+        A("1.3(a)-(b)", "Sequences & Series (AP and GP nth Terms & Sums)", "1.0 Demonstrate mastery of basic concepts in geometry and algebra", "1.3 Use sets, sequences and series in problem solving", "(a) Explore the basic tenets of sequences and series (Arithmetic progression AP, Geometric progression GP)\n(b) Find the general term for AP and GP and use them to derive formulae for the sums of APs and GPs", ["i. Derive and apply formulae for the nth term and sum of the first n terms of Arithmetic and Geometric Progressions."], 34, "Exploration, Visual representation, Group discussion", "Pattern puzzles, pattern blocks, visual aids, calculators", "AP and GP exercises, Quizzes"),
+        A("1.3(c)", "Arithmetic Mean, Geometric Mean & Compound Interest", "1.0 Demonstrate mastery of basic concepts in geometry and algebra", "1.3 Use sets, sequences and series in problem solving", "(c) Calculate arithmetic mean, geometric mean, and compound interest", ["i. Calculate arithmetic mean, geometric mean, and apply compound interest to loans and investments."], 24, "Exploration, Think-ink-pair-share, Interactive discussion", "Calculators, financial charts, visual aids", "Compound interest test, Quizzes"),
+        A("2.1(a)", "Circles (Angle Properties, Theorems, Tangents, Chords & Radians)", "2.0 Demonstrate mastery of basic concepts in coordinate geometry, trigonometry, circles, vectors, probability and statistics", "2.1 Use basic skills of circles in daily life", "Explore the basic tenets of a circle (angle properties, theorems, tangents, chords and radians)", ["i. Prove and apply circle angle properties, chord and tangent theorems, and radian measure."], 39, "Think-ink-pair-share, Scenario, Visual representation", "Charts of circle theorems, circle animations, mathematical sets, GeoGebra", "Circle theorem exercises")
+      ]
+    },
+    "FORM FOUR": {
+      ppw: 5, orient: false,
+      book: "Tanzania Institute of Education. (2023). Basic Mathematics for Secondary Schools Student's Book Form Four. TIE.",
+      activities: [
+        A("1.1(a)", "2×2 Matrices (Operations, Determinant, Inverse & Transformations)", "1.0 Demonstrate mastery of basic concepts in geometry and algebra", "1.1 Use algebra and matrices in problem solving", "(a) Explore the basic tenets of matrices (2×2 matrices: operations, determinant, inverse, and transformations)", ["i. Perform operations, determinants, inverses, and geometric transformations using 2×2 matrices."], 20, "Demonstration, Visual representation, Problem solving", "Visual aids, coloured blocks, matrix calculators, graphing calculators", "Matrix & transformation exercises"),
+        A("1.1(b)", "Solve Simultaneous Equations Using Matrices & Cramer's Rule", "1.0 Demonstrate mastery of basic concepts in geometry and algebra", "1.1 Use algebra and matrices in problem solving", "(b) Apply matrices to solve simultaneous equations of two unknowns (matrix inversion method and Cramer's rule)", ["i. Solve simultaneous linear equations in two unknowns using matrix inversion and Cramer's rule."], 20, "Questions and answers, Use of technology, Problem solving", "Graphing calculators, Excel, Microsoft Mathematics, MATLAB", "Simultaneous matrices test, Midterm Exam"),
+        A("2.1(a)", "Coordinate Geometry (Midpoint, Distance, Parallel & Perpendicular Lines)", "2.0 Demonstrate mastery of basic concepts in coordinate geometry, trigonometry, circles, vectors, probability, and statistics", "2.1 Use basic coordinate geometry, trigonometry, and vectors skills in daily life", "(a) Explore the basic tenets of coordinate geometry (midpoint of a line segment, distance between two points on a line, parallel, and perpendicular lines)", ["i. Calculate midpoint and distance between two points and apply conditions for parallel and perpendicular lines."], 22, "Demonstration, Problem solving, Visual representation", "Graph papers, mathematical sets, GeoGebra, MATLAB", "Coordinate geometry exercises"),
+        A("2.1(b)", "Sine and Cosine Rules", "2.0 Demonstrate mastery of basic concepts in coordinate geometry, trigonometry, circles, vectors, probability, and statistics", "2.1 Use basic coordinate geometry, trigonometry, and vectors skills in daily life", "(b) Apply sine and cosine rules to find distances or angles of elevation", ["i. Apply sine and cosine rules to solve triangles and find distances or angles of elevation."], 22, "Exploration, Use of technology, Problem solving", "Graphing calculators, Excel, MATLAB, GeoGebra", "Sine & cosine rule exercises, Terminal Exam"),
+        A("2.1(c)", "Compound Angles", "2.0 Demonstrate mastery of basic concepts in coordinate geometry, trigonometry, circles, vectors, probability, and statistics", "2.1 Use basic coordinate geometry, trigonometry, and vectors skills in daily life", "(c) Derive and use compound angles to solve problems", ["i. Derive and apply compound angle formulae to solve trigonometric problems."], 22, "Group discussion, Use of technology, Jigsaw", "Graphing calculators, GeoGebra, trigonometric charts", "Compound angles quiz"),
+        A("2.1(d)", "Vectors (Displacement, Position, Magnitude, Direction & Operations)", "2.0 Demonstrate mastery of basic concepts in coordinate geometry, trigonometry, circles, vectors, probability, and statistics", "2.1 Use basic coordinate geometry, trigonometry, and vectors skills in daily life", "(d) Explore the basic tenets of vectors (displacement and position vectors, magnitude and direction, sum and differences, multiplication of vectors by a scalar)", ["i. Represent displacement and position vectors, find magnitude and direction, and perform vector addition, subtraction, and scalar multiplication."], 22, "Exploration, Visual representation, Problem solving", "Graph papers, mathematical sets, GeoGebra", "Vectors problem sets"),
+        A("2.2(a)", "Probability of Two Events", "2.0 Demonstrate mastery of basic concepts in coordinate geometry, trigonometry, circles, vectors, probability, and statistics", "2.2 Use probability in problem solving", "Explore the basic tenets of probability of two events (probability of an event, mutually exclusive events, dependent events, combined events using tree diagrams, tables and formulae)", ["i. Calculate probabilities of single, mutually exclusive, dependent, and combined events using tree diagrams, tables, and formulae."], 22, "Visual representation, Group discussion", "Probability games, simulations, probability trees and diagrams", "Probability test"),
+        A("2.3(a)", "Statistics (Frequency Distribution, Central Tendency, Histogram & Ogive)", "2.0 Demonstrate mastery of basic concepts in coordinate geometry, trigonometry, circles, vectors, probability, and statistics", "2.3 Use statistics in problem solving", "Explore the basic tenets of statistics (frequency distribution, measures of central tendency, histogram, frequency polygon, and cumulative frequency curve 'ogive')", ["i. Determine measures of central tendency and draw histograms, frequency polygons, and ogives."], 25, "Demonstration, Group discussion, Exploration", "Statistical calculators, statistical charts, graph paper", "Statistics graphing assignments")
+      ]
+    }
+  },
+
+  "ADDITIONAL MATHEMATICS": {
+    "FORM THREE": {
+      ppw: 4, orient: false,
+      book: "Ministry of Education, Science and Technology. (2023). Additional Mathematics for Secondary Schools Student's Book Form Three. TIE.",
+      activities: [
+        A("1.1(a)", "Logic (Propositions, Connectives, Truth Tables & Circuits)", "1.0 Use advanced mathematical knowledge and skills in everyday life", "1.1 Demonstrate mastery of logic in decision making", "Explore the basic tenets of logic (logical statements/propositions, connectives, arguments, validity of an argument, truth tables and simple circuits)", ["i. Construct truth tables, test validity of logical arguments, and design simple switching circuits."], 18, "Group discussion, Visual representations, Logic games", "Books, Excerpts of logical arguments, simulations, circuit animations", "Logic & truth table exercises"),
+        A("2.1(a)", "Algebra (Roots of Quadratics, Linear-Quadratic Systems & Remainder Theorem)", "2.0 Demonstrate mastery of some advanced concepts in Algebra and Calculus in problem solving", "2.1 Use Algebra and Calculus to solve problems in different contexts", "(a) Explore the basic tenets of Algebra (sum and product of roots of a quadratic equation, solve algebraically and graphically simultaneous equations involving one linear and one quadratic equation, use the remainder theorem to find a remainder of a polynomial function of up to third degree)", ["i. Apply sum and product of quadratic roots, solve linear-quadratic simultaneous equations, and use the remainder theorem on polynomials."], 20, "Exploration, Scenario modeling, Puzzles and ICT tools", "Books, Algebra packages, Graphing calculators, graph papers", "Algebra test, Midterm Exam"),
+        A("2.1(b)", "Rational Functions (Asymptotes, Domain, Range & Graphs)", "2.0 Demonstrate mastery of some advanced concepts in Algebra and Calculus in problem solving", "2.1 Use Algebra and Calculus to solve problems in different contexts", "(b) Explore the basic tenets of Rational Functions (properties, asymptotes, domain and range, graphs)", ["i. Determine domain, range, and asymptotes of rational functions and sketch their graphs."], 18, "Virtual representations, Hands-on activities", "Graphing calculators, Graph papers, relevant books, AI tools", "Rational functions graphing assignment"),
+        A("2.1(c)", "Differentiation (First Principles, Power, Chain, Product & Quotient Rules)", "2.0 Demonstrate mastery of some advanced concepts in Algebra and Calculus in problem solving", "2.1 Use Algebra and Calculus to solve problems in different contexts", "(c) Explore the basic tenets of Differentiation (derivatives of polynomial and trigonometric functions: first principles, power rule, chain rule, product rule and quotient rule)", ["i. Differentiate polynomial and trigonometric functions using first principles, power, chain, product, and quotient rules."], 20, "Step-by-step demonstrations, Practice", "Graphing calculators, differentiation apps, GeoGebra", "Differentiation quizzes, Terminal Exam"),
+        A("2.1(d)", "Applications of Differentiation (Rates of Change, Maxima/Minima & Curve Sketching)", "2.0 Demonstrate mastery of some advanced concepts in Algebra and Calculus in problem solving", "2.1 Use Algebra and Calculus to solve problems in different contexts", "(d) Apply differentiation to determine rates of change of quantities, maxima and minima of functions, turning points, points of inflection and curve sketching", ["i. Apply differentiation to rates of change, turning points, maxima/minima, points of inflection, and curve sketching."], 18, "Project-based learning, Problem solving", "Graphing calculators, GeoGebra", "Optimization & curve sketching test"),
+        A("2.1(e)", "Indefinite & Definite Integrals of Polynomials and Trigonometric Functions", "2.0 Demonstrate mastery of some advanced concepts in Algebra and Calculus in problem solving", "2.1 Use Algebra and Calculus to solve problems in different contexts", "(e) Determine indefinite and definite integrals of polynomial expressions and simple trigonometric functions", ["i. Evaluate indefinite and definite integrals of polynomial and simple trigonometric functions."], 15, "Think-Ink-Pair-Share (TIPS), Problem solving", "Graphing calculators, GeoGebra", "Integration exercises"),
+        A("2.1(f)", "Applications of Integration (Area Under Curve & Volume of Revolution)", "2.0 Demonstrate mastery of some advanced concepts in Algebra and Calculus in problem solving", "2.1 Use Algebra and Calculus to solve problems in different contexts", "(f) Apply Integration to determine area under a curve and volume of a solid of revolution of a simple curve about an axis", ["i. Apply definite integration to determine area under a curve and volume of a solid of revolution."], 15, "Problem-based learning, Scenario modeling", "Graphing calculators, GeoGebra", "Area & volume of revolution test"),
+        A("2.2(a)", "Set Theory (Three Sets, Venn Diagrams, Cardinality & De Morgan's Laws)", "2.0 Demonstrate mastery of some advanced concepts in Algebra and Calculus in problem solving", "2.2 Apply sets theory skills in decision making", "(a) Explore the basic tenets of set theory (operation on three sets, Venn diagrams, cardinality of a set, set properties and De Morgan's laws)", ["i. Apply set properties, De Morgan's laws, and three-set Venn diagrams to solve cardinality problems."], 16, "Exploration, Problem-based learning", "Real objects, set simulations, charts of sets, manila papers", "Three-set Venn diagram test")
+      ]
+    },
+    "FORM FOUR": {
+      ppw: 4, orient: false,
+      book: "Ministry of Education, Science and Technology. (2023). Additional Mathematics for Secondary Schools Student's Book Form Four. TIE.",
+      activities: [
+        A("1.1(a)", "Coordinate Geometry (Ratio Theorem, Perpendicular Distance, Circles & Loci)", "1.0 Use advanced mathematical knowledge and skills in daily life", "1.1 Use some advanced skills in coordinate geometry, Trigonometry and Vectors in daily life", "(a) Explore the basic tenets of coordinate geometry (ratio theorem, perpendicular distance, angle between two intersecting lines, equation of a circle, locus of a moving point)", ["i. Apply ratio theorem, perpendicular distance, angle between intersecting lines, equation of a circle, and plane loci."], 24, "Simulations, Interactive graphing", "Graph papers, geometrical models, Geoboards, Maple, GeoGebra, MATLAB", "Coordinate geometry & loci test"),
+        A("1.1(b)", "Trigonometry (Identities, Double/Compound Angles & Equations)", "1.0 Use advanced mathematical knowledge and skills in daily life", "1.1 Use some advanced skills in coordinate geometry, Trigonometry and Vectors in daily life", "(b) Explore the basic tenets of trigonometry (trigonometric identities, double angle and compound angle formulae and solving trigonometric equations)", ["i. Prove trigonometric identities, apply double/compound angle formulae, and solve trigonometric equations."], 24, "Heuristic methods, Guided discovery", "Graph papers, angle animations, GeoGebra, MATLAB", "Trigonometry test, Midterm Exam"),
+        A("1.1(c)", "Vectors in 3D Space (Components, Dot & Cross Products)", "1.0 Use advanced mathematical knowledge and skills in daily life", "1.1 Use some advanced skills in coordinate geometry, Trigonometry and Vectors in daily life", "(c) Explore the basic tenets of vectors in three dimensional space (components, representations, dot and cross products of two vectors)", ["i. Represent 3D vectors and compute dot and cross products of two vectors."], 14, "Jigsaw, Vector simulations", "Scientific calculators, Maple, GeoGebra, MATLAB, AI tools", "3D vectors quiz"),
+        A("1.1(d)", "Applications of Dot Product (Angle Between Vectors & Work Done)", "1.0 Use advanced mathematical knowledge and skills in daily life", "1.1 Use some advanced skills in coordinate geometry, Trigonometry and Vectors in daily life", "(d) Apply the dot product of vectors to solve problems involving angles between two vectors and work done by a force on an object", ["i. Apply the dot product to find angles between vectors and work done by a force."], 14, "Group discussion, Problem solving", "Vector animations, GeoGebra, MATLAB", "Dot product exercises, Terminal Exam"),
+        A("1.1(e)", "Applications of Cross Product (Unit Normal Vector & Area)", "1.0 Use advanced mathematical knowledge and skills in daily life", "1.1 Use some advanced skills in coordinate geometry, Trigonometry and Vectors in daily life", "(e) Apply the cross product of vectors to find a unit vector normal to a given plane and to find area of a plane figure", ["i. Apply the cross product to find a unit vector normal to a plane and area of plane figures."], 14, "Problem-based learning", "Vector animations, GeoGebra, MATLAB", "Cross product exercises"),
+        A("1.2(a)", "Statistics (Measures of Dispersion: Range, Variance, Standard Deviation)", "1.0 Use advanced mathematical knowledge and skills in daily life", "1.2 Apply statistical skills in the fields of business and economics", "Explore the basic tenets of statistics (measures of dispersion: range, variance and standard deviation)", ["i. Calculate range, variance, and standard deviation and conduct a business/economics data project."], 10, "Exploration, Field project", "Statistical packages, Statistics books, AI tools, collected data", "Statistical dispersion project report"),
+        A("1.3(a)", "Counting Techniques (Fundamental Principle, Permutations & Combinations)", "1.0 Use advanced mathematical knowledge and skills in daily life", "1.3 Apply the basic skills of probability in daily life", "(a) Explore the basic tenets of counting techniques (fundamental principle of counting, permutations, and combinations)", ["i. Apply the fundamental counting principle, permutations, and combinations."], 10, "Researching, Demonstrations", "Counting simulations, Real objects, abacus", "Permutations & combinations quiz"),
+        A("1.3(b)", "Probability (Independent Events & Conditional Probability)", "1.0 Use advanced mathematical knowledge and skills in daily life", "1.3 Apply the basic skills of probability in daily life", "(b) Explore the basic tenets of probability (independent events and conditional probability)", ["i. Conduct random experiments and solve problems on independent events and conditional probability."], 10, "Experiments, Problem solving", "Counting simulations, dice, coins, deck of cards", "Conditional probability test"),
+        A("2.1(a)", "3×3 Matrices (Operations, Determinant & Inverse)", "2.0 Demonstrate mastery of some advanced concepts in Algebra and Calculus in problem solving", "2.1 Use Algebra and Calculus to solve problems in different contexts", "(a) Explore the basic tenets of 3×3 matrices (operations, determinant, and inverse)", ["i. Perform operations and find determinants and inverses of 3×3 matrices."], 10, "Heuristic method, ICT verification", "Scientific calculators, Maple, GeoGebra, MATLAB", "3×3 Matrix inverse quiz"),
+        A("2.1(b)", "Solve 3×3 Simultaneous Linear Equations", "2.0 Demonstrate mastery of some advanced concepts in Algebra and Calculus in problem solving", "2.1 Use Algebra and Calculus to solve problems in different contexts", "(b) Use 3×3 matrices to solve systems of linear simultaneous equations with three unknowns", ["i. Solve systems of linear simultaneous equations with three unknowns using 3×3 matrices."], 10, "Problem-based learning", "Scientific calculators, GeoGebra, MATLAB", "Simultaneous 3×3 systems test")
+      ]
+    }
+  },
+
+  "CHEMISTRY": {
+    "FORM ONE": {
+      ppw: 3, orient: true,
+      book: "Tanzania Institute of Education. (2023). Chemistry for Secondary Schools Student's Book Form One. TIE.",
+      activities: [
+        A("1.1(a)", "Concept of Chemistry", "1.0 Demonstrate mastery of basic concepts, theories and principles in Chemistry", "1.1 Demonstrate mastery of concepts, theories and principles in Chemistry", "(a) Describe the concept of Chemistry (meaning, branches, applications and relationships with other disciplines)", ["i. Explain the meaning, branches, applications, and relationship of Chemistry with other disciplines."], 9, "Brainstorming, Project works", "Pictures, diagrams, simulations, videos illustrating Chemistry applications", "Question and answer, Quiz"),
+        A("1.1(b)", "Contribution of Chemistry to Modern Society", "1.0 Demonstrate mastery of basic concepts, theories and principles in Chemistry", "1.1 Demonstrate mastery of concepts, theories and principles in Chemistry", "(b) Discuss the contribution of Chemistry in the development of modern society", ["i. Visit nearby industries, farms, or health facilities to discuss the contribution of Chemistry in modern society."], 9, "Field visit, Group discussion", "Simulations, animations or videos on contribution of Chemistry", "Field visit report, Quizzes"),
+        A("1.1(c)", "Concept of Matter (Physical & Chemical Changes)", "1.0 Demonstrate mastery of basic concepts, theories and principles in Chemistry", "1.1 Demonstrate mastery of concepts, theories and principles in Chemistry", "(c) Describe the concept of matter (physical and chemical changes of matter)", ["i. Perform experiments demonstrating physical and chemical changes of matter (sublimation, rusting, freezing, evaporation)."], 18, "Practical work, Experimentation", "Ice, water, heat source, evaporating basin, nails, beaker, salt, iodine crystals, CuSO4", "Practical observation, Midterm Test"),
+        A("1.1(d)", "Chemical Elements, Binary Compounds & Mixtures", "1.0 Demonstrate mastery of basic concepts, theories and principles in Chemistry", "1.1 Demonstrate mastery of concepts, theories and principles in Chemistry", "(d) Describe the concepts of chemical elements (criteria for assigning chemical symbols), compounds (binary compound) and mixtures (types of solution and separation of mixtures)", ["i. Assign chemical symbols, prepare solutions, and describe elements, binary compounds, and mixtures."], 18, "Think-ink-pair-share, Hands-on-minds-on", "Periodic table, copper, zinc, iron, sulphur, salt, magnet, crucible, heat source, HCl", "Practical exercises, Quizzes"),
+        A("1.1(e)", "Compare Properties of Compounds with Constituent Elements", "1.0 Demonstrate mastery of basic concepts, theories and principles in Chemistry", "1.1 Demonstrate mastery of concepts, theories and principles in Chemistry", "(e) Compare the properties of compounds with those of constituent elements", ["i. Compare physical and chemical properties of compounds with those of their constituent elements."], 12, "Group discussion, Technological-based learning", "Margarine, filter paper, funnel, ethanol, iodine crystals, wall charts", "Quizzes, Terminal Exam"),
+        A("1.1(f)", "Concept of the Periodic Table (First 20 Elements)", "1.0 Demonstrate mastery of basic concepts, theories and principles in Chemistry", "1.1 Demonstrate mastery of concepts, theories and principles in Chemistry", "(f) Explain the concept of the periodic table (1st 20 elements in the Periodic Table; metals and non-metals)", ["i. Classify environmental materials into metals and non-metals and explain the first 20 elements of the Periodic Table."], 12, "Outdoor activity, Project works", "Wall charts, simulations illustrating 1st 20 elements; metals and non-metals", "Project report, Quizzes"),
+        A("2.1(a)", "Basic Chemistry Laboratory Skills & Safety", "2.0 Conduct experiments in Chemistry", "2.1 Conduct experiments in Chemistry", "(a) Describe basic Chemistry laboratory skills (chemistry laboratory rules and safety measures, first aid, fire and firefighting, and Chemistry laboratory apparatus)", ["i. Interpret laboratory safety rules, first aid, firefighting classes, and common laboratory apparatus."], 15, "Group discussion, Guest speaker (fire brigade), Outdoor firefighting", "Laboratory manuals, wall charts, first aid kit, apparatus, fire extinguishers", "Apparatus & safety quiz"),
+        A("2.1(b)", "Experiments on Changes of State of Matter", "2.0 Conduct experiments in Chemistry", "2.1 Conduct experiments in Chemistry", "(b) Perform experiments on the changes of matter from one state to another", ["i. Perform laboratory experiments demonstrating changes of matter from one state to another."], 12, "Experimentation", "Ice, water, iron chips, heat source, iodine crystals, anhydrous CuSO4", "Lab report, Quizzes"),
+        A("2.1(c)", "Experiments on Separation of Mixtures", "2.0 Conduct experiments in Chemistry", "2.1 Conduct experiments in Chemistry", "(c) Perform experiments on separation of different mixtures using different methods", ["i. Perform experiments separating mixtures by filtration, evaporation, distillation, sublimation, decantation, and chromatography."], 12, "Home-based project, Experimentation, Questions and answers", "Salt, iron filings, magnet, sulphur, heat source, filter paper, funnel, distillation system", "Practical lab assessment")
+      ]
+    },
+    "FORM TWO": {
+      ppw: 3, orient: false,
+      book: "Tanzania Institute of Education. (2023). Chemistry for Secondary Schools Student's Book Form Two. TIE.",
+      activities: [
+        A("1.1(a)", "Modern Concept of Atomic Structure", "1.0 Demonstrate mastery of basic concepts, theories and principles in Chemistry", "1.1 Demonstrate mastery of concepts, theories and principles in Chemistry", "(a) Describe the modern concept of atomic structure (Dalton's atomic structure and sub-atomic particles)", ["i. Describe Dalton's atomic structure and properties of sub-atomic particles."], 9, "Think-ink-pair-share, Technological-based learning", "Diagrams, wall charts, simulations illustrating Dalton's atomic structure", "Written report, Quizzes"),
+        A("1.1(b)", "Concept of Electronic Arrangements", "1.0 Demonstrate mastery of basic concepts, theories and principles in Chemistry", "1.1 Demonstrate mastery of concepts, theories and principles in Chemistry", "(b) Describe the concept of electronic arrangements", ["i. Design models showing electronic arrangements in shells of atoms."], 9, "Technological-based learning, Group model designing", "Energy shell diagrams, locally available modelling materials", "Electronic model assessment"),
+        A("1.1(c)", "Determine Atomic and Mass Numbers", "1.0 Demonstrate mastery of basic concepts, theories and principles in Chemistry", "1.1 Demonstrate mastery of concepts, theories and principles in Chemistry", "(c) Use the concept of atomic structure to determine the atomic and mass numbers of an element", ["i. Calculate atomic numbers, mass numbers, protons, neutrons, and electrons of elements."], 9, "Group discussion", "Models and wall charts showing protons and neutrons of elements", "Calculation exercises, Midterm Test"),
+        A("1.1(d)", "Chemical Formulae & IUPAC Nomenclature", "1.0 Demonstrate mastery of basic concepts, theories and principles in Chemistry", "1.1 Demonstrate mastery of concepts, theories and principles in Chemistry", "(d) Explain the concept of chemical formulae and nomenclature (valence, oxidation state, radicals and naming of binary inorganic compounds using the IUPAC system)", ["i. Apply valence, oxidation states, and radicals to write chemical formulae and name binary inorganic compounds using IUPAC rules."], 12, "Inquiry-based learning, Group discussion, Gallery walk", "Valence cards, modern periodic table, labelled chemical bottles", "IUPAC nomenclature quiz"),
+        A("1.1(e)", "Empirical and Molecular Formulae", "1.0 Demonstrate mastery of basic concepts, theories and principles in Chemistry", "1.1 Demonstrate mastery of concepts, theories and principles in Chemistry", "(e) Determine empirical and molecular formulae of common compounds", ["i. Calculate percentage composition, empirical formulae, and molecular formulae of compounds."], 9, "Group discussion, Problem solving", "Models depicting empirical and molecular formulae, periodic table", "Empirical formula test"),
+        A("1.1(f)", "Chemical Bonding (Covalent & Electrovalent)", "1.0 Demonstrate mastery of basic concepts, theories and principles in Chemistry", "1.1 Demonstrate mastery of concepts, theories and principles in Chemistry", "(f) Describe the concept of chemical bonding (covalent and electrovalent bonding)", ["i. Describe and demonstrate covalent and electrovalent bonding using models and ChemDraw."], 9, "Outdoor activity, Technological-based learning", "Organic/inorganic structure models, Computers with Chemistry software", "Bonding exercises, Terminal Exam"),
+        A("1.1(g)", "Chemical Reactions & Balancing Equations", "1.0 Demonstrate mastery of basic concepts, theories and principles in Chemistry", "1.1 Demonstrate mastery of concepts, theories and principles in Chemistry", "(g) Describe the concept of chemical reactions (chemical equations, balancing chemical equations, and types of chemical reactions)", ["i. Write and balance chemical equations, classify types of reactions, and verify conservation of matter."], 9, "Group discussion, Think-ink-pair-share, Experimentation", "Kerosene, candles, KOH/NaOH, HCl, apparatus", "Equation balancing test"),
+        A("1.1(h)", "Relate Chemical Reactions with Daily Life Processes", "1.0 Demonstrate mastery of basic concepts, theories and principles in Chemistry", "1.1 Demonstrate mastery of concepts, theories and principles in Chemistry", "(h) Relate the types of chemical reactions with common processes in daily life such as burning of fuel and digestion in living organisms", ["i. Examine applications of chemical reactions in fuel combustion and digestion."], 6, "Project works", "Laboratory notebook, heat source, charcoal", "Project report"),
+        A("1.1(i)", "Acids, Bases and Salts & Daily Applications", "1.0 Demonstrate mastery of basic concepts, theories and principles in Chemistry", "1.1 Demonstrate mastery of concepts, theories and principles in Chemistry", "(i) Describe acids, bases and salts (reactions of acids and bases with various substances) and their applications in daily life", ["i. Analyse reactions and industrial/daily applications of acids, bases, and salts."], 9, "Inquiry-based learning, Group discussion, Field trips", "Citrus fruits, vinegar, wood ash, baking powder, mineral acids, hydroxides, indicators", "Field trip report, Quizzes"),
+        A("1.2(a)", "Trends in Properties Across & Down the Periodic Table", "1.0 Demonstrate mastery of basic concepts, theories and principles in Chemistry", "1.2 Demonstrate an understanding of the physical and chemical properties of elements on the basis of their arrangements in the periodic table", "(a) Explain the changes in the physical and chemical properties of elements across and down the periodic table", ["i. Explain trends in physical and chemical properties of elements across periods and down groups."], 9, "Group discussion", "Diagrams, wall charts, simulations of periodic trends", "Periodic trends quiz"),
+        A("1.2(b)", "Use Electronic Configuration to Locate Elements", "1.0 Demonstrate mastery of basic concepts, theories and principles in Chemistry", "1.2 Demonstrate an understanding of the physical and chemical properties of elements on the basis of their arrangements in the periodic table", "(b) Use the electronic configuration of an element to locate their positions in the periodic table", ["i. Apply electronic configurations to locate positions of elements in the periodic table."], 9, "Group discussion", "Wall charts of modern periodic table", "Written exercises"),
+        A("2.1(a)", "Prepare Acid-Base Indicators from Local Materials", "2.0 Conduct experiments in Chemistry", "2.1 Conduct experiments in Chemistry", "(a) Prepare acid-base indicators using locally available materials", ["i. Prepare acid-base indicators from locally available coloured flowers and leaves."], 9, "Outdoor activity, Experimentation", "Coloured flowers/leaves, mortar and pestle, heat source", "Practical indicator report"),
+        A("2.1(b)", "Test Acidity & Alkalinity Using Prepared Indicators", "2.0 Conduct experiments in Chemistry", "2.1 Conduct experiments in Chemistry", "(b) Use the prepared indicators to test acidity and alkalinity of substances found in the locality", ["i. Test acidity and alkalinity of local substances using prepared indicators, POP, and MO."], 9, "Experimentation", "Locally prepared indicator, POP, MO, lemon juice, vinegar, NaOH", "Practical lab assessment")
+      ]
+    },
+    "FORM THREE": {
+      ppw: 4, orient: false,
+      book: "Tanzania Institute of Education. (2023). Chemistry for Secondary Schools Student's Book Form Three. TIE.",
+      activities: [
+        A("1.1(a)", "The Mole Concept & Molar Quantities", "1.0 Demonstrate mastery of basic concepts, theories and principles in Chemistry", "1.1 Demonstrate mastery of concepts, theories and principles in Chemistry", "(a) Describe the mole concept (comparison of the mole with other units of measurements and molar quantities of substances)", ["i. Describe the mole concept and convert masses and volumes of substances to moles and vice versa."], 10, "Outdoor learning, Classroom assignments", "Analytical balance, chemicals, molar mass wall charts", "Mole calculation exercises"),
+        A("1.1(b)", "Avogadro's Law & Molar Quantities", "1.0 Demonstrate mastery of basic concepts, theories and principles in Chemistry", "1.1 Demonstrate mastery of concepts, theories and principles in Chemistry", "(b) Explain Avogadro's law in relation to molar quantities", ["i. Apply Avogadro's law in explaining and calculating molar quantities."], 8, "Group discussion", "Scientific calculator, analytical balance", "Quizzes, Homework"),
+        A("1.1(c)", "Principles of Volumetric Analysis", "1.0 Demonstrate mastery of basic concepts, theories and principles in Chemistry", "1.1 Demonstrate mastery of concepts, theories and principles in Chemistry", "(c) Explain the principles of volumetric analysis (preparation of standard solutions and volumetric calculations)", ["i. Explain preparation of standard solutions and perform volumetric calculations."], 12, "Brainstorming, Project works, Group discussion", "Analytical balance, pipette, burette, volumetric flasks, standard acids/bases", "Volumetric calculations test, Midterm Exam"),
+        A("1.1(d)", "Applications of Volumetric Analysis", "1.0 Demonstrate mastery of basic concepts, theories and principles in Chemistry", "1.1 Demonstrate mastery of concepts, theories and principles in Chemistry", "(d) Describe the applications of volumetric analysis in real life and industrial settings as in soft drinks and cocktail making, medicine and in agriculture", ["i. Perform experiments illustrating real-life and industrial applications of volumetric analysis."], 8, "Experimentation", "Pipettes, burettes, volumetric flasks, vinegar, antacid tablets, fertilisers", "Lab report, Quizzes"),
+        A("1.1(e)", "Ionic Theory and Electrolysis", "1.0 Demonstrate mastery of basic concepts, theories and principles in Chemistry", "1.1 Demonstrate mastery of concepts, theories and principles in Chemistry", "(e) Explore the basic tenets of ionic theory and electrolysis (ionic theory, mechanism of electrolysis and laws of electrolysis)", ["i. Describe ionic theory, mechanism of electrolysis, and Faraday's laws of electrolysis."], 10, "Group discussion, Experimentation, Field trip", "Electrolytic cells, dry cells, CuSO4, H2SO4, wall charts", "Electrolysis test"),
+        A("1.1(f)", "Preparation & Properties of Metal Compounds", "1.0 Demonstrate mastery of basic concepts, theories and principles in Chemistry", "1.1 Demonstrate mastery of concepts, theories and principles in Chemistry", "(f) Describe the preparation and properties of various compounds of metals (oxides, hydroxides, carbonates, hydrogen carbonates, nitrates, chlorides and sulphates of metals)", ["i. Investigate preparation, properties, and uses of metal oxides, hydroxides, carbonates, nitrates, chlorides, and sulphates."], 10, "Inquiry-based learning", "Periodic table, metal salts, Kipp's apparatus, laboratory glassware", "Written exercises, Terminal Exam"),
+        A("1.1(g)", "Oxidizing & Displacement Properties of Non-Metal Compounds", "1.0 Demonstrate mastery of basic concepts, theories and principles in Chemistry", "1.1 Demonstrate mastery of concepts, theories and principles in Chemistry", "(g) Describe the oxidizing and displacement properties of non-metal compounds (oxygen, hydrogen, chlorine, hydrogen chloride, sulphur dioxide, nitrogen, ammonia, and carbon dioxide)", ["i. Describe oxidizing and displacement properties of non-metal compounds."], 10, "Group discussion, Project works", "Wall charts, KMnO4, K2Cr2O7, gas jars", "Project report, Quizzes"),
+        A("2.1(a)", "Perform Experiments on Volumetric Analysis", "2.0 Conduct experiments in Chemistry", "2.1 Conduct experiments in Chemistry", "(a) Perform experiments on volumetric analysis", ["i. Perform acid-base titration experiments for various standard solutions."], 12, "Experimentation, Field trips", "Analytical balance, pipette, burette, volumetric flasks, NaOH, HCl, H2SO4", "Practical titration exam"),
+        A("2.1(b)", "Experiments on Applications of Electrolysis", "2.0 Conduct experiments in Chemistry", "2.1 Conduct experiments in Chemistry", "(b) Perform experiments on the applications of electrolysis in corrosion inhibition and purification of metals", ["i. Perform experiments on electroplating, corrosion inhibition, and copper purification."], 10, "Experimentation", "Dry cells, copper electrodes, CuSO4, ammeter, voltmeter", "Electrolysis lab report"),
+        A("2.1(c)", "Use Software to Sketch Experimental Set-ups", "2.0 Conduct experiments in Chemistry", "2.1 Conduct experiments in Chemistry", "(c) Use appropriate software to sketch the set-ups of experiments", ["i. Use Chemistry software to sketch laboratory experimental set-ups."], 6, "Experimentation", "Chemistry-based computer software", "Software sketch assignment"),
+        A("2.1(d)", "Prepare Various Compounds of Metals", "2.0 Conduct experiments in Chemistry", "2.1 Conduct experiments in Chemistry", "(d) Prepare various compounds of metals (oxides, hydroxides, carbonates, hydrogen carbonates, nitrates, chlorides, and sulphates)", ["i. Synthesise metal oxides, hydroxides, carbonates, nitrates, chlorides, and sulphates in the lab."], 12, "Group discussion, Experimentation", "Metal strips/salts, Kipp's apparatus, glassware, acids", "Practical synthesis check"),
+        A("2.1(e)", "Demonstrate Oxidizing & Displacement Properties of Non-Metals", "2.0 Conduct experiments in Chemistry", "2.1 Conduct experiments in Chemistry", "(e) Demonstrate oxidizing and displacement properties of non-metallic compounds", ["i. Demonstrate oxidizing and displacement reactions of non-metallic compounds."], 10, "Group discussion, Inquiry-based learning", "Gas generators, dyes, FeCl2, K2Cr2O7, KMnO4", "Practical observation"),
+        A("2.1(f)", "Prepare Sulphuric Acid from Sulphur Dioxide", "2.0 Conduct experiments in Chemistry", "2.1 Conduct experiments in Chemistry", "(f) Prepare sulphuric acid from sulphur dioxide", ["i. Prepare sulphuric acid from sulphur dioxide in the laboratory."], 8, "Experimentation", "Wall charts, sulphur dioxide, distilled water, delivery tubes", "Lab report"),
+        A("3.1(a)", "Extraction of Iron from Its Ore", "3.0 Demonstrate mastery of basic principles of extraction of metals", "3.1 Demonstrate mastery of the principles of extraction of metals", "(a) Describe the extraction of iron from its ore (ores, stages, and methods of extraction)", ["i. Describe iron ores and Blast Furnace stages for extracting iron."], 10, "Field trips, Group discussion", "Wall charts showing metal ores and extraction methods", "Field report, Quizzes"),
+        A("4.1(a)", "Design and Carry Out a Simple Research Project in Chemistry", "4.0 Conduct a project in Chemistry", "4.1 Conduct a project in Chemistry", "(a) Design and carry-out a simple research project in Chemistry", ["i. Design and execute a Chemistry research project on water purification, rusting, or waste management."], 20, "Group discussion, Project works", "Library resources, videos, laboratory apparatus", "Form III Chemistry Project")
+      ]
+    },
+    "FORM FOUR": {
+      ppw: 4, orient: false,
+      book: "Tanzania Institute of Education. (2023). Chemistry for Secondary Schools Student's Book Form Four. TIE.",
+      activities: [
+        A("1.1(a)", "Basic Tenets of Qualitative Analysis", "1.0 Demonstrate mastery of basic concepts, theories and principles in Chemistry", "1.1 Demonstrate mastery of concepts, theories and principles in Chemistry", "(a) Explore the basic tenets of qualitative analysis (preliminary analysis, tests in solution and confirmatory test)", ["i. Explain preliminary analysis, solution tests, and confirmatory tests for cations and anions."], 18, "Group discussion, Laboratory activity", "Qualitative analysis reagents, apparatus, qualitative analysis sheets, salt samples", "Qualitative analysis quiz"),
+        A("1.1(b)", "Basic Tenets of Organic Chemistry (Aliphatic Hydrocarbons & Alcohols)", "1.0 Demonstrate mastery of basic concepts, theories and principles in Chemistry", "1.1 Demonstrate mastery of concepts, theories and principles in Chemistry", "(b) Explore the basic tenets of Organic Chemistry (organic compounds; aliphatic hydrocarbons and alcohols)", ["i. Describe homologous series, functional groups, and categories of aliphatic hydrocarbons and alcohols."], 18, "Brainstorming, Group discussion", "Molecular models and organic substances", "Written exercises, Midterm Exam"),
+        A("2.1(a)", "Use Chemistry Software to Draw Organic Structures (C1–C10)", "2.0 Demonstrate mastery of basic terminologies in Chemistry", "2.1 Use the International Union of Pure and Applied Chemistry nomenclature to name chemical species", "(a) Use Chemistry software to draw organic structures of hydrocarbons and alcohols with 1 carbon to 10 carbon atoms", ["i. Draw structural isomers of C1–C10 hydrocarbons and alcohols using Chemistry software."], 12, "Experimentation", "Chemistry computer software, organic models, wall charts", "Practical software drawing check"),
+        A("2.1(b)", "Name Aliphatic Hydrocarbons & Alcohols Using IUPAC System", "2.0 Demonstrate mastery of basic terminologies in Chemistry", "2.1 Use the International Union of Pure and Applied Chemistry nomenclature to name chemical species", "(b) Name aliphatic hydrocarbons and alcohols with 1 carbon to 10 carbon atoms using the IUPAC system and Chemistry software", ["i. Name C1–C10 aliphatic hydrocarbons and alcohols systematically using IUPAC nomenclature."], 12, "Group discussion, Laboratory observations", "Wall charts, molecular model kits, labelled chemical containers", "IUPAC naming test"),
+        A("2.2(a)", "Chemical Reactions of Aliphatic Hydrocarbons & Alcohols", "2.0 Demonstrate mastery of basic terminologies in Chemistry", "2.2 Use chemical symbols, formulae and equations to represent chemical reaction", "(a) Describe the chemical reactions of aliphatic hydrocarbons and alcohols in relation to their structures", ["i. Describe and write equations for reactions of aliphatic hydrocarbons and alcohols."], 12, "Gallery walk, Role play, Group discussion", "Wall charts, pictures and videos of organic reactions", "Organic reactions test, Terminal Exam"),
+        A("3.1(a)", "Investigate Chemical Species Using Systematic Qualitative Analysis", "3.0 Conduct experiments in Chemistry", "3.1 Conduct experiments in Chemistry", "(a) Investigate the composition of chemical species in substances using systematic qualitative analysis", ["i. Perform hands-on systematic qualitative analysis to identify cations and anions in unknown salts."], 20, "Inquiry-based learning, Group discussion", "Qualitative analysis reagents, sheets, and unknown salt samples", "Practical Qualitative Analysis Exam"),
+        A("3.1(b)", "Demonstrate Preparations of Aliphatic Hydrocarbons & Alcohols", "3.0 Conduct experiments in Chemistry", "3.1 Conduct experiments in Chemistry", "(b) Demonstrate the local and industrial preparations of aliphatic hydrocarbons and alcohols", ["i. Perform experiments demonstrating local and industrial preparations of hydrocarbons and alcohols."], 16, "Hands-on-minds-on, Experimentation", "Wall charts showing distillers, fermentation chemicals and apparatus", "Practical lab report"),
+        A("4.1(a)", "Complete and Submit Form III Chemistry Project Report", "4.0 Conduct a project in Chemistry", "4.1 Conduct a project in Chemistry", "(a) Complete and submit a report for the project started in Form Three", ["i. Complete experimental analysis and submit the final scientific report for the Form III project."], 24, "Project works", "Project guidelines, sample project reports, Chemistry software", "Final Project Report assessment")
+      ]
+    }
+  },
+
+  "GEOGRAPHY": {
+    "FORM ONE": {
+      ppw: 5, orient: true,
+      book: "Tanzania Institute of Education. (2023). Geography for Secondary Schools Student's Book Form One. TIE.",
+      activities: [
+        A("1.1(a)", "Concept and Scope of Geography", "1.0 Demonstrate mastery of the structure of the Earth", "1.1 Demonstrate an understanding of the origin and the structure of the Earth and Earth systems", "(a) Explain the concept and scope of Geography (branches, importance and relationship with other disciplines)", ["i. Brainstorm on the meaning, branches, and importance of Geography, and observe local landforms and human activities."], 9, "Brainstorming, Field observation", "Relevant books, charts, and ICT simulation tools on the concept of Geography", "Oral questions, Field notes"),
+        A("1.1(b)", "Describe the Earth, Solar System, Movements, Parallels & Meridians", "1.0 Demonstrate mastery of the structure of the Earth", "1.1 Demonstrate an understanding of the origin and the structure of the Earth and Earth systems", "(b) Describe the Earth (origin, shape, size, position and movements of the earth in the solar system, and parallels and meridians)", ["i. Describe the origin, shape, size, and position of the Earth and design a solar system model.", "ii. Explain rotation and revolution of the Earth and use parallels and meridians to locate places and calculate time."], 80, "Brainstorming, Field observation, Project work", "Relevant books, globe, picture of solar system, ICT simulation tools and models", "Solar system model project, Midterm & Terminal Exams"),
+        A("1.2(a)", "Major Features of the Earth's Surface", "1.0 Demonstrate mastery of the structure of the Earth", "1.2 Demonstrate an understanding of the major features of the Earth surface", "(a) Describe major features of the Earth's surface (continents, oceans, major relief features, large inland water bodies and vegetation zones)", ["i. Discuss the distribution of continents, oceans, major relief features, water bodies, and vegetation zones."], 76, "Questions & Answers, Field observation, Group discussion", "Environment, relevant books, relief maps, globe/models, ICT simulation tools", "Field observation report, Map exercises")
+      ]
+    },
+    "FORM TWO": {
+      ppw: 4, orient: false,
+      book: "Tanzania Institute of Education. (2023). Geography for Secondary Schools Student's Book Form Two. TIE.",
+      activities: [
+        A("1.1(a)", "Internal Structure of the Earth", "1.0 Demonstrate mastery of the structure of the Earth", "1.1 Demonstrate an understanding of the origin and the structure of the Earth and earth systems", "(a) Describe the internal structure of the Earth (crust, mantle, core) and their major characteristics (location, size/thickness, density and gross composition)", ["i. Describe the crust, mantle, and core and design models/drawings of the internal structure of the Earth."], 27, "Brainstorming, Group work", "Relevant books, globe/models, environment, flash on internal structure of the earth", "Model assessment, Quizzes"),
+        A("1.1(b)", "Main External Earth Systems", "1.0 Demonstrate mastery of the structure of the Earth", "1.1 Demonstrate an understanding of the origin and the structure of the Earth and earth systems", "(b) Describe the main external Earth systems (Hydrosphere, Atmosphere and Biosphere)", ["i. Explain the Hydrosphere, Atmosphere, Biosphere, and Cryosphere with local community examples."], 24, "Questions & Answers, Field observation, Independent library study", "Relevant books, globe/models, ICT tools, flash on external Earth systems", "Library study report, Midterm Exam"),
+        A("2.1(a1)", "Basic Principles of Reading & Interpreting Maps", "2.0 Demonstrate mastery of basic skills and techniques in Geography", "2.1 Demonstrate an understanding of the basic techniques of map and photograph interpretation", "(a) Describe the basic principles of reading and interpreting maps (key, symbols, scale, direction, frame, margin/map title, and contour patterns)", ["i. Apply map key, symbols, scale, direction, grid references, and contour patterns in reading maps."], 16, "Brainstorming, Group discussion", "Maps, relevant books, ICT simulation tools", "Practical map reading exercises"),
+        A("2.1(a2)", "Reading & Interpreting Topographical and Statistical Maps", "2.0 Demonstrate mastery of basic skills and techniques in Geography", "2.1 Demonstrate an understanding of the basic techniques of map and photograph interpretation", "(b) Reading and interpreting various types of maps and their importance (topographical and statistical map)", ["i. Interpret relief, drainage, settlements, and human activities on topographical and statistical maps."], 16, "Case study, Group discussion", "Topographical and statistical maps, relevant books", "Map interpretation test, Terminal Exam"),
+        A("2.1(b)", "Basic Concept of Photograph in Geography", "2.0 Demonstrate mastery of basic skills and techniques in Geography", "2.1 Demonstrate an understanding of the basic techniques of map and photograph interpretation", "(b) Describe the basic concept of photograph in Geography (meaning, types, elements and uses)", ["i. Explain meaning, types (ground, vertical, oblique), elements, and uses of photographs in Geography."], 27, "Brainstorming, Group discussion, Guest speaker", "Relevant books, ground/vertical/oblique photographs, camera, ICT tools", "Photograph types quiz"),
+        A("2.1(c)", "Basic Principles of Photograph Interpretation", "2.0 Demonstrate mastery of basic skills and techniques in Geography", "2.1 Demonstrate an understanding of the basic techniques of map and photograph interpretation", "(c) Describe the basic principles of photograph interpretation (identifying foreground, middle ground and background, associating objects with geographical phenomena)", ["i. Identify foreground, middle ground, and background and interpret geographical phenomena in photographs."], 26, "Question & Answers, Group discussion, Case study", "Relevant books on photographs, magazines/newspapers, ICT tools", "Photograph interpretation exercises")
+      ]
+    },
+    "FORM THREE": {
+      ppw: 3, orient: false,
+      book: "Tanzania Institute of Education. (2023). Geography for Secondary Schools Student's Book Form Three. TIE.",
+      activities: [
+        A("1.1(a)", "Major Climatic Regions of the World", "1.0 Demonstrate mastery of the structure of the Earth", "1.1 Demonstrate an understanding of the relationship between relief, climate and natural vegetation", "(a) Describe the major climatic regions of the world (tropical, temperate, polar and sub-tropical)", ["i. Characterise major world climatic regions and draw climographs and world climate maps."], 25, "Brainstorming, Group discussion, Field visit, Graphical and map presentation", "Maps, graphs, photographs, globe, online materials", "Climograph & map exercises, Midterm Exam"),
+        A("1.1(b)", "Relationship Between Relief, Climate & Natural Vegetation", "1.0 Demonstrate mastery of the structure of the Earth", "1.1 Demonstrate an understanding of the relationship between relief, climate and natural vegetation", "(b) Describe the relationship between major features of the Earth's surface, climate, and natural vegetation", ["i. Justify the relationship between major relief features, climate, and natural vegetation."], 24, "Question & Answers, Case study", "Maps, photographs, globe, online materials", "Case study exercises, Terminal Exam"),
+        A("2.1(a)", "Basic Tenets of Land Surveying", "2.0 Demonstrate mastery of basic skills and techniques in Geography", "2.1 Demonstrate an understanding of the basic techniques in land surveying", "(a) Explore the basic tenets of surveying (meaning, types, equipment, methods, and importance)", ["i. Explain concepts, types, equipment, methods, and importance of land surveying."], 28, "Group discussion, Brainstorming, Guest speaker", "Books on land surveying, tape/chain, arrows, plumb bob, cross-staff, ranging poles, pegs", "Surveying equipment quiz"),
+        A("2.1(b)", "Carry Out Simple Tape/Chain Surveying", "2.0 Demonstrate mastery of basic skills and techniques in Geography", "2.1 Demonstrate an understanding of the basic techniques in land surveying", "(b) Carry out simple tape/chain surveying", ["i. Conduct simple tape/chain surveying activities around the school and local community."], 14, "Project work, Guest speaker, Group discussion", "Tape/chain, arrows, plumb bob, cross-staff, ranging poles, pegs, notebook", "Practical chain surveying assessment"),
+        A("3.1(a)", "Develop and Carry Out a Simple Research Project in Geography", "3.0 Demonstrate mastery of human geography", "3.1 Carry out a project in Geography", "(a) Develop and carry out a simple research project in Geography", ["i. Prepare a research title and conduct fieldwork data collection in Geography."], 14, "Project work, Field work", "Environment, notebooks, camera/smartphones, ICT tools", "Form III Field Research Project")
+      ]
+    },
+    "FORM FOUR": {
+      ppw: 4, orient: false,
+      book: "Tanzania Institute of Education. (2023). Geography for Secondary Schools Student's Book Form Four. TIE.",
+      activities: [
+        A("1.1(a)", "Geographical Factors Influencing Population, Settlements & Economy", "1.0 Demonstrate mastery of human geography", "1.1 Demonstrate an understanding of the relationship between geography, environmental health, human settlements and economic activities", "(a) Describe the geographical factors that influence the spatial distribution of population, human settlements and economic activities (climate, soil, relief, vegetation, transport and water supply)", ["i. Observe settlement patterns and analyse how climate, soil, relief, vegetation, transport, and water supply influence population, settlements, and economic activities."], 72, "Field observation, Brainstorming, Case studies", "Books on human settlement, National census reports, demographic data", "Field observation report, Midterm & Terminal Exams"),
+        A("1.1(b)", "Impacts of Population Distribution on Economic Activities & Environment", "1.0 Demonstrate mastery of human geography", "1.1 Demonstrate an understanding of the relationship between geography, environmental health, human settlements and economic activities", "(b) Examine the impacts of population distribution on economic activities and the environment (land use and settlement patterns changes)", ["i. Examine the impacts of population distribution on economic activities, land-use changes, and environmental sustainability."], 54, "Brainstorming, Group discussion, Field observation, Case studies", "Books on human settlement, photographs on settlement patterns and environment", "Case study report, Written exercises"),
+        A("1.2(a)", "Complete and Submit Form III Geography Project Report", "1.0 Demonstrate mastery of human geography", "1.2 Carry out a project in Geography", "(a) Complete and submit a report of the project started in Form Three", ["i. Write, present, and submit the final report for the Geography research project started in Form Three."], 10, "Project work, Role play, Group presentation", "Books on geographical research, research reports, ICT tools", "Final Geography Project Report")
+      ]
+    }
+  },
+
+  "HISTORY": {
+    "FORM ONE": {
+      ppw: 2, orient: true,
+      book: "Tanzania Institute of Education. (2023). History for Secondary Schools Student's Book Form One. TIE.",
+      activities: [
+        A("1.1(a)", "Concept of History & Sources of Historical Information", "1.0 Demonstrate mastery of African history before colonialism", "1.1 Demonstrate an understanding of the concept of History and sources of historical information", "Describe the concept of History and the sources of historical information", ["i. Describe the concept of History, sources of historical information, and dating methods."], 12, "Brainstorming, Group discussion, Jigsaw, Resourceful person, Study tour", "On-line materials, journal articles, historical charts, time-lines", "Oral questions, Quizzes"),
+        A("1.2(a)", "Theories of the Origin of Human Beings", "1.0 Demonstrate mastery of African history before colonialism", "1.2 Demonstrate an understanding of theories of the origin of human beings", "(a) Describe the theories of the origin of human beings", ["i. Listen to religious leaders and historians on creation and evolution theories and write a report."], 8, "Guest speakers, Report writing, Discussion", "On-line sources and journal articles on origin of human beings", "Guest speaker report, Quizzes"),
+        A("1.2(b)", "Stages of Human Evolution & Technological Ages", "1.0 Demonstrate mastery of African history before colonialism", "1.2 Demonstrate an understanding of theories of the origin of human beings", "(b) Describe the stages of human evolution and their technological Ages", ["i. Role-play and describe stages of human evolution and tools/activities across Stone and Iron Ages."], 10, "Role-play, Group discussion", "Charts, pictures, journal articles on human evolution and technological Ages", "Role-play rubric, Midterm Exam"),
+        A("1.3(a)", "Modes of Production in Pre-Colonial Africa", "1.0 Demonstrate mastery of African history before colonialism", "1.3 Demonstrate an understanding of the economic, political, social and technological development of pre-colonial Africa", "(a) Describe different modes of production in pre-colonial Africa", ["i. Study local production ownership and relate findings to communal, slave, and feudal modes of production in pre-colonial Africa."], 14, "Community visit, Gallery walk, Group discussion", "Pictures and journal articles on pre-colonial modes of production", "Gallery walk assessment, Terminal Exam"),
+        A("1.3(b)", "Economic Activities & Impact on Pre-Colonial African Societies", "1.0 Demonstrate mastery of African history before colonialism", "1.3 Demonstrate an understanding of the economic, political, social and technological development of pre-colonial Africa", "(b) Explain different economic activities and their impact on pre-colonial African societies", ["i. Explain agriculture, pastoralism, handcraft industries, mining, and trade in pre-colonial Africa."], 14, "Group sharing, Brainstorming, Presentations", "Journal articles and on-line sources on pre-colonial economic activities", "Group presentations, Quizzes"),
+        A("1.3(c)", "Socio-Political Organisations & Education in Pre-Colonial Africa", "1.0 Demonstrate mastery of African history before colonialism", "1.3 Demonstrate an understanding of the economic, political, social and technological development of pre-colonial Africa", "(c) Describe social-political organisations and education in pre-colonial African societies", ["i. Discuss clan, age-set, Ntemiship, state organisations, and indigenous education in pre-colonial Africa."], 12, "Group discussion, Presentations", "Charts and pictures on pre-colonial socio-political organisations", "Written exercises, Quizzes")
+      ]
+    },
+    "FORM TWO": {
+      ppw: 2, orient: false,
+      book: "Tanzania Institute of Education. (2023). History for Secondary Schools Student's Book Form Two. TIE.",
+      activities: [
+        A("1.1(a)", "Pre-Colonial Interactions Among African Societies", "1.0 Demonstrate mastery of African history before colonialism", "1.1 Demonstrate an understanding of interactions among African societies during the pre-colonial period", "Describe the pre-colonial interactions among the societies of Indian Ocean Islands, Eastern, Western, Northern and Southern Africa (conditions and consequences)", ["i. Describe factors and consequences of pre-colonial interactions among societies of Indian Ocean Islands, Eastern, Western, Northern, and Southern Africa."], 24, "Individual reflection, Group discussion", "On-line materials and journal articles on pre-colonial interactions", "Oral questions, Midterm Exam"),
+        A("1.2(a)", "Early Contacts with Middle East, Far East & Europe (1st–15th C)", "1.0 Demonstrate mastery of African history before colonialism", "1.2 Demonstrate an understanding of the early contacts among the people of Africa, the Middle East, the Far East and Europe from the 1st Century to the 19th Century", "(a) Describe the early contacts between African societies and the Middle East, Far East and Europe from the 1st Century up to the 15th Century (conditions and consequences)", ["i. Study conditions and consequences of early contacts between Africa, the Middle East, Far East, and Europe (1st–15th Century)."], 16, "Jigsaw, Class presentations, Reflection", "On-line sources and journal articles on early contacts (1st–15th Century)", "Jigsaw presentation, Terminal Exam"),
+        A("1.2(b)", "Contacts with Portuguese, French, Dutch & British (15th–18th C)", "1.0 Demonstrate mastery of African history before colonialism", "1.2 Demonstrate an understanding of the early contacts among the people of Africa, the Middle East, the Far East and Europe from the 1st Century to the 19th Century", "(b) Explain the contacts between African societies and the Portuguese, French, Dutch and British from the 15th Century up to the 18th Century", ["i. Explain factors and effects of contacts between African societies and the Portuguese, French, Dutch, and British (15th–18th Century)."], 15, "Jigsaw (four groups), Presentations", "Journal articles and on-line sources on European contacts (15th–18th Century)", "Group presentations, Quizzes"),
+        A("1.2(c)", "Origin, Development & Effects of the Slave Trade (15th–19th C)", "1.0 Demonstrate mastery of African history before colonialism", "1.2 Demonstrate an understanding of the early contacts among the people of Africa, the Middle East, the Far East and Europe from the 1st Century to the 19th Century", "(c) Describe the origin, development and effects of the slave trade from the 15th Century to the 19th Century", ["i. Describe the origin, development, abolition, and effects of the slave trade from the 15th to the 19th Century."], 15, "Scenario analysis, Group discussion", "Photographs, charts and on-line sources on the slave trade", "Scenario essay questions")
+      ]
+    },
+    "FORM THREE": {
+      ppw: 3, orient: false,
+      book: "Tanzania Institute of Education. (2023). History for Secondary Schools Student's Book Form Three. TIE.",
+      activities: [
+        A("1.1(a)", "Development of Capitalism in Europe & Impact on Africa", "1.0 Demonstrate mastery of the relationship between capitalism and Africa", "1.1 Demonstrate an understanding of the development of capitalism and its impact on Africa", "Describe the development of capitalism in Europe and its impact on Africa", ["i. Discuss and role-play European capitalism, the scramble and partition of Africa, imposition of colonial rule, and African resistances."], 43, "Group discussion, Role-play", "Journal articles, reports, speeches and on-line sources", "Role-play assessment, Midterm Exam"),
+        A("1.2(a)", "Colonial Administrative Systems in Africa", "1.0 Demonstrate mastery of the relationship between capitalism and Africa", "1.2 Demonstrate an understanding of colonial systems in Africa", "(a) Discuss colonial administrative systems in Africa (German, French, British and Portuguese)", ["i. Discuss German, French, British, and Portuguese colonial administrative systems in Africa."], 8, "Scenario/simulation, Group discussion", "Photographs, charts, and on-line sources on colonial administration", "Comparative essay quiz"),
+        A("1.2(b)", "Colonial Economic Systems in Africa", "1.0 Demonstrate mastery of the relationship between capitalism and Africa", "1.2 Demonstrate an understanding of colonial systems in Africa", "(b) Discuss colonial economic systems in Africa (Establishment, characteristics, sectors, labour issues)", ["i. Discuss establishment, characteristics, sectors, and labour issues of colonial economies in Africa."], 8, "ICT-supported learning, Group discussion", "On-line sources and pictures on colonial economic systems", "Written test, Terminal Exam"),
+        A("1.2(c)", "Nature & Patterns of Colonial Social Services", "1.0 Demonstrate mastery of the relationship between capitalism and Africa", "1.2 Demonstrate an understanding of colonial systems in Africa", "(c) Assess the nature and patterns of colonial social services in Africa", ["i. Explore and write reports on colonial education, health, water, and housing services in Africa."], 7, "Four-group research, Report writing", "On-line sources, pictures and photographs on colonial social services", "Group report assessment"),
+        A("1.2(d)", "Relate Colonial Systems with Current African Systems", "1.0 Demonstrate mastery of the relationship between capitalism and Africa", "1.2 Demonstrate an understanding of colonial systems in Africa", "(d) Relate colonial economic, political, infrastructure, and education systems in Africa with the current African systems", ["i. Research similarities and differences between colonial systems and current African systems."], 7, "Guided research, Discussion", "On-line sources on colonial vs. current African systems", "Research presentation"),
+        A("1.3(a)", "Describe Nationalist Movements in Africa", "1.0 Demonstrate mastery of the relationship between capitalism and Africa", "1.3 Demonstrate an understanding of the history of nationalist movements in Africa", "(a) Describe nationalist movements in Africa", ["i. Trace pre-nationalist associations (religious, peasant, welfare, workers) and mass nationalist movements."], 12, "Jigsaw, Group discussion", "Photographs and on-line sources on nationalist movements", "Jigsaw presentation"),
+        A("1.3(b)", "Assess the Rise of Nationalist Movements in Africa", "1.0 Demonstrate mastery of the relationship between capitalism and Africa", "1.3 Demonstrate an understanding of the history of nationalist movements in Africa", "(b) Assess the rise of nationalist movements in Africa", ["i. Assess internal and external forces for the emergence of nationalist movements in Africa."], 10, "Group discussion", "Photographs, speeches, reports on rise of nationalism", "Essay exercises, Quizzes"),
+        A("1.3(c)", "Appraise Lessons from Nationalist Movements in Africa", "1.0 Demonstrate mastery of the relationship between capitalism and Africa", "1.3 Demonstrate an understanding of the history of nationalist movements in Africa", "(c) Appraise the lessons drawn from the nationalist movements in Africa", ["i. Reflect on lessons that current African countries draw from nationalist movements."], 10, "Group reflection, Presentations", "Speeches, reports and on-line sources", "Reflection essay")
+      ]
+    },
+    "FORM FOUR": {
+      ppw: 3, orient: false,
+      book: "Tanzania Institute of Education. (2023). History for Secondary Schools Student's Book Form Four. TIE.",
+      activities: [
+        A("1.1(a)", "Concept and Origin of Nation-Building in Africa", "1.0 Demonstrate mastery of the history of nation-building in post-colonial Africa", "1.1 Demonstrate mastery of the history of nation-building in post-colonial Africa", "(a) Describe the concept and origin of nation-building in Africa", ["i. Discuss the meaning and evolution of nation-building in post-colonial African countries."], 15, "Group discussion", "On-line sources, journal articles, reports, speeches", "Oral questions, Quizzes"),
+        A("1.1(b)", "Evaluate Strategies Used in Nation-Building", "1.0 Demonstrate mastery of the history of nation-building in post-colonial Africa", "1.1 Demonstrate mastery of the history of nation-building in post-colonial Africa", "(b) Evaluate the strategies used in nation-building", ["i. Engage with a guest speaker to evaluate strategies used in nation-building in Africa."], 15, "Guest speaker, Discussion", "On-line sources, speeches, reports", "Guest speaker report, Midterm Exam"),
+        A("1.2(a)", "Appraise Achievements & Challenges of Nation-Building", "1.0 Demonstrate mastery of the history of nation-building in post-colonial Africa", "1.2 Demonstrate an understanding of the successes and challenges of nation-building in post-colonial Africa", "(a) Appraise the achievements and challenges of nation-building in post-colonial Africa", ["i. Debate and appraise achievements and challenges of nation-building in independent African countries."], 15, "Class debate, Plenary appraisal", "On-line sources, journal articles, reports and speeches", "Debate evaluation"),
+        A("1.2(b)", "Project on Nation-Building (1960s–1970s Case Study)", "1.0 Demonstrate mastery of the history of nation-building in post-colonial Africa", "1.2 Demonstrate an understanding of the successes and challenges of nation-building in post-colonial Africa", "(b) Design and carry out a project on nation-building between the 1960s and 1970s (use one African country as a case study)", ["i. Design tools, collect/analyse data on nation-building (1960s–1970s) for one African country, and submit a report."], 15, "Project work, Research", "On-line sources, archival reports, case study guides", "Case Study Project Report, Terminal Exam"),
+        A("2.1(a)", "Origin & Development of OAU/AU & Regional Groupings", "2.0 Demonstrate mastery of the history of Africa's participation in regional and international affairs", "2.1 Demonstrate an understanding of the regional integration in Africa", "(a) Describe the origin and development of the Organisation of African Unity (OAU/African Union (AU)) and economic regional groupings in Africa (OAU/AU, EAC, SADC & ECOWAS, Arab Maghreb Union)", ["i. Study the establishment, objectives, successes, and challenges of OAU/AU, EAC, SADC, ECOWAS, and AMU."], 18, "Four-group internet research, Presentations", "On-line sources, reports, speeches, photographs", "Group research presentations"),
+        A("2.1(b)", "Assess Performance of Continental & Regional Integration", "2.0 Demonstrate mastery of the history of Africa's participation in regional and international affairs", "2.1 Demonstrate an understanding of the regional integration in Africa", "(b) Assess the performance of continental and regional integration efforts in Africa", ["i. Debate the performance of continental and regional integration efforts in Africa and write a report."], 12, "Class debate, Report writing", "On-line sources, reports, speeches", "Debate summary report"),
+        A("2.2(a)", "Appraise African Participation in the UN & Its Agencies", "2.0 Demonstrate mastery of the history of Africa's participation in regional and international affairs", "2.2 Demonstrate an understanding of the history of Africa's participation in the United Nations Organisation", "Appraise African participation in the United Nations and its agencies", ["i. Debate and appraise Africa's participation in the UN and its agencies (UNICEF, UNDP, WHO, UNESCO, UNCHR, FAO)."], 15, "Class debate, Discussion", "On-line sources, reports, speeches, photographs", "Debate assessment")
+      ]
+    }
+  },
+
+  "BUSINESS STUDIES": {
+    "FORM ONE": {
+      ppw: 2, orient: true,
+      book: "Tanzania Institute of Education. (2023). Business Studies for Secondary Schools Student's Book Form One. TIE.",
+      activities: [
+        A("1.1(a)", "Concept & Scope of Business Studies & School Business Club", "1.0 Demonstrate mastery of business knowledge", "1.1 Demonstrate mastery of the concepts, theories and principles of Business Education", "(a) Describe the concept and scope of business studies, and its relationship with other disciplines", ["i. Analyse scenarios on production, distribution, and consumption and explore the relationship of Business Studies with other subjects.", "ii. Draft and compile a constitution to establish the school business club."], 22, "Scenario, Jigsaw, Brainstorming, Guest speaker, Skills lab, Project activity", "Online/offline sources, business club guidelines, video clips", "Club Constitution project, Midterm Exam"),
+        A("1.1(b)", "Concept & Theories of Entrepreneurship", "1.0 Demonstrate mastery of business knowledge", "1.1 Demonstrate mastery of the concepts, theories and principles of Business Education", "(b) Describe the concept and theories of entrepreneurship (meaning, characteristics, skills and importance)", ["i. Explore characteristics, skills, and importance of entrepreneurship via a field trip.", "ii. Perform simulation games on innovation, economic, sociological, opportunity, and resource-based theories."], 24, "Brainstorming, Field trip, Role play/simulation", "Online/offline sources, video clips of business activities", "Field trip report, Terminal Exam"),
+        A("1.1(c)", "Sole Proprietorship (Features, Registration & Start-Up)", "1.0 Demonstrate mastery of business knowledge", "1.1 Demonstrate mastery of the concepts, theories and principles of Business Education", "(c) Describe sole proprietorship (meaning, features, advantages and disadvantages and start-up)", ["i. Explain features, advantages/disadvantages, and BRELA registration of sole proprietorship.", "ii. Analyse real-person case studies on sole proprietor start-up processes."], 24, "Brainstorming, Guest speaker, Project activity, Case study", "Online/offline sources from BRELA", "Registration project report")
+      ]
+    },
+    "FORM TWO": {
+      ppw: 2, orient: false,
+      book: "Tanzania Institute of Education. (2023). Business Studies for Secondary Schools Student's Book Form Two. TIE.",
+      activities: [
+        A("1.1(a)", "Concept of Production", "1.0 Demonstrate mastery of business knowledge", "1.1 Demonstrate mastery of the concepts, theories and principles of Business Education", "(a) Explain the concept of production (meaning, types, factors and importance)", ["i. Visit a nearby production centre and produce a selected product in the school business club."], 12, "Observation activity, Field trip, Skills lab, Project activity", "Online/offline sources, tangible items", "Club production report"),
+        A("1.1(b)", "Sources of Capital for Small Businesses", "1.0 Demonstrate mastery of business knowledge", "1.1 Demonstrate mastery of the concepts, theories and principles of Business Education", "(b) Describe sources of capital for small businesses (loans, savings, deferred payments, funds from family and friends)", ["i. Evaluate sources of capital, calculate interest, and plan capital acquisition for the business club."], 12, "Think-ink-pair-share, Field trip, Guest speaker, Skills lab, Project activity", "Online/offline sources, bank/microfinance brochures", "Capital plan project, Midterm Exam"),
+        A("1.1(c)", "Role of Microfinancing & Cooperatives", "1.0 Demonstrate mastery of business knowledge", "1.1 Demonstrate mastery of the concepts, theories and principles of Business Education", "(c) Describe the role of microfinancing and cooperatives in facilitating business formation and operations", ["i. Visit nearby microfinances and cooperatives and design a club financing strategy."], 10, "Brainstorming, Scenario, Field trip, Project activity", "Online/offline sources", "Field trip report, Terminal Exam"),
+        A("2.1(a)", "Small Business Management & Cash Budgeting", "2.0 Solve social challenges using business skills", "2.1 Demonstrate mastery of the basic skills of operating a small-scale business", "(a) Describe the basic aspects of management for small businesses (meaning, functions, financial and other records keeping, calculation of profit and loss, budgeting and control, administration)", ["i. Explain management functions, calculate profit/loss, and prepare a monthly cash budget for the business club."], 14, "Brainstorming, Think-ink-pair-share, Project activity", "Online/offline sources and budget template", "Monthly cash budget project"),
+        A("2.1(b)", "Warehousing & Inventorying for Small Businesses", "2.0 Solve social challenges using business skills", "2.1 Demonstrate mastery of the basic skills of operating a small-scale business", "(b) Describe the basic aspects of warehousing and inventorying for small businesses (meaning and functions)", ["i. Describe warehousing and prepare inventory documents (GRN, Bin Card, Delivery Note, Inventory Ledger) for the business club."], 12, "Group activity, Guest speaker, Project activity", "Samples of GRN, Goods Release Note, Bin Cards, Delivery Note, Inventory Ledger", "Inventory documents portfolio"),
+        A("3.1(a)", "Identify Local Business Opportunities & Pitching", "3.0 Apply business knowledge in various contexts", "3.1 Apply business theories into practice", "(a) Identify business opportunities available in the local environment", ["i. Identify local business opportunities, prepare a business pitch guide, and pitch ideas to an investor panel."], 10, "Brainstorming, Gallery walk, Group discussion, Skills lab, Project activity", "Pitch guide template, pitch rubric, online/offline sources", "Business pitch presentation")
+      ]
+    },
+    "FORM THREE": {
+      ppw: 4, orient: false,
+      book: "Tanzania Institute of Education. (2023). Business Studies for Secondary Schools Student's Book Form Three. TIE.",
+      activities: [
+        A("1.1(a)", "Marketing & the 4Ps for Small Businesses", "1.0 Demonstrate mastery of business knowledge", "1.1 Demonstrate mastery of the concepts, theories and principles of Business Education", "(a) Describe the basic aspects of marketing for small businesses (meaning and importance, product, price, place/distribution, promotion)", ["i. Analyse marketing case studies and prepare/execute a 4Ps marketing plan for business club products."], 22, "Group activity, Case study, Skills lab, Project activity", "Online/offline sources", "4Ps Marketing Plan project"),
+        A("1.1(b)", "E-Marketing & Social Media Business Biography", "1.0 Demonstrate mastery of business knowledge", "1.1 Demonstrate mastery of the concepts, theories and principles of Business Education", "(b) Describe the basic aspects of e-marketing for small businesses (upload business biography in social media)", ["i. Design and upload a business biography on social media accounts for e-marketing."], 20, "Scenario, Group activity, Skills lab, Project activity, Guest speaker", "Online/offline sources, biography template", "Social media biography project, Midterm Exam"),
+        A("2.1(a)", "Policy & Regulatory Environment in Tanzania", "2.0 Solve social challenges using business skills", "2.1 Demonstrate mastery of the basic skills of operating a small-scale business", "(a) Explore the basic aspects of the policy and regulatory environment governing small businesses in Tanzania (roles of government and non-governmental agencies, policies, laws and by-laws)", ["i. Explore business regulations, regulatory agencies, and compliance procedures in Tanzania."], 26, "Group activity, Case study, Guest speaker, Project activity", "Online/offline sources", "Compliance recommendation report, Terminal Exam"),
+        A("2.1(b)", "Procedures for Registering Small Businesses in Tanzania", "2.0 Solve social challenges using business skills", "2.1 Demonstrate mastery of the basic skills of operating a small-scale business", "(b) Describe procedures for registering small businesses in Tanzania (types of licenses, importance of registration and sanctions for non-compliance)", ["i. Visit local businesses and create an action plan on licensing and registering a small business."], 26, "Reflection, Field trip, Resourceful person, Skills lab, Project activity", "Online/offline sources, registration guide, license template", "Registration action plan project"),
+        A("3.1(a)", "Develop a Plan for a Small Business", "3.0 Apply business knowledge in various contexts", "3.1 Apply business theories into practice", "(a) Develop a plan for a small business identified from the opportunities in Form II (identification, financing, production and distribution, and marketing)", ["i. Develop a complete small business plan covering description, market analysis, marketing, management, operations, and finance."], 28, "Brainstorming, Case study, Group activity, Skills lab, Project activity", "Online/offline sources, business plan template", "Form III Business Plan document"),
+        A("3.2(a)", "Basic Tenets of Ethics for Small Businesses", "3.0 Apply business knowledge in various contexts", "3.2 Demonstrate mastery of basic business ethics", "(a) Describe the basic tenets of ethics for small businesses (meaning, norms, and values)", ["i. Develop business ethics guides and examine ethics advocated by FCC and ZFCC."], 18, "Brainstorming, Skills lab, Project activity, Group activity", "Online/offline sources", "Business ethics guide")
+      ]
+    },
+    "FORM FOUR": {
+      ppw: 4, orient: false,
+      book: "Tanzania Institute of Education. (2023). Business Studies for Secondary Schools Student's Book Form Four. TIE.",
+      activities: [
+        A("1.1(a)", "Basic Aspects of Insurance for Small Businesses", "1.0 Demonstrate mastery of business knowledge", "1.1 Demonstrate mastery of the concepts, theories and principles of Business Education", "(a) Explain the basic aspects of insurance for small businesses (meaning, principles, importance, choice of appropriate insurance plan and procedures of filing insurance claims)", ["i. Explain principles and types of insurance, policy acquisition, and procedures for filing claims."], 20, "Scenario, Guest speaker, Skills lab, Project activity", "Online/offline sources", "Insurance strategy project"),
+        A("1.1(b)", "Business Partnerships & Partnership Deed", "1.0 Demonstrate mastery of business knowledge", "1.1 Demonstrate mastery of the concepts, theories and principles of Business Education", "(b) Describe business partnerships (meaning, types, features, advantages and disadvantages, formation and dissolution)", ["i. Describe partnership formation and dissolution and develop a Partnership Deed."], 20, "Role play, Case study, Debate, Skills lab, Project activity", "Online/offline sources, partnership deed template", "Partnership Deed document, Midterm Exam"),
+        A("2.1(a)", "Taxes and Levies Associated with Small Businesses (TRA/ZRA)", "2.0 Solve social challenges using business skills", "2.1 Demonstrate mastery of the basic skills of operating a small-scale business", "(a) Describe taxes and levies associated with small businesses in Tanzania (meaning, types, importance, and sanctions for non-compliance)", ["i. Describe types of taxes/levies, tax assessment, and sanctions for non-compliance with TRA/ZRA officers."], 18, "Role play, Guest speaker (TRA/ZRA), Skills lab, Project activity", "Online/offline sources, guidelines from TRA", "Small business tax report"),
+        A("2.1(b)", "Basic Principles of Communication & Networking", "2.0 Solve social challenges using business skills", "2.1 Demonstrate mastery of the basic skills of operating a small-scale business", "(b) Describe the basic principles of communication and networking for small businesses", ["i. Compare clear vs. unclear business write-ups and create a communication and networking growth plan."], 16, "Brainstorming, Scenario, Skills lab, Gallery walk", "Online/offline sources, write-up templates", "Communication & networking plan, Terminal Exam"),
+        A("2.2(a)", "Use Pricing Techniques to Determine Product Prices", "2.0 Solve social challenges using business skills", "2.2 Demonstrate mastery of the basic skills of trading locally and internationally", "(a) Use pricing techniques to determine appropriate prices of products", ["i. Analyse pricing techniques, visit a producer, and create a product price catalogue."], 16, "Scenario, Field visit, Skills lab, Project activity", "Online/offline sources, price catalogue samples", "Product Price Catalogue project"),
+        A("2.2(b)", "Procedures for Buying & Selling Within and Outside the Country", "2.0 Solve social challenges using business skills", "2.2 Demonstrate mastery of the basic skills of trading locally and internationally", "(b) Identify relevant procedures and practices for buying and selling products within and outside the country", ["i. Explain import and export procedures, documentation, clearing and forwarding agencies, and Incoterms."], 12, "Scenario, Case study", "Online/offline sources, sample import/export documents", "Import/Export case study test"),
+        A("2.2(c)", "Use Appropriate Selling Methods, Branding, Packaging & Barcoding", "2.0 Solve social challenges using business skills", "2.2 Demonstrate mastery of the basic skills of trading locally and internationally", "(c) Use appropriate selling methods and techniques (branding, logos, packaging, after sales services, barcoding, direct mail and internet auctions) to facilitate trade", ["i. Name a product, create a logo, improve packaging and barcoding, and propose selling strategies."], 12, "Brainstorming, Skills lab, Project activity", "Online/offline sources, sample products", "Branded & packaged product prototype"),
+        A("3.1(a)", "Complete and Present the Business Plan Developed in Form III", "3.0 Apply business knowledge in various contexts", "3.1 Apply business theories into practice", "Complete and present the business plan developed in Form Three", ["i. Peer-review, polish, and pitch the completed Business Plan and submit the Form IV Business Portfolio folder."], 26, "Group peer review, Skills lab, Project portfolio", "Online/offline sources, Form III business plans", "Final Business Plan Pitch & Portfolio")
+      ]
+    }
+  },
+
+  "BOOK-KEEPING": {
+    "FORM ONE": {
+      ppw: 2, orient: true,
+      book: "Tanzania Institute of Education. (2023). Book-keeping for Secondary Schools Student's Book Form One. TIE.",
+      activities: [
+        A("1.1(a)", "Concept of Book-keeping", "1.0 Demonstrate mastery of the principles of Book-keeping", "1.1 Demonstrate an understanding of the basic principles and theories of Book-keeping", "(a) Explain the concept of Book-keeping (origin, meaning, purpose, relationship with other disciplines and basic terms)", ["i. Explain the origin, meaning, purpose, basic terms, and relationship of Book-keeping with other subjects."], 10, "Brainstorming, Presentation, Case study", "Sample of invoice/receipt, YouTube Channels, Interactive Website", "Oral questions, Quizzes"),
+        A("1.1(b)", "Basis for Recording Business Transactions (Assumptions & Principles)", "1.0 Demonstrate mastery of the principles of Book-keeping", "1.1 Demonstrate an understanding of the basic principles and theories of Book-keeping", "(b) Explain the basis for recording business transactions (accounting assumptions and principles)", ["i. Discuss accounting assumptions and principles that guide the recording of business transactions."], 8, "Group discussion, Presentation", "Accounting Forums Websites, Sample of invoice/receipt", "Quizzes, Midterm Exam"),
+        A("1.2(c)-(d)", "Double-Entry Theory, Accounting Equation & Types of Accounts", "1.0 Demonstrate mastery of the principles of Book-keeping", "1.2 Record business transactions using source documents", "(c) Describe the theory of the double-entry system of Book-keeping (the accounting equation)\n(d) Describe various types of accounts (assets, liabilities, capital, revenue and expenses)", ["i. Apply the accounting equation and classify assets, liabilities, capital, revenue, and expenses."], 9, "Skills lab, Group discussion, Demonstration, Think-ink-pair-share, Panel discussion", "Sample of ledger, receipts and payments, Accounting Tutorials", "Accounting equation exercises"),
+        A("1.2(a)-(b)", "Identify Source Documents & Record in Books of Original Entry", "1.0 Demonstrate mastery of the principles of Book-keeping", "1.2 Record business transactions using source documents", "(a) Identify sources of business transactions (source documents)\n(b) Record business transactions from various source documents", ["i. Identify source documents and record transactions into books of original entry (day books)."], 9, "Gallery walk, Skills lab, Demonstration, Practice", "Sample of source documents, Sample of a day book", "Day book recording exercises, Terminal Exam"),
+        A("1.2(c2)", "Post Transactions to Ledger Accounts & Balance Off", "1.0 Demonstrate mastery of the principles of Book-keeping", "1.2 Record business transactions using source documents", "(c) Post recorded business transactions from books of original entry to ledger accounts and balance off the accounts", ["i. Post transactions from books of original entry to ledger accounts and balance off accounts."], 9, "Skills lab, Demonstration, Practice", "Sample of a ledger, Sample of Book of Original Entry", "Ledger posting test"),
+        A("1.3(a)-(b)", "Describe and Prepare a Trial Balance", "1.0 Demonstrate mastery of the principles of Book-keeping", "1.3 Prepare a trial balance", "(a) Describe the trial balance\n(b) Prepare a trial balance to check the arithmetical accuracy of ledger accounts", ["i. Describe and prepare a trial balance to check the arithmetical accuracy of ledger accounts."], 5, "Group discussion, Demonstration, Skills lab", "Sample of accounts", "Trial balance exercises"),
+        A("2.1(a)-(b)", "Describe Basic Financial Statements & Prepare Income Statement", "2.0 Prepare basic financial statements", "2.1 Prepare basic profit or loss statements", "(a) Describe basic financial statements (meaning, types, purpose, content and format)\n(b) Prepare a basic income statement", ["i. Explain formats of financial statements and prepare a basic income statement."], 10, "Brainstorming, Skills lab, Demonstration, Practice, Presentation", "Sample of financial statements", "Income statement test"),
+        A("2.2(a)-(b)", "Classify Assets/Liabilities & Prepare Statement of Financial Position", "2.0 Prepare basic financial statements", "2.2 Prepare basic business financial position statements", "(a) Classify assets and liabilities\n(b) Prepare a basic statement of financial position", ["i. Classify assets and liabilities and prepare a basic statement of financial position."], 10, "Group discussion, Demonstration, Practice, Presentation", "Sample of financial statements", "Statement of financial position exercises")
+      ]
+    },
+    "FORM TWO": {
+      ppw: 2, orient: false,
+      book: "Tanzania Institute of Education. (2023). Book-keeping for Secondary Schools Student's Book Form Two. TIE.",
+      activities: [
+        A("1.1(a)", "Describe Cash and Banking Transactions (Types of Cash Books)", "1.0 Demonstrate mastery of the principles of Book-keeping", "1.1 Record business transactions using source documents", "(a) Describe cash and banking transactions (types of cash books)", ["i. Engage with a guest accountant to describe cash and banking transactions and types of cash books."], 10, "Guest speaker, Reflection", "Sample of invoice/receipt", "Guest speaker summary, Quizzes"),
+        A("1.1(b)", "Record Receipts & Payments in Double, Three-Column & Petty Cash Books", "1.0 Demonstrate mastery of the principles of Book-keeping", "1.1 Record business transactions using source documents", "(b) Record cash/bank receipts and payments from various source documents in the Cash Book (double column, three-column or petty cash book)", ["i. Record cash and bank receipts and payments into double-column, three-column, and petty cash books."], 20, "Skills club, Business club project", "Sample of invoice/receipt", "Cash book project, Midterm Exam"),
+        A("1.2(a)-(b)", "Describe & Correct Errors in the Trial Balance", "1.0 Demonstrate mastery of the principles of Book-keeping", "1.2 Prepare a Trial balance", "(a) Describe errors in the Trial balance (meaning, types, sources and detection)\n(b) Correct errors in the Trial balance by means of journal entries and adjust the trial balance", ["i. Identify errors in the trial balance, correct them using journal entries, and adjust the trial balance."], 10, "Group discussion, Demonstration, Practice, Presentation", "Sample of accounts", "Error correction exercises, Terminal Exam"),
+        A("2.1(a)", "Describe a Bank Reconciliation Statement", "2.0 Demonstrate mastery of financial assets control", "2.1 Prepare bank reconciliation statements", "(a) Describe a Bank reconciliation statement (meaning, importance, reasons for inconsistencies, and the key terms used)", ["i. Explain the meaning, importance, reasons for inconsistencies, and key terms in bank reconciliation."], 8, "Guest speaker, Skills lab, Demonstration, Practice", "Sample of a bank statement", "Oral questions, Quizzes"),
+        A("2.1(b)", "Prepare Adjusted Cash Book & Bank Reconciliation Statement", "2.0 Demonstrate mastery of financial assets control", "2.1 Prepare bank reconciliation statements", "(b) Prepare adjusted cash book and bank reconciliation statement", ["i. Prepare an adjusted cash book and a bank reconciliation statement."], 12, "Project, Feedback reflection", "Sample of a bank statement", "Bank reconciliation project"),
+        A("2.2(a)-(b)", "Describe Budgeting & Prepare a Simple Cash Budget", "2.0 Demonstrate mastery of financial assets control", "2.2 Prepare a financial budget", "(a) Describe Budgeting and budgetary control process (meaning, importance, approaches, and features of a good budget)\n(b) Prepare a simple cash budget", ["i. Describe budgeting and budgetary control and prepare a simple cash budget."], 10, "Think-ink-pair-share, Demonstration, Practice", "Sample of financial Budget, Sample of cash budget", "Simple cash budget test")
+      ]
+    },
+    "FORM THREE": {
+      ppw: 4, orient: false,
+      book: "Tanzania Institute of Education. (2023). Book-keeping for Secondary Schools Student's Book Form Three. TIE.",
+      activities: [
+        A("1.1(a)-(b)", "Describe Control Accounts & Prepare Purchases/Sales Ledger Controls", "1.0 Demonstrate mastery of financial assets control", "1.1 Prepare a Trial balance", "(a) Describe control accounts\n(b) Prepare Purchases and Sales Ledgers as further controls of the arithmetical accuracy of ledger accounts", ["i. Describe control accounts and prepare Purchases and Sales Ledger control accounts."], 20, "Group discussion, Presentation, Demonstration, Practice", "Sample of accounts, Sample of Purchases and Sales Ledgers", "Control account exercises"),
+        A("2.1(a)", "Adjustments in Financial Statements (Depreciation, Bad & Doubtful Debts)", "2.0 Prepare basic financial statements", "2.1 Prepare basic profit or loss statements", "(a) Describe the necessary adjustments needed in the preparation of financial statements (depreciation, bad debts and doubtful debts)", ["i. Calculate depreciation (IAS 16) and record depreciation, bad debts, and doubtful debts."], 16, "Brainstorming, Library/internet search, Practice, Group discussion", "Sample of financial statements", "Depreciation & bad debts test, Midterm Exam"),
+        A("2.1(b)", "Prepare Comprehensive Income Statement with Adjustments", "2.0 Prepare basic financial statements", "2.1 Prepare basic profit or loss statements", "(b) Prepare a comprehensive income statement with adjustments", ["i. Prepare a comprehensive income statement incorporating year-end adjustments."], 14, "Demonstration, Practice", "Sample of Income statements", "Adjusted income statement exercises"),
+        A("2.1(c)", "Estimate Profit or Loss from Incomplete Records", "2.0 Prepare basic financial statements", "2.1 Prepare basic profit or loss statements", "(c) Estimate profit or loss for the period from incomplete records", ["i. Estimate profit or loss for the period from incomplete records (single entry)."], 12, "Demonstration, Practice", "Sample of Income statements", "Incomplete records test"),
+        A("2.2(a)-(b)", "Capital vs. Revenue Expenditure & Comprehensive Statement of Financial Position", "2.0 Prepare basic financial statements", "2.2 Prepare basic business financial position statements", "(a) Differentiate between capital and revenue expenditures and their effect on financial statements\n(b) Prepare a comprehensive statement of financial position", ["i. Differentiate capital and revenue expenditures and prepare a comprehensive statement of financial position."], 20, "Group discussion, Demonstration, Practice", "Sample of business financial position statements", "Terminal Examination"),
+        A("3.1(a)", "Describe For-Profit, Not-For-Profit & Non-Profit Organisations", "3.0 Prepare financial statements for non-commercial institutions", "3.1 Demonstrate an understanding of commercial and non-commercial organisations", "(a) Describe For-Profit, Not-For-Profit and Non-Profit organizations (motive, owners, management, sources of income, accounting etc.)", ["i. Compare For-Profit, Not-For-Profit, and Non-Profit organisations."], 8, "Group discussion, Plenary", "Sample of financial statements of non-commercial organisations", "Oral questions, Quizzes"),
+        A("3.2(a)", "Important Accounting Items for Not-For-Profit Organisations", "3.0 Prepare financial statements for non-commercial institutions", "3.2 Prepare financial statements of non-commercial organisations", "(a) Describe important items relating to the accounting of Not-For-Profit organizations", ["i. Explore subscriptions, accumulated fund, and special accounting items for Not-For-Profit organisations."], 12, "Project, Feedback presentation", "Sample of financial statements of non-commercial organisations", "Project presentation"),
+        A("3.2(b)", "Prepare Relevant Accounts for Not-For-Profit Organisations", "3.0 Prepare financial statements for non-commercial institutions", "3.2 Prepare financial statements of non-commercial organisations", "(b) Prepare the relevant accounts for Not-For-Profit organizations (receipts and payments accounts, Income and expenditure statements and a statement of financial position)", ["i. Prepare Receipts and Payments accounts, Income and Expenditure statements, and Statements of Financial Position."], 18, "Demonstration, Practice", "Sample of financial statements of non-commercial organisations", "Not-For-Profit accounts test"),
+        A("4.1(a)-(b)", "Basis of Accounting & Adjusting Accruals and Pre-payments", "4.0 Demonstrate mastery of financial assets control", "4.1 Adjust records in financial statements", "(a) Describe the basis of accounting (cash basis and accrual basis)\n(b) Adjust various recorded business transactions in the financial statements based on appropriate accounting basis (accruals and pre-payments)", ["i. Describe cash vs. accrual basis and adjust financial statements for accruals and prepayments."], 20, "Group discussion, Presentation, Demonstration, Practice", "Sample of financial statements", "Accrual adjustments test")
+      ]
+    },
+    "FORM FOUR": {
+      ppw: 4, orient: false,
+      book: "Tanzania Institute of Education. (2023). Book-keeping for Secondary Schools Student's Book Form Four. TIE.",
+      activities: [
+        A("1.1(a)", "Describe Forms of Business Arrangements", "1.0 Prepare basic financial statements", "1.1 Prepare basic profit or loss statements", "(a) Describe various forms of business arrangements (manufacturing firms; consignment arrangement; partnership and joint venture agreement and departmental stores)", ["i. Conduct a field visit to a manufacturing firm and discuss manufacturing, consignment, partnership, joint venture, and departmental stores."], 12, "Field visit, Group discussion, Presentation", "Sample of financial statements", "Field visit report"),
+        A("1.1(b)", "Prepare Profit or Loss Accounts for Different Forms of Business", "1.0 Prepare basic financial statements", "1.1 Prepare basic profit or loss statements", "(b) Prepare relevant accounts to determine profit or loss for different forms of business (manufacturing firms; partnership firms-admission and retirement of a partner; joint venture; consignments and departmental stores)", ["i. Prepare manufacturing accounts, partnership admission/retirement accounts, joint venture, consignment, and departmental income statements."], 32, "Demonstration, Practice", "Sample of financial statements", "Specialised profit/loss accounts test, Midterm Exam"),
+        A("1.2(a)", "Prepare Statements of Financial Position for Different Forms of Business", "1.0 Prepare basic financial statements", "1.2 Prepare basic business financial position statements", "(a) Prepare statements of financial position for different forms of business (manufacturing firms; partnership firms-admission and retirement of a partner, and departmental stores)", ["i. Prepare statements of financial position for manufacturing firms, partnerships, and departmental stores."], 14, "Practice", "Sample of business financial position statements", "Financial position exercises, Terminal Exam"),
+        A("1.3(a)-(b)", "Describe & Prepare Basic Statements of Cash Flows", "1.0 Prepare basic financial statements", "1.3 Prepare basic Statements of Cash flows", "(a) Describe types of Cash Flows\n(b) Prepare a basic Statements of Cash flows", ["i. Identify operating, investing, and financing cash flows and prepare a basic Statement of Cash Flows."], 12, "Group discussion, Illustration", "Copies of financial statements", "Statement of Cash Flows test"),
+        A("1.4(a)", "Prepare a Basic Set of Financial Statements for Financial Audit", "1.0 Prepare basic financial statements", "1.4 Prepare basic financial statements for audit", "(a) Prepare a basic set of financial statements for financial audit (Income Statement, Statement of Financial Position, Cash Flows and Notes to Financial Statements)", ["i. Compile a complete set of audit-ready financial statements (Income Statement, Financial Position, Cash Flows, and Notes)."], 10, "Project, Feedback presentation", "Sample of annual financial reports", "Audit Financial Statements Project"),
+        A("2.1(a)-(c)", "Use Basic Accounting Packages (Record, Analyse & Produce Statements)", "2.0 Demonstrate mastery of the use of ICT in Book-keeping", "2.1 Use basic accounting packages", "(a) Record business transactions by using basic accounting packages\n(b) Analyse simple financial data by using accounting packages\n(c) Apply basic accounting packages to produce financial statements", ["i. Record transactions, analyse financial data, and generate financial statements using accounting software."], 10, "Group discussion, Skills lab demonstration, Practice, Project", "Accounting software", "Computerised accounting project")
+      ]
+    }
+  }
+};
+
+let currentActivities = [];
+let activeBook = "";
+
+function onSubjectChange() {
+  const subj = document.getElementById("subjectSelector").value;
+  const formSel = document.getElementById("formSelector");
+  const forms = Object.keys(ALL_SYLLABI[subj]);
+  formSel.innerHTML = forms.map(f => `<option value="${f}">${f}</option>`).join("");
+  loadFormSyllabus();
+}
+
+function loadFormSyllabus() {
+  const subj = document.getElementById("subjectSelector").value;
+  const formKey = document.getElementById("formSelector").value;
+  const data = ALL_SYLLABI[subj][formKey];
+  document.getElementById("ppwVal").value = data.ppw;
+  document.getElementById("orientToggle").checked = !!data.orient;
+  activeBook = data.book;
+  currentActivities = JSON.parse(JSON.stringify(data.activities));
+  renderQueue();
+  renderTable();
+}
+
+function renderQueue() {
+  const ul = document.getElementById("topicQueue");
+  ul.innerHTML = currentActivities.map((act, i) => `
+    <li class="topic-row">
+      <div class="topic-title">
+        <strong>#${i + 1} [${act.code}]: ${act.title}</strong>
+        <span>Syllabus Periods: <input type="number" value="${act.periods}" min="1" max="120" style="width:52px; padding:1px 4px;" onchange="updatePeriods(${i}, this.value)" /></span>
+      </div>
+      <div class="order-btns">
+        <button class="sm-btn" onclick="moveFirst(${i})" title="Start with this activity">1st</button>
+        <button class="sm-btn" onclick="moveStep(${i}, -1)">↑</button>
+        <button class="sm-btn" onclick="moveStep(${i}, 1)">↓</button>
+      </div>
+    </li>
+  `).join("");
+}
+
+function updatePeriods(idx, val) {
+  currentActivities[idx].periods = Math.max(1, parseInt(val) || 1);
+  renderTable();
+}
+
+function moveStep(idx, dir) {
+  const target = idx + dir;
+  if (target < 0 || target >= currentActivities.length) return;
+  [currentActivities[idx], currentActivities[target]] = [currentActivities[target], currentActivities[idx]];
+  renderQueue();
+  renderTable();
+}
+
+function moveFirst(idx) {
+  if (idx === 0) return;
+  const item = currentActivities.splice(idx, 1)[0];
+  currentActivities.unshift(item);
+  renderQueue();
+  renderTable();
+}
+
+function buildCalendar(includeOrient) {
+  const months = ["JANUARY","FEBRUARY","MARCH","APRIL","MAY","JUNE","JULY","AUGUST","SEPTEMBER","OCTOBER","NOVEMBER"];
+  const cal = [];
+
+  if (includeOrient) {
+    cal.push({ type: "banner", text: "REGISTRATION & ORIENTATION COURSE (2ND WEEK OF JANUARY TO 2ND WEEK OF FEBRUARY)" });
+  }
+
+  for (let m = 0; m < months.length; m++) {
+    for (let w = 1; w <= 4; w++) {
+      if (includeOrient && (m === 0 || (m === 1 && w <= 2))) continue;
+      if (m === 2 && w === 4) {
+        cal.push({ type: "banner", text: "MID-TERM ASSESSMENT & MID-TERM BREAK (27TH MARCH – 08TH APRIL)" });
+        continue;
+      }
+      if (m === 3 && w === 1) continue;
+      if (m === 5) {
+        if (w === 1) {
+          cal.push({ type: "banner", text: "TERMINAL EXAMINATIONS & FIRST-TERM BREAK (05TH JUNE – 06TH JULY)" });
+        }
+        continue;
+      }
+      if (m === 6 && w === 1) continue;
+      if (m === 8 && w === 1) {
+        cal.push({ type: "banner", text: "MID-TERM TEST & MID-TERM BREAK (04TH SEPTEMBER – 14TH SEPTEMBER)" });
+        continue;
+      }
+      cal.push({ type: "week", month: months[m], week: w });
+    }
+  }
+
+  cal.push({ type: "banner", text: "ANNUAL EXAMINATIONS & END OF YEAR HOLIDAY" });
+  return cal;
+}
+
+// Schedule all atomic syllabus activities and automatically fill any remaining 1-2 months (or reserved weeks) with Exam Revision!
+function buildRawScheduleRows(cal, ppw) {
+  const revMode = document.getElementById("revisionMode").value;
+  const subj = document.getElementById("subjectSelector").value;
+  const formKey = document.getElementById("formSelector").value;
+
+  const totalWeekSlots = cal.filter(c => c.type === "week").length;
+  const minRevWeeks = revMode === "auto8" ? 8 : (revMode === "auto4" ? 4 : 0);
+  const maxTeachingWeeks = Math.max(10, totalWeekSlots - minRevWeeks);
+  const maxTeachingPeriods = maxTeachingWeeks * ppw;
+
+  // Clone activities and scale periods proportionally ONLY if total exceeds maxTeachingPeriods
+  const rawTotalPeriods = currentActivities.reduce((s, a) => s + a.periods, 0);
+  const workingActs = currentActivities.map((a, idx) => {
+    let effPeriods = a.periods;
+    if (rawTotalPeriods > maxTeachingPeriods) {
+      effPeriods = Math.max(1, Math.round((a.periods / rawTotalPeriods) * maxTeachingPeriods));
+    }
+    return { ...a, effPeriods, actId: idx };
+  });
+
+  const rawItems = [];
+  let qPtr = 0;
+  let rem = workingActs.length ? workingActs[0].effPeriods : 0;
+  let cIdx = 0;
+
+  while (cIdx < cal.length && qPtr < workingActs.length) {
+    const slot = cal[cIdx];
+    if (slot.type === "banner") {
+      rawItems.push({ type: "banner", text: slot.text });
+      cIdx++;
+      continue;
+    }
+
+    const act = workingActs[qPtr];
+    const monthName = slot.month;
+    const weeks = [];
+    let alloc = 0;
+
+    while (
+      cIdx < cal.length &&
+      cal[cIdx].type === "week" &&
+      cal[cIdx].month === monthName &&
+      rem > 0
+    ) {
+      weeks.push(cal[cIdx].week);
+      const take = Math.min(ppw, rem);
+      alloc += take;
+      rem -= take;
+      cIdx++;
+    }
+
+    const weekText = weeks.length > 1 ? `${weeks[0]}&${weeks[weeks.length - 1]}` : `${weeks[0]}`;
+
+    rawItems.push({
+      type: "data",
+      isRevision: false,
+      actId: act.actId,
+      mainComp: act.mainComp,
+      specComp: act.specComp,
+      mainAct: act.mainAct,
+      specActsArray: act.specActs,
+      month: monthName,
+      week: weekText,
+      periods: alloc,
+      methods: act.methods,
+      resources: act.resources,
+      assessment: act.assessment,
+      ref: activeBook,
+      remarks: ""
+    });
+
+    if (rem <= 0) {
+      qPtr++;
+      if (qPtr < workingActs.length) rem = workingActs[qPtr].effPeriods;
+    }
+  }
+
+  // Fill ALL remaining calendar weeks before the final Annual Exam banner with structured Exam Revision!
+  let revPhase = 1;
+  while (cIdx < cal.length) {
+    const slot = cal[cIdx];
+    if (slot.type === "banner") {
+      rawItems.push({ type: "banner", text: slot.text });
+      cIdx++;
+      continue;
+    }
+
+    const monthName = slot.month;
+    const weeks = [];
+    let alloc = 0;
+
+    while (
+      cIdx < cal.length &&
+      cal[cIdx].type === "week" &&
+      cal[cIdx].month === monthName
+    ) {
+      weeks.push(cal[cIdx].week);
+      alloc += ppw;
+      cIdx++;
+    }
+
+    const weekText = weeks.length > 1 ? `${weeks[0]}&${weeks[weeks.length - 1]}` : `${weeks[0]}`;
+    const isMonth1 = revPhase === 1;
+
+    rawItems.push({
+      type: "data",
+      isRevision: true,
+      actId: `rev_${revPhase}`,
+      mainComp: `Comprehensive Revision & Examination Preparation (${subj})`,
+      specComp: isMonth1
+        ? `Consolidate mastery of Term I & Term II competences in ${subj}`
+        : `Demonstrate examination readiness through NECTA/TIE past papers and timed mock drills`,
+      mainAct: isMonth1
+        ? `(a) Review core concepts, theories, practical skills, and challenging topics across the ${formKey} syllabus`
+        : `(b) Solve past examination papers, conduct timed assessment drills, and review marking schemes`,
+      specActsArray: [
+        isMonth1
+          ? `i. Guide students in groups to review key syllabus competences, summarise main concepts, and resolve difficult questions.`
+          : `i. Administer timed past examination papers, guide peer/teacher marking scheme discussions, and provide targeted remediation.`
+      ],
+      month: monthName,
+      week: weekText,
+      periods: alloc,
+      methods: "Group discussion, Past paper problem solving, Peer teaching, Q&A clinics",
+      resources: `${subj} Past Examination Papers, Marking Schemes, TIE Student's Book (${formKey}), Summary Charts`,
+      assessment: "Timed Revision Tests, Past Paper Drills, Mock/Annual Exam Practice",
+      ref: activeBook,
+      remarks: ""
+    });
+    revPhase++;
+  }
+
+  // Distribute specific sub-activities across rows belonging to the same atomic activity
+  const rowsByAct = {};
+  rawItems.forEach(item => {
+    if (item.type === "data") {
+      if (!rowsByAct[item.actId]) rowsByAct[item.actId] = [];
+      rowsByAct[item.actId].push(item);
+    }
+  });
+
+  Object.values(rowsByAct).forEach(rows => {
+    const lines = rows[0].specActsArray;
+    const numRows = rows.length;
+    if (numRows === 1) {
+      rows[0].specAct = lines.join("\n");
+    } else {
+      rows.forEach((r, idx) => {
+        if (lines.length >= numRows) {
+          const start = Math.floor((idx * lines.length) / numRows);
+          const end = Math.floor(((idx + 1) * lines.length) / numRows);
+          r.specAct = lines.slice(start, Math.max(start + 1, end)).join("\n");
+        } else {
+          r.specAct = lines[idx] || lines[lines.length - 1];
+        }
+      });
+    }
+  });
+
+  return rawItems;
+}
+
+function applyCellMerging(scheduleItems) {
+  const mergeCols = [
+    { key: "mainComp", parentKey: null },
+    { key: "specComp", parentKey: "mainComp" },
+    { key: "mainAct", parentKey: "specComp" },
+    { key: "specAct", parentKey: "mainAct" },
+    { key: "month", parentKey: null },
+    { key: "methods", parentKey: "specComp" },
+    { key: "resources", parentKey: "specComp" },
+    { key: "assessment", parentKey: "specComp" },
+    { key: "ref", parentKey: null }
+  ];
+
+  scheduleItems.forEach(item => {
+    if (item.type === "data") {
+      item._spans = {};
+      mergeCols.forEach(c => { item._spans[c.key] = 1; });
+    }
+  });
+
+  mergeCols.forEach(({ key, parentKey }) => {
+    let anchorIdx = -1;
+    for (let i = 0; i < scheduleItems.length; i++) {
+      const row = scheduleItems[i];
+      if (row.type !== "data") {
+        anchorIdx = -1;
+        continue;
+      }
+      if (anchorIdx === -1) {
+        anchorIdx = i;
+        continue;
+      }
+      const prev = scheduleItems[anchorIdx];
+      const sameValue = row[key] && row[key] === prev[key];
+      const sameParent = !parentKey || (row[parentKey] === prev[parentKey]);
+
+      if (sameValue && sameParent) {
+        prev._spans[key] += 1;
+        row._spans[key] = 0;
+      } else {
+        anchorIdx = i;
+      }
+    }
+  });
+
+  return scheduleItems;
+}
+
+function renderCell(row, key, content, alignCenter = false, preLine = false) {
+  const span = row._spans[key];
+  if (span === 0) return "";
+  const spanAttr = span > 1 ? ` rowspan="${span}"` : "";
+  let styles = [];
+  if (alignCenter) styles.push("text-align:center; vertical-align:middle;");
+  if (preLine) styles.push("white-space:pre-line;");
+  const styleAttr = styles.length ? ` style="${styles.join(" ")}"` : "";
+  return `<td${spanAttr}${styleAttr}>${content}</td>`;
+}
+
+function renderTable() {
+  const subj = document.getElementById("subjectSelector").value;
+  const formKey = document.getElementById("formSelector").value;
+  const school = document.getElementById("schoolName").value;
+  const teacher = document.getElementById("teacherName").value;
+  const year = document.getElementById("yearVal").value;
+  const ppw = Math.max(1, parseInt(document.getElementById("ppwVal").value) || 2);
+  const orient = document.getElementById("orientToggle").checked;
+
+  const cal = buildCalendar(orient);
+  const rawItems = buildRawScheduleRows(cal, ppw);
+  const mergedItems = applyCellMerging(rawItems);
+
+  let tbodyHtml = "";
+  mergedItems.forEach(item => {
+    if (item.type === "banner") {
+      tbodyHtml += `<tr><td colspan="12" class="break-row">${item.text}</td></tr>`;
+    } else {
+      const trClass = item.isRevision ? ` class="revision-row"` : "";
+      tbodyHtml += `
+        <tr${trClass}>
+          ${renderCell(item, "mainComp", item.mainComp, false, true)}
+          ${renderCell(item, "specComp", item.specComp, false, true)}
+          ${renderCell(item, "mainAct", item.mainAct, false, true)}
+          ${renderCell(item, "specAct", item.specAct, false, true)}
+          ${renderCell(item, "month", item.month, true)}
+          <td style="text-align:center;">${item.week}</td>
+          <td style="text-align:center;">${item.periods}</td>
+          ${renderCell(item, "methods", item.methods)}
+          ${renderCell(item, "resources", item.resources)}
+          ${renderCell(item, "assessment", item.assessment)}
+          ${renderCell(item, "ref", item.ref)}
+          <td>${item.remarks}</td>
+        </tr>
+      `;
+    }
+  });
+
+  document.getElementById("schemeDoc").innerHTML = `
+    <div class="doc-title">
+      <div>PRESIDENT’S OFFICE – REGIONAL ADMINISTRATION AND LOCAL GOVERNMENT</div>
+      <div>SCHEME OF WORK – ${year}</div>
+    </div>
+    <div class="doc-meta">
+      <div>NAME OF SCHOOL: ${school}</div>
+      <div>TEACHER'S NAME: ${teacher}</div>
+      <div>SUBJECT: ${subj}</div>
+      <div>CLASS: ${formKey}</div>
+      <div>TERM: I &amp; II</div>
+      <div>YEAR: ${year}</div>
+    </div>
+    <table class="tie-scheme">
+      <thead>
+        <tr>
+          <th>Main Competence</th>
+          <th>Specific Competence</th>
+          <th>Main Learning Activities</th>
+          <th>Specific Learning Activities</th>
+          <th>Month</th>
+          <th>Week</th>
+          <th>No. of Periods</th>
+          <th>Teaching and Learning Methods</th>
+          <th>Teaching and Learning Resources</th>
+          <th>Assessment Tools</th>
+          <th>References</th>
+          <th>Remarks</th>
+        </tr>
+      </thead>
+      <tbody>${tbodyHtml}</tbody>
+    </table>
+  `;
+}
+
+function downloadWord() {
+  const subj = document.getElementById("subjectSelector").value;
+  const formKey = document.getElementById("formSelector").value;
+  const htmlContent = document.getElementById("schemeDoc").innerHTML;
+  const docFile = `
+    <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+    <head><meta charset='utf-8'>
+    <style>
+      @page Section1 { size: 841.9pt 595.3pt; mso-page-orientation: landscape; margin: 1.2cm; }
+      div.Section1 { page: Section1; font-family: 'Times New Roman', serif; font-size: 11pt; }
+      table { width: 100%; border-collapse: collapse; font-family: 'Times New Roman', serif; font-size: 10pt; }
+      th, td { border: 1px solid #000; padding: 5px; vertical-align: top; }
+      th { background: #f1f5f9; font-weight: bold; text-align: center; }
+      .break-row { background: #e2e8f0; text-align: center; font-weight: bold; }
+      .doc-title { text-align: center; font-weight: bold; margin-bottom: 10px; }
+    </style>
+    </head>
+    <body><div class="Section1">${htmlContent}</div></body></html>
+  `;
+  const blob = new Blob(['\ufeff', docFile], { type: 'application/msword' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${subj.replace(/\s+/g, "_")}_${formKey.replace(/\s+/g, "_")}_ATOMIC_SCHEME_2026.doc`;
+  a.click();
+}
+
+onSubjectChange();
+</script>
+</body>
+</html>

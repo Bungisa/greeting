@@ -59,6 +59,7 @@ import { OfflineIndicator, PWAInstallButton } from './components/PWAInstallButto
 import { StemArenaGame } from './components/StemArenaGame';
 import { ElimikaPlayHub, PlayGameRoute } from './components/ElimikaPlayHub';
 import { VirtualScienceLab } from './components/VirtualScienceLab';
+import { TieSchemeOfWorkGenerator } from './components/TieSchemeOfWorkGenerator';
 import {
   MathText,
   renderLatexSnippet,
@@ -795,8 +796,11 @@ export default function App() {
   // Print Basket
   const [printBasket, setPrintBasket] = useState<PaperRecord[]>([]);
 
-  // Document Viewer Modal & Selected Exam Detail View
+  // Document Viewer Modal & Selected Exam / Book / Syllabus Detail Views
   const [selectedExamDetail, setSelectedExamDetail] = useState<PaperRecord | null>(null);
+  const [selectedBookDetail, setSelectedBookDetail] = useState<PaperRecord | null>(null);
+  const [selectedSyllabusDetail, setSelectedSyllabusDetail] = useState<PaperRecord | null>(null);
+  const pendingDeepLinkDocIdRef = useRef<string | null>(null);
   const [viewerPaper, setViewerPaper] = useState<PaperRecord | null>(null);
   const [viewerType, setViewerType] = useState<'paper' | 'answers'>('paper');
   const [viewerLoading, setViewerLoading] = useState<boolean>(true);
@@ -1017,6 +1021,43 @@ export default function App() {
       navigator.clipboard.writeText(url).catch(() => {});
     }
     showToast(`🔗 Direct link copied: ${sub ? `${cls} ${sub}` : cls}`);
+  }
+
+  function buildShareableDocUrl(doc: PaperRecord): string {
+    const base = `${window.location.origin}${window.location.pathname}`;
+    const pageType = doc.isSyllabus ? 'syllabus' : doc.isBook ? 'books' : 'papers';
+    return `${base}#page=${pageType}&doc=${encodeURIComponent(doc.id)}`;
+  }
+
+  function getDocWhatsAppShareUrl(doc: PaperRecord): string {
+    const shareUrl = buildShareableDocUrl(doc);
+    const kind = doc.isSyllabus ? 'Syllabus' : doc.isBook ? 'TIE Textbook' : 'Past Paper';
+    const text = `Check out this ${kind} on Elimika Tanzania:\n📘 *${doc.title}*\n(${doc.form} · ${doc.subject})\n\nRead or Download free here:\n${shareUrl}`;
+    return `https://wa.me/?text=${encodeURIComponent(text)}`;
+  }
+
+  async function shareLibraryDocument(doc: PaperRecord) {
+    const url = buildShareableDocUrl(doc);
+    const kind = doc.isSyllabus ? 'Syllabus' : doc.isBook ? 'TIE Textbook' : 'Past Paper';
+    const text = `${doc.title} (${doc.form} · ${doc.subject}) — Read or download free on Elimika Tanzania`;
+
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      try {
+        await navigator.share({ title: `${doc.title} | Elimika`, text, url });
+        return;
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return;
+      }
+    }
+
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(url);
+      } catch {
+        // ignore clipboard failure
+      }
+    }
+    showToast(`🔗 ${kind} link copied! Ready to share.`);
   }
 
   useEffect(() => {
@@ -1716,9 +1757,10 @@ export default function App() {
       const rawHash = (window.location.hash || '').replace(/^#/, '').trim();
       if (!rawHash) return false;
 
-      if (rawHash.includes('class=') || rawHash.includes('subject=') || rawHash.includes('page=') || rawHash.includes('q=')) {
+      if (rawHash.includes('class=') || rawHash.includes('subject=') || rawHash.includes('page=') || rawHash.includes('q=') || rawHash.includes('doc=')) {
         const params = new URLSearchParams(rawHash);
         const pageParam = (params.get('page') || '').trim().toLowerCase();
+        const docParam = (params.get('doc') || '').trim();
         const rawCls = (params.get('class') || params.get('cls') || '').replace(/-/g, ' ').trim();
         const rawSub = (params.get('subject') || params.get('sub') || '').replace(/-/g, ' ').trim();
         const rawQ = (params.get('q') || params.get('search') || '').replace(/-/g, ' ').trim();
@@ -1735,11 +1777,20 @@ export default function App() {
             ? normalizeSubjectName(rawSub, rawSub)
             : '';
 
+        if (docParam) {
+          pendingDeepLinkDocIdRef.current = docParam;
+          if (pageParam === 'books') setActivePage('books');
+          else if (pageParam === 'syllabus') setActivePage('syllabus');
+          else setActivePage('papers');
+          return true;
+        }
+
         if (pageParam === 'books') {
           openBooksPage(normCls, matchedOfficialSub || rawQ);
           return true;
         }
         if (pageParam === 'syllabus') {
+          setSelectedSyllabusDetail(null);
           setActivePage('syllabus');
           if (rawQ || matchedOfficialSub) setSyllabusSearchQuery(rawQ || matchedOfficialSub);
           return true;
@@ -1869,6 +1920,8 @@ export default function App() {
     mohaViewMode,
     playRoute,
     selectedExamDetail,
+    selectedBookDetail,
+    selectedSyllabusDetail,
     viewerPaper,
     attachModalOpen,
     teacherStudioOpen,
@@ -1883,6 +1936,8 @@ export default function App() {
       mohaViewMode,
       playRoute,
       selectedExamDetail,
+      selectedBookDetail,
+      selectedSyllabusDetail,
       viewerPaper,
       attachModalOpen,
       teacherStudioOpen,
@@ -1895,6 +1950,8 @@ export default function App() {
     mohaViewMode,
     playRoute,
     selectedExamDetail,
+    selectedBookDetail,
+    selectedSyllabusDetail,
     viewerPaper,
     attachModalOpen,
     teacherStudioOpen,
@@ -1971,6 +2028,14 @@ export default function App() {
       setSelectedExamDetail(null);
       return;
     }
+    if (cur.selectedBookDetail) {
+      setSelectedBookDetail(null);
+      return;
+    }
+    if (cur.selectedSyllabusDetail) {
+      setSelectedSyllabusDetail(null);
+      return;
+    }
     if (cur.attachModalOpen) {
       setAttachModalOpen(false);
       return;
@@ -2030,7 +2095,7 @@ export default function App() {
 
     const onPopState = (event: PopStateEvent) => {
       const cur = latestNavStateRef.current;
-      // If full-screen viewer or exam detail is open, close it first and keep current page
+      // If full-screen viewer or document detail is open, close it first and keep current page
       if (cur.viewerPaper) {
         setViewerPaper(null);
         try {
@@ -2043,8 +2108,16 @@ export default function App() {
         }
         return;
       }
-      if (cur.selectedExamDetail || cur.attachModalOpen || cur.teacherStudioOpen) {
+      if (
+        cur.selectedExamDetail ||
+        cur.selectedBookDetail ||
+        cur.selectedSyllabusDetail ||
+        cur.attachModalOpen ||
+        cur.teacherStudioOpen
+      ) {
         setSelectedExamDetail(null);
+        setSelectedBookDetail(null);
+        setSelectedSyllabusDetail(null);
         setAttachModalOpen(false);
         setTeacherStudioOpen(false);
         try {
@@ -2097,6 +2170,29 @@ export default function App() {
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
+  // Resolve pending shared document deep link (#page=books|syllabus|papers&doc=...) once allPapers loads
+  useEffect(() => {
+    const docId = pendingDeepLinkDocIdRef.current;
+    if (!docId || allPapers.length === 0) return;
+    const found = allPapers.find((p) => p.id === docId);
+    if (!found) return;
+
+    pendingDeepLinkDocIdRef.current = null;
+    if (found.isSyllabus) {
+      setActivePage('syllabus');
+      setSelectedSyllabusDetail(found);
+    } else if (found.isBook) {
+      setActivePage('books');
+      setSelectedBookDetail(found);
+    } else {
+      setActivePage('papers');
+      setSelectedClass(found.form);
+      setSelectedSubject(found.subject);
+      setStep(3);
+      setSelectedExamDetail(found);
+    }
+  }, [allPapers]);
+
   function handleGoBack() {
     if (viewerPaper) {
       setViewerPaper(null);
@@ -2104,6 +2200,16 @@ export default function App() {
     }
     if (selectedExamDetail) {
       setSelectedExamDetail(null);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    if (selectedBookDetail) {
+      setSelectedBookDetail(null);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    if (selectedSyllabusDetail) {
+      setSelectedSyllabusDetail(null);
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -2544,7 +2650,8 @@ export default function App() {
 
       // Guaranteed binary PDF fallback via jsPDF so it NEVER downloads an .html file
       const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const activeItem = viewerPaper || selectedExamDetail;
+      const activeItem =
+        viewerPaper || selectedExamDetail || selectedBookDetail || selectedSyllabusDetail;
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(15);
       doc.text('THE UNITED REPUBLIC OF TANZANIA', 105, 20, { align: 'center' });
@@ -2625,6 +2732,8 @@ export default function App() {
   }
 
   function openBooksPage(filterClass = '', filterSubject = '') {
+    setSelectedBookDetail(null);
+    setSelectedSyllabusDetail(null);
     setActivePage('books');
     if (filterClass) {
       const fLower = filterClass.toLowerCase();
@@ -2640,7 +2749,21 @@ export default function App() {
   }
 
   function openSyllabusPage() {
+    setSelectedBookDetail(null);
+    setSelectedSyllabusDetail(null);
     setActivePage('syllabus');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function openBookDetailView(book: PaperRecord) {
+    saveRecentPaper(book);
+    setSelectedBookDetail(book);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function openSyllabusDetailView(syllabus: PaperRecord) {
+    saveRecentPaper(syllabus);
+    setSelectedSyllabusDetail(syllabus);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -3041,7 +3164,7 @@ export default function App() {
 
     const docLabels: Record<OfficialDocType, string> = {
       lessonplan: '4-Stage TIE Competence-Based Lesson Plan',
-      schemeofwork: 'PO-RALG Scheme of Work (2026)',
+      schemeofwork: 'PO-RALG Scheme of Work (2027)',
       lessonnotes: 'Official TIE Comprehensive Lesson Notes',
       exampaper: 'Full NECTA Format Examination Paper (100 Marks)',
       blueprint: "Bloom's Taxonomy Table of Specifications (Exam Blueprint)",
@@ -4400,7 +4523,7 @@ export default function App() {
     <div className="min-h-screen w-full max-w-full overflow-x-hidden flex flex-col bg-[var(--bg-canvas)] text-[var(--text-primary)] transition-colors">
       {/* TOP BAR CONTRACT: 3 Zones (Brand, Nav Links, Primary Action) — hidden in full-viewport Moha AI & Game modes */}
       {activePage !== 'moha' && activePage !== 'game' && (
-      <header className="sticky top-0 z-40 bg-[var(--bg-surface-glass)] backdrop-blur-md border-b border-[var(--border-subtle)] transition-colors">
+      <header className="sticky top-0 z-40 bg-[var(--bg-surface-glass)] backdrop-blur-md border-b border-[var(--border-subtle)] transition-colors print:hidden">
         <div className="max-w-5xl mx-auto px-2.5 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-1.5 sm:gap-4">
           <a
             href="#home"
@@ -4825,6 +4948,17 @@ export default function App() {
                         <span>Moha AI &amp; Studio</span>
                       </button>
                       <button
+                        onClick={() => {
+                          setSelectedStudioDocType('schemeofwork');
+                          setActivePage('moha');
+                          setMohaViewMode('studio');
+                          setTeacherStudioOpen(true);
+                        }}
+                        className="px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                      >
+                        <span>📅 Scheme of Work (2027)</span>
+                      </button>
+                      <button
                         onClick={() => openVirtualLabPage()}
                         className="px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs cursor-pointer flex items-center gap-1.5 shadow-2xs"
                       >
@@ -4943,12 +5077,7 @@ export default function App() {
                           </div>
                           <button
                             type="button"
-                            onClick={() =>
-                              copyShareableSubjectLink(
-                                selectedExamDetail.form,
-                                selectedExamDetail.subject
-                              )
-                            }
+                            onClick={() => shareLibraryDocument(selectedExamDetail)}
                             className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold cursor-pointer shrink-0"
                             title="Share Exam"
                           >
@@ -5254,243 +5383,442 @@ export default function App() {
           transition={{ duration: 0.22, ease: 'easeOut' }}
           className="flex-grow bg-slate-50 min-h-screen pb-24"
         >
-          <section className="py-3 bg-white border-b border-slate-200">
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-2.5">
-              {/* Row 1: Unified Library Switcher + Search Input */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
-                <div className="inline-flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setActivePage('papers')}
-                    className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-bold text-xs text-slate-700 hover:text-slate-900 hover:bg-white/70 flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
-                  >
-                    <FileText className="w-3.5 h-3.5" />
-                    <span>Past Papers</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => openBooksPage()}
-                    className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-bold text-xs bg-emerald-600 text-white shadow-2xs flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
-                  >
-                    <span>📘 Books ({availableUploadedBooks.length})</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => openSyllabusPage()}
-                    className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-bold text-xs text-slate-700 hover:text-slate-900 hover:bg-white/70 flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
-                  >
-                    <span>📜 Syllabus ({availableUploadedSyllabuses.length})</span>
-                  </button>
-                </div>
+          {/* Unified Library Bar (Hidden on Book Detail View so clicking a book opens a clean dedicated page) */}
+          {!selectedBookDetail && (
+            <section className="py-3 bg-white border-b border-slate-200">
+              <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-2.5">
+                {/* Row 1: Unified Library Switcher + Search Input */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+                  <div className="inline-flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedBookDetail(null);
+                        setActivePage('papers');
+                      }}
+                      className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-bold text-xs text-slate-700 hover:text-slate-900 hover:bg-white/70 flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>Past Papers</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openBooksPage()}
+                      className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-bold text-xs bg-emerald-600 text-white shadow-2xs flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
+                    >
+                      <span>📘 Books ({availableUploadedBooks.length})</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openSyllabusPage()}
+                      className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-bold text-xs text-slate-700 hover:text-slate-900 hover:bg-white/70 flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
+                    >
+                      <span>📜 Syllabus ({availableUploadedSyllabuses.length})</span>
+                    </button>
+                  </div>
 
-                <div className="relative flex-1 max-w-md">
-                  <input
-                    type="text"
-                    value={booksSearchQuery}
-                    onChange={(e) => setBooksSearchQuery(e.target.value)}
-                    placeholder="Search textbook or subject..."
-                    className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-300 focus:border-emerald-600 focus:outline-none text-xs sm:text-sm font-medium bg-slate-50"
-                  />
-                  <Search className="w-4 h-4 text-slate-400 absolute left-2.5 top-2" />
-                </div>
-              </div>
-
-              {/* Row 2: Simple Class Dropdown + Quick Level Filter + Count */}
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <select
-                    aria-label="Select Class for Textbooks"
-                    value={booksPageSelectedClass}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setBooksPageSelectedClass(val);
-                      if (val === 'ALL') {
-                        setBooksPageLevel('ALL');
-                      } else if (val.startsWith('Standard')) {
-                        setBooksPageLevel('Primary');
-                      } else if (val === 'Form 5' || val === 'Form 6') {
-                        setBooksPageLevel('Advanced');
-                      } else {
-                        setBooksPageLevel('Secondary');
-                      }
-                    }}
-                    className="px-3 py-1.5 rounded-xl border border-slate-300 bg-white text-slate-900 font-bold text-xs cursor-pointer focus:outline-none focus:border-emerald-600"
-                  >
-                    <option value="ALL">All Classes (Std 1 – Form 6)</option>
-                    <optgroup label="Secondary (Form 1–6)">
-                      {['Form 1', 'Form 2', 'Form 3', 'Form 4', 'Form 5', 'Form 6'].map((c) => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </optgroup>
-                    <optgroup label="Primary (Standard 1–7)">
-                      {['Standard 1', 'Standard 2', 'Standard 3', 'Standard 4', 'Standard 5', 'Standard 6', 'Standard 7'].map((c) => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </optgroup>
-                  </select>
-
-                  <div className="inline-flex items-center p-0.5 rounded-lg bg-slate-100 border border-slate-200">
-                    {(['ALL', 'Secondary', 'Primary', 'Advanced'] as const).map((lvl) => (
-                      <button
-                        key={lvl}
-                        onClick={() => {
-                          setBooksPageLevel(lvl);
-                          setBooksPageSelectedClass('ALL');
-                        }}
-                        className={`px-2.5 py-1 rounded-md font-bold text-xs whitespace-nowrap shrink-0 cursor-pointer ${
-                          booksPageLevel === lvl
-                            ? 'bg-emerald-600 text-white'
-                            : 'text-slate-600 hover:text-slate-900'
-                        }`}
-                      >
-                        {lvl === 'ALL' ? 'All' : lvl === 'Primary' ? 'Primary' : lvl === 'Secondary' ? 'O-Level' : 'A-Level'}
-                      </button>
-                    ))}
+                  <div className="relative flex-1 max-w-md">
+                    <input
+                      type="text"
+                      value={booksSearchQuery}
+                      onChange={(e) => setBooksSearchQuery(e.target.value)}
+                      placeholder="Search textbook or subject..."
+                      className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-300 focus:border-emerald-600 focus:outline-none text-xs sm:text-sm font-medium bg-slate-50"
+                    />
+                    <Search className="w-4 h-4 text-slate-400 absolute left-2.5 top-2" />
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 text-xs tabular-nums">
-                  <span className="font-bold text-emerald-800">
-                    {availableUploadedBooks.length} Books Ready
-                  </span>
-                  {upcomingPlaceholderBooks.length > 0 && (
+                {/* Row 2: Simple Class Dropdown + Quick Level Filter + Count */}
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <select
+                      aria-label="Select Class for Textbooks"
+                      value={booksPageSelectedClass}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setBooksPageSelectedClass(val);
+                        if (val === 'ALL') {
+                          setBooksPageLevel('ALL');
+                        } else if (val.startsWith('Standard')) {
+                          setBooksPageLevel('Primary');
+                        } else if (val === 'Form 5' || val === 'Form 6') {
+                          setBooksPageLevel('Advanced');
+                        } else {
+                          setBooksPageLevel('Secondary');
+                        }
+                      }}
+                      className="px-3 py-1.5 rounded-xl border border-slate-300 bg-white text-slate-900 font-bold text-xs cursor-pointer focus:outline-none focus:border-emerald-600"
+                    >
+                      <option value="ALL">All Classes (Std 1 – Form 6)</option>
+                      <optgroup label="Secondary (Form 1–6)">
+                        {['Form 1', 'Form 2', 'Form 3', 'Form 4', 'Form 5', 'Form 6'].map((c) => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Primary (Standard 1–7)">
+                        {['Standard 1', 'Standard 2', 'Standard 3', 'Standard 4', 'Standard 5', 'Standard 6', 'Standard 7'].map((c) => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                      </optgroup>
+                    </select>
+
+                    <div className="inline-flex items-center p-0.5 rounded-lg bg-slate-100 border border-slate-200">
+                      {(['ALL', 'Secondary', 'Primary', 'Advanced'] as const).map((lvl) => (
+                        <button
+                          key={lvl}
+                          onClick={() => {
+                            setBooksPageLevel(lvl);
+                            setBooksPageSelectedClass('ALL');
+                          }}
+                          className={`px-2.5 py-1 rounded-md font-bold text-xs whitespace-nowrap shrink-0 cursor-pointer ${
+                            booksPageLevel === lvl
+                              ? 'bg-emerald-600 text-white'
+                              : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          {lvl === 'ALL' ? 'All' : lvl === 'Primary' ? 'Primary' : lvl === 'Secondary' ? 'O-Level' : 'A-Level'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-xs tabular-nums">
+                    <span className="font-bold text-emerald-800">
+                      {availableUploadedBooks.length} Books Ready
+                    </span>
+                    {upcomingPlaceholderBooks.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setShowUpcomingBooks((prev) => !prev)}
+                        className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] cursor-pointer"
+                      >
+                        {showUpcomingBooks ? 'Hide Request List' : `+ Request Book (${upcomingPlaceholderBooks.length})`}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 space-y-4">
+            {selectedBookDetail ? (
+              /* ==================== TEXTBOOK DETAIL PAGE (READ, DOWNLOAD & SHARE + RECOMMENDED) ==================== */
+              <div className="space-y-5">
+                <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                  {/* Top Detail Navigation Bar */}
+                  <div className="px-4 py-3 bg-slate-900 text-white flex items-center justify-between gap-3">
                     <button
                       type="button"
-                      onClick={() => setShowUpcomingBooks((prev) => !prev)}
-                      className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] cursor-pointer"
+                      onClick={() => setSelectedBookDetail(null)}
+                      className="p-1.5 px-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center gap-1.5 text-xs font-bold cursor-pointer shrink-0"
                     >
-                      {showUpcomingBooks ? 'Hide Request List' : `+ Request Book (${upcomingPlaceholderBooks.length})`}
+                      <ArrowLeft className="w-4 h-4" />
+                      <span>Back</span>
                     </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </section>
+                    <div className="text-xs sm:text-sm font-bold text-white truncate flex-1 text-center">
+                      {selectedBookDetail.title}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => shareLibraryDocument(selectedBookDetail)}
+                      className="p-1.5 px-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold cursor-pointer shrink-0"
+                      title="Share Textbook"
+                    >
+                      📲 Share
+                    </button>
+                  </div>
 
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 space-y-4">
+                  {/* Hero "TIE TEXTBOOK" Poster Banner */}
+                  <div className="bg-white p-6 sm:p-8 text-center border-b border-slate-200 flex flex-col items-center justify-center">
+                    <div className="text-3xl sm:text-4xl font-black tracking-tight text-emerald-600 leading-none uppercase">
+                      OFFICIAL TIE
+                    </div>
+                    <div className="text-3xl sm:text-4xl font-black tracking-tight text-blue-700 leading-none uppercase mt-1">
+                      TEXTBOOK
+                    </div>
+                    <div className="mt-3 px-6 py-2.5 sm:py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-blue-600 text-white font-black text-2xl sm:text-4xl uppercase tracking-tight shadow-sm w-full max-w-md">
+                      {selectedBookDetail.form}
+                    </div>
+                    <div className="mt-2.5 text-xs sm:text-sm font-extrabold text-emerald-700">
+                      Tanzania Institute of Education · {selectedBookDetail.subject}
+                    </div>
+                  </div>
 
-            {/* Available / Uploaded PDFs First */}
-            {availableUploadedBooks.length === 0 ? (
-              <div className="py-10 text-center bg-white rounded-2xl border border-slate-200 p-6 space-y-3">
-                <h3 className="text-base font-bold text-slate-900">
-                  No uploaded TIE PDF Books match this filter yet
-                </h3>
-                <p className="text-xs text-slate-500 max-w-md mx-auto">
-                  Try selecting &ldquo;All Levels&rdquo; or request a specific textbook via WhatsApp below.
-                </p>
-                <div className="flex flex-wrap items-center justify-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setBooksPageLevel('ALL');
-                      setBooksPageSelectedClass('ALL');
-                      setBooksSearchQuery('');
-                    }}
-                    className="px-4 py-2 bg-emerald-600 text-white font-bold text-xs rounded-xl cursor-pointer"
-                  >
-                    Show All Available TIE Books
-                  </button>
-                  <a
-                    href={getRequestPaperWhatsAppUrl(
-                      booksPageSelectedClass !== 'ALL' ? booksPageSelectedClass : 'Secondary',
-                      booksSearchQuery || 'TIE Student Book',
-                      'Missing TIE Textbook PDF'
-                    )}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-4 py-2 bg-slate-900 text-white font-bold text-xs rounded-xl"
-                  >
-                    📩 Request a Textbook via WhatsApp
-                  </a>
+                  {/* Book Information & Action Options (Read, Download, Share) */}
+                  <div className="p-5 sm:p-6 space-y-4">
+                    <div className="space-y-1.5">
+                      <h2 className="text-lg sm:text-xl font-black text-slate-900 leading-snug flex items-center gap-2">
+                        <span>{getSubjectIcon(selectedBookDetail.subject)}</span>
+                        <span>{selectedBookDetail.title}</span>
+                      </h2>
+                      <div className="text-xs font-semibold text-slate-500 flex flex-wrap items-center gap-2">
+                        <span>📅 {selectedBookDetail.year}</span>
+                        <span>•</span>
+                        <span className="text-emerald-700 font-bold">{selectedBookDetail.category}</span>
+                        <span>•</span>
+                        <span>{selectedBookDetail.subject}</span>
+                        <span>•</span>
+                        <span>{selectedBookDetail.form}</span>
+                      </div>
+                    </div>
+
+                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                      Read online in full screen, download PDF to your device, or share <strong>{selectedBookDetail.title}</strong> with students and teachers for free.
+                    </p>
+
+                    <div className="border-l-4 border-emerald-600 bg-slate-50 rounded-r-2xl p-4 sm:p-5 space-y-3">
+                      <div className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
+                        Choose an option for this textbook:
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => openViewer(selectedBookDetail.id, 'paper')}
+                          className="w-full px-4 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs sm:text-sm uppercase tracking-wide flex items-center justify-between gap-2 shadow-sm cursor-pointer transition-all"
+                        >
+                          <span className="flex items-center gap-2">
+                            <BookOpen className="w-4 h-4 shrink-0" />
+                            <span>Read Textbook (PDF)</span>
+                          </span>
+                          <ChevronRight className="w-4 h-4 shrink-0" />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            triggerDirectDownloadUrl(
+                              selectedBookDetail.paperUrl,
+                              `${selectedBookDetail.title}.pdf`
+                            )
+                          }
+                          className="w-full px-4 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xs sm:text-sm uppercase tracking-wide flex items-center justify-between gap-2 shadow-sm cursor-pointer transition-all"
+                        >
+                          <span className="flex items-center gap-2">
+                            <Download className="w-4 h-4 shrink-0" />
+                            <span>Download PDF</span>
+                          </span>
+                          <ChevronRight className="w-4 h-4 shrink-0" />
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => shareLibraryDocument(selectedBookDetail)}
+                          className="w-full px-4 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                        >
+                          <span>📲 Share Link</span>
+                        </button>
+                        <a
+                          href={getDocWhatsAppShareUrl(selectedBookDetail)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full px-4 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#1ebe5d] text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors"
+                        >
+                          <span>💬 Share on WhatsApp</span>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
                 </div>
+
+                {/* RECOMMENDED TEXTBOOKS LIST */}
+                {(() => {
+                  const sameClassBooks = availableUploadedBooks.filter(
+                    (b) => b.id !== selectedBookDetail.id && b.form === selectedBookDetail.form
+                  );
+                  const recommendedBooks =
+                    sameClassBooks.length >= 6
+                      ? sameClassBooks.slice(0, 6)
+                      : [
+                          ...sameClassBooks,
+                          ...availableUploadedBooks.filter(
+                            (b) =>
+                              b.id !== selectedBookDetail.id &&
+                              !sameClassBooks.some((s) => s.id === b.id)
+                          ),
+                        ].slice(0, 6);
+
+                  if (recommendedBooks.length === 0) return null;
+
+                  return (
+                    <div className="space-y-3">
+                      <div className="text-xs font-black uppercase tracking-wider text-slate-500 px-1">
+                        RECOMMENDED TEXTBOOKS
+                      </div>
+                      <div className="bg-white rounded-2xl border border-slate-200 divide-y divide-slate-100 overflow-hidden shadow-xs">
+                        {recommendedBooks.map((rec) => (
+                          <button
+                            key={rec.id}
+                            type="button"
+                            onClick={() => openBookDetailView(rec)}
+                            className="w-full p-3.5 sm:p-4 hover:bg-emerald-50/60 transition-colors flex items-center justify-between gap-3.5 text-left cursor-pointer group"
+                          >
+                            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-white border border-slate-200 shadow-2xs shrink-0 flex flex-col items-center justify-center p-1 text-center">
+                              <span className="text-[7px] sm:text-[8px] font-black leading-none text-emerald-700 uppercase">
+                                TIE
+                              </span>
+                              <span className="text-[7px] sm:text-[8px] font-black leading-none text-blue-600 uppercase mt-0.5">
+                                BOOK
+                              </span>
+                              <span className="w-full py-0.5 px-1 my-0.5 rounded bg-gradient-to-r from-emerald-600 to-blue-600 text-white font-black text-[8px] sm:text-[9px] uppercase tracking-tight truncate">
+                                {rec.form}
+                              </span>
+                              <span className="text-[5px] sm:text-[6px] font-bold text-slate-400 truncate w-full">
+                                Official PDF
+                              </span>
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-emerald-700 line-clamp-2 leading-snug">
+                                {getSubjectIcon(rec.subject)} {rec.title}
+                              </h4>
+                              <div className="text-[11px] font-medium text-slate-500 mt-1">
+                                {rec.form} · {rec.subject} · {rec.year}
+                              </div>
+                            </div>
+
+                            <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-600 shrink-0" />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {availableUploadedBooks.map((p) => (
-                  <article
-                    key={p.id}
-                    className="bg-white p-5 rounded-2xl border border-emerald-400 shadow-sm hover:border-emerald-600 transition-colors flex flex-col justify-between gap-4"
-                  >
-                    <div>
-                      <div className="flex items-center justify-between gap-2 text-xs text-slate-500 mb-1.5">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-emerald-700">{p.category}</span>
-                          <span aria-hidden="true">·</span>
-                          <span className="font-semibold text-slate-700">{p.form}</span>
-                          <span aria-hidden="true">·</span>
-                          <span>{p.subject}</span>
-                        </div>
-                        <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-[10px]">
-                          PDF Ready ✓
-                        </span>
-                      </div>
-                      <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                        <span>{getSubjectIcon(p.subject)}</span>
-                        <span>{p.title}</span>
-                      </h3>
-                    </div>
-                    <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2">
+              /* ==================== CLEAN TEXTBOOKS LIST VIEW (CLICK ANY BOOK TO OPEN DETAIL PAGE) ==================== */
+              <>
+                {availableUploadedBooks.length === 0 ? (
+                  <div className="py-10 text-center bg-white rounded-2xl border border-slate-200 p-6 space-y-3">
+                    <h3 className="text-base font-bold text-slate-900">
+                      No uploaded TIE PDF Books match this filter yet
+                    </h3>
+                    <p className="text-xs text-slate-500 max-w-md mx-auto">
+                      Try selecting &ldquo;All Levels&rdquo; or request a specific textbook via WhatsApp below.
+                    </p>
+                    <div className="flex flex-wrap items-center justify-center gap-2">
                       <button
-                        onClick={() => openViewer(p.id, 'paper')}
-                        className="flex-1 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
+                        type="button"
+                        onClick={() => {
+                          setBooksPageLevel('ALL');
+                          setBooksPageSelectedClass('ALL');
+                          setBooksSearchQuery('');
+                        }}
+                        className="px-4 py-2 bg-emerald-600 text-white font-bold text-xs rounded-xl cursor-pointer"
                       >
-                        <BookOpen className="w-3.5 h-3.5" />
-                        <span>Read</span>
+                        Show All Available TIE Books
                       </button>
-                      <button
-                        onClick={() => triggerDirectDownloadUrl(p.paperUrl, `${p.title}.pdf`)}
-                        className="flex-1 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm whitespace-nowrap cursor-pointer"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        <span>Download</span>
-                      </button>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            )}
-
-            {/* Collapsed "Coming Soon" Section for Unuploaded TIE Books */}
-            {upcomingPlaceholderBooks.length > 0 && showUpcomingBooks && (
-              <div className="space-y-3 pt-4 border-t border-slate-200">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-black text-slate-700">
-                    ⏳ Upcoming TIE Curriculum Books — Coming Soon ({upcomingPlaceholderBooks.length})
-                  </h3>
-                  <button
-                    type="button"
-                    onClick={() => setShowUpcomingBooks(false)}
-                    className="text-xs font-bold text-slate-500 hover:text-slate-800 cursor-pointer"
-                  >
-                    Collapse ▲
-                  </button>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {upcomingPlaceholderBooks.map((p) => (
-                    <article
-                      key={p.id}
-                      className="bg-white/80 p-4 rounded-2xl border border-slate-200 flex items-center justify-between gap-3"
-                    >
-                      <div className="min-w-0">
-                        <div className="text-[11px] font-semibold text-slate-500">
-                          {p.form} · {p.subject}
-                        </div>
-                        <h4 className="text-xs sm:text-sm font-bold text-slate-800 truncate">
-                          {getSubjectIcon(p.subject)} {p.title}
-                        </h4>
-                      </div>
                       <a
-                        href={getRequestPaperWhatsAppUrl(p.form, p.subject, p.title)}
+                        href={getRequestPaperWhatsAppUrl(
+                          booksPageSelectedClass !== 'ALL' ? booksPageSelectedClass : 'Secondary',
+                          booksSearchQuery || 'TIE Student Book',
+                          'Missing TIE Textbook PDF'
+                        )}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold text-[11px] whitespace-nowrap shrink-0"
+                        className="px-4 py-2 bg-slate-900 text-white font-bold text-xs rounded-xl"
                       >
-                        📩 Request Book
+                        📩 Request a Textbook via WhatsApp
                       </a>
-                    </article>
-                  ))}
-                </div>
-              </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {availableUploadedBooks.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => openBookDetailView(p)}
+                        className="w-full bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 hover:border-emerald-500 shadow-xs transition-all flex items-center justify-between gap-3.5 text-left cursor-pointer group"
+                      >
+                        {/* Square "TIE BOOK" Class Badge Thumbnail */}
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-white border border-slate-200 shadow-2xs shrink-0 flex flex-col items-center justify-center p-1.5 text-center">
+                          <span className="text-[8px] sm:text-[9px] font-black leading-none text-emerald-700 uppercase tracking-tight">
+                            OFFICIAL
+                          </span>
+                          <span className="text-[8px] sm:text-[9px] font-black leading-none text-blue-600 uppercase tracking-tight mt-0.5">
+                            TEXTBOOK
+                          </span>
+                          <span className="w-full py-0.5 px-1 my-1 rounded bg-gradient-to-r from-emerald-600 to-blue-600 text-white font-black text-[9px] sm:text-[10px] uppercase tracking-tight truncate">
+                            {p.form}
+                          </span>
+                          <span className="text-[6px] sm:text-[7px] font-bold text-slate-400 leading-none truncate w-full">
+                            TIE Curriculum
+                          </span>
+                        </div>
+
+                        {/* Book Title & Metadata */}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-sm sm:text-base font-bold text-slate-900 group-hover:text-emerald-700 line-clamp-2 leading-snug">
+                            {getSubjectIcon(p.subject)} {p.title}
+                          </h3>
+                          <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500 mt-1 tabular-nums">
+                            <span className="font-bold text-emerald-700">{p.category}</span>
+                            <span aria-hidden="true">·</span>
+                            <span className="font-semibold text-slate-700">{p.form}</span>
+                            <span aria-hidden="true">·</span>
+                            <span>{p.subject}</span>
+                            <span aria-hidden="true">·</span>
+                            <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-[10px]">
+                              PDF Ready ✓
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="shrink-0 p-2 rounded-xl bg-slate-50 group-hover:bg-emerald-50 text-slate-400 group-hover:text-emerald-600 transition-colors">
+                          <ChevronRight className="w-5 h-5" />
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Collapsed "Coming Soon" Section for Unuploaded TIE Books */}
+                {upcomingPlaceholderBooks.length > 0 && showUpcomingBooks && (
+                  <div className="space-y-3 pt-4 border-t border-slate-200">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-black text-slate-700">
+                        ⏳ Upcoming TIE Curriculum Books — Coming Soon ({upcomingPlaceholderBooks.length})
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={() => setShowUpcomingBooks(false)}
+                        className="text-xs font-bold text-slate-500 hover:text-slate-800 cursor-pointer"
+                      >
+                        Collapse ▲
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {upcomingPlaceholderBooks.map((p) => (
+                        <article
+                          key={p.id}
+                          className="bg-white/80 p-4 rounded-2xl border border-slate-200 flex items-center justify-between gap-3"
+                        >
+                          <div className="min-w-0">
+                            <div className="text-[11px] font-semibold text-slate-500">
+                              {p.form} · {p.subject}
+                            </div>
+                            <h4 className="text-xs sm:text-sm font-bold text-slate-800 truncate">
+                              {getSubjectIcon(p.subject)} {p.title}
+                            </h4>
+                          </div>
+                          <a
+                            href={getRequestPaperWhatsAppUrl(p.form, p.subject, p.title)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold text-[11px] whitespace-nowrap shrink-0"
+                          >
+                            📩 Request Book
+                          </a>
+                        </article>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </motion.div>
@@ -5506,179 +5834,372 @@ export default function App() {
           transition={{ duration: 0.22, ease: 'easeOut' }}
           className="flex-grow bg-slate-50 min-h-screen pb-24"
         >
-          <section className="py-3 bg-white border-b border-slate-200">
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-2.5">
-              {/* Row 1: Unified Library Switcher + Search Input */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
-                <div className="inline-flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setActivePage('papers')}
-                    className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-bold text-xs text-slate-700 hover:text-slate-900 hover:bg-white/70 flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
-                  >
-                    <FileText className="w-3.5 h-3.5" />
-                    <span>Past Papers</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => openBooksPage()}
-                    className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-bold text-xs text-slate-700 hover:text-slate-900 hover:bg-white/70 flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
-                  >
-                    <span>📘 Books ({availableUploadedBooks.length})</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => openSyllabusPage()}
-                    className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-bold text-xs bg-amber-500 text-slate-950 shadow-2xs flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
-                  >
-                    <span>📜 Syllabus ({availableUploadedSyllabuses.length})</span>
-                  </button>
-                </div>
-
-                <div className="relative flex-1 max-w-md">
-                  <input
-                    type="text"
-                    value={syllabusSearchQuery}
-                    onChange={(e) => setSyllabusSearchQuery(e.target.value)}
-                    placeholder="Search syllabus subject..."
-                    className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-300 focus:border-amber-500 focus:outline-none text-xs sm:text-sm font-medium bg-slate-50"
-                  />
-                  <Search className="w-4 h-4 text-slate-400 absolute left-2.5 top-2" />
-                </div>
-              </div>
-
-              {/* Row 2: Compact Level Filter + Count */}
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                <div className="inline-flex items-center p-0.5 rounded-lg bg-slate-100 border border-slate-200">
-                  {(['ALL', 'Secondary', 'Primary', 'Advanced'] as const).map((lvl) => (
-                    <button
-                      key={lvl}
-                      onClick={() => setSyllabusPageLevel(lvl)}
-                      className={`px-2.5 py-1 rounded-md font-bold text-xs whitespace-nowrap shrink-0 cursor-pointer ${
-                        syllabusPageLevel === lvl
-                          ? 'bg-amber-500 text-slate-950'
-                          : 'text-slate-600 hover:text-slate-900'
-                      }`}
-                    >
-                      {lvl === 'ALL' ? 'All Levels' : lvl === 'Primary' ? 'Primary' : lvl === 'Secondary' ? 'O-Level' : 'A-Level'}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="flex items-center gap-2 text-xs tabular-nums">
-                  <span className="font-bold text-amber-900">
-                    {availableUploadedSyllabuses.length} Syllabuses Ready
-                  </span>
-                  {upcomingPlaceholderSyllabuses.length > 0 && (
+          {/* Unified Library Switcher + Filters (Hidden on Syllabus Detail Page) */}
+          {!selectedSyllabusDetail && (
+            <section className="py-3 bg-white border-b border-slate-200">
+              <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-2.5">
+                {/* Row 1: Unified Library Switcher + Search Input */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+                  <div className="inline-flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 shrink-0">
                     <button
                       type="button"
-                      onClick={() => setShowUpcomingSyllabuses((prev) => !prev)}
-                      className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] cursor-pointer"
+                      onClick={() => {
+                        setSelectedSyllabusDetail(null);
+                        setActivePage('papers');
+                      }}
+                      className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-bold text-xs text-slate-700 hover:text-slate-900 hover:bg-white/70 flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
                     >
-                      {showUpcomingSyllabuses ? 'Hide Request List' : `+ Request Syllabus (${upcomingPlaceholderSyllabuses.length})`}
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>Past Papers</span>
                     </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 space-y-4">
-
-            {availableUploadedSyllabuses.length === 0 && !showUpcomingSyllabuses ? (
-              <div className="py-10 text-center bg-white rounded-3xl border border-slate-200 p-6 space-y-3">
-                <h3 className="text-base font-bold text-slate-900">
-                  Official TIE Competence-Based Syllabuses
-                </h3>
-                <p className="text-xs text-slate-500 max-w-md mx-auto">
-                  You can view all interactive syllabus topics inside <strong>Moha AI Tutor</strong> or click below to browse upcoming syllabus placeholders.
-                </p>
-                <div className="flex flex-wrap items-center justify-center gap-2">
-                  {upcomingPlaceholderSyllabuses.length > 0 && (
                     <button
                       type="button"
-                      onClick={() => setShowUpcomingSyllabuses(true)}
-                      className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl cursor-pointer"
+                      onClick={() => openBooksPage()}
+                      className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-bold text-xs text-slate-700 hover:text-slate-900 hover:bg-white/70 flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
                     >
-                      ⏳ View All {upcomingPlaceholderSyllabuses.length} Curriculum Syllabus Subjects
+                      <span>📘 Books ({availableUploadedBooks.length})</span>
                     </button>
-                  )}
-                  <a
-                    href={getRequestPaperWhatsAppUrl('Secondary', syllabusSearchQuery || 'TIE Syllabus', 'TIE Syllabus PDF')}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-4 py-2 bg-slate-900 text-white font-bold text-xs rounded-xl"
-                  >
-                    📩 Request Syllabus PDF on WhatsApp
-                  </a>
+                    <button
+                      type="button"
+                      onClick={() => openSyllabusPage()}
+                      className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-bold text-xs bg-amber-500 text-slate-950 shadow-2xs flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
+                    >
+                      <span>📜 Syllabus ({availableUploadedSyllabuses.length})</span>
+                    </button>
+                  </div>
+
+                  <div className="relative flex-1 max-w-md">
+                    <input
+                      type="text"
+                      value={syllabusSearchQuery}
+                      onChange={(e) => setSyllabusSearchQuery(e.target.value)}
+                      placeholder="Search syllabus subject..."
+                      className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-300 focus:border-amber-500 focus:outline-none text-xs sm:text-sm font-medium bg-slate-50"
+                    />
+                    <Search className="w-4 h-4 text-slate-400 absolute left-2.5 top-2" />
+                  </div>
                 </div>
+
+                {/* Row 2: Compact Level Filter + Count */}
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                  <div className="inline-flex items-center p-0.5 rounded-lg bg-slate-100 border border-slate-200">
+                    {(['ALL', 'Secondary', 'Primary', 'Advanced'] as const).map((lvl) => (
+                      <button
+                        key={lvl}
+                        onClick={() => setSyllabusPageLevel(lvl)}
+                        className={`px-2.5 py-1 rounded-md font-bold text-xs whitespace-nowrap shrink-0 cursor-pointer ${
+                          syllabusPageLevel === lvl
+                            ? 'bg-amber-500 text-slate-950'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        {lvl === 'ALL' ? 'All Levels' : lvl === 'Primary' ? 'Primary' : lvl === 'Secondary' ? 'O-Level' : 'A-Level'}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-2 text-xs tabular-nums">
+                    <span className="font-bold text-amber-900">
+                      {availableUploadedSyllabuses.length} Syllabuses Ready
+                    </span>
+                    {upcomingPlaceholderSyllabuses.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setShowUpcomingSyllabuses((prev) => !prev)}
+                        className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] cursor-pointer"
+                      >
+                        {showUpcomingSyllabuses ? 'Hide Request List' : `+ Request Syllabus (${upcomingPlaceholderSyllabuses.length})`}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 space-y-4">
+            {selectedSyllabusDetail ? (
+              /* ==================== SYLLABUS DETAIL PAGE (READ, DOWNLOAD & SHARE + RECOMMENDED) ==================== */
+              <div className="space-y-5">
+                <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                  {/* Top Detail Navigation Bar */}
+                  <div className="px-4 py-3 bg-slate-900 text-white flex items-center justify-between gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedSyllabusDetail(null)}
+                      className="p-1.5 px-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center gap-1.5 text-xs font-bold cursor-pointer shrink-0"
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                      <span>Back</span>
+                    </button>
+                    <div className="text-xs sm:text-sm font-bold text-white truncate flex-1 text-center">
+                      {selectedSyllabusDetail.title}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => shareLibraryDocument(selectedSyllabusDetail)}
+                      className="p-1.5 px-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold cursor-pointer shrink-0"
+                      title="Share Syllabus"
+                    >
+                      📲 Share
+                    </button>
+                  </div>
+
+                  {/* Hero "OFFICIAL TIE SYLLABUS" Poster Banner */}
+                  <div className="bg-white p-6 sm:p-8 text-center border-b border-slate-200 flex flex-col items-center justify-center">
+                    <div className="text-3xl sm:text-4xl font-black tracking-tight text-amber-600 leading-none uppercase">
+                      OFFICIAL TIE
+                    </div>
+                    <div className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 leading-none uppercase mt-1">
+                      SYLLABUS
+                    </div>
+                    <div className="mt-3 px-6 py-2.5 sm:py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-black text-2xl sm:text-4xl uppercase tracking-tight shadow-sm w-full max-w-md">
+                      {selectedSyllabusDetail.form}
+                    </div>
+                    <div className="mt-2.5 text-xs sm:text-sm font-extrabold text-amber-800">
+                      Competence-Based Curriculum · {selectedSyllabusDetail.subject}
+                    </div>
+                  </div>
+
+                  {/* Syllabus Information & Action Options (Read, Download, Share) */}
+                  <div className="p-5 sm:p-6 space-y-4">
+                    <div className="space-y-1.5">
+                      <h2 className="text-lg sm:text-xl font-black text-slate-900 leading-snug flex items-center gap-2">
+                        <span>{getSubjectIcon(selectedSyllabusDetail.subject)}</span>
+                        <span>{selectedSyllabusDetail.title}</span>
+                      </h2>
+                      <div className="text-xs font-semibold text-slate-500 flex flex-wrap items-center gap-2">
+                        <span>📅 {selectedSyllabusDetail.year}</span>
+                        <span>•</span>
+                        <span className="text-amber-800 font-bold">{selectedSyllabusDetail.category}</span>
+                        <span>•</span>
+                        <span>{selectedSyllabusDetail.subject}</span>
+                        <span>•</span>
+                        <span>{selectedSyllabusDetail.form}</span>
+                      </div>
+                    </div>
+
+                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                      Read online in full screen, download PDF to your device, or share <strong>{selectedSyllabusDetail.title}</strong> with teachers and students for free.
+                    </p>
+
+                    <div className="border-l-4 border-amber-500 bg-slate-50 rounded-r-2xl p-4 sm:p-5 space-y-3">
+                      <div className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
+                        Choose an option for this syllabus:
+                      </div>
+
+                      {selectedSyllabusDetail.paperUrl ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <button
+                            type="button"
+                            onClick={() => openViewer(selectedSyllabusDetail.id, 'paper')}
+                            className="w-full px-4 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs sm:text-sm uppercase tracking-wide flex items-center justify-between gap-2 shadow-sm cursor-pointer transition-all"
+                          >
+                            <span className="flex items-center gap-2">
+                              <BookOpen className="w-4 h-4 shrink-0" />
+                              <span>Read Syllabus (PDF)</span>
+                            </span>
+                            <ChevronRight className="w-4 h-4 shrink-0" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              triggerDirectDownloadUrl(
+                                selectedSyllabusDetail.paperUrl,
+                                `${selectedSyllabusDetail.title}.pdf`
+                              )
+                            }
+                            className="w-full px-4 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xs sm:text-sm uppercase tracking-wide flex items-center justify-between gap-2 shadow-sm cursor-pointer transition-all"
+                          >
+                            <span className="flex items-center gap-2">
+                              <Download className="w-4 h-4 shrink-0" />
+                              <span>Download PDF</span>
+                            </span>
+                            <ChevronRight className="w-4 h-4 shrink-0" />
+                          </button>
+                        </div>
+                      ) : (
+                        <a
+                          href={getRequestPaperWhatsAppUrl(
+                            selectedSyllabusDetail.form,
+                            selectedSyllabusDetail.subject,
+                            selectedSyllabusDetail.title
+                          )}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full px-4 py-3.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs sm:text-sm uppercase tracking-wide flex items-center justify-center gap-2 shadow-sm transition-all"
+                        >
+                          <span>📩 Request Syllabus PDF on WhatsApp</span>
+                        </a>
+                      )}
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => shareLibraryDocument(selectedSyllabusDetail)}
+                          className="w-full px-4 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                        >
+                          <span>📲 Share Link</span>
+                        </button>
+                        <a
+                          href={getDocWhatsAppShareUrl(selectedSyllabusDetail)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full px-4 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#1ebe5d] text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors"
+                        >
+                          <span>💬 Share on WhatsApp</span>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* RECOMMENDED SYLLABUSES LIST */}
+                {(() => {
+                  const recommendedSyllabuses = availableUploadedSyllabuses
+                    .filter((s) => s.id !== selectedSyllabusDetail.id)
+                    .slice(0, 6);
+
+                  if (recommendedSyllabuses.length === 0) return null;
+
+                  return (
+                    <div className="space-y-3">
+                      <div className="text-xs font-black uppercase tracking-wider text-slate-500 px-1">
+                        RECOMMENDED SYLLABUSES
+                      </div>
+                      <div className="bg-white rounded-2xl border border-slate-200 divide-y divide-slate-100 overflow-hidden shadow-xs">
+                        {recommendedSyllabuses.map((rec) => (
+                          <button
+                            key={rec.id}
+                            type="button"
+                            onClick={() => openSyllabusDetailView(rec)}
+                            className="w-full p-3.5 sm:p-4 hover:bg-amber-50/60 transition-colors flex items-center justify-between gap-3.5 text-left cursor-pointer group"
+                          >
+                            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-white border border-slate-200 shadow-2xs shrink-0 flex flex-col items-center justify-center p-1 text-center">
+                              <span className="text-[7px] sm:text-[8px] font-black leading-none text-amber-700 uppercase">
+                                TIE
+                              </span>
+                              <span className="text-[7px] sm:text-[8px] font-black leading-none text-slate-900 uppercase mt-0.5">
+                                SYLLABUS
+                              </span>
+                              <span className="w-full py-0.5 px-1 my-0.5 rounded bg-gradient-to-r from-amber-500 to-orange-600 text-white font-black text-[8px] sm:text-[9px] uppercase tracking-tight truncate">
+                                {rec.form}
+                              </span>
+                              <span className="text-[5px] sm:text-[6px] font-bold text-slate-400 truncate w-full">
+                                Official PDF
+                              </span>
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-amber-800 line-clamp-2 leading-snug">
+                                {getSubjectIcon(rec.subject)} {rec.title}
+                              </h4>
+                              <div className="text-[11px] font-medium text-slate-500 mt-1">
+                                {rec.form} · {rec.subject} · {rec.year}
+                              </div>
+                            </div>
+
+                            <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-amber-600 shrink-0" />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {(showUpcomingSyllabuses ? dedicatedSyllabuses : availableUploadedSyllabuses).map((p) => {
-                  const hasUrl = Boolean(p.paperUrl);
-                  return (
-                    <article
-                      key={p.id}
-                      className="bg-white p-5 rounded-2xl border border-amber-200 hover:border-amber-500 shadow-sm flex flex-col justify-between gap-4"
-                    >
-                      <div>
-                        <div className="flex items-center justify-between gap-2 text-xs text-slate-500 mb-1.5 tabular-nums">
-                          <div>
-                            <span className="font-bold text-amber-800">{p.category}</span>
-                            <span aria-hidden="true"> · </span>
-                            <span>{p.form}</span>
-                            <span aria-hidden="true"> · </span>
-                            <span>{p.year}</span>
+              /* ==================== CLEAN SYLLABUS LIST ONLY (CLICK TO OPEN DETAIL PAGE) ==================== */
+              <>
+                {availableUploadedSyllabuses.length === 0 && !showUpcomingSyllabuses ? (
+                  <div className="py-10 text-center bg-white rounded-3xl border border-slate-200 p-6 space-y-3">
+                    <h3 className="text-base font-bold text-slate-900">
+                      Official TIE Competence-Based Syllabuses
+                    </h3>
+                    <p className="text-xs text-slate-500 max-w-md mx-auto">
+                      No uploaded syllabuses match your filter. Try switching to &ldquo;All Levels&rdquo; or request a syllabus PDF below.
+                    </p>
+                    <div className="flex flex-wrap items-center justify-center gap-2">
+                      {upcomingPlaceholderSyllabuses.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setShowUpcomingSyllabuses(true)}
+                          className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl cursor-pointer"
+                        >
+                          ⏳ View All {upcomingPlaceholderSyllabuses.length} Curriculum Syllabus Subjects
+                        </button>
+                      )}
+                      <a
+                        href={getRequestPaperWhatsAppUrl('Secondary', syllabusSearchQuery || 'TIE Syllabus', 'TIE Syllabus PDF')}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-4 py-2 bg-slate-900 text-white font-bold text-xs rounded-xl"
+                      >
+                        📩 Request Syllabus PDF on WhatsApp
+                      </a>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {(showUpcomingSyllabuses ? dedicatedSyllabuses : availableUploadedSyllabuses).map((p) => {
+                      const hasUrl = Boolean(p.paperUrl);
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => openSyllabusDetailView(p)}
+                          className="w-full bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 hover:border-amber-500 shadow-xs transition-all flex items-center justify-between gap-3.5 text-left cursor-pointer group"
+                        >
+                          {/* Square "TIE SYLLABUS" Badge Thumbnail */}
+                          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-white border border-slate-200 shadow-2xs shrink-0 flex flex-col items-center justify-center p-1.5 text-center">
+                            <span className="text-[8px] sm:text-[9px] font-black leading-none text-amber-700 uppercase tracking-tight">
+                              OFFICIAL
+                            </span>
+                            <span className="text-[8px] sm:text-[9px] font-black leading-none text-slate-900 uppercase tracking-tight mt-0.5">
+                              SYLLABUS
+                            </span>
+                            <span className="w-full py-0.5 px-1 my-1 rounded bg-gradient-to-r from-amber-500 to-orange-600 text-white font-black text-[9px] sm:text-[10px] uppercase tracking-tight truncate">
+                              {p.form}
+                            </span>
+                            <span className="text-[6px] sm:text-[7px] font-bold text-slate-400 leading-none truncate w-full">
+                              TIE Curriculum
+                            </span>
                           </div>
-                          <span
-                            className={`px-2 py-0.5 rounded-md font-bold text-[10px] ${
-                              hasUrl
-                                ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                                : 'bg-amber-50 text-amber-800 border border-amber-200'
-                            }`}
-                          >
-                            {hasUrl ? 'PDF Ready ✓' : 'Coming Soon'}
-                          </span>
-                        </div>
-                        <h3 className="text-base font-bold text-slate-900">{p.title}</h3>
-                        <p className="text-xs font-medium text-slate-500 mt-1">
-                          Subject: <span className="text-slate-800 font-semibold">{p.subject}</span>
-                        </p>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-slate-100">
-                        {hasUrl ? (
-                          <>
-                            <button
-                              onClick={() => openViewer(p.id, 'paper')}
-                              className="flex-1 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
-                            >
-                              <BookOpen className="w-3.5 h-3.5" />
-                              <span>Read</span>
-                            </button>
-                            <button
-                              onClick={() => triggerDirectDownloadUrl(p.paperUrl, `${p.title}.pdf`)}
-                              className="flex-1 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm whitespace-nowrap cursor-pointer"
-                            >
-                              <Download className="w-3.5 h-3.5" />
-                              <span>Download</span>
-                            </button>
-                          </>
-                        ) : (
-                          <a
-                            href={getRequestPaperWhatsAppUrl(p.form, p.subject, p.title)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex-1 px-3.5 py-2 bg-amber-50 hover:bg-amber-100 text-amber-950 border border-amber-300 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 whitespace-nowrap"
-                          >
-                            <span>📩 Request Syllabus on WhatsApp</span>
-                          </a>
-                        )}
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
+
+                          {/* Syllabus Title & Metadata Only */}
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-sm sm:text-base font-bold text-slate-900 group-hover:text-amber-800 line-clamp-2 leading-snug">
+                              {getSubjectIcon(p.subject)} {p.title}
+                            </h3>
+                            <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500 mt-1 tabular-nums">
+                              <span className="font-bold text-amber-800">{p.category}</span>
+                              <span aria-hidden="true">·</span>
+                              <span className="font-semibold text-slate-700">{p.form}</span>
+                              <span aria-hidden="true">·</span>
+                              <span>{p.year}</span>
+                              <span aria-hidden="true">·</span>
+                              <span>{p.subject}</span>
+                              <span
+                                className={`px-1.5 py-0.5 rounded font-bold text-[10px] ${
+                                  hasUrl
+                                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                                    : 'bg-amber-50 text-amber-800 border border-amber-200'
+                                }`}
+                              >
+                                {hasUrl ? 'PDF Ready ✓' : 'Coming Soon'}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="shrink-0 p-2 rounded-xl bg-slate-50 group-hover:bg-amber-50 text-slate-400 group-hover:text-amber-700 transition-colors">
+                            <ChevronRight className="w-5 h-5" />
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
             )}
           </div>
         </motion.div>
@@ -6212,7 +6733,7 @@ export default function App() {
       {/* PERSISTENT 4-TAB MOBILE BOTTOM NAVIGATION BAR (ALWAYS VISIBLE IN LIBRARY, QUIZ, MOHA AI & GAME) */}
       <nav
         aria-label="Mobile Primary Navigation"
-        className="fixed bottom-0 inset-x-0 z-[70] h-14 bg-[var(--bg-surface-glass)] backdrop-blur-md border-t border-[var(--border-subtle)] px-2 py-1.5 flex items-center justify-around gap-1.5 lg:hidden shadow-lg"
+        className="fixed bottom-0 inset-x-0 z-[70] h-14 bg-[var(--bg-surface-glass)] backdrop-blur-md border-t border-[var(--border-subtle)] px-2 py-1.5 flex items-center justify-around gap-1.5 lg:hidden shadow-lg print:hidden"
       >
         <button
           type="button"
@@ -6401,10 +6922,10 @@ export default function App() {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15 }}
-          className="fixed inset-x-0 top-0 bottom-14 lg:bottom-0 z-40 w-full max-w-full h-[calc(100dvh-3.5rem)] lg:h-[100dvh] bg-slate-50 flex flex-col overflow-hidden"
+          className="tie-print-unlock fixed inset-x-0 top-0 bottom-14 lg:bottom-0 z-40 w-full max-w-full h-[calc(100dvh-3.5rem)] lg:h-[100dvh] bg-slate-50 flex flex-col overflow-hidden"
         >
           {/* Unified Navigation & Context Bar (Responsive Mobile-First Layout) */}
-          <div className="shrink-0 bg-white border-b border-slate-200 px-2.5 sm:px-4 py-1.5 shadow-2xs">
+          <div className="shrink-0 bg-white border-b border-slate-200 px-2.5 sm:px-4 py-1.5 shadow-2xs print:hidden">
             <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-1.5">
               {/* Row 1 on Mobile / Left on Desktop: Back + Brand + Class/Subject + Book/Chapter Selectors */}
               <div className="flex items-center justify-between md:justify-start gap-1.5 overflow-x-auto no-scrollbar">
@@ -6723,9 +7244,9 @@ export default function App() {
 
           {/* ==================== VIEW 3: TEACHER STUDIO (LESSON PLAN & SCHEME OF WORK ONLY) ==================== */}
           {mohaViewMode === 'studio' && (
-            <div className="flex-1 min-h-0 flex flex-col overflow-hidden bg-slate-100">
+            <div className="tie-print-unlock flex-1 min-h-0 flex flex-col overflow-hidden bg-slate-100">
               {/* Top Studio Bar: Only Lesson Plan & Scheme of Work + PDF Export */}
-              <div className="shrink-0 bg-white border-b border-slate-200 px-2.5 sm:px-4 py-2">
+              <div className="shrink-0 bg-white border-b border-slate-200 px-2.5 sm:px-4 py-2 print:hidden">
                 <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2 text-xs">
                   {/* Left: Document Type Selector (Only Lesson Plan & Scheme of Work) */}
                   <div className="flex items-center gap-1.5">
@@ -6738,7 +7259,7 @@ export default function App() {
                       },
                       {
                         id: 'schemeofwork' as const,
-                        label: '📅 Scheme of Work',
+                        label: '📅 Scheme of Work (2027)',
                         activeClass: 'bg-emerald-700 text-white shadow-2xs',
                         inactiveClass: 'bg-slate-100 text-slate-700 hover:bg-slate-200',
                       },
@@ -6763,58 +7284,66 @@ export default function App() {
                     })}
                   </div>
 
-                  {/* Right: Edit Details toggle + Direct PDF Export Actions */}
-                  <div className="flex items-center gap-1.5">
-                    {studioPreviewHtml && (
-                      <button
-                        type="button"
-                        onClick={() => setTeacherStudioOpen((v) => !v)}
-                        className={`px-2.5 py-1.5 rounded-xl font-bold text-[11px] border cursor-pointer whitespace-nowrap ${
-                          teacherStudioOpen
-                            ? 'bg-violet-600 text-white border-violet-600'
-                            : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300'
-                        }`}
-                      >
-                        {teacherStudioOpen ? '✕ Hide Form' : '✏️ Edit Details'}
-                      </button>
-                    )}
+                  {/* Right: Edit Details toggle + Direct PDF Export Actions (Lesson Plan mode) */}
+                  {selectedStudioDocType === 'lessonplan' && (
+                    <div className="flex items-center gap-1.5">
+                      {studioPreviewHtml && (
+                        <button
+                          type="button"
+                          onClick={() => setTeacherStudioOpen((v) => !v)}
+                          className={`px-2.5 py-1.5 rounded-xl font-bold text-[11px] border cursor-pointer whitespace-nowrap ${
+                            teacherStudioOpen
+                              ? 'bg-violet-600 text-white border-violet-600'
+                              : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300'
+                          }`}
+                        >
+                          {teacherStudioOpen ? '✕ Hide Form' : '✏️ Edit Details'}
+                        </button>
+                      )}
 
-                    {studioPreviewHtml && (
-                      <>
-                        <button
-                          onClick={() => downloadMwalimuDocPdf('studio-preview', 'portrait')}
-                          className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] flex items-center gap-1 cursor-pointer whitespace-nowrap"
-                          title="Download Portrait PDF"
-                        >
-                          <Download className="w-3 h-3" /> Portrait PDF
-                        </button>
-                        <button
-                          onClick={() => downloadMwalimuDocPdf('studio-preview', 'landscape')}
-                          className="px-2.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] flex items-center gap-1 cursor-pointer whitespace-nowrap"
-                          title="Download Landscape PDF"
-                        >
-                          <Download className="w-3 h-3" /> Landscape PDF
-                        </button>
-                      </>
-                    )}
-                  </div>
+                      {studioPreviewHtml && (
+                        <>
+                          <button
+                            onClick={() => downloadMwalimuDocPdf('studio-preview', 'portrait')}
+                            className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                            title="Download Portrait PDF"
+                          >
+                            <Download className="w-3 h-3" /> Portrait PDF
+                          </button>
+                          <button
+                            onClick={() => downloadMwalimuDocPdf('studio-preview', 'landscape')}
+                            className="px-2.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                            title="Download Landscape PDF"
+                          >
+                            <Download className="w-3 h-3" /> Landscape PDF
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Scrollable Main Area: Teacher Data Entry Form + Generated Document Preview */}
-              <div className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-6 py-4 space-y-4">
+              {/* Scrollable Main Area: Self-Contained 2027 TIE Scheme Generator OR Lesson Plan Studio */}
+              <div className="tie-print-unlock flex-1 min-h-0 overflow-y-auto px-3 sm:px-6 py-4 space-y-4">
+                {selectedStudioDocType === 'schemeofwork' ? (
+                  <TieSchemeOfWorkGenerator
+                    initialClass={mohaActiveClass}
+                    initialSubject={mohaActiveSubject}
+                    initialSchool={tsSchool || userProfile.school}
+                    initialTeacher={tsTeacher || userProfile.name}
+                  />
+                ) : (
+                <>
                 {(teacherStudioOpen || !studioPreviewHtml) && (
                   <div className="max-w-3xl mx-auto bg-white rounded-2xl border border-slate-200 shadow-xs p-4 sm:p-6 space-y-4">
                     <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
                       <div>
                         <h3 className="text-sm sm:text-base font-black text-slate-900">
-                          {selectedStudioDocType === 'lessonplan'
-                            ? '📋 Lesson Plan Details'
-                            : '📅 Scheme of Work Details'}
+                          📋 Lesson Plan Details
                         </h3>
                         <p className="text-xs text-slate-500">
-                          Fill in the teacher, topic, and student attendance details below to generate your{' '}
-                          {selectedStudioDocType === 'lessonplan' ? 'Lesson Plan' : 'Scheme of Work'} for{' '}
+                          Fill in the teacher, topic, and student attendance details below to generate your Lesson Plan for{' '}
                           <span className="font-bold text-slate-800">
                             {mohaActiveClass} • {mohaActiveSubject}
                           </span>
@@ -6822,27 +7351,15 @@ export default function App() {
                         </p>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedStudioDocType('lessonplan')}
-                          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer ${
-                            selectedStudioDocType === 'lessonplan'
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-slate-100 text-slate-700'
-                          }`}
-                        >
+                        <span className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-blue-600 text-white">
                           Lesson Plan
-                        </button>
+                        </span>
                         <button
                           type="button"
                           onClick={() => setSelectedStudioDocType('schemeofwork')}
-                          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer ${
-                            selectedStudioDocType === 'schemeofwork'
-                              ? 'bg-emerald-700 text-white'
-                              : 'bg-slate-100 text-slate-700'
-                          }`}
+                          className="px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-700"
                         >
-                          Scheme of Work
+                          Switch to Scheme of Work (2027)
                         </button>
                       </div>
                     </div>
@@ -7038,6 +7555,8 @@ export default function App() {
                       }}
                     />
                   </div>
+                )}
+                </>
                 )}
               </div>
             </div>
