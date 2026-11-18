@@ -137,7 +137,89 @@
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
       [data-aistudio-badge], #aistudio-badge, .aistudio-logo { display: none !important; }
+      /* Critical inline fallback styles so images and SVG icons never blow up to full screen if an old PWA cache delays or drops external CSS */
+      html, body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+      img, svg {
+        max-width: 100%;
+        height: auto;
+      }
+      nav img, header img {
+        max-width: 36px;
+        max-height: 36px;
+      }
+      button svg, a svg {
+        max-width: 24px;
+        max-height: 24px;
+      }
     </style>
+    <script>
+      // Self-healing CSS & Service Worker cache recovery for installed mobile PWAs
+      (function () {
+        var CACHE_GUARD_KEY = 'elimika_sw_css_guard_v4_2027';
+        function purgeStaleCachesAndReload() {
+          try {
+            if (sessionStorage.getItem('elimika_css_recovering') === '1') return;
+            sessionStorage.setItem('elimika_css_recovering', '1');
+          } catch (e) {}
+          Promise.all([
+            'caches' in window
+              ? caches.keys().then(function (names) {
+                  return Promise.all(names.map(function (n) { return caches.delete(n); }));
+                })
+              : Promise.resolve(),
+            'serviceWorker' in navigator
+              ? navigator.serviceWorker.getRegistrations().then(function (regs) {
+                  return Promise.all(regs.map(function (r) { return r.unregister(); }));
+                })
+              : Promise.resolve()
+          ]).finally(function () {
+            try { localStorage.setItem(CACHE_GUARD_KEY, '1'); } catch (e) {}
+            window.location.replace(window.location.pathname + '?v=' + Date.now());
+          });
+        }
+
+        try {
+          if (!localStorage.getItem(CACHE_GUARD_KEY)) {
+            localStorage.setItem(CACHE_GUARD_KEY, '1');
+            if ('caches' in window) {
+              caches.keys().then(function (names) {
+                names.forEach(function (name) {
+                  if (name.indexOf('v3') === -1) {
+                    caches.delete(name);
+                  }
+                });
+              });
+            }
+            if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.getRegistrations().then(function (regs) {
+                regs.forEach(function (r) { r.update(); });
+              });
+            }
+          }
+        } catch (e) {}
+
+        window.addEventListener('load', function () {
+          setTimeout(function () {
+            try {
+              var probe = document.createElement('div');
+              probe.className = 'hidden';
+              document.body.appendChild(probe);
+              var isTailwindLoaded = window.getComputedStyle(probe).display === 'none';
+              document.body.removeChild(probe);
+              if (!isTailwindLoaded) {
+                purgeStaleCachesAndReload();
+              } else {
+                sessionStorage.removeItem('elimika_css_recovering');
+              }
+            } catch (e) {}
+          }, 900);
+        });
+      })();
+    </script>
   </head>
   <body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col selection:bg-[#7047A3] selection:text-white">
     <div id="root">

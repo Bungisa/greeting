@@ -2928,9 +2928,66 @@ async function startServer() {
     (process.env.NODE_ENV === 'production' || process.env.npm_lifecycle_event === 'start') &&
     fs.existsSync(distIndexPath);
 
+  app.use((req, res, next) => {
+    if (
+      req.path === '/' ||
+      req.path === '/index.html' ||
+      req.path === '/sw.js' ||
+      req.path === '/manifest.json' ||
+      req.path === '/manifest.webmanifest' ||
+      /^\/workbox-.*\.js$/i.test(req.path)
+    ) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+    }
+    next();
+  });
+
   app.use(express.static(path.join(__dirname, 'public')));
 
+  // Fallback handler when a stale cached index.html on a mobile PWA requests an older hashed /assets/*.css file
+  const serveFallbackAssetIfNeeded = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (req.method !== 'GET') return next();
+    if (/^\/assets\/.*\.css$/i.test(req.path)) {
+      const requestedPath = path.join(distPath, req.path);
+      if (fs.existsSync(requestedPath)) {
+        res.setHeader('Content-Type', 'text/css; charset=utf-8');
+        return res.sendFile(requestedPath);
+      }
+      const assetsDir = path.join(distPath, 'assets');
+      if (fs.existsSync(assetsDir)) {
+        const cssFiles = fs
+          .readdirSync(assetsDir)
+          .filter((f) => f.endsWith('.css'))
+          .sort((a, b) => {
+            const statA = fs.statSync(path.join(assetsDir, a)).mtimeMs;
+            const statB = fs.statSync(path.join(assetsDir, b)).mtimeMs;
+            return statB - statA;
+          });
+        if (cssFiles.length > 0) {
+          res.setHeader('Content-Type', 'text/css; charset=utf-8');
+          res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+          return res.sendFile(path.join(assetsDir, cssFiles[0]));
+        }
+      }
+      // If running in dev mode without dist/assets, redirect CSS request to Vite's /src/index.css
+      const srcCssPath = path.join(__dirname, 'src', 'index.css');
+      if (!isProduction && fs.existsSync(srcCssPath)) {
+        return res.redirect(302, '/src/index.css');
+      }
+      return res.status(404).type('text/css').send('/* Stylesheet not found */');
+    }
+    return next();
+  };
+
   if (!isProduction) {
+    // Also serve dist/assets if present in dev so cached PWA clients requesting /assets/index-*.css still get valid CSS
+    if (fs.existsSync(path.join(distPath, 'assets'))) {
+      app.use('/assets', express.static(path.join(distPath, 'assets'), { fallthrough: true }));
+    }
+    app.use(serveFallbackAssetIfNeeded);
+
     const vitePromise = import('vite').then(({ createServer: createViteServer }) =>
       createViteServer({
         server: { middlewareMode: true, hmr: false },
@@ -2947,7 +3004,13 @@ async function startServer() {
     });
   } else {
     app.use(express.static(distPath));
-    app.get('*', (_req, res, next) => {
+    app.use(serveFallbackAssetIfNeeded);
+    app.get('*', (req, res, next) => {
+      // Never serve text/html index.html for missing static assets (.css, .js, .png, etc.)
+      if (/^\/assets\//i.test(req.path) || /\.(?:css|js|mjs|map|png|jpg|jpeg|gif|svg|ico|webp|woff2?|ttf)$/i.test(req.path)) {
+        return res.status(404).end();
+      }
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       if (fs.existsSync(distIndexPath)) {
         return res.sendFile(distIndexPath, (err) => {
           if (err) next();

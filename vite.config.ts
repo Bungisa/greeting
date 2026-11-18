@@ -48,18 +48,34 @@ export default defineConfig(() => {
           skipWaiting: true,
           clientsClaim: true,
           cleanupOutdatedCaches: true,
-          maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
-          globPatterns: ['index.html', 'icon.svg', 'pwa-192x192.png', 'assets/*.css'],
-          navigateFallbackDenylist: [/^\/api\//],
+          maximumFileSizeToCacheInBytes: 15 * 1024 * 1024,
+          globPatterns: ['icon.svg', 'pwa-192x192.png', 'assets/*.css'],
+          globIgnores: ['**/node_modules/**/*', 'sw.js', 'workbox-*.js', 'papers/**/*', '**/*.pdf', 'assets/aistudio/**/*'],
+          navigateFallbackDenylist: [/^\/api\//, /^\/papers\//, /^\/assets\//, /\.(?:css|js|map|json|png|jpg|jpeg|svg|ico|woff2?)$/i],
           runtimeCaching: [
+            {
+              urlPattern: ({ request }) => request.mode === 'navigate',
+              handler: 'NetworkFirst',
+              options: {
+                cacheName: 'elimika-html-shell-v3',
+                networkTimeoutSeconds: 4,
+                expiration: {
+                  maxEntries: 5,
+                  maxAgeSeconds: 60 * 60 * 24 * 7,
+                },
+              },
+            },
             {
               urlPattern: /\/assets\/.*\.(?:js|css)$/i,
               handler: 'StaleWhileRevalidate',
               options: {
-                cacheName: 'elimika-app-bundles',
+                cacheName: 'elimika-app-bundles-v3',
                 expiration: {
-                  maxEntries: 15,
+                  maxEntries: 30,
                   maxAgeSeconds: 60 * 60 * 24 * 30,
+                },
+                cacheableResponse: {
+                  statuses: [0, 200],
                 },
               },
             },

@@ -5,10 +5,14 @@ import './index.css';
 if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     try {
-      const slimKey = 'elimika_cache_slimmed_v2';
+      const slimKey = 'elimika_cache_slimmed_v4_2027';
       if (!localStorage.getItem(slimKey) && 'caches' in window) {
         caches.keys().then((keys) => {
-          keys.forEach((k) => caches.delete(k));
+          keys.forEach((k) => {
+            if (!k.includes('v3')) {
+              caches.delete(k);
+            }
+          });
         }).catch(() => {});
         localStorage.setItem(slimKey, '1');
       }
