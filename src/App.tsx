@@ -53,6 +53,21 @@ import {
   TIE_CURRICULUM_SUBJECTS,
   UserProfileData,
 } from './data/curriculumData';
+import {
+  AdMobConfig,
+  buildAndroidManifestMetaTag,
+  buildAppAdsTxtContent,
+  detectAdMobRuntime,
+  initAdMobBridge,
+  isValidAdMobAppId,
+  isValidAdMobPublisherId,
+  isValidAdMobUnitId,
+  loadLocalAdMobConfig,
+  normalizePublisherId,
+  saveLocalAdMobConfig,
+  showAdMobBanner,
+  showAdMobInterstitial,
+} from './utils/admobBridge';
 import type { DiagramPreset } from './components/InteractiveDiagramLab';
 import { OfflineIndicator, PWAInstallButton } from './components/PWAInstallButton';
 import type { PlayGameRoute } from './components/ElimikaPlayHub';
@@ -958,6 +973,8 @@ export default function App() {
       return 'ca-pub-7814843623545511';
     }
   });
+  const [admobConfig, setAdmobConfig] = useState<AdMobConfig>(() => loadLocalAdMobConfig());
+  const [admobSaving, setAdmobSaving] = useState<boolean>(false);
   const [profileLogoTheme, setProfileLogoTheme] = useState<'blue_black' | 'blue_white' | 'black_blue'>('blue_black');
   const [whatsappConfig, setWhatsappConfig] = useState<{
     channelName: string;
@@ -1102,6 +1119,46 @@ export default function App() {
       document.head.appendChild(script);
     }
   }, [adsensePubId]);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      let resolved = loadLocalAdMobConfig();
+      try {
+        const res = await fetchElimikaApi('/api/admob/config', { cache: 'no-store' });
+        if (res.ok) {
+          const data = (await res.json()) as Partial<AdMobConfig>;
+          if (active && data && typeof data === 'object') {
+            resolved = {
+              enabled: typeof data.enabled === 'boolean' ? data.enabled : resolved.enabled,
+              testMode: typeof data.testMode === 'boolean' ? data.testMode : resolved.testMode,
+              publisherId:
+                typeof data.publisherId === 'string' && isValidAdMobPublisherId(data.publisherId)
+                  ? normalizePublisherId(data.publisherId)
+                  : resolved.publisherId,
+              androidAppId: typeof data.androidAppId === 'string' ? data.androidAppId : resolved.androidAppId,
+              bannerUnitId: typeof data.bannerUnitId === 'string' ? data.bannerUnitId : resolved.bannerUnitId,
+              interstitialUnitId:
+                typeof data.interstitialUnitId === 'string' ? data.interstitialUnitId : resolved.interstitialUnitId,
+              rewardedUnitId: typeof data.rewardedUnitId === 'string' ? data.rewardedUnitId : resolved.rewardedUnitId,
+            };
+            setAdmobConfig(resolved);
+            saveLocalAdMobConfig(resolved);
+          }
+        }
+      } catch {
+        // Fallback to local AdMob config when offline
+      }
+      if (!active) return;
+      const runtime = await initAdMobBridge(resolved);
+      if (runtime !== 'web' && resolved.enabled) {
+        await showAdMobBanner(resolved);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const downloadElimikaProfilePicPng = (theme: 'blue_black' | 'blue_white' | 'black_blue' = profileLogoTheme) => {
     const canvas = document.createElement('canvas');
@@ -4058,6 +4115,7 @@ export default function App() {
         // ignore
       }
       submitChallengeScore(correctCount, quizItems.length);
+      void showAdMobInterstitial(admobConfig);
     }
   }
 
@@ -8737,13 +8795,220 @@ export default function App() {
                 </div>
               )}
 
-              {/* TAB 4: GOOGLE ADSENSE MONETIZATION SETUP (Admin Only) */}
+              {/* TAB 4: GOOGLE ADSENSE & ADMOB MONETIZATION SETUP (Admin Only) */}
               {whatsappAdminUnlocked && whatsappTab === 'adsense' && (
                 <div className="space-y-4 text-xs">
+                  {/* GOOGLE ADMOB (ANDROID PLAY STORE APP) SETUP */}
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-indigo-950 via-slate-900 to-blue-950 text-white border border-indigo-500/40 space-y-3 shadow-md">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="font-black text-sm text-sky-300">
+                        📱 Google AdMob — Android Play Store Monetization
+                      </span>
+                      <span className="px-2.5 py-0.5 rounded-md bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 font-bold text-[10px]">
+                        /app-ads.txt Live · {detectAdMobRuntime() === 'web' ? 'Web / TWA Shell' : `Native ${detectAdMobRuntime()}`}
+                      </span>
+                    </div>
+
+                    <p className="text-[11px] text-slate-200 leading-relaxed">
+                      Your root verification file{' '}
+                      <a
+                        href="/app-ads.txt"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-sky-300 underline font-bold"
+                      >
+                        https://www.elimika.online/app-ads.txt
+                      </a>{' '}
+                      is live and your Privacy Policy includes the Google AdMob &amp; Android Advertising ID disclosure.
+                      Paste your AdMob App ID and Ad Unit IDs below to connect your Android build.
+                    </p>
+
+                    <div className="p-2.5 rounded-xl bg-white/10 border border-white/15 text-[11px] text-amber-200 leading-relaxed">
+                      <strong>Play Store Note:</strong> A browser TWA wrapper (<code>online.elimika.twa</code>) displays
+                      Google AdSense web ads inside Chrome. To serve native <strong>Google AdMob SDK</strong> ads, wrap
+                      Elimika with <strong>Capacitor</strong> (<code>@capacitor-community/admob</code>) or an Android
+                      WebView exposing <code>window.ElimikaAdMob</code> — this app&apos;s bridge auto-connects to both
+                      with a 3-minute student-friendly interstitial cooldown.
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-200 mb-1">
+                          AdMob Publisher ID (for /app-ads.txt)
+                        </label>
+                        <input
+                          type="text"
+                          value={admobConfig.publisherId}
+                          onChange={(e) => setAdmobConfig((prev) => ({ ...prev, publisherId: e.target.value }))}
+                          placeholder="pub-7814843623545511"
+                          className="w-full px-3 py-2 rounded-xl border border-white/20 bg-slate-950/70 text-white font-mono text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-200 mb-1">
+                          Android AdMob App ID (contains ~)
+                        </label>
+                        <input
+                          type="text"
+                          value={admobConfig.androidAppId}
+                          onChange={(e) => setAdmobConfig((prev) => ({ ...prev, androidAppId: e.target.value }))}
+                          placeholder="ca-app-pub-7814843623545511~XXXXXXXXXX"
+                          className="w-full px-3 py-2 rounded-xl border border-white/20 bg-slate-950/70 text-white font-mono text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-200 mb-1">
+                          Banner Ad Unit ID (contains /)
+                        </label>
+                        <input
+                          type="text"
+                          value={admobConfig.bannerUnitId}
+                          onChange={(e) => setAdmobConfig((prev) => ({ ...prev, bannerUnitId: e.target.value }))}
+                          placeholder="ca-app-pub-7814843623545511/XXXXXXXXXX"
+                          className="w-full px-3 py-2 rounded-xl border border-white/20 bg-slate-950/70 text-white font-mono text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-200 mb-1">
+                          Interstitial Ad Unit ID (Quiz Break)
+                        </label>
+                        <input
+                          type="text"
+                          value={admobConfig.interstitialUnitId}
+                          onChange={(e) => setAdmobConfig((prev) => ({ ...prev, interstitialUnitId: e.target.value }))}
+                          placeholder="ca-app-pub-7814843623545511/XXXXXXXXXX"
+                          className="w-full px-3 py-2 rounded-xl border border-white/20 bg-slate-950/70 text-white font-mono text-xs"
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="block text-[11px] font-bold text-slate-200 mb-1">
+                          Rewarded Ad Unit ID (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          value={admobConfig.rewardedUnitId}
+                          onChange={(e) => setAdmobConfig((prev) => ({ ...prev, rewardedUnitId: e.target.value }))}
+                          placeholder="ca-app-pub-7814843623545511/XXXXXXXXXX"
+                          className="w-full px-3 py-2 rounded-xl border border-white/20 bg-slate-950/70 text-white font-mono text-xs"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-4 pt-1 text-[11px] text-slate-200">
+                      <label className="inline-flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={admobConfig.enabled}
+                          onChange={(e) => setAdmobConfig((prev) => ({ ...prev, enabled: e.target.checked }))}
+                          className="rounded border-slate-400"
+                        />
+                        <span>Enable AdMob Native Bridge</span>
+                      </label>
+                      <label className="inline-flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={admobConfig.testMode}
+                          onChange={(e) => setAdmobConfig((prev) => ({ ...prev, testMode: e.target.checked }))}
+                          className="rounded border-slate-400"
+                        />
+                        <span>Google Test Ads Mode (keep ON until Play Store production)</span>
+                      </label>
+                    </div>
+
+                    <div className="p-2.5 rounded-xl bg-slate-950/70 border border-white/10 font-mono text-[11px] text-emerald-300 break-all">
+                      {buildAppAdsTxtContent(admobConfig.publisherId).trim()}
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        disabled={admobSaving}
+                        onClick={async () => {
+                          if (!isValidAdMobPublisherId(admobConfig.publisherId)) {
+                            showToast('⚠️ Invalid Publisher ID (expected pub-XXXXXXXXXXXXXXXX).');
+                            return;
+                          }
+                          if (!isValidAdMobAppId(admobConfig.androidAppId)) {
+                            showToast('⚠️ Invalid AdMob App ID (expected ca-app-pub-XXXXXXXXXXXXXXXX~YYYYYYYYYY).');
+                            return;
+                          }
+                          if (
+                            !isValidAdMobUnitId(admobConfig.bannerUnitId) ||
+                            !isValidAdMobUnitId(admobConfig.interstitialUnitId) ||
+                            !isValidAdMobUnitId(admobConfig.rewardedUnitId)
+                          ) {
+                            showToast('⚠️ Invalid Ad Unit ID (expected ca-app-pub-XXXXXXXXXXXXXXXX/YYYYYYYYYY).');
+                            return;
+                          }
+
+                          const normalized: AdMobConfig = {
+                            ...admobConfig,
+                            publisherId: normalizePublisherId(admobConfig.publisherId),
+                            androidAppId: admobConfig.androidAppId.trim(),
+                            bannerUnitId: admobConfig.bannerUnitId.trim(),
+                            interstitialUnitId: admobConfig.interstitialUnitId.trim(),
+                            rewardedUnitId: admobConfig.rewardedUnitId.trim(),
+                          };
+                          setAdmobConfig(normalized);
+                          saveLocalAdMobConfig(normalized);
+                          setAdmobSaving(true);
+                          try {
+                            const res = await fetchElimikaApi('/api/admob/config', {
+                              method: 'POST',
+                              credentials: 'include',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                ...(adminSessionToken ? { Authorization: `Bearer ${adminSessionToken}` } : {}),
+                              },
+                              body: JSON.stringify(normalized),
+                            });
+                            if (res.ok) {
+                              showToast('✅ AdMob IDs saved & /app-ads.txt updated on server!');
+                            } else {
+                              const errData = await res.json().catch(() => ({}));
+                              showToast(`⚠️ ${errData.error || 'Saved locally (admin session required for server update).'}`);
+                            }
+                          } catch {
+                            showToast('⚠️ Saved locally.');
+                          } finally {
+                            setAdmobSaving(false);
+                          }
+                        }}
+                        className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 text-white font-extrabold cursor-pointer"
+                      >
+                        {admobSaving ? '⏳ Saving...' : '💾 Save AdMob Config & Update /app-ads.txt'}
+                      </button>
+
+                      <a
+                        href="/app-ads.txt"
+                        download="app-ads.txt"
+                        className="px-3 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold inline-flex items-center gap-1"
+                      >
+                        <span>⬇️ Download app-ads.txt</span>
+                      </a>
+
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const snippet = buildAndroidManifestMetaTag(admobConfig.androidAppId, admobConfig.testMode);
+                          try {
+                            await navigator.clipboard.writeText(snippet);
+                            showToast('📋 AndroidManifest.xml AdMob meta-data copied!');
+                          } catch {
+                            showToast('⚠️ Could not copy automatically.');
+                          }
+                        }}
+                        className="px-3 py-2 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/40 text-sky-200 font-bold cursor-pointer"
+                      >
+                        📋 Copy AndroidManifest.xml Tag
+                      </button>
+                    </div>
+                  </div>
+
                   <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 space-y-2 text-slate-800">
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-black text-sm text-blue-950">
-                        💰 Connect Elimika Online to Google AdSense
+                        💰 Connect Elimika Online to Google AdSense (Web)
                       </span>
                       <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-bold text-[10px]">
                         Privacy Policy &amp; Terms Ready ✓
@@ -8751,7 +9016,9 @@ export default function App() {
                     </div>
                     <ol className="list-decimal pl-5 space-y-1.5 leading-relaxed text-slate-700">
                       <li>
-                        <strong>Step 1 — Get a Custom Domain:</strong> Google AdSense requires a top-level custom domain (such as <code>elimikaonline.co.tz</code> or <code>elimika.com</code>) rather than a temporary preview URL.
+                        <strong>Step 1 — Verified Domain:</strong> Your custom domain{' '}
+                        <code>https://www.elimika.online</code> serves both <code>/ads.txt</code> and{' '}
+                        <code>/app-ads.txt</code>.
                       </li>
                       <li>
                         <strong>Step 2 — Sign Up at Google AdSense:</strong> Go to{' '}
@@ -8763,13 +9030,16 @@ export default function App() {
                         >
                           google.com/adsense
                         </a>{' '}
-                        with your Gmail (<code>mohamedshabani751@gmail.com</code>) and add your website URL.
+                        with your support account (<code>elimikasupport@gmail.com</code>) and add your website URL.
                       </li>
                       <li>
-                        <strong>Step 3 — Copy Your Publisher ID:</strong> Google will give you a Publisher ID that looks like <code>ca-pub-1234567890123456</code>. Paste it below (or send it in chat so we hardcode it into <code>index.html</code> and <code>/public/ads.txt</code>).
+                        <strong>Step 3 — Copy Your Publisher ID:</strong> Google gives you a Publisher ID like{' '}
+                        <code>ca-pub-7814843623545511</code>. Paste it below to verify your site tag.
                       </li>
                       <li>
-                        <strong>Step 4 — Turn On Auto Ads:</strong> In your AdSense dashboard under <strong>Ads → Overview → By site</strong>, toggle <strong>Auto ads ON</strong> so Google automatically places clean educational banners without slowing down past papers or quizzes.
+                        <strong>Step 4 — Turn On Auto Ads:</strong> In your AdSense dashboard under{' '}
+                        <strong>Ads → Overview → By site</strong>, toggle <strong>Auto ads ON</strong> so Google
+                        automatically places clean educational banners without slowing down past papers or quizzes.
                       </li>
                     </ol>
                   </div>
@@ -8806,7 +9076,7 @@ export default function App() {
                       <div>
                         Your <code>https://elimika.online/ads.txt</code> content for Google verification:{' '}
                         <code className="bg-slate-200 px-1.5 py-0.5 rounded text-slate-900 font-bold">
-                          google.com, pub-7814843623545511, DIRECT, f08c47fec0942fa0
+                          google.com, {normalizePublisherId(admobConfig.publisherId)}, DIRECT, f08c47fec0942fa0
                         </code>
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
@@ -9164,6 +9434,14 @@ export default function App() {
                     className="hover:text-white underline underline-offset-4"
                   >
                     ads.txt
+                  </a>
+                  <a
+                    href="/app-ads.txt"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="hover:text-white underline underline-offset-4"
+                  >
+                    app-ads.txt
                   </a>
                 </div>
               </div>

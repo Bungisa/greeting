@@ -2771,9 +2771,188 @@ app.post('/api/video-download', aiStandardRateLimiter, async (req, res) => {
   }
 });
 
+// Google AdMob configuration & live app-ads.txt publisher verification
+const ADMOB_CONFIG_PATH = path.join(os.tmpdir(), 'elimika-admob-config.json');
+const ADMOB_PUBLISHER_ID_REGEX = /^(ca-)?pub-\d{16}$/;
+const ADMOB_APP_ID_REGEX = /^ca-app-pub-\d{16}~\d{10}$/;
+const ADMOB_UNIT_ID_REGEX = /^ca-app-pub-\d{16}\/\d{10}$/;
+
+interface ServerAdMobConfig {
+  enabled: boolean;
+  testMode: boolean;
+  publisherId: string;
+  androidAppId: string;
+  bannerUnitId: string;
+  interstitialUnitId: string;
+  rewardedUnitId: string;
+}
+
+function normalizeAdMobPublisherId(raw: string): string {
+  const cleaned = raw.trim();
+  if (!ADMOB_PUBLISHER_ID_REGEX.test(cleaned)) return 'pub-7814843623545511';
+  return cleaned.startsWith('ca-') ? cleaned.slice(3) : cleaned;
+}
+
+let runtimeAdMobConfig: ServerAdMobConfig = {
+  enabled: true,
+  testMode: process.env.ADMOB_TEST_MODE !== 'false',
+  publisherId: normalizeAdMobPublisherId(process.env.ADMOB_PUBLISHER_ID || 'pub-7814843623545511'),
+  androidAppId: ADMOB_APP_ID_REGEX.test((process.env.ADMOB_ANDROID_APP_ID || '').trim())
+    ? (process.env.ADMOB_ANDROID_APP_ID || '').trim()
+    : '',
+  bannerUnitId: ADMOB_UNIT_ID_REGEX.test((process.env.ADMOB_BANNER_UNIT_ID || '').trim())
+    ? (process.env.ADMOB_BANNER_UNIT_ID || '').trim()
+    : '',
+  interstitialUnitId: ADMOB_UNIT_ID_REGEX.test((process.env.ADMOB_INTERSTITIAL_UNIT_ID || '').trim())
+    ? (process.env.ADMOB_INTERSTITIAL_UNIT_ID || '').trim()
+    : '',
+  rewardedUnitId: ADMOB_UNIT_ID_REGEX.test((process.env.ADMOB_REWARDED_UNIT_ID || '').trim())
+    ? (process.env.ADMOB_REWARDED_UNIT_ID || '').trim()
+    : '',
+};
+
+try {
+  if (fs.existsSync(ADMOB_CONFIG_PATH)) {
+    const saved = JSON.parse(fs.readFileSync(ADMOB_CONFIG_PATH, 'utf-8')) as Partial<ServerAdMobConfig>;
+    if (typeof saved.enabled === 'boolean') runtimeAdMobConfig.enabled = saved.enabled;
+    if (typeof saved.testMode === 'boolean') runtimeAdMobConfig.testMode = saved.testMode;
+    if (typeof saved.publisherId === 'string' && ADMOB_PUBLISHER_ID_REGEX.test(saved.publisherId.trim())) {
+      runtimeAdMobConfig.publisherId = normalizeAdMobPublisherId(saved.publisherId);
+    }
+    if (typeof saved.androidAppId === 'string' && (saved.androidAppId === '' || ADMOB_APP_ID_REGEX.test(saved.androidAppId.trim()))) {
+      runtimeAdMobConfig.androidAppId = saved.androidAppId.trim();
+    }
+    if (typeof saved.bannerUnitId === 'string' && (saved.bannerUnitId === '' || ADMOB_UNIT_ID_REGEX.test(saved.bannerUnitId.trim()))) {
+      runtimeAdMobConfig.bannerUnitId = saved.bannerUnitId.trim();
+    }
+    if (
+      typeof saved.interstitialUnitId === 'string' &&
+      (saved.interstitialUnitId === '' || ADMOB_UNIT_ID_REGEX.test(saved.interstitialUnitId.trim()))
+    ) {
+      runtimeAdMobConfig.interstitialUnitId = saved.interstitialUnitId.trim();
+    }
+    if (
+      typeof saved.rewardedUnitId === 'string' &&
+      (saved.rewardedUnitId === '' || ADMOB_UNIT_ID_REGEX.test(saved.rewardedUnitId.trim()))
+    ) {
+      runtimeAdMobConfig.rewardedUnitId = saved.rewardedUnitId.trim();
+    }
+  }
+} catch {
+  // ignore corrupted temp config file
+}
+
 app.get('/ads.txt', (_req, res) => {
   res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-  res.send('google.com, pub-7814843623545511, DIRECT, f08c47fec0942fa0\n');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.send(`google.com, ${runtimeAdMobConfig.publisherId}, DIRECT, f08c47fec0942fa0\n`);
+});
+
+app.get('/app-ads.txt', (_req, res) => {
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  res.send(`google.com, ${runtimeAdMobConfig.publisherId}, DIRECT, f08c47fec0942fa0\n`);
+});
+
+app.get('/api/admob/config', (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  return res.json({
+    ...runtimeAdMobConfig,
+    appAdsTxtLine: `google.com, ${runtimeAdMobConfig.publisherId}, DIRECT, f08c47fec0942fa0`,
+    appAdsTxtUrl: 'https://www.elimika.online/app-ads.txt',
+  });
+});
+
+app.post('/api/admob/config', requireAdminAuth, (req, res) => {
+  const body = (req.body || {}) as Partial<Record<keyof ServerAdMobConfig, unknown>>;
+
+  const nextConfig: ServerAdMobConfig = { ...runtimeAdMobConfig };
+
+  if (body.enabled !== undefined) {
+    if (typeof body.enabled !== 'boolean') {
+      return res.status(400).json({ error: 'Invalid enabled flag.' });
+    }
+    nextConfig.enabled = body.enabled;
+  }
+
+  if (body.testMode !== undefined) {
+    if (typeof body.testMode !== 'boolean') {
+      return res.status(400).json({ error: 'Invalid testMode flag.' });
+    }
+    nextConfig.testMode = body.testMode;
+  }
+
+  if (body.publisherId !== undefined) {
+    if (typeof body.publisherId !== 'string' || !ADMOB_PUBLISHER_ID_REGEX.test(body.publisherId.trim())) {
+      return res.status(400).json({
+        error: 'Invalid AdMob Publisher ID format (expected pub-XXXXXXXXXXXXXXXX or ca-pub-XXXXXXXXXXXXXXXX).',
+      });
+    }
+    nextConfig.publisherId = normalizeAdMobPublisherId(body.publisherId);
+  }
+
+  if (body.androidAppId !== undefined) {
+    if (typeof body.androidAppId !== 'string') {
+      return res.status(400).json({ error: 'Invalid Android AdMob App ID.' });
+    }
+    const cleaned = body.androidAppId.trim();
+    if (cleaned !== '' && !ADMOB_APP_ID_REGEX.test(cleaned)) {
+      return res.status(400).json({
+        error: 'Invalid Android AdMob App ID (expected ca-app-pub-XXXXXXXXXXXXXXXX~YYYYYYYYYY).',
+      });
+    }
+    nextConfig.androidAppId = cleaned;
+  }
+
+  const unitFields: Array<['bannerUnitId' | 'interstitialUnitId' | 'rewardedUnitId', string]> = [
+    ['bannerUnitId', 'Banner Ad Unit ID'],
+    ['interstitialUnitId', 'Interstitial Ad Unit ID'],
+    ['rewardedUnitId', 'Rewarded Ad Unit ID'],
+  ];
+
+  for (const [key, label] of unitFields) {
+    if (body[key] !== undefined) {
+      if (typeof body[key] !== 'string') {
+        return res.status(400).json({ error: `Invalid ${label}.` });
+      }
+      const cleaned = (body[key] as string).trim();
+      if (cleaned !== '' && !ADMOB_UNIT_ID_REGEX.test(cleaned)) {
+        return res.status(400).json({
+          error: `Invalid ${label} (expected ca-app-pub-XXXXXXXXXXXXXXXX/YYYYYYYYYY).`,
+        });
+      }
+      nextConfig[key] = cleaned;
+    }
+  }
+
+  runtimeAdMobConfig = nextConfig;
+  const appAdsTxtLine = `google.com, ${runtimeAdMobConfig.publisherId}, DIRECT, f08c47fec0942fa0`;
+
+  try {
+    const dir = path.dirname(ADMOB_CONFIG_PATH);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(ADMOB_CONFIG_PATH, JSON.stringify(runtimeAdMobConfig, null, 2), 'utf-8');
+  } catch {
+    // non-fatal on read-only tmpfs
+  }
+
+  try {
+    const publicAppAdsPath = path.resolve(__dirname, 'public', 'app-ads.txt');
+    const publicRoot = path.resolve(__dirname, 'public');
+    if (publicAppAdsPath.startsWith(publicRoot) && fs.existsSync(publicRoot)) {
+      fs.writeFileSync(publicAppAdsPath, `${appAdsTxtLine}\n`, 'utf-8');
+    }
+  } catch {
+    // non-fatal on read-only deployment container
+  }
+
+  return res.json({
+    ok: true,
+    config: runtimeAdMobConfig,
+    appAdsTxtLine,
+    appAdsTxtUrl: 'https://www.elimika.online/app-ads.txt',
+  });
 });
 
 app.get('/assets/aistudio/:filename', (req, res) => {
