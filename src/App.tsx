@@ -1,6 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { Suspense, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { jsPDF } from 'jspdf';
 import {
   ArrowLeft,
   BarChart3,
@@ -54,12 +53,25 @@ import {
   TIE_CURRICULUM_SUBJECTS,
   UserProfileData,
 } from './data/curriculumData';
-import { DiagramPreset, InteractiveDiagramLab } from './components/InteractiveDiagramLab';
+import type { DiagramPreset } from './components/InteractiveDiagramLab';
 import { OfflineIndicator, PWAInstallButton } from './components/PWAInstallButton';
-import { StemArenaGame } from './components/StemArenaGame';
-import { ElimikaPlayHub, PlayGameRoute } from './components/ElimikaPlayHub';
-import { VirtualScienceLab } from './components/VirtualScienceLab';
-import { TieSchemeOfWorkGenerator } from './components/TieSchemeOfWorkGenerator';
+import type { PlayGameRoute } from './components/ElimikaPlayHub';
+
+const SimulationsHub = React.lazy(() =>
+  import('./components/SimulationsHub').then((m) => ({ default: m.SimulationsHub }))
+);
+const ElimikaPlayHub = React.lazy(() =>
+  import('./components/ElimikaPlayHub').then((m) => ({ default: m.ElimikaPlayHub }))
+);
+const TieSchemeOfWorkGenerator = React.lazy(() =>
+  import('./components/TieSchemeOfWorkGenerator').then((m) => ({ default: m.TieSchemeOfWorkGenerator }))
+);
+const TextbookQuestionExtractorModal = React.lazy(() =>
+  import('./components/TextbookQuestionExtractorModal').then((m) => ({
+    default: m.TextbookQuestionExtractorModal,
+  }))
+);
+
 import {
   MathText,
   renderLatexSnippet,
@@ -68,7 +80,6 @@ import {
   sanitizeUntrustedHtml,
   typesetMathInElement,
 } from './utils/mathRenderer';
-import { TextbookQuestionExtractorModal } from './components/TextbookQuestionExtractorModal';
 import { getQuestionDiagramSvg } from './utils/questionDiagramGenerator';
 import {
   addQuestionsToStoredBank,
@@ -749,10 +760,19 @@ export default function App() {
   const [allPapers, setAllPapers] = useState<PaperRecord[]>(() => processParsedRows([]));
   const [syncStatus, setSyncStatus] = useState<'syncing' | 'live' | 'offline' | 'error'>('syncing');
 
-  // Navigation & View Mode
+  // Navigation & View Mode ('home' is the Learning Library Hub from the reference design)
   const [activePage, setActivePage] = useState<
-    'papers' | 'books' | 'syllabus' | 'daily_quiz' | 'virtual_lab' | 'moha' | 'game'
-  >('papers');
+    | 'home'
+    | 'papers'
+    | 'books'
+    | 'syllabus'
+    | 'schemes'
+    | 'lesson_plans'
+    | 'daily_quiz'
+    | 'virtual_lab'
+    | 'moha'
+    | 'game'
+  >('home');
   const [playRoute, setPlayRoute] = useState<PlayGameRoute>('hub');
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [selectedClass, setSelectedClass] = useState<string>('');
@@ -811,10 +831,11 @@ export default function App() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimerRef = useRef<number | null>(null);
 
-  // Moha AI Full-Page Site State
+  // Moha AI & Simulations State
   const [mohaOpen, setMohaOpen] = useState<boolean>(false);
   const [mohaViewMode, setMohaViewMode] = useState<'chat' | 'studio' | 'quiz' | 'diagram'>('chat');
   const [activeDiagramPreset, setActiveDiagramPreset] = useState<DiagramPreset>('physics_ohm');
+  const [simulationsTab, setSimulationsTab] = useState<'diagrams' | 'labs'>('diagrams');
   const [mohaActiveClass, setMohaActiveClass] = useState<string>(() => {
     try {
       return localStorage.getItem('elimika_moha_active_class_v1') || 'Form 3';
@@ -1843,6 +1864,14 @@ export default function App() {
       setActivePage('syllabus');
     } else if (window.location.hash === '#books') {
       setActivePage('books');
+    } else if (window.location.hash === '#past-papers' || window.location.hash === '#papers') {
+      setActivePage('papers');
+    } else if (window.location.hash === '#schemes' || window.location.hash === '#scheme-of-work') {
+      setActivePage('schemes');
+    } else if (window.location.hash === '#lesson-plans') {
+      setActivePage('lesson_plans');
+    } else if (window.location.hash === '#simulations' || window.location.hash === '#virtual-lab') {
+      setActivePage('virtual_lab');
     } else if (window.location.hash === '#daily-quiz') {
       openDailyQuizPage();
     } else if (window.location.hash === '#moha') {
@@ -1899,16 +1928,20 @@ export default function App() {
     selectedSubject: string;
     mohaViewMode: typeof mohaViewMode;
     playRoute: typeof playRoute;
+    hasDetail: boolean;
+    hasViewer: boolean;
   }
 
   const navHistoryStackRef = useRef<ElimikaHistorySnapshot[]>([
     {
-      activePage: 'papers',
+      activePage: 'home',
       step: 1,
       selectedClass: '',
       selectedSubject: '',
       mohaViewMode: 'chat',
       playRoute: 'hub',
+      hasDetail: false,
+      hasViewer: false,
     },
   ]);
   const isPoppingHistoryRef = useRef<boolean>(false);
@@ -1964,6 +1997,8 @@ export default function App() {
     }
     const stack = navHistoryStackRef.current;
     const top = stack[stack.length - 1];
+    const hasDetail = Boolean(selectedExamDetail || selectedBookDetail || selectedSyllabusDetail);
+    const hasViewer = Boolean(viewerPaper);
     const nextSnap: ElimikaHistorySnapshot = {
       activePage,
       step,
@@ -1971,6 +2006,8 @@ export default function App() {
       selectedSubject,
       mohaViewMode,
       playRoute,
+      hasDetail,
+      hasViewer,
     };
     const isSame =
       top &&
@@ -1979,25 +2016,35 @@ export default function App() {
       top.selectedClass === nextSnap.selectedClass &&
       top.selectedSubject === nextSnap.selectedSubject &&
       top.mohaViewMode === nextSnap.mohaViewMode &&
-      top.playRoute === nextSnap.playRoute;
+      top.playRoute === nextSnap.playRoute &&
+      top.hasDetail === nextSnap.hasDetail &&
+      top.hasViewer === nextSnap.hasViewer;
 
     if (!isSame) {
       stack.push(nextSnap);
       try {
         let nextHash = window.location.hash;
         if (!nextHash.includes('challenge=')) {
-          if (activePage === 'papers') {
+          if (activePage === 'home') {
+            nextHash = '';
+          } else if (activePage === 'papers') {
             if (step === 3 && selectedClass && selectedSubject) {
               nextHash = `#class=${encodeURIComponent(selectedClass.replace(/\s+/g, '-'))}&subject=${encodeURIComponent(selectedSubject.replace(/\s+/g, '-'))}`;
             } else if (step === 2 && selectedClass) {
               nextHash = `#class=${encodeURIComponent(selectedClass.replace(/\s+/g, '-'))}`;
-            } else if (step === 1) {
-              nextHash = '';
+            } else {
+              nextHash = '#past-papers';
             }
           } else if (activePage === 'books') {
             nextHash = '#books';
           } else if (activePage === 'syllabus') {
             nextHash = '#syllabus';
+          } else if (activePage === 'schemes') {
+            nextHash = '#schemes';
+          } else if (activePage === 'lesson_plans') {
+            nextHash = '#lesson-plans';
+          } else if (activePage === 'virtual_lab') {
+            nextHash = '#simulations';
           } else if (activePage === 'daily_quiz') {
             nextHash = '#daily-quiz';
           } else if (activePage === 'moha') {
@@ -2016,7 +2063,18 @@ export default function App() {
         // ignore history push errors in restricted frames
       }
     }
-  }, [activePage, step, selectedClass, selectedSubject, mohaViewMode, playRoute]);
+  }, [
+    activePage,
+    step,
+    selectedClass,
+    selectedSubject,
+    mohaViewMode,
+    playRoute,
+    selectedExamDetail,
+    selectedBookDetail,
+    selectedSyllabusDetail,
+    viewerPaper,
+  ]);
 
   const stepBackFallback = () => {
     const cur = latestNavStateRef.current;
@@ -2040,10 +2098,6 @@ export default function App() {
       setAttachModalOpen(false);
       return;
     }
-    if (cur.teacherStudioOpen) {
-      setTeacherStudioOpen(false);
-      return;
-    }
     if (cur.activePage === 'game' && cur.playRoute !== 'hub') {
       setPlayRoute('hub');
       return;
@@ -2052,22 +2106,32 @@ export default function App() {
       setMohaViewMode('chat');
       return;
     }
-    if (cur.activePage !== 'papers') {
-      if (window.speechSynthesis) window.speechSynthesis.cancel();
-      setActivePage('papers');
-      return;
-    }
-    if (cur.step === 3) {
-      if (searchQuery.trim().length > 0) {
-        setSearchQuery('');
-        setStep(cur.selectedClass ? 2 : 1);
-      } else {
-        setStep(2);
+    if (cur.activePage === 'papers') {
+      if (cur.step === 3) {
+        if (searchQuery.trim().length > 0) {
+          setSearchQuery('');
+          if (cur.selectedClass) {
+            setStep(2);
+          } else {
+            setStep(1);
+            setActivePage('home');
+          }
+        } else {
+          setStep(2);
+        }
+        return;
       }
+      if (cur.step === 2) {
+        setStep(1);
+        return;
+      }
+      setActivePage('home');
       return;
     }
-    if (cur.step === 2) {
-      setStep(1);
+    if (cur.activePage !== 'home') {
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
+      setActivePage('home');
+      return;
     }
   };
 
@@ -2079,12 +2143,14 @@ export default function App() {
           {
             elimikaNav: true,
             idx: 0,
-            activePage: 'papers',
+            activePage: 'home',
             step: 1,
             selectedClass: '',
             selectedSubject: '',
             mohaViewMode: 'chat',
             playRoute: 'hub',
+            hasDetail: false,
+            hasViewer: false,
           },
           ''
         );
@@ -2095,39 +2161,33 @@ export default function App() {
 
     const onPopState = (event: PopStateEvent) => {
       const cur = latestNavStateRef.current;
-      // If full-screen viewer or document detail is open, close it first and keep current page
+      // 1. If full-screen PDF viewer is open, close it first
       if (cur.viewerPaper) {
+        isPoppingHistoryRef.current = true;
         setViewerPaper(null);
-        try {
-          const topSnap = navHistoryStackRef.current[navHistoryStackRef.current.length - 1];
-          if (topSnap) {
-            window.history.pushState({ elimikaNav: true, ...topSnap }, '');
-          }
-        } catch {
-          // ignore
+        const stack = navHistoryStackRef.current;
+        if (stack.length > 1 && stack[stack.length - 1]?.hasViewer) {
+          stack.pop();
         }
         return;
       }
+      // 2. If Exam / Book / Syllabus detail view is open, close it back to the list view
       if (
         cur.selectedExamDetail ||
         cur.selectedBookDetail ||
         cur.selectedSyllabusDetail ||
-        cur.attachModalOpen ||
-        cur.teacherStudioOpen
+        cur.attachModalOpen
       ) {
+        isPoppingHistoryRef.current = true;
         setSelectedExamDetail(null);
         setSelectedBookDetail(null);
         setSelectedSyllabusDetail(null);
         setAttachModalOpen(false);
-        setTeacherStudioOpen(false);
-        try {
-          const topSnap = navHistoryStackRef.current[navHistoryStackRef.current.length - 1];
-          if (topSnap) {
-            window.history.pushState({ elimikaNav: true, ...topSnap }, '');
-          }
-        } catch {
-          // ignore
+        const stack = navHistoryStackRef.current;
+        if (stack.length > 1 && stack[stack.length - 1]?.hasDetail) {
+          stack.pop();
         }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
         return;
       }
 
@@ -2152,7 +2212,7 @@ export default function App() {
       if (event.state && event.state.elimikaNav) {
         isPoppingHistoryRef.current = true;
         if (window.speechSynthesis) window.speechSynthesis.cancel();
-        setActivePage(event.state.activePage || 'papers');
+        setActivePage(event.state.activePage || 'home');
         setStep(event.state.step || 1);
         setSelectedClass(event.state.selectedClass || '');
         setSelectedSubject(event.state.selectedSubject || '');
@@ -2649,6 +2709,7 @@ export default function App() {
       }
 
       // Guaranteed binary PDF fallback via jsPDF so it NEVER downloads an .html file
+      const { jsPDF } = await import('jspdf');
       const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
       const activeItem =
         viewerPaper || selectedExamDetail || selectedBookDetail || selectedSyllabusDetail;
@@ -2723,12 +2784,40 @@ export default function App() {
   }
 
   function resetToStep1() {
-    setActivePage('papers');
+    setActivePage('home');
     setSelectedClass('');
     setSelectedSubject('');
     setSelectedExamDetail(null);
+    setSelectedBookDetail(null);
+    setSelectedSyllabusDetail(null);
     setSearchQuery('');
     setStep(1);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function openPastPapersPage() {
+    setSelectedExamDetail(null);
+    setSelectedBookDetail(null);
+    setSelectedSyllabusDetail(null);
+    setSelectedClass('');
+    setSelectedSubject('');
+    setSearchQuery('');
+    setStep(1);
+    setActivePage('papers');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function openSchemesOfWorkPage() {
+    setSelectedStudioDocType('schemeofwork');
+    setActivePage('schemes');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function openLessonPlansPage() {
+    setSelectedStudioDocType('lessonplan');
+    setTeacherStudioOpen(true);
+    setActivePage('lesson_plans');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   function openBooksPage(filterClass = '', filterSubject = '') {
@@ -2794,8 +2883,9 @@ export default function App() {
     startAiQuiz(cls, sub, firstTopic, firstSubTopic, src, true);
   }
 
-  function openVirtualLabPage(customClass?: string) {
+  function openVirtualLabPage(customClass?: string, initialTab: 'diagrams' | 'labs' = 'diagrams') {
     if (customClass) setMohaActiveClass(customClass);
+    setSimulationsTab(initialTab);
     setActivePage('virtual_lab');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -2832,6 +2922,7 @@ export default function App() {
     setRecentSearchQueries((prev) => {
       const updated = prev.filter((item) => item !== queryToRemove);
       try {
+        localStorage.setItem('elimika_recent_search_queries_v1', JSON.stringify(updated));
         localStorage.setItem('recentSearchQueries', JSON.stringify(updated));
       } catch {
         // ignore storage errors
@@ -2974,11 +3065,25 @@ export default function App() {
       openDailyQuizPage(targetCls, targetSub);
       return;
     }
+    if (initialView === 'studio') {
+      setMohaActiveClass(targetCls);
+      setMohaActiveSubject(targetSub);
+      setTsClass(targetCls);
+      setTsSubject(targetSub);
+      openLessonPlansPage();
+      return;
+    }
+    if (initialView === 'diagram') {
+      setMohaActiveClass(targetCls);
+      setMohaActiveSubject(targetSub);
+      openVirtualLabPage(targetCls, 'diagrams');
+      return;
+    }
     setMohaActiveClass(targetCls);
     setMohaActiveSubject(targetSub);
     setTsClass(targetCls);
     setTsSubject(targetSub);
-    setMohaViewMode(initialView);
+    setMohaViewMode('chat');
     setFlashcards(getDefaultFlashcardsForSubject(targetCls, targetSub));
     setActiveFlashcardIdx(0);
     setFlashcardFlipped(false);
@@ -3126,9 +3231,7 @@ export default function App() {
   }
 
   function openTeacherDocFormFor() {
-    setActivePage('moha');
-    setMohaViewMode('studio');
-    setTeacherStudioOpen(true);
+    openLessonPlansPage();
     const defaultTopics = getSyllabusTopicsForClassSubject(mohaActiveClass, mohaActiveSubject);
     if (!tsTopic && defaultTopics.length > 0) {
       setTsTopic(defaultTopics[0].replace(/^\d+\.\d+\s*/, ''));
@@ -4070,6 +4173,7 @@ export default function App() {
     };
 
     try {
+      const { jsPDF } = await import('jspdf');
       const pdf = new jsPDF({ orientation, unit: 'mm', format: 'a4' });
       const pageW = pdf.internal.pageSize.getWidth();
       const pageH = pdf.internal.pageSize.getHeight();
@@ -4521,17 +4625,17 @@ export default function App() {
 
   return (
     <div className="min-h-screen w-full max-w-full overflow-x-hidden flex flex-col bg-[var(--bg-canvas)] text-[var(--text-primary)] transition-colors">
-      {/* TOP BAR CONTRACT: 3 Zones (Brand, Nav Links, Primary Action) — hidden in full-viewport Moha AI & Game modes */}
+      {/* TOP HEADER BAR — Matches uploaded reference design */}
       {activePage !== 'moha' && activePage !== 'game' && (
-      <header className="sticky top-0 z-40 bg-[var(--bg-surface-glass)] backdrop-blur-md border-b border-[var(--border-subtle)] transition-colors print:hidden">
-        <div className="max-w-5xl mx-auto px-2.5 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-1.5 sm:gap-4">
+      <header className="sticky top-0 z-40 bg-white/85 dark:bg-slate-900/85 backdrop-blur-md border-b border-slate-200/70 dark:border-slate-800 transition-colors print:hidden">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
           <a
             href="#home"
             onClick={(e) => {
               e.preventDefault();
               resetToStep1();
             }}
-            className="text-sm sm:text-xl font-black tracking-tight text-slate-900 whitespace-nowrap shrink-0 flex items-center gap-1.5 sm:gap-2"
+            className="flex items-center gap-2.5 sm:gap-3 shrink-0 group"
           >
             <img
               src="/pwa-192x192.png"
@@ -4540,91 +4644,98 @@ export default function App() {
                 e.currentTarget.src = '/pwa-192x192.png';
               }}
               alt="Elimika Logo"
-              className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg shadow-xs shrink-0 object-cover"
+              className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl shadow-sm shrink-0 object-cover"
             />
-            <span>
-              ELIMIKA<span className="text-blue-600">.</span>
-            </span>
+            <div className="leading-tight">
+              <div className="text-base sm:text-xl font-black tracking-tight text-[#0A1E5E] dark:text-white">
+                ELIMIKA
+              </div>
+              <div className="text-[10px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 tracking-tight">
+                Learn &bull; Teach &bull; Excel
+              </div>
+            </div>
           </a>
 
-          <nav className="hidden lg:flex items-center gap-5 text-sm font-semibold text-slate-600">
+          <nav className="hidden lg:flex items-center gap-5 text-sm font-semibold text-slate-600 dark:text-slate-300">
             <button
               onClick={() => resetToStep1()}
-              className={`hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 cursor-pointer flex items-center gap-1.5 ${
-                activePage === 'papers' || activePage === 'books' || activePage === 'syllabus'
+              className={`hover:text-blue-700 transition-colors whitespace-nowrap shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                activePage === 'home' ||
+                activePage === 'papers' ||
+                activePage === 'books' ||
+                activePage === 'syllabus' ||
+                activePage === 'schemes' ||
+                activePage === 'lesson_plans'
                   ? 'text-blue-600 font-bold underline underline-offset-4'
                   : ''
               }`}
             >
-              <BookOpen className="w-4 h-4" />
-              <span>Library (Papers, Books &amp; Syllabus)</span>
+              <Home className="w-4 h-4" />
+              <span>Home</span>
             </button>
             <button
               onClick={() => openDailyQuizPage()}
-              className={`hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 cursor-pointer flex items-center gap-1 ${
+              className={`hover:text-violet-700 transition-colors whitespace-nowrap shrink-0 cursor-pointer flex items-center gap-1 ${
                 activePage === 'daily_quiz' ? 'text-violet-700 font-bold underline underline-offset-4' : ''
               }`}
             >
               <span>🎯 Daily Quiz</span>
             </button>
             <button
+              onClick={() => openMwalimuModal()}
+              className={`hover:text-violet-700 transition-colors whitespace-nowrap shrink-0 cursor-pointer flex items-center gap-1 ${
+                (activePage as string) === 'moha' ? 'text-violet-700 font-bold underline underline-offset-4' : ''
+              }`}
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>Moha AI</span>
+            </button>
+            <button
               onClick={() => {
                 setPlayRoute('hub');
                 setActivePage('game');
               }}
-              className={`hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 cursor-pointer flex items-center gap-1 ${
+              className={`hover:text-emerald-700 transition-colors whitespace-nowrap shrink-0 cursor-pointer flex items-center gap-1 ${
                 (activePage as string) === 'game' ? 'text-emerald-700 font-bold underline underline-offset-4' : ''
               }`}
             >
-              <span>🎮 Elimika Play</span>
+              <span>🎮 Play</span>
             </button>
           </nav>
 
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            <PWAInstallButton />
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+            <div className="hidden sm:block">
+              <PWAInstallButton />
+            </div>
 
+            {/* Notification / Community Bell Button (Matches reference design) */}
             <button
+              type="button"
               onClick={() => setWhatsappModalOpen(true)}
-              className="px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl font-bold text-[11px] sm:text-xs flex items-center gap-1 shadow-xs transition-colors whitespace-nowrap shrink-0 cursor-pointer bg-[#25D366] hover:bg-[#1ebe5d] text-white"
-              title="Join or Manage Elimika WhatsApp Channel & Community"
+              aria-label="Notifications and Community Updates"
+              title="Elimika Updates & WhatsApp Channel"
+              className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 shadow-xs hover:shadow-sm flex items-center justify-center text-[#0A1E5E] dark:text-slate-100 cursor-pointer transition-all"
             >
-              <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current shrink-0" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824zm-3.423-14.416c-6.627 0-12 5.373-12 12 0 2.625.846 5.059 2.284 7.033l-1.494 5.457 5.586-1.466c1.911 1.251 4.187 1.976 6.624 1.976 6.627 0 12-5.373 12-12s-5.373-12-12-12z"/>
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
               </svg>
-              <span className="hidden md:inline">WhatsApp</span>
+              <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-800" />
             </button>
 
-            {/* Instant 1-Tap Dark / Light Theme Button (Visible on all screens) */}
+            {/* Circular Moon / Sun Dark Mode Toggle (Matches reference design) */}
             <button
               type="button"
               onClick={() => selectThemeMode(darkMode ? 'light' : 'dark')}
               aria-label={darkMode ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
-              title={darkMode ? 'Currently Dark Mode — Click for Light Mode' : 'Currently Light Mode — Click for Dark Mode'}
-              className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl font-bold text-[11px] sm:text-xs flex items-center gap-1.5 border shadow-xs transition-all cursor-pointer shrink-0 ${
-                darkMode
-                  ? 'bg-amber-400 text-slate-950 border-amber-300'
-                  : 'bg-slate-900 text-white border-slate-700 hover:bg-slate-800'
-              }`}
+              title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 shadow-xs hover:shadow-sm flex items-center justify-center text-[#0A1E5E] dark:text-amber-300 cursor-pointer transition-all"
             >
               {darkMode ? (
-                <>
-                  <Sun className="w-3.5 h-3.5 shrink-0" />
-                  <span>Light</span>
-                </>
+                <Sun className="w-5 h-5" />
               ) : (
-                <>
-                  <Moon className="w-3.5 h-3.5 shrink-0" />
-                  <span>Dark</span>
-                </>
+                <Moon className="w-5 h-5 fill-[#0A1E5E]" />
               )}
-            </button>
-
-            <button
-              onClick={() => openMwalimuModal()}
-              className="hidden sm:flex px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl font-bold text-[11px] sm:text-xs items-center gap-1 shadow-sm transition-colors whitespace-nowrap shrink-0 cursor-pointer bg-violet-600 hover:bg-violet-700 text-white"
-            >
-              <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-              <span>Moha AI</span>
             </button>
           </div>
         </div>
@@ -4634,7 +4745,369 @@ export default function App() {
       <OfflineIndicator />
 
       <AnimatePresence mode="wait">
-      {/* MAIN PAST PAPERS BROWSER MODE */}
+      {/* ==================== HOME: YOUR LEARNING LIBRARY HUB (MATCHES UPLOADED STRUCTURE) ==================== */}
+      {activePage === 'home' && (
+        <motion.div
+          key="view-home-library"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.2, ease: 'easeOut' }}
+          className="flex-grow bg-gradient-to-b from-[#EAF2FF] via-[#F4F8FF] to-[#F8FAFC] dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 pb-24"
+        >
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-6 sm:pt-9 pb-8 space-y-5">
+            {/* Hero Title & Curved Blue Underline */}
+            <div className="text-center space-y-2">
+              <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-[#0A1E5E] dark:text-white">
+                Your Learning Library
+              </h1>
+              <p className="text-sm sm:text-base font-medium text-slate-600 dark:text-slate-300">
+                Everything you need to learn and teach.
+              </p>
+              <div className="flex justify-center pt-0.5">
+                <svg className="w-32 h-3 text-blue-600" viewBox="0 0 140 12" fill="none">
+                  <path
+                    d="M3 9.5C38 2.5 102 2.5 137 8.5"
+                    stroke="currentColor"
+                    strokeWidth="3.5"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </div>
+            </div>
+
+            {/* Unified Pill Search Bar with Voice Mic */}
+            <div ref={searchBoxContainerRef} className="relative">
+              <div className="flex items-center bg-white dark:bg-slate-900 rounded-full border border-slate-200/90 dark:border-slate-700 px-4 sm:px-5 py-3 sm:py-3.5 shadow-[0_8px_26px_rgba(15,23,42,0.06)] focus-within:border-blue-500 transition-all">
+                <Search className="w-5 h-5 text-[#0A1E5E] dark:text-slate-300 shrink-0 mr-3" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onFocus={() => setShowSearchSuggestions(true)}
+                  onClick={() => setShowSearchSuggestions(true)}
+                  onChange={(e) => {
+                    handleSmartSearchChange(e.target.value);
+                    setShowSearchSuggestions(true);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && searchQuery.trim().length >= 2) {
+                      saveRecentSearchQuery(searchQuery);
+                      setShowSearchSuggestions(false);
+                    } else if (e.key === 'Escape') {
+                      setShowSearchSuggestions(false);
+                    }
+                  }}
+                  placeholder="Search papers, books, syllabus..."
+                  className="w-full text-sm sm:text-base font-medium bg-transparent text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none"
+                />
+                {searchQuery.trim().length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery('');
+                      setShowSearchSuggestions(true);
+                    }}
+                    className="text-slate-400 hover:text-slate-700 p-1 mr-1 cursor-pointer"
+                    title="Clear search"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+                <div className="h-5 w-px bg-slate-200 dark:bg-slate-700 mx-2.5 shrink-0" />
+                <button
+                  type="button"
+                  onClick={startVoiceSearch}
+                  className="p-1.5 rounded-full text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800 flex items-center justify-center shrink-0 cursor-pointer transition-colors"
+                  title="Voice Search"
+                >
+                  <Mic className="w-5 h-5" />
+                </button>
+              </div>
+
+              {showSearchSuggestions && recentSearchQueries.length > 0 && (() => {
+                const qLower = searchQuery.trim().toLowerCase();
+                const matchingQueries = qLower
+                  ? recentSearchQueries.filter((item) => item.toLowerCase().includes(qLower))
+                  : recentSearchQueries;
+                const displayList = matchingQueries.length > 0 ? matchingQueries : recentSearchQueries;
+
+                return (
+                  <div className="absolute left-0 right-0 top-full mt-2 z-30 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xl overflow-hidden text-left">
+                    <div className="px-4 py-2.5 bg-slate-50 dark:bg-slate-800/70 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-500">Recent Searches</span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          clearRecentSearchQueries();
+                          setShowSearchSuggestions(false);
+                        }}
+                        className="text-xs font-bold text-rose-600 hover:text-rose-700 cursor-pointer"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                    <div className="max-h-52 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+                      {displayList.map((term) => (
+                        <div
+                          key={term}
+                          className="flex items-center justify-between px-4 py-2.5 hover:bg-blue-50/70 dark:hover:bg-slate-800 transition-colors group"
+                        >
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleSmartSearchChange(term, true);
+                              setShowSearchSuggestions(false);
+                            }}
+                            className="flex items-center gap-2.5 flex-1 min-w-0 text-left cursor-pointer"
+                          >
+                            <Search className="w-4 h-4 text-slate-400 group-hover:text-blue-600 shrink-0" />
+                            <span className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 group-hover:text-blue-700 truncate">
+                              {term}
+                            </span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeRecentSearchQuery(term);
+                            }}
+                            className="p-1 text-slate-400 hover:text-rose-600 rounded-lg cursor-pointer shrink-0"
+                            title="Remove"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* 6 Category Cards Grid (2x3 Clean Learning Library Hub) */}
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+              {/* 1. Past Papers */}
+              <button
+                type="button"
+                onClick={() => openPastPapersPage()}
+                className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-[0_8px_24px_rgba(15,23,42,0.05)] hover:shadow-md hover:border-blue-400 transition-all flex items-center justify-between gap-2.5 text-left cursor-pointer group"
+              >
+                <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-600 text-white shadow-sm flex items-center justify-center shrink-0">
+                    <FileText className="w-6 h-6 sm:w-7 sm:h-7" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-sm sm:text-lg font-black text-[#0A1E5E] dark:text-white leading-tight truncate">
+                      Past Papers
+                    </div>
+                    <div className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 leading-snug mt-0.5 line-clamp-2">
+                      Exam papers &amp; revision materials
+                    </div>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 group-hover:text-blue-600 shrink-0" />
+              </button>
+
+              {/* 2. Books */}
+              <button
+                type="button"
+                onClick={() => openBooksPage()}
+                className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-[0_8px_24px_rgba(15,23,42,0.05)] hover:shadow-md hover:border-emerald-400 transition-all flex items-center justify-between gap-2.5 text-left cursor-pointer group"
+              >
+                <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-emerald-400 to-green-600 text-white shadow-sm flex items-center justify-center shrink-0">
+                    <BookOpen className="w-6 h-6 sm:w-7 sm:h-7" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-sm sm:text-lg font-black text-[#0A1E5E] dark:text-white leading-tight truncate">
+                      Books
+                    </div>
+                    <div className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 leading-snug mt-0.5 line-clamp-2">
+                      Textbooks &amp; reference books
+                    </div>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 group-hover:text-emerald-600 shrink-0" />
+              </button>
+
+              {/* 3. Syllabus */}
+              <button
+                type="button"
+                onClick={() => openSyllabusPage()}
+                className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-[0_8px_24px_rgba(15,23,42,0.05)] hover:shadow-md hover:border-amber-400 transition-all flex items-center justify-between gap-2.5 text-left cursor-pointer group"
+              >
+                <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-sm flex items-center justify-center shrink-0">
+                    <svg className="w-6 h-6 sm:w-7 sm:h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M8 21h12a2 2 0 0 0 2-2v-2H10v2a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v3h4" />
+                      <path d="M19 17V5a2 2 0 0 0-2-2H4" />
+                      <path d="M15 8h-5" />
+                      <path d="M15 12h-5" />
+                    </svg>
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-sm sm:text-lg font-black text-[#0A1E5E] dark:text-white leading-tight truncate">
+                      Syllabus
+                    </div>
+                    <div className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 leading-snug mt-0.5 line-clamp-2">
+                      Curriculum guide
+                    </div>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 group-hover:text-amber-600 shrink-0" />
+              </button>
+
+              {/* 4. Schemes of Work */}
+              <button
+                type="button"
+                onClick={() => openSchemesOfWorkPage()}
+                className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-[0_8px_24px_rgba(15,23,42,0.05)] hover:shadow-md hover:border-violet-400 transition-all flex items-center justify-between gap-2.5 text-left cursor-pointer group"
+              >
+                <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-sm flex items-center justify-center shrink-0">
+                    <svg className="w-6 h-6 sm:w-7 sm:h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+                      <line x1="16" x2="16" y1="2" y2="6" />
+                      <line x1="8" x2="8" y1="2" y2="6" />
+                      <line x1="3" x2="21" y1="10" y2="10" />
+                      <path d="M8 14h.01" />
+                      <path d="M12 14h.01" />
+                      <path d="M16 14h.01" />
+                      <path d="M8 18h.01" />
+                      <path d="M12 18h.01" />
+                      <path d="M16 18h.01" />
+                    </svg>
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-sm sm:text-lg font-black text-[#0A1E5E] dark:text-white leading-tight">
+                      Schemes of Work
+                    </div>
+                    <div className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 leading-snug mt-0.5 truncate">
+                      Teaching plans
+                    </div>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 group-hover:text-violet-600 shrink-0" />
+              </button>
+
+              {/* 5. Lesson Plans */}
+              <button
+                type="button"
+                onClick={() => openLessonPlansPage()}
+                className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-[0_8px_24px_rgba(15,23,42,0.05)] hover:shadow-md hover:border-teal-400 transition-all flex items-center justify-between gap-2.5 text-left cursor-pointer group"
+              >
+                <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600 text-white shadow-sm flex items-center justify-center shrink-0">
+                    <svg className="w-6 h-6 sm:w-7 sm:h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M13 4h3a2 2 0 0 1 2 2v14" />
+                      <path d="M2 20h3" />
+                      <path d="M13 20h9" />
+                      <path d="M10 12v.01" />
+                      <path d="M13 4.562v16.157a1 1 0 0 1-1.242.97L5 20V5.562a2 2 0 0 1 1.515-1.94l4-1A2 2 0 0 1 13 4.561Z" />
+                    </svg>
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-sm sm:text-lg font-black text-[#0A1E5E] dark:text-white leading-tight truncate">
+                      Lesson Plans
+                    </div>
+                    <div className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 leading-snug mt-0.5 line-clamp-2">
+                      Ready-to-use lesson plans
+                    </div>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 group-hover:text-teal-600 shrink-0" />
+              </button>
+
+              {/* 6. Simulations (Interactive Diagrams & Science Labs) */}
+              <button
+                type="button"
+                onClick={() => openVirtualLabPage(selectedClass || savedClass || mohaActiveClass || 'Form 4', 'diagrams')}
+                className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-[0_8px_24px_rgba(15,23,42,0.05)] hover:shadow-md hover:border-rose-400 transition-all flex items-center justify-between gap-2.5 text-left cursor-pointer group"
+              >
+                <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-600 text-white shadow-sm flex items-center justify-center shrink-0">
+                    <svg className="w-6 h-6 sm:w-7 sm:h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2" />
+                      <path d="M8.5 2h7" />
+                      <path d="M7 16h10" />
+                    </svg>
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-sm sm:text-lg font-black text-[#0A1E5E] dark:text-white leading-tight truncate">
+                      Simulations
+                    </div>
+                    <div className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 leading-snug mt-0.5 line-clamp-2">
+                      Diagrams &amp; science labs
+                    </div>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 group-hover:text-rose-600 shrink-0" />
+              </button>
+            </div>
+
+            {/* Continue Learning Banner (Matches Reference Design) */}
+            {(() => {
+              const latestPaper = recentPapers[0];
+              const resumeSubject = latestPaper?.subject || selectedSubject || mohaActiveSubject || 'Mathematics';
+              const resumeClass = latestPaper?.form || savedClass || selectedClass || mohaActiveClass || 'Form 4';
+
+              return (
+                <div className="bg-gradient-to-r from-[#DCEBFF] via-[#E6F0FF] to-[#D5E6FF] dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-4 sm:p-5 rounded-3xl border border-blue-200/80 dark:border-slate-700 shadow-xs flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
+                    <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-blue-700/10 dark:bg-blue-500/20 text-[#0A1E5E] dark:text-blue-300 flex items-center justify-center shrink-0">
+                      <BookOpen className="w-6 h-6 sm:w-7 sm:h-7" />
+                    </div>
+                    <div className="h-9 w-px bg-blue-300/70 dark:bg-slate-700 shrink-0" />
+                    <div className="min-w-0">
+                      <div className="text-sm sm:text-base font-black text-[#0A1E5E] dark:text-white leading-tight">
+                        Continue Learning
+                      </div>
+                      <div className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 truncate mt-0.5">
+                        {resumeSubject} &bull; {resumeClass}
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (latestPaper) {
+                        const found = allPapers.find((p) => p.id === latestPaper.id);
+                        if (found) {
+                          if (found.isBook) {
+                            setActivePage('books');
+                            openBookDetailView(found);
+                            return;
+                          }
+                          if (found.isSyllabus) {
+                            setActivePage('syllabus');
+                            openSyllabusDetailView(found);
+                            return;
+                          }
+                          setSelectedClass(found.form);
+                          setSelectedSubject(found.subject);
+                          setStep(3);
+                          setActivePage('papers');
+                          openExamDetailView(found);
+                          return;
+                        }
+                      }
+                      selectClass(resumeClass);
+                    }}
+                    className="px-4 sm:px-5 py-2.5 rounded-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-extrabold text-xs sm:text-sm shadow-sm flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer transition-all"
+                  >
+                    <span>Continue</span>
+                    <span>&rarr;</span>
+                  </button>
+                </div>
+              );
+            })()}
+          </div>
+        </motion.div>
+      )}
+
+      {/* ==================== DEDICATED PAST PAPERS PAGE (CLEAN, NO TOP CATEGORY SWITCHER) ==================== */}
       {activePage === 'papers' && (
         <motion.div
           key="view-papers"
@@ -4642,40 +5115,29 @@ export default function App() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -6 }}
           transition={{ duration: 0.22, ease: 'easeOut' }}
-          className="flex-grow flex flex-col"
+          className="flex-grow flex flex-col bg-slate-50 dark:bg-slate-950"
         >
-          <section className="py-3 bg-white border-b border-slate-200">
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-2.5">
-              {/* Compact Top Row: Unified Library 3-Tab Switcher + Search */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
-                <div className="inline-flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setActivePage('papers')}
-                    className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-bold text-xs bg-blue-600 text-white shadow-2xs flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
-                  >
-                    <FileText className="w-3.5 h-3.5" />
-                    <span>Past Papers</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => openBooksPage(selectedClass)}
-                    className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-bold text-xs text-slate-700 hover:text-slate-900 hover:bg-white/70 flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
-                  >
-                    <span>📘 Books ({availableUploadedBooks.length})</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => openSyllabusPage()}
-                    className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-bold text-xs text-slate-700 hover:text-slate-900 hover:bg-white/70 flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
-                  >
-                    <span>📜 Syllabus ({availableUploadedSyllabuses.length})</span>
-                  </button>
+          {/* Search Bar Header (Hidden on Final Step Exam Detail View) */}
+          {!selectedExamDetail && (
+            <section className="py-3.5 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+              <div className="max-w-4xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-400 to-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                    <FileText className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h1 className="text-sm sm:text-base font-black text-slate-900 dark:text-white leading-tight">
+                      Past Papers
+                    </h1>
+                    <p className="text-[11px] font-medium text-slate-500">
+                      Exam papers &amp; marking schemes
+                    </p>
+                  </div>
                 </div>
 
                 {/* Smart Search + Voice Search */}
                 <div ref={searchBoxContainerRef} className="relative flex-1 max-w-md">
-                  <div className="flex items-center bg-slate-50 rounded-xl border border-slate-300 px-3 py-1.5 focus-within:border-blue-600 focus-within:bg-white transition-colors">
+                  <div className="flex items-center bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-300 dark:border-slate-700 px-3 py-1.5 focus-within:border-blue-600 focus-within:bg-white transition-colors">
                     <Search className="w-4 h-4 text-slate-400 shrink-0 mr-2" />
                     <input
                       type="text"
@@ -4694,8 +5156,8 @@ export default function App() {
                           setShowSearchSuggestions(false);
                         }
                       }}
-                      placeholder="Search paper or book (e.g. Form 4 Math)..."
-                      className="w-full text-xs sm:text-sm font-medium bg-transparent text-slate-800 placeholder-slate-400 focus:outline-none"
+                      placeholder="Search past paper (e.g. Form 4 Math)..."
+                      className="w-full text-xs sm:text-sm font-medium bg-transparent text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none"
                     />
                     {searchQuery.trim().length > 0 && (
                       <button
@@ -4717,75 +5179,15 @@ export default function App() {
                       <Mic className="w-3.5 h-3.5" />
                     </button>
                   </div>
-
-                  {showSearchSuggestions && recentSearchQueries.length > 0 && (() => {
-                    const qLower = searchQuery.trim().toLowerCase();
-                    const matchingQueries = qLower
-                      ? recentSearchQueries.filter((item) => item.toLowerCase().includes(qLower))
-                      : recentSearchQueries;
-                    const displayList = matchingQueries.length > 0 ? matchingQueries : recentSearchQueries;
-
-                    return (
-                      <div className="absolute left-0 right-0 top-full mt-1.5 z-30 bg-white rounded-xl border border-slate-200 shadow-lg overflow-hidden text-left">
-                        <div className="px-3 py-2 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-                          <span className="text-[11px] font-bold text-slate-500">Recent Searches</span>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              clearRecentSearchQueries();
-                              setShowSearchSuggestions(false);
-                            }}
-                            className="text-[11px] font-bold text-rose-600 hover:text-rose-700 cursor-pointer"
-                          >
-                            Clear
-                          </button>
-                        </div>
-                        <div className="max-h-48 overflow-y-auto divide-y divide-slate-100">
-                          {displayList.map((term) => (
-                            <div
-                              key={term}
-                              className="flex items-center justify-between px-3 py-2 hover:bg-blue-50/70 transition-colors group"
-                            >
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  handleSmartSearchChange(term, true);
-                                  setShowSearchSuggestions(false);
-                                }}
-                                className="flex items-center gap-2 flex-1 min-w-0 text-left cursor-pointer"
-                              >
-                                <Search className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600 shrink-0" />
-                                <span className="text-xs font-semibold text-slate-700 group-hover:text-blue-700 truncate">
-                                  {term}
-                                </span>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  removeRecentSearchQuery(term);
-                                }}
-                                className="p-1 text-slate-400 hover:text-rose-600 rounded-lg cursor-pointer shrink-0"
-                                title="Remove"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })()}
                 </div>
               </div>
-            </div>
-          </section>
+            </section>
+          )}
 
           <main className="flex-grow py-4 pb-24">
             <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-4">
-              {/* Show Step Navigation Bar ONLY when inside Step 2 or Step 3 */}
-              {step > 1 && (
+              {/* Show Step Navigation Bar ONLY when inside Step 2 or Step 3 List (Hidden on Final Step Exam Detail View) */}
+              {step > 1 && !selectedExamDetail && (
                 <div className="flex items-center justify-between gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200">
                   <nav className="flex items-center gap-1.5 text-xs font-bold text-slate-500 overflow-x-auto">
                     <button
@@ -4814,24 +5216,12 @@ export default function App() {
                     {step === 3 && (
                       <>
                         <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />
-                        <button
-                          type="button"
-                          onClick={() => setSelectedExamDetail(null)}
-                          className="px-2.5 py-1 rounded-lg bg-blue-600 text-white whitespace-nowrap shrink-0 cursor-pointer"
-                        >
+                        <span className="px-2.5 py-1 rounded-lg bg-blue-600 text-white whitespace-nowrap shrink-0">
                           {selectedSubject}
-                        </button>
+                        </span>
                       </>
                     )}
                   </nav>
-
-                  <button
-                    onClick={handleGoBack}
-                    className="px-3 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1 shrink-0 cursor-pointer"
-                  >
-                    <ArrowLeft className="w-3.5 h-3.5" />
-                    <span>Back</span>
-                  </button>
                 </div>
               )}
 
@@ -4928,79 +5318,6 @@ export default function App() {
                       </div>
                     )}
                   </div>
-
-                  {/* 2. COMPACT SINGLE-ROW STUDY TOOLS & LABS STRIP */}
-                  <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div>
-                      <h2 className="text-sm sm:text-base font-black text-slate-900">
-                        02. Interactive Study Tools &amp; Labs
-                      </h2>
-                      <p className="text-xs text-slate-500">
-                        AI Textbook Tutor, Teacher Studio (Lesson Plans &amp; Schemes), Science Practicals &amp; Mastery Tracker.
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2 shrink-0">
-                      <button
-                        onClick={() => openMwalimuModal()}
-                        className="px-3.5 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs cursor-pointer flex items-center gap-1.5 shadow-2xs"
-                      >
-                        <Sparkles className="w-3.5 h-3.5" />
-                        <span>Moha AI &amp; Studio</span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSelectedStudioDocType('schemeofwork');
-                          setActivePage('moha');
-                          setMohaViewMode('studio');
-                          setTeacherStudioOpen(true);
-                        }}
-                        className="px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs cursor-pointer flex items-center gap-1.5 shadow-2xs"
-                      >
-                        <span>📅 Scheme of Work (2027)</span>
-                      </button>
-                      <button
-                        onClick={() => openVirtualLabPage()}
-                        className="px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs cursor-pointer flex items-center gap-1.5 shadow-2xs"
-                      >
-                        <span>🧪 Virtual Science Lab</span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          setPlayRoute('hub');
-                          setActivePage('game');
-                        }}
-                        className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-300 font-bold text-xs cursor-pointer flex items-center gap-1.5 shadow-2xs"
-                      >
-                        <span>🎮 Elimika Play</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* 3. RECENTLY OPENED PAPERS */}
-                  {recentPapers.length > 0 && (
-                    <div className="bg-white p-5 rounded-2xl border border-slate-200 space-y-3">
-                      <div className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                        03. Recently Opened Papers &amp; Books
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                        {recentPapers.map((item) => (
-                          <button
-                            key={item.id}
-                            onClick={() => openViewer(item.id, 'paper')}
-                            className="p-3 rounded-xl bg-slate-50 hover:bg-blue-50 border border-slate-200 text-left flex items-center justify-between gap-2 cursor-pointer transition-colors"
-                          >
-                            <div className="min-w-0">
-                              <div className="text-xs font-bold text-slate-900 truncate">{item.title}</div>
-                              <div className="text-[11px] font-medium text-slate-500">
-                                {item.form} · {item.subject} · {item.year}
-                              </div>
-                            </div>
-                            <span className="text-xs font-bold text-blue-600 shrink-0">Open →</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </section>
               )}
 
@@ -5020,12 +5337,6 @@ export default function App() {
                         title="Copy direct shareable link for this class"
                       >
                         📲 Share Class
-                      </button>
-                      <button
-                        onClick={() => openBooksPage(selectedClass)}
-                        className="px-3 py-2 rounded-xl font-bold text-xs border border-emerald-500 bg-emerald-100 text-emerald-950 hover:bg-emerald-200 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
-                      >
-                        📚 Books &amp; Syllabus ↗
                       </button>
                     </div>
                   </div>
@@ -5055,30 +5366,22 @@ export default function App() {
                 </section>
               )}
 
-              {/* STEP 3: EXAMS LIST OR EXAM DETAIL VIEW */}
+              {/* STEP 3: EXAMS LIST OR EXAM DETAIL VIEW (CLEAN LAST STEP WITH NO BACK ARROWS) */}
               {step === 3 && (
                 <section className="space-y-4">
                   {selectedExamDetail ? (
-                    /* ==================== EXAM DETAIL VIEW (WITH EXAM PAPER PDF & MARKING SCHEME OPTIONS + RECOMMENDED) ==================== */
+                    /* ==================== EXAM DETAIL VIEW (CLEAN PAGE, NO BACK ARROW — USE PHONE BACK BUTTON) ==================== */
                     <div className="space-y-5">
                       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-                        {/* Top Detail Navigation Bar */}
+                        {/* Clean Top Title & Share Bar (No Back Arrow on Last Step) */}
                         <div className="px-4 py-3 bg-slate-900 text-white flex items-center justify-between gap-3">
-                          <button
-                            type="button"
-                            onClick={() => setSelectedExamDetail(null)}
-                            className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center gap-1.5 text-xs font-bold cursor-pointer shrink-0"
-                          >
-                            <ArrowLeft className="w-4 h-4" />
-                            <span>Back</span>
-                          </button>
-                          <div className="text-xs sm:text-sm font-bold text-white truncate flex-1 text-center">
+                          <div className="text-xs sm:text-sm font-bold text-white truncate flex-1">
                             {selectedExamDetail.title}
                           </div>
                           <button
                             type="button"
                             onClick={() => shareLibraryDocument(selectedExamDetail)}
-                            className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold cursor-pointer shrink-0"
+                            className="p-1.5 px-3 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold cursor-pointer shrink-0"
                             title="Share Exam"
                           >
                             📲 Share
@@ -5124,8 +5427,7 @@ export default function App() {
                             {selectedExamDetail.title.toUpperCase()}
                           </div>
 
-                          {/* Left-Bordered Options Box: 1. Exam Paper (PDF) & 2. Marking Scheme (PDF) */}
-                          <div className="border-l-4 border-violet-600 bg-slate-50 rounded-r-2xl p-4 sm:p-5 space-y-3">
+                          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-3">
                             <div className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
                               Select an option to open in Full Screen &amp; Download:
                             </div>
@@ -5303,7 +5605,6 @@ export default function App() {
                               onClick={() => openExamDetailView(p)}
                               className="w-full bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 hover:border-blue-500 shadow-xs transition-all flex items-center justify-between gap-3.5 text-left cursor-pointer group"
                             >
-                              {/* Square "SOLVING EXAMS" Class Badge Thumbnail */}
                               <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-white border border-slate-200 shadow-2xs shrink-0 flex flex-col items-center justify-center p-1.5 text-center">
                                 <span className="text-[8px] sm:text-[9px] font-black leading-none text-blue-600 uppercase tracking-tight">
                                   SOLVING
@@ -5319,7 +5620,6 @@ export default function App() {
                                 </span>
                               </div>
 
-                              {/* Exam Title & Metadata */}
                               <div className="flex-1 min-w-0">
                                 <h3 className="text-sm sm:text-base font-bold text-slate-900 group-hover:text-blue-700 line-clamp-2 leading-snug">
                                   {p.title}
@@ -5333,7 +5633,6 @@ export default function App() {
                                 </div>
                               </div>
 
-                              {/* Right Chevron / Bookmark Indicator */}
                               <div className="shrink-0 p-2 rounded-xl bg-slate-50 group-hover:bg-blue-50 text-slate-400 group-hover:text-blue-600 transition-colors">
                                 <ChevronRight className="w-5 h-5" />
                               </div>
@@ -5373,7 +5672,7 @@ export default function App() {
         </motion.div>
       )}
 
-      {/* DEDICATED TIE BOOKS PAGE (PART OF UNIFIED LIBRARY) */}
+      {/* ==================== DEDICATED BOOKS PAGE (CLEAN PAGE, NO CATEGORY SWITCHER OR LAST-STEP BACK ARROW) ==================== */}
       {activePage === 'books' && (
         <motion.div
           key="view-books"
@@ -5383,38 +5682,22 @@ export default function App() {
           transition={{ duration: 0.22, ease: 'easeOut' }}
           className="flex-grow bg-slate-50 min-h-screen pb-24"
         >
-          {/* Unified Library Bar (Hidden on Book Detail View so clicking a book opens a clean dedicated page) */}
           {!selectedBookDetail && (
-            <section className="py-3 bg-white border-b border-slate-200">
-              <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-2.5">
-                {/* Row 1: Unified Library Switcher + Search Input */}
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
-                  <div className="inline-flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedBookDetail(null);
-                        setActivePage('papers');
-                      }}
-                      className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-bold text-xs text-slate-700 hover:text-slate-900 hover:bg-white/70 flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
-                    >
-                      <FileText className="w-3.5 h-3.5" />
-                      <span>Past Papers</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => openBooksPage()}
-                      className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-bold text-xs bg-emerald-600 text-white shadow-2xs flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
-                    >
-                      <span>📘 Books ({availableUploadedBooks.length})</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => openSyllabusPage()}
-                      className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-bold text-xs text-slate-700 hover:text-slate-900 hover:bg-white/70 flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
-                    >
-                      <span>📜 Syllabus ({availableUploadedSyllabuses.length})</span>
-                    </button>
+            <section className="py-3.5 bg-white border-b border-slate-200">
+              <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-green-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                      <BookOpen className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h1 className="text-sm sm:text-base font-black text-slate-900 leading-tight">
+                        Books ({availableUploadedBooks.length})
+                      </h1>
+                      <p className="text-[11px] font-medium text-slate-500">
+                        Official TIE textbooks &amp; reference books
+                      </p>
+                    </div>
                   </div>
 
                   <div className="relative flex-1 max-w-md">
@@ -5429,8 +5712,7 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Row 2: Simple Class Dropdown + Quick Level Filter + Count */}
-                <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex flex-wrap items-center gap-2">
                     <select
                       aria-label="Select Class for Textbooks"
@@ -5484,9 +5766,6 @@ export default function App() {
                   </div>
 
                   <div className="flex items-center gap-2 text-xs tabular-nums">
-                    <span className="font-bold text-emerald-800">
-                      {availableUploadedBooks.length} Books Ready
-                    </span>
                     {upcomingPlaceholderBooks.length > 0 && (
                       <button
                         type="button"
@@ -5504,33 +5783,23 @@ export default function App() {
 
           <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 space-y-4">
             {selectedBookDetail ? (
-              /* ==================== TEXTBOOK DETAIL PAGE (READ, DOWNLOAD & SHARE + RECOMMENDED) ==================== */
+              /* ==================== TEXTBOOK DETAIL PAGE (CLEAN LAST STEP, NO BACK ARROW — USE PHONE BACK BUTTON) ==================== */
               <div className="space-y-5">
                 <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-                  {/* Top Detail Navigation Bar */}
                   <div className="px-4 py-3 bg-slate-900 text-white flex items-center justify-between gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedBookDetail(null)}
-                      className="p-1.5 px-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center gap-1.5 text-xs font-bold cursor-pointer shrink-0"
-                    >
-                      <ArrowLeft className="w-4 h-4" />
-                      <span>Back</span>
-                    </button>
-                    <div className="text-xs sm:text-sm font-bold text-white truncate flex-1 text-center">
+                    <div className="text-xs sm:text-sm font-bold text-white truncate flex-1">
                       {selectedBookDetail.title}
                     </div>
                     <button
                       type="button"
                       onClick={() => shareLibraryDocument(selectedBookDetail)}
-                      className="p-1.5 px-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold cursor-pointer shrink-0"
+                      className="p-1.5 px-3 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold cursor-pointer shrink-0"
                       title="Share Textbook"
                     >
                       📲 Share
                     </button>
                   </div>
 
-                  {/* Hero "TIE TEXTBOOK" Poster Banner */}
                   <div className="bg-white p-6 sm:p-8 text-center border-b border-slate-200 flex flex-col items-center justify-center">
                     <div className="text-3xl sm:text-4xl font-black tracking-tight text-emerald-600 leading-none uppercase">
                       OFFICIAL TIE
@@ -5546,7 +5815,6 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Book Information & Action Options (Read, Download, Share) */}
                   <div className="p-5 sm:p-6 space-y-4">
                     <div className="space-y-1.5">
                       <h2 className="text-lg sm:text-xl font-black text-slate-900 leading-snug flex items-center gap-2">
@@ -5568,7 +5836,7 @@ export default function App() {
                       Read online in full screen, download PDF to your device, or share <strong>{selectedBookDetail.title}</strong> with students and teachers for free.
                     </p>
 
-                    <div className="border-l-4 border-emerald-600 bg-slate-50 rounded-r-2xl p-4 sm:p-5 space-y-3">
+                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-3">
                       <div className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
                         Choose an option for this textbook:
                       </div>
@@ -5689,7 +5957,7 @@ export default function App() {
                 })()}
               </div>
             ) : (
-              /* ==================== CLEAN TEXTBOOKS LIST VIEW (CLICK ANY BOOK TO OPEN DETAIL PAGE) ==================== */
+              /* ==================== CLEAN TEXTBOOKS LIST VIEW ==================== */
               <>
                 {availableUploadedBooks.length === 0 ? (
                   <div className="py-10 text-center bg-white rounded-2xl border border-slate-200 p-6 space-y-3">
@@ -5734,7 +6002,6 @@ export default function App() {
                         onClick={() => openBookDetailView(p)}
                         className="w-full bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 hover:border-emerald-500 shadow-xs transition-all flex items-center justify-between gap-3.5 text-left cursor-pointer group"
                       >
-                        {/* Square "TIE BOOK" Class Badge Thumbnail */}
                         <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-white border border-slate-200 shadow-2xs shrink-0 flex flex-col items-center justify-center p-1.5 text-center">
                           <span className="text-[8px] sm:text-[9px] font-black leading-none text-emerald-700 uppercase tracking-tight">
                             OFFICIAL
@@ -5750,7 +6017,6 @@ export default function App() {
                           </span>
                         </div>
 
-                        {/* Book Title & Metadata */}
                         <div className="flex-1 min-w-0">
                           <h3 className="text-sm sm:text-base font-bold text-slate-900 group-hover:text-emerald-700 line-clamp-2 leading-snug">
                             {getSubjectIcon(p.subject)} {p.title}
@@ -5762,9 +6028,7 @@ export default function App() {
                             <span aria-hidden="true">·</span>
                             <span>{p.subject}</span>
                             <span aria-hidden="true">·</span>
-                            <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-[10px]">
-                              PDF Ready ✓
-                            </span>
+                            <span className="text-emerald-700 font-bold">PDF Ready</span>
                           </div>
                         </div>
 
@@ -5776,7 +6040,6 @@ export default function App() {
                   </div>
                 )}
 
-                {/* Collapsed "Coming Soon" Section for Unuploaded TIE Books */}
                 {upcomingPlaceholderBooks.length > 0 && showUpcomingBooks && (
                   <div className="space-y-3 pt-4 border-t border-slate-200">
                     <div className="flex items-center justify-between">
@@ -5824,7 +6087,7 @@ export default function App() {
         </motion.div>
       )}
 
-      {/* DEDICATED SYLLABUS PAGE (PART OF UNIFIED LIBRARY) */}
+      {/* ==================== DEDICATED SYLLABUS PAGE (CLEAN PAGE, NO CATEGORY SWITCHER OR LAST-STEP BACK ARROW) ==================== */}
       {activePage === 'syllabus' && (
         <motion.div
           key="view-syllabus"
@@ -5834,38 +6097,22 @@ export default function App() {
           transition={{ duration: 0.22, ease: 'easeOut' }}
           className="flex-grow bg-slate-50 min-h-screen pb-24"
         >
-          {/* Unified Library Switcher + Filters (Hidden on Syllabus Detail Page) */}
           {!selectedSyllabusDetail && (
-            <section className="py-3 bg-white border-b border-slate-200">
-              <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-2.5">
-                {/* Row 1: Unified Library Switcher + Search Input */}
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
-                  <div className="inline-flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedSyllabusDetail(null);
-                        setActivePage('papers');
-                      }}
-                      className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-bold text-xs text-slate-700 hover:text-slate-900 hover:bg-white/70 flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
-                    >
-                      <FileText className="w-3.5 h-3.5" />
-                      <span>Past Papers</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => openBooksPage()}
-                      className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-bold text-xs text-slate-700 hover:text-slate-900 hover:bg-white/70 flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
-                    >
-                      <span>📘 Books ({availableUploadedBooks.length})</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => openSyllabusPage()}
-                      className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg font-bold text-xs bg-amber-500 text-slate-950 shadow-2xs flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
-                    >
-                      <span>📜 Syllabus ({availableUploadedSyllabuses.length})</span>
-                    </button>
+            <section className="py-3.5 bg-white border-b border-slate-200">
+              <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                      <FileText className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h1 className="text-sm sm:text-base font-black text-slate-900 leading-tight">
+                        Syllabus ({availableUploadedSyllabuses.length})
+                      </h1>
+                      <p className="text-[11px] font-medium text-slate-500">
+                        Official TIE curriculum guides
+                      </p>
+                    </div>
                   </div>
 
                   <div className="relative flex-1 max-w-md">
@@ -5880,8 +6127,7 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Row 2: Compact Level Filter + Count */}
-                <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="inline-flex items-center p-0.5 rounded-lg bg-slate-100 border border-slate-200">
                     {(['ALL', 'Secondary', 'Primary', 'Advanced'] as const).map((lvl) => (
                       <button
@@ -5899,9 +6145,6 @@ export default function App() {
                   </div>
 
                   <div className="flex items-center gap-2 text-xs tabular-nums">
-                    <span className="font-bold text-amber-900">
-                      {availableUploadedSyllabuses.length} Syllabuses Ready
-                    </span>
                     {upcomingPlaceholderSyllabuses.length > 0 && (
                       <button
                         type="button"
@@ -5919,26 +6162,17 @@ export default function App() {
 
           <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 space-y-4">
             {selectedSyllabusDetail ? (
-              /* ==================== SYLLABUS DETAIL PAGE (READ, DOWNLOAD & SHARE + RECOMMENDED) ==================== */
+              /* ==================== SYLLABUS DETAIL PAGE (CLEAN LAST STEP, NO BACK ARROW — USE PHONE BACK BUTTON) ==================== */
               <div className="space-y-5">
                 <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-                  {/* Top Detail Navigation Bar */}
                   <div className="px-4 py-3 bg-slate-900 text-white flex items-center justify-between gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedSyllabusDetail(null)}
-                      className="p-1.5 px-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center gap-1.5 text-xs font-bold cursor-pointer shrink-0"
-                    >
-                      <ArrowLeft className="w-4 h-4" />
-                      <span>Back</span>
-                    </button>
-                    <div className="text-xs sm:text-sm font-bold text-white truncate flex-1 text-center">
+                    <div className="text-xs sm:text-sm font-bold text-white truncate flex-1">
                       {selectedSyllabusDetail.title}
                     </div>
                     <button
                       type="button"
                       onClick={() => shareLibraryDocument(selectedSyllabusDetail)}
-                      className="p-1.5 px-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold cursor-pointer shrink-0"
+                      className="p-1.5 px-3 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold cursor-pointer shrink-0"
                       title="Share Syllabus"
                     >
                       📲 Share
@@ -5983,7 +6217,7 @@ export default function App() {
                       Read online in full screen, download PDF to your device, or share <strong>{selectedSyllabusDetail.title}</strong> with teachers and students for free.
                     </p>
 
-                    <div className="border-l-4 border-amber-500 bg-slate-50 rounded-r-2xl p-4 sm:p-5 space-y-3">
+                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-3">
                       <div className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
                         Choose an option for this syllabus:
                       </div>
@@ -6200,6 +6434,369 @@ export default function App() {
                   </div>
                 )}
               </>
+            )}
+          </div>
+        </motion.div>
+      )}
+
+      {/* ==================== DEDICATED SCHEMES OF WORK (2027) PAGE (CLEAN PAGE, NO BACK ARROWS) ==================== */}
+      {activePage === 'schemes' && (
+        <motion.div
+          key="view-schemes"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.22, ease: 'easeOut' }}
+          className="tie-print-unlock flex-grow bg-slate-50 min-h-screen pb-24"
+        >
+          <section className="py-3.5 bg-white border-b border-slate-200 print:hidden">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none">
+                    <rect x="3.5" y="5" width="17" height="15.5" rx="3" fill="currentColor" />
+                    <path d="M7.5 3.5V6.5M16.5 3.5V6.5" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" />
+                  </svg>
+                </div>
+                <div>
+                  <h1 className="text-sm sm:text-base font-black text-slate-900 leading-tight">
+                    Schemes of Work (2027)
+                  </h1>
+                  <p className="text-[11px] font-medium text-slate-500">
+                    Official TIE 12-Column Teaching Plans · MS Word (.doc) &amp; PDF Download
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <div className="tie-print-unlock max-w-7xl mx-auto px-3 sm:px-6 py-4">
+            <Suspense
+              fallback={
+                <div className="py-12 flex justify-center">
+                  <div className="w-7 h-7 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                </div>
+              }
+            >
+              <TieSchemeOfWorkGenerator
+                initialClass={mohaActiveClass}
+                initialSubject={mohaActiveSubject}
+                initialSchool={tsSchool || userProfile.school}
+                initialTeacher={tsTeacher || userProfile.name}
+              />
+            </Suspense>
+          </div>
+        </motion.div>
+      )}
+
+      {/* ==================== DEDICATED LESSON PLANS PAGE (CLEAN PAGE, NO BACK ARROWS) ==================== */}
+      {activePage === 'lesson_plans' && (
+        <motion.div
+          key="view-lesson-plans"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.22, ease: 'easeOut' }}
+          className="flex-grow bg-slate-50 min-h-screen pb-24"
+        >
+          <section className="py-3.5 bg-white border-b border-slate-200 print:hidden">
+            <div className="max-w-5xl mx-auto px-4 sm:px-6 flex flex-wrap items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                  <FileText className="w-4 h-4" />
+                </div>
+                <div>
+                  <h1 className="text-sm sm:text-base font-black text-slate-900 leading-tight">
+                    Lesson Plans
+                  </h1>
+                  <p className="text-[11px] font-medium text-slate-500">
+                    Ready-to-use 4-Stage TIE Competence-Based Lesson Plans
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                {/* Class & Subject Selector */}
+                <div className="flex items-center gap-1 bg-slate-100 rounded-xl px-2.5 py-1.5 border border-slate-200">
+                  <select
+                    value={mohaActiveClass}
+                    onChange={(e) => {
+                      const newCls = e.target.value;
+                      setMohaActiveClass(newCls);
+                      setTsClass(newCls);
+                      const subs = TIE_CURRICULUM_SUBJECTS[newCls] || ['Basic Mathematics'];
+                      const nextSub = subs.includes(mohaActiveSubject) ? mohaActiveSubject : subs[0];
+                      setMohaActiveSubject(nextSub);
+                      setTsSubject(nextSub);
+                      const nextTopics = getSyllabusTopicsForClassSubject(newCls, nextSub);
+                      const firstChap = nextTopics[0]?.replace(/^\d+\.\d+\s*/, '').trim() || '';
+                      setTsTopic(firstChap);
+                      setTsSubTopic(firstChap);
+                    }}
+                    className="bg-transparent text-slate-900 font-bold focus:outline-none cursor-pointer"
+                  >
+                    {Object.keys(TIE_CURRICULUM_SUBJECTS).map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="text-slate-400">·</span>
+                  <select
+                    value={mohaActiveSubject}
+                    onChange={(e) => {
+                      const nextSub = e.target.value;
+                      setMohaActiveSubject(nextSub);
+                      setTsSubject(nextSub);
+                      const nextTopics = getSyllabusTopicsForClassSubject(mohaActiveClass, nextSub);
+                      const firstChap = nextTopics[0]?.replace(/^\d+\.\d+\s*/, '').trim() || '';
+                      setTsTopic(firstChap);
+                      setTsSubTopic(firstChap);
+                    }}
+                    className="bg-transparent text-teal-700 font-bold focus:outline-none cursor-pointer max-w-[140px] sm:max-w-[180px] truncate"
+                  >
+                    {(TIE_CURRICULUM_SUBJECTS[mohaActiveClass] || ['Basic Mathematics']).map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {studioPreviewHtml && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setTeacherStudioOpen((v) => !v)}
+                      className={`px-2.5 py-1.5 rounded-xl font-bold text-[11px] border cursor-pointer whitespace-nowrap ${
+                        teacherStudioOpen
+                          ? 'bg-teal-600 text-white border-teal-600'
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300'
+                      }`}
+                    >
+                      {teacherStudioOpen ? '✕ Hide Form' : '✏️ Edit Details'}
+                    </button>
+                    <button
+                      onClick={() => downloadMwalimuDocPdf('studio-preview', 'portrait')}
+                      className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                      title="Download Portrait PDF"
+                    >
+                      <Download className="w-3 h-3" /> Portrait PDF
+                    </button>
+                    <button
+                      onClick={() => downloadMwalimuDocPdf('studio-preview', 'landscape')}
+                      className="px-2.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                      title="Download Landscape PDF"
+                    >
+                      <Download className="w-3 h-3" /> Landscape PDF
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </section>
+
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 space-y-4">
+            {(teacherStudioOpen || !studioPreviewHtml) && (
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-4 sm:p-6 space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                  <div>
+                    <h3 className="text-sm sm:text-base font-black text-slate-900">
+                      📋 Lesson Plan Details
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      Fill in the teacher, topic, and student attendance details below to generate your Lesson Plan for{' '}
+                      <span className="font-bold text-slate-800">
+                        {mohaActiveClass} • {mohaActiveSubject}
+                      </span>
+                      .
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Teacher&apos;s Name
+                    </label>
+                    <input
+                      type="text"
+                      value={tsTeacher}
+                      onChange={(e) => setTsTeacher(e.target.value)}
+                      placeholder="e.g. Mr. J. Nyerere"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-teal-600 focus:outline-none font-semibold text-xs bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      School Name
+                    </label>
+                    <input
+                      type="text"
+                      value={tsSchool}
+                      onChange={(e) => setTsSchool(e.target.value)}
+                      placeholder="e.g. Azania Secondary School"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-teal-600 focus:outline-none font-semibold text-xs bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Main Topic
+                    </label>
+                    {activeSyllabusTopics.length > 0 && (
+                      <select
+                        value={activeSyllabusTopics.includes(tsTopic) ? tsTopic : ''}
+                        onChange={(e) => {
+                          if (e.target.value) setTsTopic(e.target.value);
+                        }}
+                        className="w-full mb-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 font-semibold text-xs text-slate-700"
+                      >
+                        <option value="">-- Choose from Syllabus Topics (or type below) --</option>
+                        {activeSyllabusTopics.map((topic) => (
+                          <option key={topic} value={topic}>
+                            {topic}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    <input
+                      type="text"
+                      value={tsTopic}
+                      onChange={(e) => setTsTopic(e.target.value)}
+                      placeholder={activeSyllabusTopics[0] || 'Enter Main Topic'}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-teal-600 focus:outline-none font-semibold text-xs bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Sub-Topic
+                    </label>
+                    <input
+                      type="text"
+                      value={tsSubTopic}
+                      onChange={(e) => setTsSubTopic(e.target.value)}
+                      placeholder="e.g. Solving Quadratic Equations"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-teal-600 focus:outline-none font-semibold text-xs bg-white"
+                    />
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">
+                          Duration
+                        </label>
+                        <input
+                          type="text"
+                          value={tsDuration}
+                          onChange={(e) => setTsDuration(e.target.value)}
+                          placeholder="80 Minutes"
+                          className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-semibold text-xs bg-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">
+                          Date
+                        </label>
+                        <input
+                          type="date"
+                          value={tsDate}
+                          onChange={(e) => setTsDate(e.target.value)}
+                          className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-semibold text-xs bg-white"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Number of Students Section */}
+                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black text-slate-800">
+                      👥 Number of Students (Attendance)
+                    </span>
+                    <span className="text-[11px] font-bold text-slate-600">
+                      Registered: {(Number(tsRegG) || 0) + (Number(tsRegB) || 0)} • Present:{' '}
+                      {(Number(tsPresG) || 0) + (Number(tsPresB) || 0)}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
+                        Registered Girls
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={tsRegG}
+                        onChange={(e) => setTsRegG(Number(e.target.value) || 0)}
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-bold text-xs bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
+                        Registered Boys
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={tsRegB}
+                        onChange={(e) => setTsRegB(Number(e.target.value) || 0)}
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-bold text-xs bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
+                        Present Girls
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={tsPresG}
+                        onChange={(e) => setTsPresG(Number(e.target.value) || 0)}
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-bold text-xs bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
+                        Present Boys
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={tsPresB}
+                        onChange={(e) => setTsPresB(Number(e.target.value) || 0)}
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-bold text-xs bg-white"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
+                  <button
+                    type="button"
+                    disabled={generatingDocType !== null}
+                    onClick={() => submitTeacherStudioDoc('lessonplan')}
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl font-black text-xs sm:text-sm text-white bg-teal-600 hover:bg-teal-700 cursor-pointer shadow-sm transition-all disabled:opacity-50"
+                  >
+                    {generatingDocType !== null ? '⏳ Generating Document...' : '📋 Generate Lesson Plan'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {studioPreviewHtml && (
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-4 sm:p-6">
+                <div
+                  id="msg-body-studio-preview"
+                  contentEditable
+                  suppressContentEditableWarning
+                  className="overflow-x-auto focus:outline-none min-h-[60vh]"
+                  dangerouslySetInnerHTML={{
+                    __html: sanitizeUntrustedHtml(studioPreviewHtml),
+                  }}
+                />
+              </div>
             )}
           </div>
         </motion.div>
@@ -6691,7 +7288,7 @@ export default function App() {
         );
       })()}
 
-      {/* DEDICATED VIRTUAL SCIENCE PRACTICALS LAB (NECTA PAPER 2) PAGE */}
+      {/* ==================== DEDICATED SIMULATIONS PAGE (ALL INTERACTIVE DIAGRAMS & VIRTUAL SCIENCE LABS, NO BACK ARROWS) ==================== */}
       {activePage === 'virtual_lab' && (
         <motion.div
           key="view-virtual-lab"
@@ -6699,84 +7296,125 @@ export default function App() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -6 }}
           transition={{ duration: 0.22, ease: 'easeOut' }}
-          className="flex-grow py-6 pb-24 bg-slate-50"
+          className={`flex-grow min-h-screen ${darkMode ? 'bg-[#080b13]' : 'bg-slate-50'}`}
         >
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-4">
-            <div className="flex items-center justify-between gap-2">
-              <button
-                onClick={handleGoBack}
-                className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-2xs"
+          <Suspense
+            fallback={
+              <div
+                className={`min-h-screen flex items-center justify-center ${
+                  darkMode ? 'bg-[#080b13]' : 'bg-slate-50'
+                }`}
               >
-                <ArrowLeft className="w-4 h-4" /> Back
-              </button>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => openDailyQuizPage(mohaActiveClass, mohaActiveSubject)}
-                  className="px-3.5 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs cursor-pointer"
-                >
-                  🎯 Daily Quiz
-                </button>
+                <div className="w-8 h-8 border-3 border-cyan-500 border-t-transparent rounded-full animate-spin" />
               </div>
-            </div>
-
-            <VirtualScienceLab
-              activeClass={selectedClass || savedClass || mohaActiveClass || 'Form 4'}
+            }
+          >
+            <SimulationsHub
+              darkMode={darkMode}
+              activeClass={mohaActiveClass || selectedClass || savedClass || 'Form 4'}
+              onChangeClass={(newCls) => {
+                setMohaActiveClass(newCls);
+                setTsClass(newCls);
+                const subs = TIE_CURRICULUM_SUBJECTS[newCls] || ['Basic Mathematics'];
+                const nextSub = subs.includes(mohaActiveSubject) ? mohaActiveSubject : subs[0];
+                setMohaActiveSubject(nextSub);
+                setTsSubject(nextSub);
+              }}
+              activeSubject={mohaActiveSubject}
+              initialDiagramPreset={activeDiagramPreset}
+              initialTab={simulationsTab}
               onLaunchPracticalQuiz={(cls, subject, topic) => {
                 openDailyQuizPage(cls, subject, topic, 'ALL', 'ALL');
               }}
             />
-          </div>
+          </Suspense>
         </motion.div>
       )}
       </AnimatePresence>
 
-      {/* PERSISTENT 4-TAB MOBILE BOTTOM NAVIGATION BAR (ALWAYS VISIBLE IN LIBRARY, QUIZ, MOHA AI & GAME) */}
+      {/* PERSISTENT 4-TAB MOBILE BOTTOM NAVIGATION BAR (HOME, DAILY QUIZ, MOHA AI, PLAY) */}
       <nav
         aria-label="Mobile Primary Navigation"
-        className="fixed bottom-0 inset-x-0 z-[70] h-14 bg-[var(--bg-surface-glass)] backdrop-blur-md border-t border-[var(--border-subtle)] px-2 py-1.5 flex items-center justify-around gap-1.5 lg:hidden shadow-lg print:hidden"
+        className={`fixed bottom-0 inset-x-0 z-[70] h-16 px-2 flex items-center justify-around lg:hidden shadow-[0_-8px_24px_-12px_rgba(15,23,42,0.12)] rounded-t-3xl border-t print:hidden ${
+          darkMode
+            ? 'bg-slate-900/95 backdrop-blur-md border-slate-800'
+            : 'bg-white/95 backdrop-blur-md border-slate-200/80'
+        }`}
       >
         <button
           type="button"
-          onClick={() => {
-            if (activePage !== 'papers' && activePage !== 'books' && activePage !== 'syllabus') {
-              setActivePage('papers');
-            } else {
-              resetToStep1();
-            }
-          }}
-          className={`flex-1 py-1.5 px-2 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[11px] font-bold cursor-pointer transition-colors ${
-            activePage === 'papers' || activePage === 'books' || activePage === 'syllabus'
-              ? 'bg-blue-600 text-white'
-              : 'text-slate-700 hover:text-slate-900'
+          onClick={() => resetToStep1()}
+          className={`relative flex-1 h-full flex flex-col items-center justify-center gap-0.5 text-[11px] font-extrabold cursor-pointer transition-colors ${
+            activePage === 'home' ||
+            activePage === 'papers' ||
+            activePage === 'books' ||
+            activePage === 'syllabus' ||
+            activePage === 'schemes' ||
+            activePage === 'lesson_plans' ||
+            activePage === 'virtual_lab'
+              ? 'text-blue-600'
+              : darkMode
+                ? 'text-slate-400 hover:text-slate-200'
+                : 'text-[#1e2952] hover:text-blue-600'
           }`}
         >
-          <BookOpen className="w-4 h-4" />
-          <span>Library</span>
+          <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
+            <path d="M11.47 3.841a.75.75 0 0 1 1.06 0l8.69 8.69a.75.75 0 1 0 1.06-1.061l-8.689-8.69a2.25 2.25 0 0 0-3.182 0l-8.69 8.69a.75.75 0 1 0 1.061 1.06l8.69-8.689Z" />
+            <path d="m12 5.432 8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 0 1-.75-.75v-4.5a.75.75 0 0 0-.75-.75h-3a.75.75 0 0 0-.75.75V21a.75.75 0 0 1-.75.75H5.625a1.875 1.875 0 0 1-1.875-1.875v-6.198a2.29 2.29 0 0 0 .091-.086L12 5.432Z" />
+          </svg>
+          <span>Home</span>
+          {(activePage === 'home' ||
+            activePage === 'papers' ||
+            activePage === 'books' ||
+            activePage === 'syllabus' ||
+            activePage === 'schemes' ||
+            activePage === 'lesson_plans' ||
+            activePage === 'virtual_lab') && (
+            <span className="absolute bottom-0 inset-x-3 h-1 rounded-t-full bg-blue-600" />
+          )}
         </button>
+
         <button
           type="button"
           onClick={() => openDailyQuizPage()}
-          className={`flex-1 py-1.5 px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold cursor-pointer transition-colors ${
+          className={`relative flex-1 h-full flex flex-col items-center justify-center gap-0.5 text-[11px] font-extrabold cursor-pointer transition-colors ${
             activePage === 'daily_quiz'
-              ? 'bg-violet-600 text-white'
-              : 'text-slate-700 hover:text-slate-900'
+              ? 'text-blue-600'
+              : darkMode
+                ? 'text-slate-400 hover:text-slate-200'
+                : 'text-[#1e2952] hover:text-blue-600'
           }`}
         >
-          <span>🎯</span>
+          <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.1">
+            <circle cx="12" cy="12" r="8.5" />
+            <circle cx="12" cy="12" r="4.5" />
+            <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+            <path d="M16 8l4.5-4.5M18 3.5h2.5V6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
           <span>Daily Quiz</span>
+          {activePage === 'daily_quiz' && (
+            <span className="absolute bottom-0 inset-x-3 h-1 rounded-t-full bg-blue-600" />
+          )}
         </button>
+
         <button
           type="button"
           onClick={() => openMwalimuModal()}
-          className={`flex-1 py-1.5 px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold cursor-pointer transition-colors ${
+          className={`relative flex-1 h-full flex flex-col items-center justify-center gap-0.5 text-[11px] font-extrabold cursor-pointer transition-colors ${
             activePage === 'moha'
-              ? 'bg-violet-600 text-white'
-              : 'text-slate-700 hover:text-slate-900'
+              ? 'text-blue-600'
+              : darkMode
+                ? 'text-slate-400 hover:text-slate-200'
+                : 'text-[#1e2952] hover:text-blue-600'
           }`}
         >
-          <Sparkles className="w-4 h-4" />
+          <Sparkles className="w-5 h-5" />
           <span>Moha AI</span>
+          {activePage === 'moha' && (
+            <span className="absolute bottom-0 inset-x-3 h-1 rounded-t-full bg-blue-600" />
+          )}
         </button>
+
         <button
           type="button"
           onClick={() => {
@@ -6786,14 +7424,21 @@ export default function App() {
               window.dispatchEvent(new CustomEvent('elimika-play-return-hub'));
             }
           }}
-          className={`flex-1 py-1.5 px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold cursor-pointer transition-colors ${
+          className={`relative flex-1 h-full flex flex-col items-center justify-center gap-0.5 text-[11px] font-extrabold cursor-pointer transition-colors ${
             (activePage as string) === 'game'
-              ? 'bg-amber-500 text-slate-950'
-              : 'text-slate-700 hover:text-slate-900'
+              ? 'text-blue-600'
+              : darkMode
+                ? 'text-slate-400 hover:text-slate-200'
+                : 'text-[#1e2952] hover:text-blue-600'
           }`}
         >
-          <span>🎮</span>
+          <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
+            <path d="M6.75 6A4.75 4.75 0 0 0 2 10.75v3.5A3.75 3.75 0 0 0 5.75 18c1.24 0 2.39-.61 3.09-1.63l.63-.91a1.5 1.5 0 0 1 1.24-.66h2.58c.49 0 .96.25 1.24.66l.63.91A3.74 3.74 0 0 0 18.25 18 3.75 3.75 0 0 0 22 14.25v-3.5A4.75 4.75 0 0 0 17.25 6H6.75ZM7.5 9.25a.75.75 0 0 1 .75.75v1h1a.75.75 0 0 1 0 1.5h-1v1a.75.75 0 0 1-1.5 0v-1h-1a.75.75 0 0 1 0-1.5h1v-1a.75.75 0 0 1 .75-.75Zm9.25.75a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm-2 2.25a1 1 0 1 1 0 2 1 1 0 0 1 0-2Z" />
+          </svg>
           <span>Play</span>
+          {(activePage as string) === 'game' && (
+            <span className="absolute bottom-0 inset-x-3 h-1 rounded-t-full bg-blue-600" />
+          )}
         </button>
       </nav>
 
@@ -6820,7 +7465,7 @@ export default function App() {
         </div>
       )}
 
-      {/* CLEAN FULL-SCREEN PDF VIEWER WITH DIRECT INTERNAL STORAGE DOWNLOAD ICON */}
+      {/* CLEAN FULL-SCREEN PDF VIEWER (NO BACK ARROW ON FINAL STEP — USE PHONE BACK BUTTON) */}
       {viewerPaper && (() => {
         const activeDocUrl =
           viewerType === 'answers' && viewerPaper.answersUrl
@@ -6837,27 +7482,16 @@ export default function App() {
             role="dialog"
             aria-modal="true"
           >
-            {/* Clean Top Bar: Back Button + PDF Filename + Direct Download Icon */}
-            <div className="h-14 bg-slate-900 text-white border-b border-slate-800 px-3 sm:px-5 flex items-center justify-between gap-3 shrink-0">
-              <div className="flex items-center gap-3 min-w-0 flex-1">
-                <button
-                  type="button"
-                  onClick={() => setViewerPaper(null)}
-                  className="p-2 rounded-xl hover:bg-white/10 text-white transition-colors cursor-pointer shrink-0"
-                  title="Back"
-                  aria-label="Back"
-                >
-                  <ArrowLeft className="w-5 h-5" />
-                </button>
-                <div className="min-w-0 flex-1">
-                  <div className="text-xs sm:text-sm font-bold text-white truncate">
-                    {activeDocFilename}
-                  </div>
-                  <div className="text-[11px] font-medium text-slate-400 truncate">
-                    {viewerType === 'answers'
-                      ? `${viewerPaper.form} · ${viewerPaper.subject} · Marking Scheme`
-                      : `${viewerPaper.form} · ${viewerPaper.subject} · ${viewerPaper.year}`}
-                  </div>
+            {/* Clean Top Bar: PDF Filename + Direct Download Icon (No Back Arrow on Last Step) */}
+            <div className="h-14 bg-slate-900 text-white border-b border-slate-800 px-4 sm:px-5 flex items-center justify-between gap-3 shrink-0">
+              <div className="min-w-0 flex-1">
+                <div className="text-xs sm:text-sm font-bold text-white truncate">
+                  {activeDocFilename}
+                </div>
+                <div className="text-[11px] font-medium text-slate-400 truncate">
+                  {viewerType === 'answers'
+                    ? `${viewerPaper.form} · ${viewerPaper.subject} · Marking Scheme`
+                    : `${viewerPaper.form} · ${viewerPaper.subject} · ${viewerPaper.year}`}
                 </div>
               </div>
 
@@ -6913,32 +7547,23 @@ export default function App() {
         );
       })()}
 
-      {/* DEDICATED FULL-PAGE MOHA AI SITE (CLEAN VIEWPORT-LOCKED WORKSPACE) */}
+      {/* DEDICATED FULL-PAGE MOHA AI SITE (100% CLEAN AI CHAT WORKSPACE — NO STUDIO, DOCS OR DIAGRAMS) */}
       <AnimatePresence mode="wait">
       {activePage === 'moha' && (
         <motion.div
-          key={`view-moha-${mohaViewMode === 'studio' ? 'studio' : 'portal'}`}
+          key="view-moha-portal"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15 }}
-          className="tie-print-unlock fixed inset-x-0 top-0 bottom-14 lg:bottom-0 z-40 w-full max-w-full h-[calc(100dvh-3.5rem)] lg:h-[100dvh] bg-slate-50 flex flex-col overflow-hidden"
+          className="fixed inset-x-0 top-0 bottom-16 lg:bottom-0 z-40 w-full max-w-full h-[calc(100dvh-4rem)] lg:h-[100dvh] bg-slate-50 flex flex-col overflow-hidden"
         >
-          {/* Unified Navigation & Context Bar (Responsive Mobile-First Layout) */}
+          {/* Unified Navigation & Context Bar (Clean AI Chat Header) */}
           <div className="shrink-0 bg-white border-b border-slate-200 px-2.5 sm:px-4 py-1.5 shadow-2xs print:hidden">
             <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-1.5">
-              {/* Row 1 on Mobile / Left on Desktop: Back + Brand + Class/Subject + Book/Chapter Selectors */}
+              {/* Row 1 on Mobile / Left on Desktop: Brand + Class/Subject + Book/Chapter Selectors */}
               <div className="flex items-center justify-between md:justify-start gap-1.5 overflow-x-auto no-scrollbar">
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <button
-                    onClick={handleGoBack}
-                    className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center gap-1 cursor-pointer shrink-0"
-                    title="Back to Elimika"
-                  >
-                    <ArrowLeft className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Back</span>
-                  </button>
-
                   <div className="flex items-center gap-1 font-black text-slate-900 text-xs sm:text-sm shrink-0">
                     <span className="w-5 h-5 rounded-md bg-violet-600 text-white flex items-center justify-center text-[11px]">
                       🤖
@@ -7066,16 +7691,6 @@ export default function App() {
                       setSelectedQuizTopic(chosenChap);
                       setTsTopic(chosenChap);
                       setTsSubTopic(chosenChap);
-                      if (mohaViewMode === 'quiz') {
-                        void startAiQuiz(
-                          mohaActiveClass,
-                          mohaActiveSubject,
-                          chosenChap,
-                          'ALL',
-                          selectedQuizSourceFilter,
-                          false
-                        );
-                      }
                     }}
                     title="Select Syllabus Chapter / Topic"
                     className="max-w-[95px] sm:max-w-[125px] lg:max-w-[175px] bg-transparent text-slate-800 font-semibold text-[11px] truncate focus:outline-none cursor-pointer"
@@ -7094,47 +7709,25 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Row 2 on Mobile / Right on Desktop: Workspace Tab Switcher + Daily Quiz + Dark Mode */}
-              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar shrink-0">
-                {[
-                  { id: 'chat' as const, label: '💬 Chat' },
-                  { id: 'studio' as const, label: '📘 Studio & Docs' },
-                  { id: 'diagram' as const, label: '📐 Diagrams' },
-                ].map((tab) => {
-                  const active = mohaViewMode === tab.id;
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => setMohaViewMode(tab.id)}
-                      className={`px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-                        active
-                          ? 'bg-violet-600 text-white shadow-2xs'
-                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                      }`}
-                    >
-                      {tab.label}
-                    </button>
-                  );
-                })}
-                {mohaViewMode === 'chat' && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setMohaMessages([
-                        {
-                          id: 'msg-welcome',
-                          role: 'ai',
-                          text: `Ready for **${mohaActiveClass} • ${mohaActiveSubject}**.`,
-                        },
-                      ])
-                    }
-                    className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 text-[11px] font-bold flex items-center gap-1 cursor-pointer shrink-0"
-                    title="Clear Chat"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>Clear</span>
-                  </button>
-                )}
+              {/* Row 2 on Mobile / Right on Desktop: Clear Chat + Dark Mode */}
+              <div className="flex items-center justify-end gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setMohaMessages([
+                      {
+                        id: 'msg-welcome',
+                        role: 'ai',
+                        text: `Ready for **${mohaActiveClass} • ${mohaActiveSubject}**.`,
+                      },
+                    ])
+                  }
+                  className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 text-[11px] font-bold flex items-center gap-1 cursor-pointer shrink-0"
+                  title="Clear Chat"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Clear</span>
+                </button>
                 <button
                   type="button"
                   onClick={() => selectThemeMode(darkMode ? 'light' : 'dark')}
@@ -7152,462 +7745,108 @@ export default function App() {
             </div>
           </div>
 
-          {/* ==================== VIEW 1: CLEAN CHAT ==================== */}
-          {mohaViewMode === 'chat' && (
-            <div className="flex-1 min-h-0 flex flex-col max-w-5xl w-full mx-auto overflow-hidden">
-
-              {/* Scrollable Messages Viewport */}
-              <div
-                ref={chatContainerRef}
-                className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-5 py-3 space-y-3 bg-slate-50"
-              >
-                {mohaMessages.map((m) =>
-                  m.role === 'user' ? (
-                    <div key={m.id} className="flex justify-end">
-                      <div className="max-w-[82%] bg-violet-600 text-white px-3.5 py-2 rounded-2xl rounded-br-xs text-xs sm:text-sm font-semibold shadow-2xs space-y-2">
-                        {m.imagePreview && (
-                          <img
-                            src={m.imagePreview}
-                            alt="Uploaded"
-                            className="max-h-40 rounded-lg border border-white/30 object-contain"
-                          />
-                        )}
-                        <div>{m.text}</div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div key={m.id} className="flex justify-start">
-                      <div className="max-w-[96%] w-full bg-white border border-slate-200 p-3.5 rounded-2xl rounded-bl-xs shadow-2xs space-y-2">
-                        {m.loading ? (
-                          <div className="flex items-center gap-2 font-bold text-violet-700 text-xs">
-                            <span className="w-3.5 h-3.5 border-2 border-violet-600 border-t-transparent rounded-full animate-spin" />
-                            <span>{m.text}</span>
-                          </div>
-                        ) : (
-                          <>
-                            <div
-                              id={`msg-body-${m.id}`}
-                              className="text-xs sm:text-sm text-slate-800 leading-relaxed overflow-x-auto"
-                            >
-                              <div dangerouslySetInnerHTML={{ __html: formatMwalimuHtml(m.text) }} />
-                            </div>
-                            <div className="flex items-center gap-1.5 pt-1.5 border-t border-slate-100">
-                              <button
-                                onClick={() => speakMwalimuText(m.id, m.text)}
-                                className="px-2 py-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] flex items-center gap-1 cursor-pointer"
-                              >
-                                <Volume2 className="w-3 h-3" />
-                                <span>{speakingMsgId === m.id ? 'Stop' : 'Listen'}</span>
-                              </button>
-                              <button
-                                onClick={() => downloadMwalimuDocPdf(m.id, 'portrait')}
-                                className="px-2 py-1 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] flex items-center gap-1 cursor-pointer"
-                              >
-                                <Download className="w-3 h-3" />
-                                <span>PDF</span>
-                              </button>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  )
-                )}
-              </div>
-
-              {/* Attached Photo / PDF Preview */}
-              {mohaPendingImage && (
-                <div className="shrink-0 px-4 py-1.5 bg-violet-50 border-t border-violet-200 flex items-center justify-between">
-                  <span className="text-xs font-bold text-violet-900 truncate">
-                    {mohaPendingImage.fileName || 'File attached'}
-                  </span>
-                  <button
-                    onClick={() => setMohaPendingImage(null)}
-                    className="text-xs font-bold text-rose-600 cursor-pointer"
-                  >
-                    ✕
-                  </button>
-                </div>
-              )}
-
-              {/* Bottom Input Dock (Isolated local state for zero-lag typing) */}
-              <MohaChatInputDock
-                externalDraftValue={mohaInput}
-                onClearExternalDraft={() => setMohaInput('')}
-                onSendMessage={(text) => void sendMwalimuMessage(text)}
-                onImageSelect={handleMwalimuImageSelect}
-                onVoiceDictation={startMohaVoiceDictation}
-                inputRef={chatInputRef}
-              />
-            </div>
-          )}
-
-          {/* ==================== VIEW 3: TEACHER STUDIO (LESSON PLAN & SCHEME OF WORK ONLY) ==================== */}
-          {mohaViewMode === 'studio' && (
-            <div className="tie-print-unlock flex-1 min-h-0 flex flex-col overflow-hidden bg-slate-100">
-              {/* Top Studio Bar: Only Lesson Plan & Scheme of Work + PDF Export */}
-              <div className="shrink-0 bg-white border-b border-slate-200 px-2.5 sm:px-4 py-2 print:hidden">
-                <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2 text-xs">
-                  {/* Left: Document Type Selector (Only Lesson Plan & Scheme of Work) */}
-                  <div className="flex items-center gap-1.5">
-                    {[
-                      {
-                        id: 'lessonplan' as const,
-                        label: '📋 Lesson Plan',
-                        activeClass: 'bg-blue-600 text-white shadow-2xs',
-                        inactiveClass: 'bg-slate-100 text-slate-700 hover:bg-slate-200',
-                      },
-                      {
-                        id: 'schemeofwork' as const,
-                        label: '📅 Scheme of Work (2027)',
-                        activeClass: 'bg-emerald-700 text-white shadow-2xs',
-                        inactiveClass: 'bg-slate-100 text-slate-700 hover:bg-slate-200',
-                      },
-                    ].map((docBtn) => {
-                      const isSelected = selectedStudioDocType === docBtn.id;
-                      return (
-                        <button
-                          key={docBtn.id}
-                          type="button"
-                          disabled={generatingDocType !== null}
-                          onClick={() => {
-                            setSelectedStudioDocType(docBtn.id);
-                            setTeacherStudioOpen(true);
-                          }}
-                          className={`px-3 py-1.5 rounded-xl font-black text-xs whitespace-nowrap transition-all cursor-pointer disabled:opacity-50 ${
-                            isSelected ? docBtn.activeClass : docBtn.inactiveClass
-                          }`}
-                        >
-                          {generatingDocType === docBtn.id ? '⏳ Generating...' : docBtn.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Right: Edit Details toggle + Direct PDF Export Actions (Lesson Plan mode) */}
-                  {selectedStudioDocType === 'lessonplan' && (
-                    <div className="flex items-center gap-1.5">
-                      {studioPreviewHtml && (
-                        <button
-                          type="button"
-                          onClick={() => setTeacherStudioOpen((v) => !v)}
-                          className={`px-2.5 py-1.5 rounded-xl font-bold text-[11px] border cursor-pointer whitespace-nowrap ${
-                            teacherStudioOpen
-                              ? 'bg-violet-600 text-white border-violet-600'
-                              : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300'
-                          }`}
-                        >
-                          {teacherStudioOpen ? '✕ Hide Form' : '✏️ Edit Details'}
-                        </button>
+          {/* ==================== CLEAN AI CHAT WORKSPACE ==================== */}
+          <div className="flex-1 min-h-0 flex flex-col max-w-5xl w-full mx-auto overflow-hidden">
+            {/* Scrollable Messages Viewport */}
+            <div
+              ref={chatContainerRef}
+              className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-5 py-3 space-y-3 bg-slate-50"
+            >
+              {mohaMessages.map((m) =>
+                m.role === 'user' ? (
+                  <div key={m.id} className="flex justify-end">
+                    <div className="max-w-[82%] bg-violet-600 text-white px-3.5 py-2 rounded-2xl rounded-br-xs text-xs sm:text-sm font-semibold shadow-2xs space-y-2">
+                      {m.imagePreview && (
+                        <img
+                          src={m.imagePreview}
+                          alt="Uploaded"
+                          className="max-h-40 rounded-lg border border-white/30 object-contain"
+                        />
                       )}
-
-                      {studioPreviewHtml && (
+                      <div>{m.text}</div>
+                    </div>
+                  </div>
+                ) : (
+                  <div key={m.id} className="flex justify-start">
+                    <div className="max-w-[96%] w-full bg-white border border-slate-200 p-3.5 rounded-2xl rounded-bl-xs shadow-2xs space-y-2">
+                      {m.loading ? (
+                        <div className="flex items-center gap-2 font-bold text-violet-700 text-xs">
+                          <span className="w-3.5 h-3.5 border-2 border-violet-600 border-t-transparent rounded-full animate-spin" />
+                          <span>{m.text}</span>
+                        </div>
+                      ) : (
                         <>
-                          <button
-                            onClick={() => downloadMwalimuDocPdf('studio-preview', 'portrait')}
-                            className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] flex items-center gap-1 cursor-pointer whitespace-nowrap"
-                            title="Download Portrait PDF"
+                          <div
+                            id={`msg-body-${m.id}`}
+                            className="text-xs sm:text-sm text-slate-800 leading-relaxed overflow-x-auto"
                           >
-                            <Download className="w-3 h-3" /> Portrait PDF
-                          </button>
-                          <button
-                            onClick={() => downloadMwalimuDocPdf('studio-preview', 'landscape')}
-                            className="px-2.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] flex items-center gap-1 cursor-pointer whitespace-nowrap"
-                            title="Download Landscape PDF"
-                          >
-                            <Download className="w-3 h-3" /> Landscape PDF
-                          </button>
+                            <div dangerouslySetInnerHTML={{ __html: formatMwalimuHtml(m.text) }} />
+                          </div>
+                          <div className="flex items-center gap-1.5 pt-1.5 border-t border-slate-100">
+                            <button
+                              onClick={() => speakMwalimuText(m.id, m.text)}
+                              className="px-2 py-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] flex items-center gap-1 cursor-pointer"
+                            >
+                              <Volume2 className="w-3 h-3" />
+                              <span>{speakingMsgId === m.id ? 'Stop' : 'Listen'}</span>
+                            </button>
+                            <button
+                              onClick={() => downloadMwalimuDocPdf(m.id, 'portrait')}
+                              className="px-2 py-1 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] flex items-center gap-1 cursor-pointer"
+                            >
+                              <Download className="w-3 h-3" />
+                              <span>PDF</span>
+                            </button>
+                          </div>
                         </>
                       )}
                     </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Scrollable Main Area: Self-Contained 2027 TIE Scheme Generator OR Lesson Plan Studio */}
-              <div className="tie-print-unlock flex-1 min-h-0 overflow-y-auto px-3 sm:px-6 py-4 space-y-4">
-                {selectedStudioDocType === 'schemeofwork' ? (
-                  <TieSchemeOfWorkGenerator
-                    initialClass={mohaActiveClass}
-                    initialSubject={mohaActiveSubject}
-                    initialSchool={tsSchool || userProfile.school}
-                    initialTeacher={tsTeacher || userProfile.name}
-                  />
-                ) : (
-                <>
-                {(teacherStudioOpen || !studioPreviewHtml) && (
-                  <div className="max-w-3xl mx-auto bg-white rounded-2xl border border-slate-200 shadow-xs p-4 sm:p-6 space-y-4">
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                      <div>
-                        <h3 className="text-sm sm:text-base font-black text-slate-900">
-                          📋 Lesson Plan Details
-                        </h3>
-                        <p className="text-xs text-slate-500">
-                          Fill in the teacher, topic, and student attendance details below to generate your Lesson Plan for{' '}
-                          <span className="font-bold text-slate-800">
-                            {mohaActiveClass} • {mohaActiveSubject}
-                          </span>
-                          .
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-blue-600 text-white">
-                          Lesson Plan
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedStudioDocType('schemeofwork')}
-                          className="px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-700"
-                        >
-                          Switch to Scheme of Work (2027)
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                          Teacher&apos;s Name
-                        </label>
-                        <input
-                          type="text"
-                          value={tsTeacher}
-                          onChange={(e) => setTsTeacher(e.target.value)}
-                          placeholder="e.g. Mr. J. Nyerere"
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-violet-600 focus:outline-none font-semibold text-xs bg-white"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                          School Name
-                        </label>
-                        <input
-                          type="text"
-                          value={tsSchool}
-                          onChange={(e) => setTsSchool(e.target.value)}
-                          placeholder="e.g. Azania Secondary School"
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-violet-600 focus:outline-none font-semibold text-xs bg-white"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                          Main Topic
-                        </label>
-                        {activeSyllabusTopics.length > 0 && (
-                          <select
-                            value={activeSyllabusTopics.includes(tsTopic) ? tsTopic : ''}
-                            onChange={(e) => {
-                              if (e.target.value) setTsTopic(e.target.value);
-                            }}
-                            className="w-full mb-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 font-semibold text-xs text-slate-700"
-                          >
-                            <option value="">-- Choose from Syllabus Topics (or type below) --</option>
-                            {activeSyllabusTopics.map((topic) => (
-                              <option key={topic} value={topic}>
-                                {topic}
-                              </option>
-                            ))}
-                          </select>
-                        )}
-                        <input
-                          type="text"
-                          value={tsTopic}
-                          onChange={(e) => setTsTopic(e.target.value)}
-                          placeholder={activeSyllabusTopics[0] || 'Enter Main Topic'}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-violet-600 focus:outline-none font-semibold text-xs bg-white"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                          Sub-Topic
-                        </label>
-                        <input
-                          type="text"
-                          value={tsSubTopic}
-                          onChange={(e) => setTsSubTopic(e.target.value)}
-                          placeholder="e.g. Solving Quadratic Equations"
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-violet-600 focus:outline-none font-semibold text-xs bg-white"
-                        />
-                        <div className="grid grid-cols-2 gap-2 mt-2">
-                          <div>
-                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">
-                              Duration
-                            </label>
-                            <input
-                              type="text"
-                              value={tsDuration}
-                              onChange={(e) => setTsDuration(e.target.value)}
-                              placeholder="80 Minutes"
-                              className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-semibold text-xs bg-white"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">
-                              Date
-                            </label>
-                            <input
-                              type="date"
-                              value={tsDate}
-                              onChange={(e) => setTsDate(e.target.value)}
-                              className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-semibold text-xs bg-white"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Number of Students Section */}
-                    <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-black text-slate-800">
-                          👥 Number of Students (Attendance)
-                        </span>
-                        <span className="text-[11px] font-bold text-slate-600">
-                          Registered: {(Number(tsRegG) || 0) + (Number(tsRegB) || 0)} • Present:{' '}
-                          {(Number(tsPresG) || 0) + (Number(tsPresB) || 0)}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
-                        <div>
-                          <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
-                            Registered Girls
-                          </label>
-                          <input
-                            type="number"
-                            min={0}
-                            value={tsRegG}
-                            onChange={(e) => setTsRegG(Number(e.target.value) || 0)}
-                            className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-bold text-xs bg-white"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
-                            Registered Boys
-                          </label>
-                          <input
-                            type="number"
-                            min={0}
-                            value={tsRegB}
-                            onChange={(e) => setTsRegB(Number(e.target.value) || 0)}
-                            className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-bold text-xs bg-white"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
-                            Present Girls
-                          </label>
-                          <input
-                            type="number"
-                            min={0}
-                            value={tsPresG}
-                            onChange={(e) => setTsPresG(Number(e.target.value) || 0)}
-                            className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-bold text-xs bg-white"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
-                            Present Boys
-                          </label>
-                          <input
-                            type="number"
-                            min={0}
-                            value={tsPresB}
-                            onChange={(e) => setTsPresB(Number(e.target.value) || 0)}
-                            className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-bold text-xs bg-white"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
-                      <button
-                        type="button"
-                        disabled={generatingDocType !== null}
-                        onClick={() => submitTeacherStudioDoc(selectedStudioDocType)}
-                        className={`w-full sm:w-auto px-5 py-2.5 rounded-xl font-black text-xs sm:text-sm text-white cursor-pointer shadow-sm transition-all disabled:opacity-50 ${
-                          selectedStudioDocType === 'lessonplan'
-                            ? 'bg-blue-600 hover:bg-blue-700'
-                            : 'bg-emerald-700 hover:bg-emerald-800'
-                        }`}
-                      >
-                        {generatingDocType !== null
-                          ? '⏳ Generating Document...'
-                          : selectedStudioDocType === 'lessonplan'
-                            ? '📋 Generate Lesson Plan'
-                            : '📅 Generate Scheme of Work'}
-                      </button>
-                    </div>
                   </div>
-                )}
-
-                {studioPreviewHtml && (
-                  <div className="max-w-6xl mx-auto bg-white rounded-xl border border-slate-200 shadow-xs p-4 sm:p-6">
-                    <div
-                      id="msg-body-studio-preview"
-                      contentEditable
-                      suppressContentEditableWarning
-                      className="overflow-x-auto focus:outline-none min-h-[60vh]"
-                      dangerouslySetInnerHTML={{
-                        __html: sanitizeUntrustedHtml(studioPreviewHtml),
-                      }}
-                    />
-                  </div>
-                )}
-                </>
-                )}
-              </div>
+                )
+              )}
             </div>
-          )}
 
-          {/* ==================== VIEW 4: INTERACTIVE DIAGRAM LAB ==================== */}
-          {mohaViewMode === 'diagram' && (
-            <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-6">
-              <div className="max-w-5xl mx-auto space-y-4">
-                <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
-                  <div>
-                    <span className="font-black text-slate-900">
-                      🧪 NECTA Paper 2 Virtual Science Practicals Lab
-                    </span>
-                    <span className="text-slate-500 block sm:inline sm:ml-2">
-                      Run Titration, Salt Analysis, Food Tests, Pendulum &amp; Ohm&apos;s Law simulations.
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      openVirtualLabPage(mohaActiveClass);
-                    }}
-                    className="px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs cursor-pointer shrink-0"
-                  >
-                    Launch Virtual Science Lab →
-                  </button>
-                </div>
-                <InteractiveDiagramLab
-                  initialPreset={activeDiagramPreset}
-                  activeClass={mohaActiveClass}
-                  activeSubject={mohaActiveSubject}
-                />
+            {/* Attached Photo / PDF Preview */}
+            {mohaPendingImage && (
+              <div className="shrink-0 px-4 py-1.5 bg-violet-50 border-t border-violet-200 flex items-center justify-between">
+                <span className="text-xs font-bold text-violet-900 truncate">
+                  {mohaPendingImage.fileName || 'File attached'}
+                </span>
+                <button
+                  onClick={() => setMohaPendingImage(null)}
+                  className="text-xs font-bold text-rose-600 cursor-pointer"
+                >
+                  ✕
+                </button>
               </div>
-            </div>
-          )}
+            )}
 
+            {/* Bottom Input Dock (Isolated local state for zero-lag typing) */}
+            <MohaChatInputDock
+              externalDraftValue={mohaInput}
+              onClearExternalDraft={() => setMohaInput('')}
+              onSendMessage={(text) => void sendMwalimuMessage(text)}
+              onImageSelect={handleMwalimuImageSelect}
+              onVoiceDictation={startMohaVoiceDictation}
+              inputRef={chatInputRef}
+            />
+          </div>
         </motion.div>
       )}
       </AnimatePresence>
 
       {/* FULL-VIEWPORT ELIMIKA PLAY ARCADE (NECTA TREASURE HUNT, ESCAPE THE CLASSROOM & ORIGINAL STEM ARENA) */}
       {activePage === 'game' && (
-        <ElimikaPlayHub
-          initialRoute={playRoute}
-          initialClass={selectedClass || mohaActiveClass || 'Form 3'}
-          initialSubject={selectedSubject || mohaActiveSubject || 'Basic Mathematics'}
-          initialTopic={selectedQuizTopic && selectedQuizTopic !== 'ALL' ? selectedQuizTopic : 'ALL'}
-          allPapers={allPapers}
-          onExitPlay={handleGoBack}
-        />
+        <Suspense fallback={<div className="py-16 flex justify-center"><div className="w-8 h-8 border-3 border-violet-600 border-t-transparent rounded-full animate-spin" /></div>}>
+          <ElimikaPlayHub
+            initialRoute={playRoute}
+            initialClass={selectedClass || mohaActiveClass || 'Form 3'}
+            initialSubject={selectedSubject || mohaActiveSubject || 'Basic Mathematics'}
+            initialTopic={selectedQuizTopic && selectedQuizTopic !== 'ALL' ? selectedQuizTopic : 'ALL'}
+            allPapers={allPapers}
+            onExitPlay={handleGoBack}
+          />
+        </Suspense>
       )}
 
       {/* TOAST NOTIFICATION */}
@@ -8848,21 +9087,25 @@ export default function App() {
       )}
 
       {/* GLOBAL TEXTBOOK UPLOAD & PERSISTENT NON-REPEATING QUESTION BANK MODAL */}
-      <TextbookQuestionExtractorModal
-        isOpen={textbookExtractorModalOpen}
-        initialClass={mohaActiveClass}
-        initialSubject={mohaActiveSubject}
-        onClose={() => setTextbookExtractorModalOpen(false)}
-        onQuestionsExtracted={({ cls, subject: sub }) => {
-          setMohaActiveClass(cls);
-          setMohaActiveSubject(sub);
-          void syncQuestionBankWithServer(cls, sub);
-          if (activePage === 'daily_quiz' || (activePage === 'moha' && mohaViewMode === 'quiz')) {
-            void startAiQuiz(cls, sub, selectedQuizTopic, selectedQuizSubTopic, selectedQuizSourceFilter, activePage === 'daily_quiz');
-          }
-          showToast(`✅ Extracted & stored non-repeating textbook questions for ${cls} ${sub}!`);
-        }}
-      />
+      {textbookExtractorModalOpen && (
+        <Suspense fallback={null}>
+          <TextbookQuestionExtractorModal
+            isOpen={textbookExtractorModalOpen}
+            initialClass={mohaActiveClass}
+            initialSubject={mohaActiveSubject}
+            onClose={() => setTextbookExtractorModalOpen(false)}
+            onQuestionsExtracted={({ cls, subject: sub }) => {
+              setMohaActiveClass(cls);
+              setMohaActiveSubject(sub);
+              void syncQuestionBankWithServer(cls, sub);
+              if (activePage === 'daily_quiz' || (activePage === 'moha' && mohaViewMode === 'quiz')) {
+                void startAiQuiz(cls, sub, selectedQuizTopic, selectedQuizSubTopic, selectedQuizSourceFilter, activePage === 'daily_quiz');
+              }
+              showToast(`✅ Extracted & stored non-repeating textbook questions for ${cls} ${sub}!`);
+            }}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }

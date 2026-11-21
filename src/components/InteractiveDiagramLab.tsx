@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Play, RotateCcw, Sliders } from 'lucide-react';
 
 export type DiagramPreset = 'physics_ohm' | 'math_quadratic' | 'bio_photosynthesis' | 'chem_titration';
@@ -8,6 +8,7 @@ interface InteractiveDiagramLabProps {
   activeClass: string;
   activeSubject: string;
   onSendToChat?: (summaryText: string) => void;
+  hidePresetBar?: boolean;
 }
 
 export const InteractiveDiagramLab: React.FC<InteractiveDiagramLabProps> = ({
@@ -15,8 +16,10 @@ export const InteractiveDiagramLab: React.FC<InteractiveDiagramLabProps> = ({
   activeClass,
   activeSubject,
   onSendToChat,
+  hidePresetBar = false,
 }) => {
   const [preset, setPreset] = useState<DiagramPreset>(() => {
+    if (hidePresetBar) return initialPreset;
     const s = activeSubject.toLowerCase();
     if (s.includes('math') || s.includes('hisabati')) return 'math_quadratic';
     if (s.includes('biolog') || s.includes('sayansi')) return 'bio_photosynthesis';
@@ -24,6 +27,12 @@ export const InteractiveDiagramLab: React.FC<InteractiveDiagramLabProps> = ({
     if (s.includes('physic')) return 'physics_ohm';
     return initialPreset;
   });
+
+  useEffect(() => {
+    if (hidePresetBar) {
+      setPreset(initialPreset);
+    }
+  }, [initialPreset, hidePresetBar]);
 
   // 1. Physics: Ohm's Law Circuit State
   const [voltage, setVoltage] = useState<number>(12);
@@ -76,58 +85,71 @@ export const InteractiveDiagramLab: React.FC<InteractiveDiagramLabProps> = ({
   return (
     <div className="space-y-4">
       {/* Top Preset Selector Bar */}
-      <div className="bg-white p-3.5 rounded-2xl border border-slate-200 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-1.5">
+      {!hidePresetBar ? (
+        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <button
+              onClick={() => setPreset('physics_ohm')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                preset === 'physics_ohm'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              ⚡ Physics: Ohm&apos;s Law Circuit
+            </button>
+            <button
+              onClick={() => setPreset('math_quadratic')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                preset === 'math_quadratic'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              📐 Math: Function Graph &amp; Table
+            </button>
+            <button
+              onClick={() => setPreset('bio_photosynthesis')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                preset === 'bio_photosynthesis'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              🧬 Biology: Xylem, Phloem &amp; Photosynthesis
+            </button>
+            <button
+              onClick={() => setPreset('chem_titration')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                preset === 'chem_titration'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              🧪 Chemistry: Titration &amp; Burette Table
+            </button>
+          </div>
+
           <button
-            onClick={() => setPreset('physics_ohm')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
-              preset === 'physics_ohm'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
+            onClick={resetCurrentPreset}
+            className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1 cursor-pointer"
           >
-            ⚡ Physics: Ohm&apos;s Law Circuit
-          </button>
-          <button
-            onClick={() => setPreset('math_quadratic')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
-              preset === 'math_quadratic'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
-          >
-            📐 Math: Function Graph &amp; Table
-          </button>
-          <button
-            onClick={() => setPreset('bio_photosynthesis')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
-              preset === 'bio_photosynthesis'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
-          >
-            🧬 Biology: Xylem, Phloem &amp; Photosynthesis
-          </button>
-          <button
-            onClick={() => setPreset('chem_titration')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
-              preset === 'chem_titration'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
-          >
-            🧪 Chemistry: Titration &amp; Burette Table
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Reset</span>
           </button>
         </div>
-
-        <button
-          onClick={resetCurrentPreset}
-          className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1 cursor-pointer"
-        >
-          <RotateCcw className="w-3.5 h-3.5" />
-          <span>Reset</span>
-        </button>
-      </div>
+      ) : (
+        <div className="flex items-center justify-end">
+          <button
+            type="button"
+            onClick={resetCurrentPreset}
+            className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Reset Parameters</span>
+          </button>
+        </div>
+      )}
 
       {/* 1. PHYSICS: OHM'S LAW CIRCUIT DIAGRAM + LIVE TABLE */}
       {preset === 'physics_ohm' && (

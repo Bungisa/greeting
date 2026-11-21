@@ -19,12 +19,24 @@ import {
   ScienceLab3DViewport,
 } from '../games/stemBuilder/ScienceLab3DViewport';
 
+export type VirtualLabSubject = 'chemistry' | 'physics' | 'biology';
+export type VirtualLabSubMode =
+  | 'titration'
+  | 'qualitative'
+  | 'pendulum'
+  | 'ohm'
+  | 'food_tests'
+  | 'classification';
+
 export interface VirtualScienceLabProps {
   activeClass?: string;
   onLaunchPracticalQuiz?: (cls: string, subject: string, topic: string) => void;
+  initialSubject?: VirtualLabSubject;
+  initialSubMode?: VirtualLabSubMode;
+  embeddedMode?: boolean;
 }
 
-type ScienceSubjectTab = 'chemistry' | 'physics' | 'biology';
+type ScienceSubjectTab = VirtualLabSubject;
 
 interface TitrationRow {
   runLabel: 'Pilot' | '1' | '2' | '3';
@@ -254,11 +266,16 @@ const BIOLOGY_SPECIMENS = [
 export const VirtualScienceLab: React.FC<VirtualScienceLabProps> = ({
   activeClass = 'Form 4',
   onLaunchPracticalQuiz,
+  initialSubject = 'chemistry',
+  initialSubMode,
+  embeddedMode = false,
 }) => {
-  const [subjectTab, setSubjectTab] = useState<ScienceSubjectTab>('chemistry');
+  const [subjectTab, setSubjectTab] = useState<ScienceSubjectTab>(initialSubject);
 
   // ==================== 1. CHEMISTRY LAB STATE ====================
-  const [chemMode, setChemMode] = useState<'titration' | 'qualitative'>('titration');
+  const [chemMode, setChemMode] = useState<'titration' | 'qualitative'>(
+    initialSubMode === 'qualitative' ? 'qualitative' : 'titration'
+  );
   const [titrationPreset, setTitrationPreset] = useState<'hcl_naoh' | 'h2so4_na2co3'>('hcl_naoh');
   const [indicator, setIndicator] = useState<'MO' | 'POP'>('MO');
   const [pipetteVol, setPipetteVol] = useState<20 | 25>(25);
@@ -371,7 +388,9 @@ export const VirtualScienceLab: React.FC<VirtualScienceLabProps> = ({
   }, [titrationRows, trueEndpointVol]);
 
   // ==================== 2. PHYSICS LAB STATE ====================
-  const [physMode, setPhysMode] = useState<'pendulum' | 'ohm'>('pendulum');
+  const [physMode, setPhysMode] = useState<'pendulum' | 'ohm'>(
+    initialSubMode === 'ohm' ? 'ohm' : 'pendulum'
+  );
   const [selectedLengthCm, setSelectedLengthCm] = useState<number>(60);
   const [isSwinging, setIsSwinging] = useState<boolean>(false);
   const [swingAngle, setSwingAngle] = useState<number>(0);
@@ -429,7 +448,20 @@ export const VirtualScienceLab: React.FC<VirtualScienceLabProps> = ({
   };
 
   // ==================== 3. BIOLOGY LAB STATE ====================
-  const [bioMode, setBioMode] = useState<'food_tests' | 'classification'>('food_tests');
+  const [bioMode, setBioMode] = useState<'food_tests' | 'classification'>(
+    initialSubMode === 'classification' ? 'classification' : 'food_tests'
+  );
+
+  useEffect(() => {
+    setSubjectTab(initialSubject);
+    if (initialSubMode === 'titration' || initialSubMode === 'qualitative') {
+      setChemMode(initialSubMode);
+    } else if (initialSubMode === 'pendulum' || initialSubMode === 'ohm') {
+      setPhysMode(initialSubMode);
+    } else if (initialSubMode === 'food_tests' || initialSubMode === 'classification') {
+      setBioMode(initialSubMode);
+    }
+  }, [initialSubject, initialSubMode]);
   const [selectedFoodSample, setSelectedFoodSample] = useState<'S1' | 'S2' | 'S3'>('S1');
   const [foodTestLogs, setFoodTestLogs] = useState<FoodTestLog[]>([
     {
@@ -700,69 +732,135 @@ export const VirtualScienceLab: React.FC<VirtualScienceLabProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Top Laboratory Header & Subject Switcher */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 space-y-4 shadow-xs">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 pb-4">
-          <div className="space-y-1">
-            <div className="text-xs font-semibold text-emerald-700">
-              NECTA Paper 2 (2A / 2B / 2C) Practical Preparation · {activeClass}
+      {/* Top Laboratory Header & Subject Switcher (compact when embedded inside SimulationsHub) */}
+      {!embeddedMode ? (
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 space-y-4 shadow-xs">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+            <div className="space-y-1">
+              <div className="text-xs font-semibold text-emerald-700">
+                NECTA Paper 2 (2A / 2B / 2C) Practical Preparation · {activeClass}
+              </div>
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                Interactive Virtual Science Practicals Laboratory
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-600 max-w-3xl">
+                Perform realistic Chemistry titrations &amp; qualitative salt analysis, Physics simple pendulum &amp; Ohm&apos;s law graph experiments, and Biology biochemical food tests with official NECTA report tables.
+              </p>
             </div>
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-              Interactive Virtual Science Practicals Laboratory
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-600 max-w-3xl">
-              Perform realistic Chemistry titrations &amp; qualitative salt analysis, Physics simple pendulum &amp; Ohm&apos;s law graph experiments, and Biology biochemical food tests with official NECTA report tables.
-            </p>
+
+            {/* 3-Subject Segmented Switcher */}
+            <div className="flex flex-wrap items-center gap-1 p-1 bg-slate-100 rounded-xl shrink-0 self-start">
+              <button
+                type="button"
+                onClick={() => setSubjectTab('chemistry')}
+                className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
+                  subjectTab === 'chemistry'
+                    ? 'bg-white text-slate-900 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <FlaskConical className="w-4 h-4 text-emerald-600" />
+                <span>Chemistry 2A (Titration &amp; Salt)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSubjectTab('physics')}
+                className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
+                  subjectTab === 'physics'
+                    ? 'bg-white text-slate-900 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Gauge className="w-4 h-4 text-blue-600" />
+                <span>Physics 2A (Pendulum &amp; Circuit)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSubjectTab('biology')}
+                className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
+                  subjectTab === 'biology'
+                    ? 'bg-white text-slate-900 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Microscope className="w-4 h-4 text-violet-600" />
+                <span>Biology 2A (Food Tests &amp; Specimens)</span>
+              </button>
+            </div>
           </div>
 
-          {/* 3-Subject Segmented Switcher */}
-          <div className="flex flex-wrap items-center gap-1 p-1 bg-slate-100 rounded-xl shrink-0 self-start">
+          {/* Direct 20-Question Practical Exam Launch Bar */}
+          {onLaunchPracticalQuiz && (
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-1 text-xs">
+              <div className="text-slate-600 font-medium">
+                Want to test your Paper 2 calculations, observations, and inferences with <strong>20 Exam Questions</strong>?
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    onLaunchPracticalQuiz(
+                      activeClass,
+                      subjectTab === 'chemistry'
+                        ? 'Chemistry'
+                        : subjectTab === 'physics'
+                        ? 'Physics'
+                        : 'Biology',
+                      subjectTab === 'chemistry'
+                        ? 'Volumetric & Qualitative Analysis'
+                        : subjectTab === 'physics'
+                        ? 'Mechanics & Current Electricity Practical'
+                        : 'Nutrition Food Tests & Classification'
+                    )
+                  }
+                  className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold cursor-pointer flex items-center gap-1.5"
+                >
+                  <Play className="w-3.5 h-3.5 text-amber-400" />
+                  <span>
+                    Take 20-Question{' '}
+                    {subjectTab === 'chemistry'
+                      ? 'Chemistry'
+                      : subjectTab === 'physics'
+                      ? 'Physics'
+                      : 'Biology'}{' '}
+                    Paper 2 Practical Quiz
+                  </span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Instant Full-Screen 3D Interactive Lab Launch Banner */}
+          <div className="p-3.5 rounded-2xl bg-gradient-to-r from-slate-950 via-slate-900 to-emerald-950 text-white flex flex-wrap items-center justify-between gap-3 border border-emerald-500/40">
+            <div className="flex items-center gap-2.5 text-xs">
+              <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>
+                <strong>New 3D Interactive &amp; Animated Science Lab:</strong> Orbit 3D apparatus, trigger animated reactions, and solve NECTA Paper 2 calculations directly inside Full Screen!
+              </span>
+            </div>
             <button
               type="button"
-              onClick={() => setSubjectTab('chemistry')}
-              className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
-                subjectTab === 'chemistry'
-                  ? 'bg-white text-slate-900 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
+              onClick={() => {
+                setIs3DFullscreen(true);
+                setShow3DSolverDrawer(false);
+              }}
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-emerald-400 hover:from-amber-300 hover:to-emerald-300 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-md cursor-pointer"
             >
-              <FlaskConical className="w-4 h-4 text-emerald-600" />
-              <span>Chemistry 2A (Titration &amp; Salt)</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setSubjectTab('physics')}
-              className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
-                subjectTab === 'physics'
-                  ? 'bg-white text-slate-900 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <Gauge className="w-4 h-4 text-blue-600" />
-              <span>Physics 2A (Pendulum &amp; Circuit)</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setSubjectTab('biology')}
-              className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
-                subjectTab === 'biology'
-                  ? 'bg-white text-slate-900 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <Microscope className="w-4 h-4 text-violet-600" />
-              <span>Biology 2A (Food Tests &amp; Specimens)</span>
+              <Maximize2 className="w-3.5 h-3.5" />
+              <span>Launch Full-Screen 3D Lab &amp; Solve</span>
             </button>
           </div>
         </div>
-
-        {/* Direct 20-Question Practical Exam Launch Bar */}
-        {onLaunchPracticalQuiz && (
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-1 text-xs">
-            <div className="text-slate-600 font-medium">
-              Want to test your Paper 2 calculations, observations, and inferences with <strong>20 Exam Questions</strong>?
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
+      ) : (
+        <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl bg-slate-900 border border-slate-800 text-white">
+          <div className="flex items-center gap-2.5 text-xs">
+            <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+            <span className="text-slate-200">
+              <strong className="text-white">3D Interactive Lab ({activeClass}):</strong> Orbit apparatus, run reactions &amp; verify NECTA Paper 2 calculations.
+            </span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {onLaunchPracticalQuiz && (
               <button
                 type="button"
                 onClick={() =>
@@ -780,44 +878,26 @@ export const VirtualScienceLab: React.FC<VirtualScienceLabProps> = ({
                       : 'Nutrition Food Tests & Classification'
                   )
                 }
-                className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold cursor-pointer flex items-center gap-1.5"
+                className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-bold text-xs cursor-pointer flex items-center gap-1.5"
               >
                 <Play className="w-3.5 h-3.5 text-amber-400" />
-                <span>
-                  Take 20-Question{' '}
-                  {subjectTab === 'chemistry'
-                    ? 'Chemistry'
-                    : subjectTab === 'physics'
-                    ? 'Physics'
-                    : 'Biology'}{' '}
-                  Paper 2 Practical Quiz
-                </span>
+                <span>20-Qn Practical Quiz</span>
               </button>
-            </div>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                setIs3DFullscreen(true);
+                setShow3DSolverDrawer(false);
+              }}
+              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-emerald-400 hover:from-amber-300 hover:to-emerald-300 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-md cursor-pointer"
+            >
+              <Maximize2 className="w-3.5 h-3.5" />
+              <span>Full-Screen 3D Lab</span>
+            </button>
           </div>
-        )}
-
-        {/* Instant Full-Screen 3D Interactive Lab Launch Banner */}
-        <div className="p-3.5 rounded-2xl bg-gradient-to-r from-slate-950 via-slate-900 to-emerald-950 text-white flex flex-wrap items-center justify-between gap-3 border border-emerald-500/40">
-          <div className="flex items-center gap-2.5 text-xs">
-            <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
-            <span>
-              <strong>New 3D Interactive &amp; Animated Science Lab:</strong> Orbit 3D apparatus, trigger animated reactions, and solve NECTA Paper 2 calculations directly inside Full Screen!
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              setIs3DFullscreen(true);
-              setShow3DSolverDrawer(false);
-            }}
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-emerald-400 hover:from-amber-300 hover:to-emerald-300 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-md cursor-pointer"
-          >
-            <Maximize2 className="w-3.5 h-3.5" />
-            <span>Launch Full-Screen 3D Lab &amp; Solve</span>
-          </button>
         </div>
-      </div>
+      )}
 
       {/* ==================== 3D INTERACTIVE & ANIMATED LAB STAGE (WITH IN-FULLSCREEN SOLVING) ==================== */}
       <ScienceLab3DViewport

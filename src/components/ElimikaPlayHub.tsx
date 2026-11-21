@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import {
   Award,
   CheckCircle2,
@@ -16,10 +16,25 @@ import {
   Users,
   Wrench,
 } from 'lucide-react';
-import { StemArenaGame } from './StemArenaGame';
-import { TreasureHuntGame } from './games/TreasureHuntGame';
-import { EscapeClassroomGame } from '../games/EscapeClassroomGame';
-import { TugOfWarGame } from '../games/TugOfWarGame';
+
+const StemArenaGame = React.lazy(() =>
+  import('./StemArenaGame').then((m) => ({ default: m.StemArenaGame }))
+);
+const TreasureHuntGame = React.lazy(() =>
+  import('./games/TreasureHuntGame').then((m) => ({ default: m.TreasureHuntGame }))
+);
+const EscapeClassroomGame = React.lazy(() =>
+  import('../games/EscapeClassroomGame').then((m) => ({ default: m.EscapeClassroomGame }))
+);
+const TugOfWarGame = React.lazy(() =>
+  import('../games/TugOfWarGame').then((m) => ({ default: m.TugOfWarGame }))
+);
+const TeacherClassroomGameStudio = React.lazy(() =>
+  import('./games/TeacherClassroomGameStudio').then((m) => ({
+    default: m.TeacherClassroomGameStudio,
+  }))
+);
+import type { ClassroomCreationOption } from '../games/teacherClassroomGameEngine';
 import {
   ElimikaPlayProgress,
   getAvailableSubjectsForClass,
@@ -40,7 +55,8 @@ export type PlayGameRoute =
   | 'treasure_hunt_live'
   | 'escape_classroom'
   | 'stem_arena'
-  | 'tug_of_war';
+  | 'tug_of_war'
+  | 'classroom_studio';
 
 interface ElimikaPlayHubProps {
   initialRoute?: PlayGameRoute;
@@ -59,6 +75,7 @@ export const ElimikaPlayHub: React.FC<ElimikaPlayHubProps> = ({
   allPapers,
 }) => {
   const [activeRoute, setActiveRoute] = useState<PlayGameRoute>(initialRoute);
+  const [studioInitialOption, setStudioInitialOption] = useState<ClassroomCreationOption>('bank');
   const [progress, setProgress] = useState<ElimikaPlayProgress>(() => loadPlayProgress());
   const [selectedLaunchClass, setSelectedLaunchClass] = useState<string>(initialClass || 'Form 4');
   const [selectedLaunchSubject, setSelectedLaunchSubject] = useState<string>(
@@ -165,9 +182,15 @@ export const ElimikaPlayHub: React.FC<ElimikaPlayHubProps> = ({
         escape_classroom: '#escape-classroom',
         stem_arena: '#stem-arena',
         tug_of_war: '#tug-of-war',
+        classroom_studio: '#classroom-studio',
       };
       window.history.replaceState(null, '', hashMap[route]);
     }
+  };
+
+  const openTeacherClassroomStudio = (option: ClassroomCreationOption) => {
+    setStudioInitialOption(option);
+    navigateToGame('classroom_studio');
   };
 
   const handleAnswerBridgeQuestion = (optIndex: number) => {
@@ -221,27 +244,24 @@ export const ElimikaPlayHub: React.FC<ElimikaPlayHubProps> = ({
     setBridgeQuestionIdx((idx) => idx + 1);
   };
 
+  const gameLoadingFallback = (
+    <div className="w-full min-h-[45vh] flex items-center justify-center p-6">
+      <div className="w-8 h-8 border-3 border-violet-600 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+
   if (activeRoute === 'stem_arena') {
-    return <StemArenaGame onExitGame={() => navigateToGame('hub')} />;
+    return (
+      <Suspense fallback={gameLoadingFallback}>
+        <StemArenaGame onExitGame={() => navigateToGame('hub')} />
+      </Suspense>
+    );
   }
 
   if (activeRoute === 'treasure_hunt' || activeRoute === 'treasure_hunt_live') {
     return (
-      <TreasureHuntGame
-        initialClass={selectedLaunchClass}
-        initialSubject={selectedLaunchSubject}
-        initialTopic={selectedLaunchTopic}
-        allPapers={allPapers}
-        onExitToHub={() => navigateToGame('hub')}
-        onProgressUpdate={(p) => setProgress(p)}
-      />
-    );
-  }
-
-  if (activeRoute === 'escape_classroom') {
-    return (
-      <div className="pb-16 lg:pb-0">
-        <EscapeClassroomGame
+      <Suspense fallback={gameLoadingFallback}>
+        <TreasureHuntGame
           initialClass={selectedLaunchClass}
           initialSubject={selectedLaunchSubject}
           initialTopic={selectedLaunchTopic}
@@ -249,6 +269,23 @@ export const ElimikaPlayHub: React.FC<ElimikaPlayHubProps> = ({
           onExitToHub={() => navigateToGame('hub')}
           onProgressUpdate={(p) => setProgress(p)}
         />
+      </Suspense>
+    );
+  }
+
+  if (activeRoute === 'escape_classroom') {
+    return (
+      <div className="pb-16 lg:pb-0">
+        <Suspense fallback={gameLoadingFallback}>
+          <EscapeClassroomGame
+            initialClass={selectedLaunchClass}
+            initialSubject={selectedLaunchSubject}
+            initialTopic={selectedLaunchTopic}
+            allPapers={allPapers}
+            onExitToHub={() => navigateToGame('hub')}
+            onProgressUpdate={(p) => setProgress(p)}
+          />
+        </Suspense>
       </div>
     );
   }
@@ -256,14 +293,33 @@ export const ElimikaPlayHub: React.FC<ElimikaPlayHubProps> = ({
   if (activeRoute === 'tug_of_war') {
     return (
       <div className="pb-16 lg:pb-0">
-        <TugOfWarGame
-          initialClass={selectedLaunchClass}
-          initialSubject={selectedLaunchSubject}
-          initialTopic={selectedLaunchTopic}
-          allPapers={allPapers}
-          onExitToHub={() => navigateToGame('hub')}
-          onProgressUpdate={(p) => setProgress(p)}
-        />
+        <Suspense fallback={gameLoadingFallback}>
+          <TugOfWarGame
+            initialClass={selectedLaunchClass}
+            initialSubject={selectedLaunchSubject}
+            initialTopic={selectedLaunchTopic}
+            allPapers={allPapers}
+            onExitToHub={() => navigateToGame('hub')}
+            onProgressUpdate={(p) => setProgress(p)}
+          />
+        </Suspense>
+      </div>
+    );
+  }
+
+  if (activeRoute === 'classroom_studio') {
+    return (
+      <div className="pb-16 lg:pb-0">
+        <Suspense fallback={gameLoadingFallback}>
+          <TeacherClassroomGameStudio
+            initialClass={selectedLaunchClass}
+            initialSubject={selectedLaunchSubject}
+            initialTopic={selectedLaunchTopic}
+            initialCreationOption={studioInitialOption}
+            allPapers={allPapers}
+            onBackToGamesHub={() => navigateToGame('hub')}
+          />
+        </Suspense>
       </div>
     );
   }
@@ -729,6 +785,30 @@ export const ElimikaPlayHub: React.FC<ElimikaPlayHubProps> = ({
       </div>
 
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-5 space-y-5">
+        {/* ==================== ELIMIKA BATTLE ==================== */}
+        <section className="bg-gradient-to-r from-[#0A3D91] via-[#1548A8] to-[#1D4ED8] text-white rounded-3xl p-5 sm:p-6 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-blue-400/30">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-amber-400 text-slate-950 flex items-center justify-center shrink-0 shadow-md">
+              <Users className="w-7 h-7" />
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-xl sm:text-2xl font-black tracking-tight">Elimika Battle</h2>
+              <p className="text-xs sm:text-sm text-blue-100 mt-0.5">
+                Live classroom team battle for 2–6 teams with lucky boxes &amp; custom questions.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => openTeacherClassroomStudio('bank')}
+            className="px-5 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs sm:text-sm flex items-center justify-center gap-2 shrink-0 cursor-pointer shadow-sm"
+          >
+            <Play className="w-4 h-4 fill-slate-950" />
+            <span>Play Elimika Battle →</span>
+          </button>
+        </section>
+
         {/* 2x2 Vibrant Learning Games Grid (Matches Screen 8 in Both Design References) */}
         <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* GAME 1: NECTA TREASURE HUNT (Royal Blue Card with Gold Trophy) */}

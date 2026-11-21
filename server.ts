@@ -2917,6 +2917,303 @@ app.get('/api/download-pdf', async (req, res) => {
   return res.status(404).json({ error: 'PDF binary resource not found' });
 });
 
+// ==================== TEACHER CLASSROOM GAMES: AI QUESTION GENERATOR & PERSISTENCE ====================
+const teacherSavedGamesStore = new Map<string, Record<string, unknown>>();
+const teacherGameResultsStore = new Map<string, Record<string, unknown>>();
+
+app.get('/api/classroom-games/saved', (_req, res) => {
+  return res.json({
+    games: Array.from(teacherSavedGamesStore.values()),
+  });
+});
+
+app.post('/api/classroom-games/saved', (req, res) => {
+  const { game } = (req.body || {}) as { game?: Record<string, unknown> };
+  if (!game || typeof game !== 'object' || typeof game.id !== 'string' || !game.id.trim()) {
+    return res.status(400).json({ error: 'Valid game object with id is required.' });
+  }
+  const cleanId = game.id.trim().slice(0, 120);
+  teacherSavedGamesStore.set(cleanId, {
+    ...game,
+    id: cleanId,
+    updatedAt: new Date().toISOString(),
+  });
+  return res.json({ ok: true, id: cleanId });
+});
+
+app.delete('/api/classroom-games/saved/:id', (req, res) => {
+  const cleanId = String(req.params.id || '').trim();
+  teacherSavedGamesStore.delete(cleanId);
+  return res.json({ ok: true, deletedId: cleanId });
+});
+
+app.get('/api/classroom-games/results', (_req, res) => {
+  return res.json({
+    results: Array.from(teacherGameResultsStore.values()),
+  });
+});
+
+app.post('/api/classroom-games/results', (req, res) => {
+  const { result } = (req.body || {}) as { result?: Record<string, unknown> };
+  if (!result || typeof result !== 'object' || typeof result.id !== 'string' || !result.id.trim()) {
+    return res.status(400).json({ error: 'Valid session result with id is required.' });
+  }
+  const cleanId = result.id.trim().slice(0, 120);
+  teacherGameResultsStore.set(cleanId, {
+    ...result,
+    id: cleanId,
+    completedAt: typeof result.completedAt === 'string' ? result.completedAt : new Date().toISOString(),
+  });
+  return res.json({ ok: true, id: cleanId });
+});
+
+app.post('/api/classroom-games/generate-ai-questions', aiStandardRateLimiter, async (req, res) => {
+  try {
+    const {
+      cls = 'Form 2',
+      subject = 'Basic Mathematics',
+      topic = 'ALL',
+      subTopic = '',
+      difficulty = 'Medium',
+      questionType = 'multiple_choice',
+      count = 5,
+      points = 20,
+      teacherPrompt = '',
+      excludeSignatures = [],
+    } = (req.body || {}) as {
+      cls?: string;
+      subject?: string;
+      topic?: string;
+      subTopic?: string;
+      difficulty?: 'Easy' | 'Medium' | 'Hard';
+      questionType?: 'multiple_choice' | 'true_false' | 'short_answer';
+      count?: number;
+      points?: number;
+      teacherPrompt?: string;
+      excludeSignatures?: string[];
+    };
+
+    const safeCls = String(cls || 'Form 2').trim().slice(0, 60);
+    const safeSubject = String(subject || 'Basic Mathematics').trim().slice(0, 120);
+    const safeTopic = String(topic || 'ALL').trim().slice(0, 200);
+    const safeSubTopic = String(subTopic || '').trim().slice(0, 200);
+    const safeDiff: 'Easy' | 'Medium' | 'Hard' =
+      difficulty === 'Easy' || difficulty === 'Hard' ? difficulty : 'Medium';
+    const safeType: 'multiple_choice' | 'true_false' | 'short_answer' =
+      questionType === 'true_false' || questionType === 'short_answer'
+        ? questionType
+        : 'multiple_choice';
+    const safeCount = Math.max(1, Math.min(15, Number(count) || 5));
+    const safePoints = Math.max(1, Math.min(500, Number(points) || 20));
+    const safeTeacherPrompt = String(teacherPrompt || '').trim().slice(0, 600);
+    const excludedSet = new Set(
+      Array.isArray(excludeSignatures)
+        ? excludeSignatures.map((s) => String(s || '').toLowerCase())
+        : []
+    );
+
+    const syllabusTopics = getSyllabusTopicsForClassSubject(safeCls, safeSubject);
+    const effectiveTopic =
+      safeTopic && safeTopic !== 'ALL' ? safeTopic : syllabusTopics[0] || safeSubject;
+    const tbInfo = getTieTextbookChapterContent(safeCls, safeSubject, effectiveTopic);
+
+    const ai = getGenAIClient();
+    const generated: Array<{
+      id: string;
+      signature: string;
+      source: 'ai';
+      questionType: 'multiple_choice' | 'true_false' | 'short_answer';
+      subject: string;
+      cls: string;
+      topic: string;
+      subTopic: string;
+      difficulty: 'Easy' | 'Medium' | 'Hard';
+      question: string;
+      options: string[];
+      correctIndex: number;
+      shortAnswer: string;
+      explanation: string;
+      hint: string;
+      points: number;
+      sourceRef: string;
+    }> = [];
+
+    if (ai) {
+      try {
+        const typeInstruction =
+          safeType === 'true_false'
+            ? 'Each question MUST be a True/False question where options is strictly ["True", "False"], correctIndex is 0 (for True) or 1 (for False), and shortAnswer is "True" or "False".'
+            : safeType === 'short_answer'
+            ? 'Each question MUST be a Short-Answer or numerical problem where shortAnswer is a concise 1-to-4 word answer or exact numerical value, and options contains 4 choices with options[0] matching shortAnswer.'
+            : 'Each question MUST be a 4-option Multiple-Choice question with 4 distinct choices in options and correctIndex (0 to 3).';
+
+        const promptText = `Generate ${safeCount} authentic, competence-based Tanzanian TIE/NECTA classroom game questions for:
+- Class/Form: ${safeCls}
+- Subject: ${safeSubject}
+- Topic: ${effectiveTopic}
+${safeSubTopic ? `- Subtopic: ${safeSubTopic}\n` : ''}- Difficulty: ${safeDiff}
+- Question Type: ${safeType}
+${safeTeacherPrompt ? `- Teacher Special Focus: ${safeTeacherPrompt}\n` : ''}
+Curriculum Context (${tbInfo.bookTitle}):
+${(tbInfo.chapterSummaryMarkdown || '').slice(0, 2500)}
+
+CRITICAL RULES:
+1. ${typeInstruction}
+2. Format all mathematical expressions, fractions (\\frac{a}{b}), exponents (x^2), roots (\\sqrt{x}), and scientific formulas inside inline LaTeX $...$ delimiters.
+3. Provide a clear step-by-step worked explanation and a helpful hint for each question.`;
+
+        const jsonText = await generateContentWithQuotaFallback(ai, {
+          contents: promptText,
+          config: {
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  question: { type: Type.STRING },
+                  options: {
+                    type: Type.ARRAY,
+                    items: { type: Type.STRING },
+                  },
+                  correctIndex: { type: Type.INTEGER },
+                  shortAnswer: { type: Type.STRING },
+                  explanation: { type: Type.STRING },
+                  hint: { type: Type.STRING },
+                  topic: { type: Type.STRING },
+                  subTopic: { type: Type.STRING },
+                },
+                required: ['question', 'options', 'correctIndex', 'shortAnswer', 'explanation'],
+              },
+            },
+          },
+          enableThinking: false,
+          timeoutMs: 18000,
+        });
+
+        if (jsonText) {
+          const parsed = JSON.parse(jsonText);
+          if (Array.isArray(parsed)) {
+            parsed.forEach((raw, idx) => {
+              if (!raw || typeof raw.question !== 'string' || !raw.question.trim()) return;
+              const baseSig = computeServerQuestionSignature(raw.question);
+              const fullSig = `${safeType}::${baseSig}`;
+              if (!baseSig || excludedSet.has(fullSig) || excludedSet.has(baseSig)) return;
+              if (generated.some((g) => g.signature === fullSig)) return;
+
+              const opts =
+                safeType === 'true_false'
+                  ? ['True', 'False']
+                  : Array.isArray(raw.options) && raw.options.length >= 2
+                  ? raw.options.slice(0, 4).map((o: unknown) => String(o || '').trim())
+                  : [String(raw.shortAnswer || 'Correct Answer')];
+
+              const cIdx =
+                safeType === 'true_false'
+                  ? raw.correctIndex === 1 || String(raw.shortAnswer).toLowerCase() === 'false'
+                    ? 1
+                    : 0
+                  : typeof raw.correctIndex === 'number' &&
+                    raw.correctIndex >= 0 &&
+                    raw.correctIndex < opts.length
+                  ? raw.correctIndex
+                  : 0;
+
+              const sAns =
+                safeType === 'true_false'
+                  ? cIdx === 0
+                    ? 'True'
+                    : 'False'
+                  : String(raw.shortAnswer || opts[cIdx] || opts[0] || '').trim();
+
+              generated.push({
+                id: `ai-${Date.now()}-${idx}`,
+                signature: fullSig,
+                source: 'ai',
+                questionType: safeType,
+                subject: safeSubject,
+                cls: safeCls,
+                topic: String(raw.topic || effectiveTopic).trim(),
+                subTopic: String(raw.subTopic || safeSubTopic || 'AI Curriculum Exercise').trim(),
+                difficulty: safeDiff,
+                question: raw.question.trim(),
+                options: opts,
+                correctIndex: cIdx,
+                shortAnswer: sAns,
+                explanation: String(raw.explanation || 'Step-by-step TIE solution.').trim(),
+                hint: String(raw.hint || `Apply ${effectiveTopic} principles.`).trim(),
+                points: safePoints,
+                sourceRef: `Elimika AI Generator · ${safeCls} ${safeSubject}`,
+              });
+            });
+          }
+        }
+      } catch {
+        // Fallback below
+      }
+    }
+
+    // Deterministic curriculum fallback if AI generated fewer than requested
+    if (generated.length < safeCount) {
+      const fallbackQuiz = buildContentIntegratedQuizQuestions(
+        safeCls,
+        safeSubject,
+        effectiveTopic,
+        undefined,
+        safeSubTopic || undefined,
+        'BOOK'
+      );
+      for (let i = 0; i < fallbackQuiz.length && generated.length < safeCount; i++) {
+        const fq = fallbackQuiz[i];
+        const rightOpt = fq.options[fq.correctIndex ?? 0] || fq.options[0] || '';
+        const wrongOpt = fq.options[((fq.correctIndex ?? 0) + 1) % fq.options.length] || '';
+        const isTrue = i % 2 === 0;
+        const qText =
+          safeType === 'true_false'
+            ? `True or False: For "${fq.question}", the correct answer is ${isTrue ? rightOpt : wrongOpt}.`
+            : fq.question;
+        const baseSig = computeServerQuestionSignature(qText);
+        const fullSig = `${safeType}::${baseSig}`;
+        if (!baseSig || excludedSet.has(fullSig) || generated.some((g) => g.signature === fullSig)) {
+          continue;
+        }
+        generated.push({
+          id: `ai-curr-${Date.now()}-${i}`,
+          signature: fullSig,
+          source: 'ai',
+          questionType: safeType,
+          subject: safeSubject,
+          cls: safeCls,
+          topic: fq.topic || effectiveTopic,
+          subTopic: fq.subTopic || safeSubTopic || 'Curriculum Problem',
+          difficulty: safeDiff,
+          question: qText,
+          options: safeType === 'true_false' ? ['True', 'False'] : [...fq.options],
+          correctIndex: safeType === 'true_false' ? (isTrue ? 0 : 1) : fq.correctIndex ?? 0,
+          shortAnswer:
+            safeType === 'true_false'
+              ? isTrue
+                ? 'True'
+                : 'False'
+              : rightOpt.replace(/\$/g, '').trim(),
+          explanation: fq.explanation || 'Step-by-step TIE curriculum solution.',
+          hint: `Review ${effectiveTopic} in ${safeCls} ${safeSubject}.`,
+          points: safePoints,
+          sourceRef: `Elimika AI Curriculum Engine · ${safeCls} ${safeSubject}`,
+        });
+      }
+    }
+
+    return res.json({
+      questions: generated.slice(0, safeCount),
+    });
+  } catch (err) {
+    return res.status(500).json({
+      error: err instanceof Error ? err.message : 'Failed to generate AI questions.',
+    });
+  }
+});
+
 async function startServer() {
   const PORT = Number(process.env.PORT) || 3000;
   const distPath = path.join(__dirname, 'dist');
