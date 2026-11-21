@@ -7,6 +7,7 @@ import {
   Dna,
   FlaskConical,
   Gauge,
+  Heart,
   Leaf,
   Microscope,
   Search,
@@ -34,6 +35,8 @@ import imgTitrationLab from '../assets/images/sim_titration_lab_1795215117250.jp
 import imgQualitativeSalt from '../assets/images/sim_qualitative_salt_1795215117515.jpg';
 import imgQuadraticGraph from '../assets/images/sim_quadratic_graph_1795215118750.jpg';
 import imgTrigWaves from '../assets/images/sim_trig_waves_1795220663340.jpg';
+import imgPlantOsmosis3D from '../assets/images/sim_plant_osmosis_3d_1795279369839.jpg';
+import imgHumanHeart3D from '../assets/images/sim_human_heart_3d_1795283136171.jpg';
 
 const InteractiveDiagramLab = React.lazy(() =>
   import('./InteractiveDiagramLab').then((m) => ({ default: m.InteractiveDiagramLab }))
@@ -62,6 +65,12 @@ const Quadratic3DSimulation = React.lazy(() =>
 const TrigWaves3DSimulation = React.lazy(() =>
   import('./TrigWaves3DSimulation').then((m) => ({ default: m.TrigWaves3DSimulation }))
 );
+const Osmosis3DSimulation = React.lazy(() =>
+  import('./Osmosis3DSimulation').then((m) => ({ default: m.Osmosis3DSimulation }))
+);
+const Heart3DSimulation = React.lazy(() =>
+  import('./Heart3DSimulation').then((m) => ({ default: m.Heart3DSimulation }))
+);
 
 export type SimulationSubjectKey = 'biology' | 'physics' | 'chemistry' | 'mathematics';
 
@@ -83,7 +92,9 @@ export interface SimulationItem {
     | 'photosynthesis3d'
     | 'pendulum3d'
     | 'quadratic3d'
-    | 'trig3d';
+    | 'trig3d'
+    | 'osmosis3d'
+    | 'heart3d';
   diagramPreset?: DiagramPreset;
   labSubject?: VirtualLabSubject;
   labSubMode?: VirtualLabSubMode;
@@ -188,6 +199,33 @@ const SUBJECT_META: SubjectMeta[] = [
 const SIMULATION_CATALOG: SimulationItem[] = [
   // BIOLOGY (4)
   {
+    id: 'bio-heart-3d',
+    title: 'Human Heart & Double Circulation',
+    shortDesc:
+      'Explore a beating 3D 4-chamber cutaway heart with animated tricuspid, bicuspid and semilunar valves, oxygenated/deoxygenated blood streams, live ECG and LUB–DUB sound.',
+    subject: 'biology',
+    subtopicId: 'bio_circulation',
+    subtopicLabel: 'Human Circulation & Physiology',
+    categoryTag: '3D VISUALISATION',
+    previewImage: imgHumanHeart3D,
+    engine: 'heart3d',
+    has3D: true,
+    keywords: [
+      'heart',
+      'circulation',
+      'double circulation',
+      'aorta',
+      'vena cava',
+      'pulmonary',
+      'ventricle',
+      'atrium',
+      'valve',
+      'ecg',
+      'blood',
+      '3d',
+    ],
+  },
+  {
     id: 'bio-mitosis-3d',
     title: 'Mitosis & Cell Division',
     shortDesc:
@@ -246,20 +284,46 @@ const SIMULATION_CATALOG: SimulationItem[] = [
     keywords: ['food tests', 'starch', 'iodine', 'benedict', 'biuret', 'sudan', 'protein', 'lipid', 'sugar'],
   },
   {
-    id: 'bio-classification',
-    title: 'Plant Cell Osmosis & Specimens A–F',
+    id: 'bio-osmosis-3d',
+    title: 'Plant Cell Osmosis & Plasmolysis',
     shortDesc:
-      'Inspect a 3D plant cell stage and classify Moss, Fern, Maize, Bean, Grasshopper and Earthworm with adaptive features.',
+      'Immerse a 3D plant cell in hypotonic, isotonic and hypertonic sucrose solutions. Watch H₂O flow, vacuole swelling, membrane retraction and live % mass change curves.',
     subject: 'biology',
     subtopicId: 'bio_cells',
     subtopicLabel: 'Cells & Classification',
     categoryTag: '3D VISUALISATION',
+    previewImage: imgPlantOsmosis3D,
+    engine: 'osmosis3d',
+    has3D: true,
+    keywords: [
+      'osmosis',
+      'plant cell',
+      'turgid',
+      'flaccid',
+      'plasmolysis',
+      'vacuole',
+      'water potential',
+      'sucrose',
+      'membrane',
+      'cell wall',
+      '3d',
+    ],
+  },
+  {
+    id: 'bio-classification',
+    title: 'Specimens A–F Classification Lab',
+    shortDesc:
+      'Inspect and classify NECTA Biology practical specimens — Moss, Fern, Maize, Bean, Grasshopper and Earthworm — with diagnostic features and adaptations.',
+    subject: 'biology',
+    subtopicId: 'bio_cells',
+    subtopicLabel: 'Cells & Classification',
+    categoryTag: 'QUANTITATIVE LAB',
     previewImage: imgCellClassification,
     engine: 'lab',
     labSubject: 'biology',
     labSubMode: 'classification',
     has3D: true,
-    keywords: ['specimen', 'classification', 'osmosis', 'cell', 'moss', 'fern', 'maize', 'bean', 'arthropoda'],
+    keywords: ['specimen', 'classification', 'moss', 'fern', 'maize', 'bean', 'arthropoda', 'necta'],
   },
 
   // PHYSICS (3)
@@ -391,6 +455,8 @@ const SIMULATION_CATALOG: SimulationItem[] = [
 
 function getSubtopicIcon(subtopicId: string) {
   switch (subtopicId) {
+    case 'bio_circulation':
+      return <Heart className="w-4 h-4 text-rose-500" />;
     case 'bio_division':
       return <Dna className="w-4 h-4 text-pink-500" />;
     case 'bio_energy':
@@ -784,7 +850,9 @@ export const SimulationsHub: React.FC<SimulationsHubProps> = ({
               activeSimulation.engine === 'photosynthesis3d' ||
               activeSimulation.engine === 'pendulum3d' ||
               activeSimulation.engine === 'quadratic3d' ||
-              activeSimulation.engine === 'trig3d'
+              activeSimulation.engine === 'trig3d' ||
+              activeSimulation.engine === 'osmosis3d' ||
+              activeSimulation.engine === 'heart3d'
                 ? ''
                 : 'text-slate-900'
             }
@@ -811,6 +879,10 @@ export const SimulationsHub: React.FC<SimulationsHubProps> = ({
                 <Quadratic3DSimulation darkMode={darkMode} activeClass={activeClass} />
               ) : activeSimulation.engine === 'trig3d' ? (
                 <TrigWaves3DSimulation darkMode={darkMode} activeClass={activeClass} />
+              ) : activeSimulation.engine === 'osmosis3d' ? (
+                <Osmosis3DSimulation darkMode={darkMode} activeClass={activeClass} />
+              ) : activeSimulation.engine === 'heart3d' ? (
+                <Heart3DSimulation darkMode={darkMode} activeClass={activeClass} />
               ) : activeSimulation.engine === 'diagram' ? (
                 <InteractiveDiagramLab
                   initialPreset={activeSimulation.diagramPreset}

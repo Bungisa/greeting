@@ -3225,10 +3225,28 @@ async function startServer() {
     (process.env.NODE_ENV === 'production' || process.env.npm_lifecycle_event === 'start') &&
     fs.existsSync(distIndexPath);
 
+  const legalPagePaths = new Set([
+    '/privacy',
+    '/privacy-policy',
+    '/privacy.html',
+    '/terms',
+    '/terms-of-service',
+    '/terms.html',
+    '/disclaimer',
+    '/disclaimer.html',
+    '/about',
+    '/about-us',
+    '/about.html',
+    '/contact',
+    '/contact-us',
+    '/contact.html',
+  ]);
+
   app.use((req, res, next) => {
     if (
       req.path === '/' ||
       req.path === '/index.html' ||
+      legalPagePaths.has(req.path) ||
       req.path === '/sw.js' ||
       req.path === '/manifest.json' ||
       req.path === '/manifest.webmanifest' ||
@@ -3240,6 +3258,22 @@ async function startServer() {
     }
     next();
   });
+
+  // Dedicated standalone HTML pages for Google Play Console, AdSense & public visitors
+  const sendPublicHtmlPage = (filename: string): express.RequestHandler => (_req, res, next) => {
+    const filePath = path.join(__dirname, 'public', filename);
+    if (fs.existsSync(filePath)) {
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      return res.sendFile(filePath);
+    }
+    return next();
+  };
+
+  app.get(['/privacy', '/privacy-policy', '/privacy.html'], sendPublicHtmlPage('privacy.html'));
+  app.get(['/terms', '/terms-of-service', '/terms.html'], sendPublicHtmlPage('terms.html'));
+  app.get(['/disclaimer', '/disclaimer.html'], sendPublicHtmlPage('disclaimer.html'));
+  app.get(['/about', '/about-us', '/about.html'], sendPublicHtmlPage('about.html'));
+  app.get(['/contact', '/contact-us', '/contact.html'], sendPublicHtmlPage('contact.html'));
 
   app.use(express.static(path.join(__dirname, 'public')));
 
