@@ -1,3 +1,6 @@
+import { Capacitor } from '@capacitor/core';
+import { AdMob, BannerAdPosition, BannerAdSize } from '@capacitor-community/admob';
+
 export interface AdMobConfig {
   enabled: boolean;
   testMode: boolean;
@@ -62,25 +65,6 @@ export function isValidAdMobUnitId(raw: string): boolean {
   return trimmed === '' || ADMOB_UNIT_ID_REGEX.test(trimmed);
 }
 
-interface CapacitorAdMobPlugin {
-  initialize?: (options?: {
-    requestTrackingAuthorization?: boolean;
-    initializeForTesting?: boolean;
-  }) => Promise<void>;
-  showBanner?: (options: {
-    adId: string;
-    adSize?: string;
-    position?: string;
-    margin?: number;
-    isTesting?: boolean;
-  }) => Promise<void>;
-  hideBanner?: () => Promise<void>;
-  prepareInterstitial?: (options: { adId: string; isTesting?: boolean }) => Promise<void>;
-  showInterstitial?: () => Promise<void>;
-  prepareRewardVideoAd?: (options: { adId: string; isTesting?: boolean }) => Promise<void>;
-  showRewardVideoAd?: () => Promise<unknown>;
-}
-
 interface AndroidWebViewAdMobBridge {
   init?: (configJson: string) => void;
   showBanner?: (adUnitId: string) => void;
@@ -90,12 +74,6 @@ interface AndroidWebViewAdMobBridge {
 }
 
 interface WindowWithAdMob extends Window {
-  Capacitor?: {
-    isNativePlatform?: () => boolean;
-    Plugins?: {
-      AdMob?: CapacitorAdMobPlugin;
-    };
-  };
   ElimikaAdMob?: AndroidWebViewAdMobBridge;
   AndroidAdMob?: AndroidWebViewAdMobBridge;
 }
@@ -105,11 +83,24 @@ function getWin(): WindowWithAdMob | null {
 }
 
 export function detectAdMobRuntime(): AdMobRuntimeType {
+  if (typeof window === 'undefined') return 'web';
+  try {
+    if (Capacitor.isNativePlatform()) {
+      return 'capacitor';
+    }
+  } catch {
+    // Fallback if Capacitor runtime is absent
+  }
   const win = getWin();
-  if (!win) return 'web';
-  if (win.Capacitor?.Plugins?.AdMob) return 'capacitor';
-  if (win.ElimikaAdMob || win.AndroidAdMob) return 'android_webview';
+  if (win?.ElimikaAdMob || win?.AndroidAdMob) return 'android_webview';
+  if (typeof navigator !== 'undefined' && navigator.userAgent.includes('ElimikaCapacitorApp')) {
+    return 'capacitor';
+  }
   return 'web';
+}
+
+export function isNativeAdMobApp(): boolean {
+  return detectAdMobRuntime() !== 'web';
 }
 
 export function loadLocalAdMobConfig(): AdMobConfig {
@@ -167,9 +158,8 @@ export async function initAdMobBridge(config: AdMobConfig): Promise<AdMobRuntime
   if (!win) return 'web';
 
   try {
-    if (runtime === 'capacitor' && win.Capacitor?.Plugins?.AdMob?.initialize) {
-      await win.Capacitor.Plugins.AdMob.initialize({
-        requestTrackingAuthorization: false,
+    if (runtime === 'capacitor' && Capacitor.isNativePlatform()) {
+      await AdMob.initialize({
         initializeForTesting: config.testMode,
       });
       bridgeInitialized = true;
@@ -206,19 +196,21 @@ export async function showAdMobBanner(config: AdMobConfig): Promise<boolean> {
   }
 
   try {
-    if (runtime === 'capacitor' && win.Capacitor?.Plugins?.AdMob?.showBanner) {
-      await win.Capacitor.Plugins.AdMob.showBanner({
+    if (runtime === 'capacitor' && Capacitor.isNativePlatform()) {
+      await AdMob.showBanner({
         adId,
-        adSize: 'ADAPTIVE_BANNER',
-        position: 'BOTTOM_CENTER',
+        adSize: BannerAdSize.ADAPTIVE_BANNER,
+        position: BannerAdPosition.BOTTOM_CENTER,
         margin: 0,
         isTesting: config.testMode,
       });
+      document.documentElement.classList.add('elimika-admob-banner-active');
       return true;
     }
     if (runtime === 'android_webview') {
       const bridge = win.ElimikaAdMob || win.AndroidAdMob;
       bridge?.showBanner?.(adId);
+      document.documentElement.classList.add('elimika-admob-banner-active');
       return true;
     }
   } catch {
@@ -233,11 +225,12 @@ export async function hideAdMobBanner(): Promise<void> {
   if (!win || runtime === 'web') return;
 
   try {
-    if (runtime === 'capacitor') {
-      await win.Capacitor?.Plugins?.AdMob?.hideBanner?.();
+    if (runtime === 'capacitor' && Capacitor.isNativePlatform()) {
+      await AdMob.hideBanner();
     } else if (runtime === 'android_webview') {
       (win.ElimikaAdMob || win.AndroidAdMob)?.hideBanner?.();
     }
+    document.documentElement.classList.remove('elimika-admob-banner-active');
   } catch {
     // ignore
   }
@@ -268,14 +261,11 @@ export async function showAdMobInterstitial(config: AdMobConfig): Promise<boolea
   }
 
   try {
-    if (runtime === 'capacitor' && win.Capacitor?.Plugins?.AdMob) {
-      const plugin = win.Capacitor.Plugins.AdMob;
-      if (plugin.prepareInterstitial && plugin.showInterstitial) {
-        await plugin.prepareInterstitial({ adId, isTesting: config.testMode });
-        await plugin.showInterstitial();
-        lastInterstitialShownAt = Date.now();
-        return true;
-      }
+    if (runtime === 'capacitor' && Capacitor.isNativePlatform()) {
+      await AdMob.prepareInterstitial({ adId, isTesting: config.testMode });
+      await AdMob.showInterstitial();
+      lastInterstitialShownAt = Date.now();
+      return true;
     } else if (runtime === 'android_webview') {
       const bridge = win.ElimikaAdMob || win.AndroidAdMob;
       if (bridge?.showInterstitial) {
@@ -310,13 +300,10 @@ export async function showAdMobRewarded(config: AdMobConfig): Promise<{ rewarded
   }
 
   try {
-    if (runtime === 'capacitor' && win.Capacitor?.Plugins?.AdMob) {
-      const plugin = win.Capacitor.Plugins.AdMob;
-      if (plugin.prepareRewardVideoAd && plugin.showRewardVideoAd) {
-        await plugin.prepareRewardVideoAd({ adId, isTesting: config.testMode });
-        await plugin.showRewardVideoAd();
-        return { rewarded: true };
-      }
+    if (runtime === 'capacitor' && Capacitor.isNativePlatform()) {
+      await AdMob.prepareRewardVideoAd({ adId, isTesting: config.testMode });
+      await AdMob.showRewardVideoAd();
+      return { rewarded: true };
     } else if (runtime === 'android_webview') {
       const bridge = win.ElimikaAdMob || win.AndroidAdMob;
       if (bridge?.showRewarded) {

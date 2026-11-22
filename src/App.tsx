@@ -938,9 +938,9 @@ export default function App() {
   const [adminAuthLoading, setAdminAuthLoading] = useState<boolean>(false);
   const [playStorePackageName, setPlayStorePackageName] = useState<string>(() => {
     try {
-      return localStorage.getItem('elimika_playstore_pkg') || 'online.elimika.twa';
+      return localStorage.getItem('elimika_playstore_pkg') || 'online.elimika.ap';
     } catch {
-      return 'online.elimika.twa';
+      return 'online.elimika.ap';
     }
   });
   const [playStoreSha256, setPlayStoreSha256] = useState<string>(() => {
@@ -1099,6 +1099,8 @@ export default function App() {
   }
 
   useEffect(() => {
+    // Google policy: never load AdSense inside native Android WebView/Capacitor apps (AdMob serves ads there)
+    if (detectAdMobRuntime() !== 'web') return;
     const cleaned = adsensePubId.trim();
     if (!cleaned || !cleaned.startsWith('ca-pub-')) return;
     let meta = document.querySelector('meta[name="google-adsense-account"]') as HTMLMetaElement | null;
@@ -8363,7 +8365,7 @@ export default function App() {
                           type="text"
                           value={playStorePackageName}
                           onChange={(e) => setPlayStorePackageName(e.target.value)}
-                          placeholder="online.elimika.twa"
+                          placeholder="online.elimika.ap"
                           className="w-full px-3 py-2 rounded-xl border border-slate-300 font-mono text-xs"
                         />
                       </div>
@@ -8389,7 +8391,7 @@ export default function App() {
                             .map((s) => s.replace(/["'\s]/g, '').toUpperCase())
                             .filter(Boolean);
                           const pkgs = Array.from(
-                            new Set([playStorePackageName.trim(), 'online.elimika.twa', 'online.elimika.tanzania'].filter(Boolean))
+                            new Set([playStorePackageName.trim(), 'online.elimika.ap', 'online.elimika.twa', 'online.elimika.tanzania'].filter(Boolean))
                           );
                           const jsonStr = JSON.stringify(
                             pkgs.map((pkg) => ({
@@ -8418,7 +8420,7 @@ export default function App() {
                             .map((s) => s.replace(/["'\s]/g, '').toUpperCase())
                             .filter(Boolean);
                           const pkgs = Array.from(
-                            new Set([playStorePackageName.trim(), 'online.elimika.twa', 'online.elimika.tanzania'].filter(Boolean))
+                            new Set([playStorePackageName.trim(), 'online.elimika.ap', 'online.elimika.twa', 'online.elimika.tanzania'].filter(Boolean))
                           );
                           const jsonStr = JSON.stringify(
                             pkgs.map((pkg) => ({
@@ -8824,7 +8826,7 @@ export default function App() {
                     </p>
 
                     <div className="p-2.5 rounded-xl bg-white/10 border border-white/15 text-[11px] text-amber-200 leading-relaxed">
-                      <strong>Play Store Note:</strong> A browser TWA wrapper (<code>online.elimika.twa</code>) displays
+                      <strong>Play Store Note:</strong> A browser TWA wrapper (<code>online.elimika.ap</code>) displays
                       Google AdSense web ads inside Chrome. To serve native <strong>Google AdMob SDK</strong> ads, wrap
                       Elimika with <strong>Capacitor</strong> (<code>@capacitor-community/admob</code>) or an Android
                       WebView exposing <code>window.ElimikaAdMob</code> — this app&apos;s bridge auto-connects to both

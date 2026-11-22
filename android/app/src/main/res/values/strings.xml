@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Elimika Tanzania</string>
+    <string name="title_activity_main">Elimika Tanzania</string>
+    <string name="package_name">online.elimika.ap</string>
+    <string name="custom_url_scheme">online.elimika.ap</string>
+    <!-- Replace with your real AdMob App ID (ca-app-pub-7814843623545511~XXXXXXXXXX) before Google Play release -->
+    <string name="admob_app_id">ca-app-pub-3940256099942544~3347511713</string>
+</resources>

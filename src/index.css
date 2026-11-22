@@ -95,6 +95,11 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Reserve bottom space when native Android AdMob adaptive banner is visible */
+html.elimika-admob-banner-active body {
+  padding-bottom: 64px;
+}
+
 /* Prevent horizontal page overflow from wide math expressions or tables on mobile */
 mjx-container,
 .katex-display {

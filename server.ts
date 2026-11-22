@@ -2535,7 +2535,7 @@ function parseSha256Fingerprints(raw: unknown): string[] {
   return combined;
 }
 
-let runtimePlayStorePackage = process.env.ANDROID_PACKAGE_NAME || 'online.elimika.twa';
+let runtimePlayStorePackage = process.env.ANDROID_PACKAGE_NAME || 'online.elimika.ap';
 let runtimePlayStoreSha256List: string[] = parseSha256Fingerprints(process.env.ANDROID_SHA256_FINGERPRINT);
 
 try {
@@ -2554,7 +2554,7 @@ app.get('/.well-known/assetlinks.json', (_req, res) => {
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('Access-Control-Allow-Origin', '*');
   const packageNames = Array.from(
-    new Set([runtimePlayStorePackage, 'online.elimika.twa', 'online.elimika.tanzania'].filter(Boolean))
+    new Set([runtimePlayStorePackage, 'online.elimika.ap', 'online.elimika.twa', 'online.elimika.tanzania'].filter(Boolean))
   );
   res.json(
     packageNames.map((pkg) => ({

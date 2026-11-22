@@ -1,0 +1,9 @@
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+	worktree = /app/applet
+[user]
+	email = audit@elimika.online
+	name = Elimika Audit
