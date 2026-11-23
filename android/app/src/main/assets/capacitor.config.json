@@ -1,0 +1,28 @@
+{
+	"appId": "online.elimika.ap",
+	"appName": "Elimika Tanzania",
+	"webDir": "dist",
+	"server": {
+		"url": "https://elimika.online",
+		"cleartext": false,
+		"androidScheme": "https",
+		"allowNavigation": [
+			"elimika.online",
+			"www.elimika.online",
+			"*.elimika.online"
+		]
+	},
+	"android": {
+		"appendUserAgent": "ElimikaCapacitorApp/1.0",
+		"allowMixedContent": false,
+		"captureInput": true,
+		"webContentsDebuggingEnabled": false
+	},
+	"plugins": {
+		"SplashScreen": {
+			"launchAutoHide": true,
+			"backgroundColor": "#0f172a",
+			"showSpinner": false
+		}
+	}
+}

@@ -33,11 +33,9 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
-
-        <!-- Google AdMob App ID (edit @string/admob_app_id in res/values/strings.xml before Play Store release) -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="@string/admob_app_id" />
+            android:value="ca-app-pub-7814843623545511~9690716700" />
     </application>
 
     <!-- Permissions -->
