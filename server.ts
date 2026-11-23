@@ -10,11 +10,16 @@ import {
   buildContentIntegratedQuizQuestions,
   buildInstantOfficialDocument,
   buildTopicDiagramSvg,
+  CONFIG,
+  escapeHtml,
   extractTextbookChaptersFromText,
   generateLocalSmartTutorReply,
   getDefaultFlashcardsForSubject,
   getSyllabusTopicsForClassSubject,
   getTieTextbookChapterContent,
+  normalizeClassName,
+  normalizeSubjectName,
+  OFFICIAL_ATTACHED_TIE_BOOKS,
   parseClassSubjectTopicFromPrompt,
   renderTopicDiagramBlockHtml,
   type LearnedMemoryItem,
@@ -2795,17 +2800,17 @@ function normalizeAdMobPublisherId(raw: string): string {
 
 let runtimeAdMobConfig: ServerAdMobConfig = {
   enabled: true,
-  testMode: process.env.ADMOB_TEST_MODE !== 'false',
+  testMode: process.env.ADMOB_TEST_MODE === 'true',
   publisherId: normalizeAdMobPublisherId(process.env.ADMOB_PUBLISHER_ID || 'pub-7814843623545511'),
   androidAppId: ADMOB_APP_ID_REGEX.test((process.env.ADMOB_ANDROID_APP_ID || '').trim())
     ? (process.env.ADMOB_ANDROID_APP_ID || '').trim()
-    : '',
+    : 'ca-app-pub-7814843623545511~9690716700',
   bannerUnitId: ADMOB_UNIT_ID_REGEX.test((process.env.ADMOB_BANNER_UNIT_ID || '').trim())
     ? (process.env.ADMOB_BANNER_UNIT_ID || '').trim()
-    : '',
+    : 'ca-app-pub-7814843623545511/5352444077',
   interstitialUnitId: ADMOB_UNIT_ID_REGEX.test((process.env.ADMOB_INTERSTITIAL_UNIT_ID || '').trim())
     ? (process.env.ADMOB_INTERSTITIAL_UNIT_ID || '').trim()
-    : '',
+    : 'ca-app-pub-7814843623545511/1766094843',
   rewardedUnitId: ADMOB_UNIT_ID_REGEX.test((process.env.ADMOB_REWARDED_UNIT_ID || '').trim())
     ? (process.env.ADMOB_REWARDED_UNIT_ID || '').trim()
     : '',
@@ -2841,6 +2846,382 @@ try {
 } catch {
   // ignore corrupted temp config file
 }
+
+// ==================== FIRST-PAGE / COVER PREVIEW & DIRECT SOCIAL SHARE LINKS ====================
+function cleanShareDocumentTitle(rawTitle: string): string {
+  return (
+    String(rawTitle || '')
+      .replace(/\.(pdf|docx?|pptx?)$/i, '')
+      .replace(
+        /[\s_-]*(?:www\.)?(?:elimika\.online|elimika\.co\.tz|elimika\.com|elimuzone\.com|wazaelimu\.com|msomibora\.com|shuledirect\.co\.tz|wazaelimu\s+com)\b/gi,
+        ''
+      )
+      .replace(/\s+/g, ' ')
+      .replace(/^[\s\-–—_]+|[\s\-–—_]+$/g, '')
+      .trim() || 'Elimika Document'
+  );
+}
+
+function parseServerSheetCSV(text: string): string[][] {
+  const rows: string[][] = [];
+  let currentRow: string[] = [];
+  let currentField = '';
+  let inQuotes = false;
+  const cleanText = String(text || '')
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n');
+
+  for (let i = 0; i < cleanText.length; i++) {
+    const char = cleanText[i];
+    const nextChar = cleanText[i + 1];
+
+    if (inQuotes) {
+      if (char === '"' && nextChar === '"') {
+        currentField += '"';
+        i++;
+      } else if (char === '"') {
+        inQuotes = false;
+      } else {
+        currentField += char;
+      }
+    } else {
+      if (char === '"') {
+        inQuotes = true;
+      } else if (char === ',') {
+        currentRow.push(currentField.trim());
+        currentField = '';
+      } else if (char === '\n') {
+        currentRow.push(currentField.trim());
+        if (currentRow.some((f) => f.length > 0)) rows.push(currentRow);
+        currentRow = [];
+        currentField = '';
+      } else {
+        currentField += char;
+      }
+    }
+  }
+  if (currentField.length > 0 || currentRow.length > 0) {
+    currentRow.push(currentField.trim());
+    if (currentRow.some((f) => f.length > 0)) rows.push(currentRow);
+  }
+  return rows;
+}
+
+interface ShareDocMetadata {
+  id: string;
+  title: string;
+  form: string;
+  subject: string;
+  pageType: 'books' | 'papers' | 'syllabus';
+  driveId: string | null;
+}
+
+let cachedSheetRows: { rows: string[][]; fetchedAt: number } | null = null;
+
+async function getServerSheetRows(): Promise<string[][]> {
+  if (cachedSheetRows && Date.now() - cachedSheetRows.fetchedAt < 15 * 60 * 1000) {
+    return cachedSheetRows.rows;
+  }
+  const endpoints = [
+    `https://docs.google.com/spreadsheets/d/${encodeURIComponent(CONFIG.SHEET_ID)}/gviz/tq?tqx=out:csv`,
+    `https://docs.google.com/spreadsheets/d/${encodeURIComponent(CONFIG.SHEET_ID)}/export?format=csv`,
+  ];
+  for (const url of endpoints) {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 4500);
+      const res = await fetch(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0' },
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
+      if (res.ok) {
+        const text = await res.text();
+        if (text && text.length > 20 && !/<!doctype\s+html|<html\b/i.test(text.slice(0, 300))) {
+          const rows = parseServerSheetCSV(text);
+          cachedSheetRows = { rows, fetchedAt: Date.now() };
+          return rows;
+        }
+      }
+    } catch {
+      // try next
+    }
+  }
+  return cachedSheetRows ? cachedSheetRows.rows : [];
+}
+
+async function resolveShareDocMetadata(
+  docId: string,
+  hintPageType?: string,
+  queryTitle?: string,
+  querySubtitle?: string,
+  queryDriveId?: string
+): Promise<ShareDocMetadata> {
+  const normalizedPageType: 'books' | 'papers' | 'syllabus' =
+    hintPageType === 'books' || hintPageType === 'syllabus' || hintPageType === 'papers'
+      ? hintPageType
+      : 'papers';
+
+  // 1. Check OFFICIAL_ATTACHED_TIE_BOOKS
+  const officialBook = OFFICIAL_ATTACHED_TIE_BOOKS.find((b) => b.id === docId);
+  if (officialBook) {
+    return {
+      id: officialBook.id,
+      title: cleanShareDocumentTitle(officialBook.title),
+      form: officialBook.form,
+      subject: officialBook.subject,
+      pageType: officialBook.isSyllabus ? 'syllabus' : officialBook.isBook ? 'books' : normalizedPageType,
+      driveId: extractDriveFileIdFromUrl(officialBook.paperUrl) || queryDriveId || null,
+    };
+  }
+
+  // 2. Check serverAttachedResources
+  const attached = serverAttachedResources.get(docId);
+  if (attached) {
+    return {
+      id: attached.id,
+      title: cleanShareDocumentTitle(attached.title),
+      form: attached.form,
+      subject: attached.subject,
+      pageType: attached.isSyllabus ? 'syllabus' : attached.isBook ? 'books' : normalizedPageType,
+      driveId: extractDriveFileIdFromUrl(attached.paperUrl) || queryDriveId || null,
+    };
+  }
+
+  // 3. Check Google Sheet row if docId is sheet-<rowIndex>
+  const sheetMatch = docId.match(/^sheet-(\d+)$/);
+  if (sheetMatch) {
+    const rowIdx = parseInt(sheetMatch[1], 10);
+    const rows = await getServerSheetRows();
+    const cols = rows[rowIdx];
+    if (Array.isArray(cols) && cols.length > 0) {
+      const rawTitle = (cols[0] || '').trim();
+      const rawForm = (cols[1] || '').trim();
+      const rawSubject = (cols[2] || '').trim();
+      const rawCat = (cols[4] || '').trim().toLowerCase();
+      const paperUrl = (cols[5] || '').trim();
+      const form = normalizeClassName(rawForm);
+      const subject = normalizeSubjectName(rawSubject || 'General', rawTitle);
+      const isSyllabus = rawCat.includes('syllabus') || rawCat.includes('muhtasari');
+      const isBook = !isSyllabus && /\b(book|kitabu|textbook)\b/i.test(rawCat);
+      return {
+        id: docId,
+        title: cleanShareDocumentTitle(rawTitle || queryTitle || `${form} ${subject}`),
+        form,
+        subject,
+        pageType: isSyllabus ? 'syllabus' : isBook ? 'books' : normalizedPageType,
+        driveId: extractDriveFileIdFromUrl(paperUrl) || queryDriveId || null,
+      };
+    }
+  }
+
+  // 4. Fallback to query hints
+  const [fallbackForm = '', fallbackSubject = ''] = (querySubtitle || '').split('·').map((s) => s.trim());
+  return {
+    id: docId,
+    title: cleanShareDocumentTitle(queryTitle || 'Elimika Document'),
+    form: fallbackForm,
+    subject: fallbackSubject,
+    pageType: normalizedPageType,
+    driveId: queryDriveId && /^[a-zA-Z0-9_-]{15,80}$/.test(queryDriveId) ? queryDriveId : null,
+  };
+}
+
+const shareCoverImageCache = new Map<string, { buffer: Buffer; contentType: string; fetchedAt: number }>();
+
+function extractFirstPageJpegFromPdfBytes(buf: Buffer): Buffer | null {
+  const jpegStartSig = Buffer.from([0xff, 0xd8, 0xff]);
+  const endstreamSig = Buffer.from('endstream');
+  let pos = 0;
+  let fallbackJpeg: Buffer | null = null;
+
+  while (pos < buf.length) {
+    const start = buf.indexOf(jpegStartSig, pos);
+    if (start < 0) break;
+    const endstreamPos = buf.indexOf(endstreamSig, start);
+    const rawEnd = endstreamPos > start ? endstreamPos : buf.length;
+    const streamLen = rawEnd - start;
+
+    if (streamLen >= 3000) {
+      // Find last 0xFF 0xD9 inside [start, rawEnd]
+      let jpegEnd = rawEnd;
+      for (let i = rawEnd - 2; i > start + 100; i--) {
+        if (buf[i] === 0xff && buf[i + 1] === 0xd9) {
+          jpegEnd = i + 2;
+          break;
+        }
+      }
+      const candidate = Buffer.from(buf.subarray(start, jpegEnd));
+      // Prefer full-page cover image (>= 15 KB) over small scanner watermark stamps
+      if (candidate.length >= 15000) {
+        return candidate;
+      }
+      if (!fallbackJpeg || candidate.length > fallbackJpeg.length) {
+        fallbackJpeg = candidate;
+      }
+    }
+
+    pos = endstreamPos > start ? endstreamPos + 9 : start + 3;
+  }
+
+  return fallbackJpeg;
+}
+
+async function fetchDriveFirstPageCoverImage(
+  rawDriveId: string
+): Promise<{ buffer: Buffer; contentType: string } | null> {
+  const driveId = rawDriveId.replace(/\.(jpe?g|png|webp)$/i, '').trim();
+  if (!/^[a-zA-Z0-9_-]{15,80}$/.test(driveId)) return null;
+
+  const cached = shareCoverImageCache.get(driveId);
+  if (cached && Date.now() - cached.fetchedAt < 6 * 60 * 60 * 1000) {
+    return { buffer: cached.buffer, contentType: cached.contentType };
+  }
+
+  // Strategy 1: Google Drive native first-page thumbnail
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5000);
+    const thumbRes = await fetch(`https://lh3.googleusercontent.com/d/${encodeURIComponent(driveId)}=w800`, {
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    const ct = (thumbRes.headers.get('content-type') || '').toLowerCase();
+    if (thumbRes.ok && ct.startsWith('image/')) {
+      const buffer = Buffer.from(await thumbRes.arrayBuffer());
+      if (buffer.length > 500) {
+        if (shareCoverImageCache.size >= 60) {
+          const oldestKey = shareCoverImageCache.keys().next().value;
+          if (oldestKey) shareCoverImageCache.delete(oldestKey);
+        }
+        shareCoverImageCache.set(driveId, { buffer, contentType: ct, fetchedAt: Date.now() });
+        return { buffer, contentType: ct };
+      }
+    }
+  } catch {
+    // proceed to Strategy 2
+  }
+
+  // Strategy 2: Extract Page 1 cover JPEG directly from the first ~1.1 MB of the PDF via HTTP Range
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 7000);
+    const rangeRes = await fetch(
+      `https://drive.usercontent.google.com/download?id=${encodeURIComponent(driveId)}&export=view`,
+      {
+        headers: {
+          'User-Agent': 'Mozilla/5.0',
+          Range: 'bytes=0-1150000',
+        },
+        signal: controller.signal,
+      }
+    );
+    clearTimeout(timer);
+    if (rangeRes.ok || rangeRes.status === 206) {
+      const pdfHeadBuffer = Buffer.from(await rangeRes.arrayBuffer());
+      const extractedJpeg = extractFirstPageJpegFromPdfBytes(pdfHeadBuffer);
+      if (extractedJpeg && extractedJpeg.length > 1000) {
+        if (shareCoverImageCache.size >= 60) {
+          const oldestKey = shareCoverImageCache.keys().next().value;
+          if (oldestKey) shareCoverImageCache.delete(oldestKey);
+        }
+        shareCoverImageCache.set(driveId, {
+          buffer: extractedJpeg,
+          contentType: 'image/jpeg',
+          fetchedAt: Date.now(),
+        });
+        return { buffer: extractedJpeg, contentType: 'image/jpeg' };
+      }
+    }
+  } catch {
+    // fallback
+  }
+
+  return null;
+}
+
+app.get(['/api/share/cover/:driveId', '/api/share/cover'], async (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  const rawDriveId = String(req.params.driveId || req.query.f || '').trim();
+  const cover = rawDriveId ? await fetchDriveFirstPageCoverImage(rawDriveId) : null;
+  if (cover) {
+    res.setHeader('Content-Type', cover.contentType);
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    return res.send(cover.buffer);
+  }
+  const fallbackIconPath = path.join(__dirname, 'public', 'pwa-512x512.png');
+  if (fs.existsSync(fallbackIconPath)) {
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    return res.sendFile(fallbackIconPath);
+  }
+  return res.status(404).end();
+});
+
+app.get(['/s/:pageType/:docId', '/s/:docId'], async (req, res) => {
+  const rawPageType = req.params.pageType ? String(req.params.pageType).trim().toLowerCase() : '';
+  const rawDocId = String(req.params.docId || '').trim();
+  const queryTitle = typeof req.query.t === 'string' ? req.query.t : '';
+  const querySubtitle = typeof req.query.c === 'string' ? req.query.c : '';
+  const queryDriveId = typeof req.query.f === 'string' ? req.query.f : '';
+
+  const meta = await resolveShareDocMetadata(
+    rawDocId,
+    rawPageType,
+    queryTitle,
+    querySubtitle,
+    queryDriveId
+  );
+
+  const proto =
+    (typeof req.headers['x-forwarded-proto'] === 'string'
+      ? req.headers['x-forwarded-proto'].split(',')[0].trim()
+      : '') || req.protocol || 'https';
+  const host = req.get('host') || 'elimika.online';
+  const origin = `${proto}://${host}`;
+
+  const cleanTitle = meta.title;
+  const subtitle = [meta.form, meta.subject].filter(Boolean).join(' · ') || 'Elimika Tanzania';
+  const coverUrl = meta.driveId
+    ? `${origin}/api/share/cover/${encodeURIComponent(meta.driveId)}.jpg`
+    : `${origin}/pwa-512x512.png`;
+  const canonicalShareUrl = `${origin}${req.originalUrl}`;
+  const targetAppUrl = `${origin}/#page=${encodeURIComponent(meta.pageType)}&doc=${encodeURIComponent(meta.id)}`;
+
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=300');
+  return res.send(`<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>${escapeHtml(cleanTitle)}</title>
+    <meta name="description" content="${escapeHtml(subtitle)}" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="elimika.online" />
+    <meta property="og:title" content="${escapeHtml(cleanTitle)}" />
+    <meta property="og:description" content="${escapeHtml(subtitle)}" />
+    <meta property="og:url" content="${escapeHtml(canonicalShareUrl)}" />
+    <meta property="og:image" content="${escapeHtml(coverUrl)}" />
+    <meta property="og:image:secure_url" content="${escapeHtml(coverUrl)}" />
+    <meta property="og:image:width" content="800" />
+    <meta property="og:image:height" content="1050" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="${escapeHtml(cleanTitle)}" />
+    <meta name="twitter:description" content="${escapeHtml(subtitle)}" />
+    <meta name="twitter:image" content="${escapeHtml(coverUrl)}" />
+    <script>window.location.replace(${JSON.stringify(targetAppUrl)});</script>
+  </head>
+  <body style="font-family:system-ui,sans-serif;background:#0f172a;color:#f8fafc;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:24px;text-align:center;">
+    <div>
+      <p style="font-weight:700;font-size:16px;margin-bottom:8px;">${escapeHtml(cleanTitle)}</p>
+      <p style="font-size:13px;color:#94a3b8;margin-bottom:16px;">${escapeHtml(subtitle)}</p>
+      <a href="${escapeHtml(targetAppUrl)}" style="color:#38bdf8;font-size:13px;">Open Document</a>
+    </div>
+  </body>
+</html>`);
+});
 
 app.get('/ads.txt', (_req, res) => {
   res.setHeader('Content-Type', 'text/plain; charset=utf-8');

@@ -1061,27 +1061,75 @@ export default function App() {
     showToast(`🔗 Direct link copied: ${sub ? `${cls} ${sub}` : cls}`);
   }
 
+  function cleanShareDocTitle(rawTitle: string): string {
+    return (
+      String(rawTitle || '')
+        .replace(/\.(pdf|docx?|pptx?)$/i, '')
+        .replace(
+          /[\s_-]*(?:www\.)?(?:elimika\.online|elimika\.co\.tz|elimika\.com|elimuzone\.com|wazaelimu\.com|msomibora\.com|shuledirect\.co\.tz|wazaelimu\s+com)\b/gi,
+          ''
+        )
+        .replace(/\s+/g, ' ')
+        .replace(/^[\s\-–—_]+|[\s\-–—_]+$/g, '')
+        .trim() || 'Elimika Document'
+    );
+  }
+
+  function extractDriveIdFromDocUrl(rawUrl?: string | null): string | null {
+    if (!rawUrl) return null;
+    const match =
+      rawUrl.match(/\/file\/d\/([a-zA-Z0-9_-]{15,})/) ||
+      rawUrl.match(/\/d\/([a-zA-Z0-9_-]{15,})/) ||
+      rawUrl.match(/[?&]id=([a-zA-Z0-9_-]{15,})/);
+    return match ? match[1] : null;
+  }
+
+  function getDocCoverImageUrl(doc: PaperRecord): string | null {
+    const driveId = extractDriveIdFromDocUrl(doc.paperUrl);
+    if (!driveId) return null;
+    const isNativeOrFile =
+      typeof window !== 'undefined' &&
+      (window.location.protocol === 'capacitor:' ||
+        window.location.protocol === 'file:' ||
+        detectAdMobRuntime() !== 'web');
+    const base = isNativeOrFile ? 'https://elimika.online' : '';
+    return `${base}/api/share/cover/${encodeURIComponent(driveId)}.jpg`;
+  }
+
   function buildShareableDocUrl(doc: PaperRecord): string {
-    const base = `${window.location.origin}${window.location.pathname}`;
+    const isNativeOrLocal =
+      typeof window === 'undefined' ||
+      !window.location.origin.startsWith('http') ||
+      window.location.hostname === 'localhost' ||
+      detectAdMobRuntime() !== 'web';
+    const origin = isNativeOrLocal ? 'https://elimika.online' : window.location.origin;
     const pageType = doc.isSyllabus ? 'syllabus' : doc.isBook ? 'books' : 'papers';
-    return `${base}#page=${pageType}&doc=${encodeURIComponent(doc.id)}`;
+    const isKnownServerId = /^sheet-\d+$/.test(doc.id) || /^tie-drive-book-/.test(doc.id);
+    if (isKnownServerId) {
+      return `${origin}/s/${pageType}/${encodeURIComponent(doc.id)}`;
+    }
+    const driveId = extractDriveIdFromDocUrl(doc.paperUrl);
+    const cleanTitle = cleanShareDocTitle(doc.title);
+    const params = new URLSearchParams();
+    params.set('t', cleanTitle);
+    if (driveId) params.set('f', driveId);
+    return `${origin}/s/${pageType}/${encodeURIComponent(doc.id)}?${params.toString()}`;
   }
 
   function getDocWhatsAppShareUrl(doc: PaperRecord): string {
     const shareUrl = buildShareableDocUrl(doc);
-    const kind = doc.isSyllabus ? 'Syllabus' : doc.isBook ? 'TIE Textbook' : 'Past Paper';
-    const text = `Check out this ${kind} on Elimika Tanzania:\n📘 *${doc.title}*\n(${doc.form} · ${doc.subject})\n\nRead or Download free here:\n${shareUrl}`;
-    return `https://wa.me/?text=${encodeURIComponent(text)}`;
+    const cleanTitle = cleanShareDocTitle(doc.title);
+    return `https://wa.me/?text=${encodeURIComponent(`${cleanTitle}\n${shareUrl}`)}`;
   }
 
   async function shareLibraryDocument(doc: PaperRecord) {
     const url = buildShareableDocUrl(doc);
-    const kind = doc.isSyllabus ? 'Syllabus' : doc.isBook ? 'TIE Textbook' : 'Past Paper';
-    const text = `${doc.title} (${doc.form} · ${doc.subject}) — Read or download free on Elimika Tanzania`;
+    const cleanTitle = cleanShareDocTitle(doc.title);
+    const kind = doc.isSyllabus ? 'Syllabus' : doc.isBook ? 'Textbook' : 'Paper';
 
     if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
       try {
-        await navigator.share({ title: `${doc.title} | Elimika`, text, url });
+        await navigator.share({ title: cleanTitle, url });
         return;
       } catch (err) {
         if (err instanceof Error && err.name === 'AbortError') return;
@@ -1095,7 +1143,7 @@ export default function App() {
         // ignore clipboard failure
       }
     }
-    showToast(`🔗 ${kind} link copied! Ready to share.`);
+    showToast(`🔗 ${kind} link copied!`);
   }
 
   useEffect(() => {
@@ -5457,27 +5505,38 @@ export default function App() {
                           </button>
                         </div>
 
-                        {/* Hero "SOLVING EXAMS" Poster Banner */}
-                        <div className="bg-white p-6 sm:p-8 text-center border-b border-slate-200 flex flex-col items-center justify-center">
-                          <div className="text-3xl sm:text-4xl font-black tracking-tight text-blue-600 leading-none uppercase">
-                            SOLVING
-                          </div>
-                          <div className="text-3xl sm:text-4xl font-black tracking-tight text-violet-600 leading-none uppercase mt-1">
-                            EXAMS
-                          </div>
-                          <div className="mt-3 px-6 py-2.5 sm:py-3 rounded-2xl bg-gradient-to-r from-violet-600 to-blue-600 text-white font-black text-2xl sm:text-4xl uppercase tracking-tight shadow-sm w-full max-w-md">
-                            {selectedExamDetail.form}
-                          </div>
-                          <div className="mt-2.5 text-xs sm:text-sm font-extrabold text-blue-600">
-                            Mock, Pre NECTA &amp; Joint Exams
-                          </div>
+                        {/* First-Page / Cover Preview (with clean fallback banner) */}
+                        <div className="bg-slate-50 p-4 sm:p-6 text-center border-b border-slate-200 flex flex-col items-center justify-center">
+                          {getDocCoverImageUrl(selectedExamDetail) ? (
+                            <img
+                              src={getDocCoverImageUrl(selectedExamDetail) || ''}
+                              alt={cleanShareDocTitle(selectedExamDetail.title)}
+                              className="max-h-72 sm:max-h-80 w-auto object-contain rounded-xl border border-slate-200 shadow-sm bg-white"
+                              loading="eager"
+                            />
+                          ) : (
+                            <>
+                              <div className="text-3xl sm:text-4xl font-black tracking-tight text-blue-600 leading-none uppercase">
+                                SOLVING
+                              </div>
+                              <div className="text-3xl sm:text-4xl font-black tracking-tight text-violet-600 leading-none uppercase mt-1">
+                                EXAMS
+                              </div>
+                              <div className="mt-3 px-6 py-2.5 sm:py-3 rounded-2xl bg-gradient-to-r from-violet-600 to-blue-600 text-white font-black text-2xl sm:text-4xl uppercase tracking-tight shadow-sm w-full max-w-md">
+                                {selectedExamDetail.form}
+                              </div>
+                              <div className="mt-2.5 text-xs sm:text-sm font-extrabold text-blue-600">
+                                Mock, Pre NECTA &amp; Joint Exams
+                              </div>
+                            </>
+                          )}
                         </div>
 
                         {/* Exam Information & Two Options (Paper in PDF + Marking Scheme) */}
                         <div className="p-5 sm:p-6 space-y-4">
                           <div className="space-y-1.5">
                             <h2 className="text-lg sm:text-xl font-black text-slate-900 leading-snug">
-                              {selectedExamDetail.title}
+                              {cleanShareDocTitle(selectedExamDetail.title)}
                             </h2>
                             <div className="text-xs font-semibold text-slate-500 flex flex-wrap items-center gap-2">
                               <span>📅 {selectedExamDetail.year}</span>
@@ -5486,14 +5545,6 @@ export default function App() {
                               <span>•</span>
                               <span>{selectedExamDetail.subject}</span>
                             </div>
-                          </div>
-
-                          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                            Download or read <strong>{selectedExamDetail.title}</strong> for free.
-                          </p>
-
-                          <div className="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wide">
-                            {selectedExamDetail.title.toUpperCase()}
                           </div>
 
                           <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-3">
@@ -5524,6 +5575,24 @@ export default function App() {
                                 </span>
                                 <ChevronRight className="w-4 h-4 shrink-0" />
                               </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                              <button
+                                type="button"
+                                onClick={() => shareLibraryDocument(selectedExamDetail)}
+                                className="w-full px-4 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                              >
+                                <span>📲 Share Link</span>
+                              </button>
+                              <a
+                                href={getDocWhatsAppShareUrl(selectedExamDetail)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="w-full px-4 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#1ebe5d] text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors"
+                              >
+                                <span>💬 Share on WhatsApp</span>
+                              </a>
                             </div>
                           </div>
                         </div>
@@ -5869,26 +5938,37 @@ export default function App() {
                     </button>
                   </div>
 
-                  <div className="bg-white p-6 sm:p-8 text-center border-b border-slate-200 flex flex-col items-center justify-center">
-                    <div className="text-3xl sm:text-4xl font-black tracking-tight text-emerald-600 leading-none uppercase">
-                      OFFICIAL TIE
-                    </div>
-                    <div className="text-3xl sm:text-4xl font-black tracking-tight text-blue-700 leading-none uppercase mt-1">
-                      TEXTBOOK
-                    </div>
-                    <div className="mt-3 px-6 py-2.5 sm:py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-blue-600 text-white font-black text-2xl sm:text-4xl uppercase tracking-tight shadow-sm w-full max-w-md">
-                      {selectedBookDetail.form}
-                    </div>
-                    <div className="mt-2.5 text-xs sm:text-sm font-extrabold text-emerald-700">
-                      Tanzania Institute of Education · {selectedBookDetail.subject}
-                    </div>
+                  <div className="bg-slate-50 p-4 sm:p-6 text-center border-b border-slate-200 flex flex-col items-center justify-center">
+                    {getDocCoverImageUrl(selectedBookDetail) ? (
+                      <img
+                        src={getDocCoverImageUrl(selectedBookDetail) || ''}
+                        alt={cleanShareDocTitle(selectedBookDetail.title)}
+                        className="max-h-72 sm:max-h-80 w-auto object-contain rounded-xl border border-slate-200 shadow-sm bg-white"
+                        loading="eager"
+                      />
+                    ) : (
+                      <>
+                        <div className="text-3xl sm:text-4xl font-black tracking-tight text-emerald-600 leading-none uppercase">
+                          OFFICIAL TIE
+                        </div>
+                        <div className="text-3xl sm:text-4xl font-black tracking-tight text-blue-700 leading-none uppercase mt-1">
+                          TEXTBOOK
+                        </div>
+                        <div className="mt-3 px-6 py-2.5 sm:py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-blue-600 text-white font-black text-2xl sm:text-4xl uppercase tracking-tight shadow-sm w-full max-w-md">
+                          {selectedBookDetail.form}
+                        </div>
+                        <div className="mt-2.5 text-xs sm:text-sm font-extrabold text-emerald-700">
+                          Tanzania Institute of Education · {selectedBookDetail.subject}
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   <div className="p-5 sm:p-6 space-y-4">
                     <div className="space-y-1.5">
                       <h2 className="text-lg sm:text-xl font-black text-slate-900 leading-snug flex items-center gap-2">
                         <span>{getSubjectIcon(selectedBookDetail.subject)}</span>
-                        <span>{selectedBookDetail.title}</span>
+                        <span>{cleanShareDocTitle(selectedBookDetail.title)}</span>
                       </h2>
                       <div className="text-xs font-semibold text-slate-500 flex flex-wrap items-center gap-2">
                         <span>📅 {selectedBookDetail.year}</span>
@@ -6248,20 +6328,31 @@ export default function App() {
                     </button>
                   </div>
 
-                  {/* Hero "OFFICIAL TIE SYLLABUS" Poster Banner */}
-                  <div className="bg-white p-6 sm:p-8 text-center border-b border-slate-200 flex flex-col items-center justify-center">
-                    <div className="text-3xl sm:text-4xl font-black tracking-tight text-amber-600 leading-none uppercase">
-                      OFFICIAL TIE
-                    </div>
-                    <div className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 leading-none uppercase mt-1">
-                      SYLLABUS
-                    </div>
-                    <div className="mt-3 px-6 py-2.5 sm:py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-black text-2xl sm:text-4xl uppercase tracking-tight shadow-sm w-full max-w-md">
-                      {selectedSyllabusDetail.form}
-                    </div>
-                    <div className="mt-2.5 text-xs sm:text-sm font-extrabold text-amber-800">
-                      Competence-Based Curriculum · {selectedSyllabusDetail.subject}
-                    </div>
+                  {/* First-Page / Cover Preview (with clean fallback banner) */}
+                  <div className="bg-slate-50 p-4 sm:p-6 text-center border-b border-slate-200 flex flex-col items-center justify-center">
+                    {getDocCoverImageUrl(selectedSyllabusDetail) ? (
+                      <img
+                        src={getDocCoverImageUrl(selectedSyllabusDetail) || ''}
+                        alt={cleanShareDocTitle(selectedSyllabusDetail.title)}
+                        className="max-h-72 sm:max-h-80 w-auto object-contain rounded-xl border border-slate-200 shadow-sm bg-white"
+                        loading="eager"
+                      />
+                    ) : (
+                      <>
+                        <div className="text-3xl sm:text-4xl font-black tracking-tight text-amber-600 leading-none uppercase">
+                          OFFICIAL TIE
+                        </div>
+                        <div className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 leading-none uppercase mt-1">
+                          SYLLABUS
+                        </div>
+                        <div className="mt-3 px-6 py-2.5 sm:py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-black text-2xl sm:text-4xl uppercase tracking-tight shadow-sm w-full max-w-md">
+                          {selectedSyllabusDetail.form}
+                        </div>
+                        <div className="mt-2.5 text-xs sm:text-sm font-extrabold text-amber-800">
+                          Competence-Based Curriculum · {selectedSyllabusDetail.subject}
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   {/* Syllabus Information & Action Options (Read, Download, Share) */}
@@ -6269,7 +6360,7 @@ export default function App() {
                     <div className="space-y-1.5">
                       <h2 className="text-lg sm:text-xl font-black text-slate-900 leading-snug flex items-center gap-2">
                         <span>{getSubjectIcon(selectedSyllabusDetail.subject)}</span>
-                        <span>{selectedSyllabusDetail.title}</span>
+                        <span>{cleanShareDocTitle(selectedSyllabusDetail.title)}</span>
                       </h2>
                       <div className="text-xs font-semibold text-slate-500 flex flex-wrap items-center gap-2">
                         <span>📅 {selectedSyllabusDetail.year}</span>
