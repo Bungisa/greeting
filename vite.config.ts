@@ -57,8 +57,8 @@ export default defineConfig(() => {
               urlPattern: ({ request }) => request.mode === 'navigate',
               handler: 'NetworkFirst',
               options: {
-                cacheName: 'elimika-html-shell-v3',
-                networkTimeoutSeconds: 4,
+                cacheName: 'elimika-html-shell-v6-2027',
+                networkTimeoutSeconds: 3,
                 expiration: {
                   maxEntries: 5,
                   maxAgeSeconds: 60 * 60 * 24 * 7,
@@ -67,12 +67,13 @@ export default defineConfig(() => {
             },
             {
               urlPattern: /\/assets\/.*\.(?:js|css)$/i,
-              handler: 'StaleWhileRevalidate',
+              handler: 'NetworkFirst',
               options: {
-                cacheName: 'elimika-app-bundles-v3',
+                cacheName: 'elimika-app-bundles-v6-2027',
+                networkTimeoutSeconds: 3,
                 expiration: {
-                  maxEntries: 30,
-                  maxAgeSeconds: 60 * 60 * 24 * 30,
+                  maxEntries: 40,
+                  maxAgeSeconds: 60 * 60 * 24 * 14,
                 },
                 cacheableResponse: {
                   statuses: [0, 200],

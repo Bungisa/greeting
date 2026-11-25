@@ -182,7 +182,7 @@
     <script>
       // Self-healing CSS & Service Worker cache recovery for installed mobile PWAs
       (function () {
-        var CACHE_GUARD_KEY = 'elimika_sw_css_guard_v4_2027';
+        var CACHE_GUARD_KEY = 'elimika_sw_css_guard_v6_2027';
         function purgeStaleCachesAndReload() {
           try {
             if (sessionStorage.getItem('elimika_css_recovering') === '1') return;
@@ -211,7 +211,7 @@
             if ('caches' in window) {
               caches.keys().then(function (names) {
                 names.forEach(function (name) {
-                  if (name.indexOf('v3') === -1) {
+                  if (name.indexOf('v6-2027') === -1) {
                     caches.delete(name);
                   }
                 });
@@ -219,7 +219,12 @@
             }
             if ('serviceWorker' in navigator) {
               navigator.serviceWorker.getRegistrations().then(function (regs) {
-                regs.forEach(function (r) { r.update(); });
+                regs.forEach(function (r) {
+                  r.update();
+                  if (r.waiting) {
+                    r.waiting.postMessage({ type: 'SKIP_WAITING' });
+                  }
+                });
               });
             }
           }

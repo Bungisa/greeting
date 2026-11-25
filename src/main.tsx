@@ -5,20 +5,31 @@ import './index.css';
 if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     try {
-      const slimKey = 'elimika_cache_slimmed_v4_2027';
+      const slimKey = 'elimika_cache_slimmed_v6_2027';
       if (!localStorage.getItem(slimKey) && 'caches' in window) {
-        caches.keys().then((keys) => {
-          keys.forEach((k) => {
-            if (!k.includes('v3')) {
-              caches.delete(k);
-            }
-          });
-        }).catch(() => {});
+        caches
+          .keys()
+          .then((keys) => {
+            keys.forEach((k) => {
+              if (!k.includes('v6-2027')) {
+                caches.delete(k);
+              }
+            });
+          })
+          .catch(() => {});
         localStorage.setItem(slimKey, '1');
       }
     } catch {
       // ignore storage errors
     }
+
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (refreshing) return;
+      refreshing = true;
+      window.location.reload();
+    });
+
     navigator.serviceWorker
       .getRegistrations()
       .then((registrations) => {

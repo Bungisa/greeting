@@ -5,7 +5,11 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
 import {
   CheckCircle2,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   ChevronUp,
+  Compass,
+  Layers,
   Leaf,
   Maximize2,
   Minimize2,
@@ -20,7 +24,6 @@ import {
   Trash2,
   Wind,
 } from 'lucide-react';
-import imgLeafCutawayStudio from '../assets/images/sim_photosynthesis_1795215064101.jpg';
 
 export interface Photosynthesis3DSimulationProps {
   darkMode?: boolean;
@@ -38,14 +41,21 @@ type LeafPartId =
   | 'phloem'
   | 'stomata';
 
-interface LessonChapter {
-  index: number;
+type CameraPresetId = 'iso360' | 'front' | 'underside' | 'vascular' | 'top';
+
+interface StepSpec {
+  stepNumber: number;
+  id: string;
   title: string;
-  startSec: number;
-  endSec: number;
+  shortTitle: string;
+  equationBadge: string;
   focusPart: LeafPartId;
-  oCaption: string;
-  aCaption: string;
+  cameraPos: [number, number, number];
+  cameraTarget: [number, number, number];
+  recommendedExplode: number;
+  oDescription: string;
+  aDescription: string;
+  keyStructures: string[];
 }
 
 interface PlottedRatePoint {
@@ -63,86 +73,226 @@ interface BioChallenge {
   check: (light: number, co2: number, temp: number, stomataOpen: boolean, rate: number) => boolean;
 }
 
-interface LabelAnchorUV {
+interface Label3DSpec {
   id: string;
   partId: LeafPartId;
   text: string;
-  u: number;
-  v: number;
+  subText: string;
+  basePos: [number, number, number];
+  explodeFactor: number;
   offsetX: number;
   offsetY: number;
+  accentHex: string;
 }
 
 interface ProjectedLabel {
   id: string;
   partId: LeafPartId;
   text: string;
+  subText: string;
   ax: number;
   ay: number;
   lx: number;
   ly: number;
+  accentHex: string;
 }
 
-interface CubicSeg {
-  p0: [number, number];
-  p1: [number, number];
-  p2: [number, number];
-  p3: [number, number];
-}
-
-// 16:9 studio leaf cutaway plane dimensions in 3D world space
-const PLANE_W = 9.6;
-const PLANE_H = 5.4;
-
-// 65-second (1:05) guided lesson for comfortable classroom reading & observation
-const LESSON_DURATION_SEC = 65;
-
-const LESSON_CHAPTERS: LessonChapter[] = [
+const PHOTOSYNTHESIS_STEPS: StepSpec[] = [
   {
-    index: 0,
-    title: 'Sunlight & palisade cells',
-    startSec: 0,
-    endSec: 17,
+    stepNumber: 1,
+    id: 'step_light',
+    title: 'Step 1: Light Absorption in Palisade Chloroplasts',
+    shortTitle: '1. Light Capture',
+    equationBadge: 'Sunlight (hν) → Chlorophyll a & b Excitation',
     focusPart: 'palisade',
-    oCaption:
-      'Sunlight passes through the transparent upper epidermis and waxy cuticle straight into vertical palisade cells packed with green chloroplasts.',
-    aCaption:
-      'Photons penetrate the translucent cuticle and upper epidermis to excite chlorophyll a & b in the thylakoid membranes of palisade mesophyll chloroplasts.',
+    cameraPos: [4.2, 3.3, 6.2],
+    cameraTarget: [0.2, 0.75, 0],
+    recommendedExplode: 0.22,
+    oDescription:
+      'Sunlight passes straight through the transparent waxy cuticle and upper epidermis into tall cylindrical palisade cells packed with green chloroplasts.',
+    aDescription:
+      'Photons (400–700 nm) penetrate the translucent cuticle and upper epidermis to excite chlorophyll a & b molecules inside the thylakoid grana membranes of palisade chloroplasts.',
+    keyStructures: ['Waxy Cuticle', 'Upper Epidermis', 'Palisade Chloroplasts', 'Thylakoid Grana'],
   },
   {
-    index: 1,
-    title: 'Stomata & xylem transport',
-    startSec: 17,
-    endSec: 34,
+    stepNumber: 2,
+    id: 'step_water',
+    title: 'Step 2: Water Transport (Xylem) & Photolysis',
+    shortTitle: '2. Xylem & Photolysis',
+    equationBadge: '2H₂O + Light → 4H⁺ + 4e⁻ + O₂↑',
     focusPart: 'xylem',
-    oCaption:
-      'Guard cells swell to open the stoma underneath the leaf so CO₂ diffuses into air spaces, while the blue xylem vessel delivers water up the leaf vein.',
-    aCaption:
-      'Turgid guard cells widen the stomatal pore for CO₂ diffusion into spongy mesophyll spaces while transpiration pull supplies H₂O through lignified xylem.',
+    cameraPos: [-5.4, 1.4, 5.8],
+    cameraTarget: [-1.15, 0.1, 0],
+    recommendedExplode: 0.18,
+    oDescription:
+      'Water (H₂O) absorbed by roots travels up the hollow blue Xylem vessels in the leaf vein and enters the chloroplasts, where light splits water into hydrogen and oxygen.',
+    aDescription:
+      'Transpiration pull draws H₂O through spiral-lignified xylem vessels into mesophyll chloroplasts, where Photosystem II catalyses photolysis (2H₂O → 4H⁺ + 4e⁻ + O₂).',
+    keyStructures: ['Xylem Lignified Vessels', 'Bundle Sheath', 'Water (H₂O) Stream', 'Photolysis Complex'],
   },
   {
-    index: 2,
-    title: 'Making glucose & oxygen',
-    startSec: 34,
-    endSec: 50,
-    focusPart: 'phloem',
-    oCaption:
-      'Inside chloroplasts, light energy combines CO₂ and water into glucose (exported down the golden phloem tube) and releases bright oxygen bubbles!',
-    aCaption:
-      'Photolysis releases O₂ while ATP and NADPH drive the Calvin cycle to synthesise triose phosphate, actively loaded as sucrose into phloem sieve tubes.',
-  },
-  {
-    index: 3,
-    title: 'Limiting factors & heat stress',
-    startSec: 50,
-    endSec: 65,
+    stepNumber: 3,
+    id: 'step_co2',
+    title: 'Step 3: Stomatal Opening & CO₂ Gas Diffusion',
+    shortTitle: '3. Stomata & CO₂ In',
+    equationBadge: 'Turgid Guard Cells → CO₂ Diffusion into Air Spaces',
     focusPart: 'stomata',
-    oCaption:
-      'Too much heat (above 40°C) damages photosynthetic enzymes and wilts the leaf tissue, causing oxygen output to drop sharply!',
-    aCaption:
-      'Above ~40°C, thermal denaturation of Rubisco and photosynthetic enzymes collapses carbon fixation even when light and CO₂ remain abundant.',
+    cameraPos: [2.4, -3.8, 6.0],
+    cameraTarget: [0.4, -1.35, 0.2],
+    recommendedExplode: 0.15,
+    oDescription:
+      'On the underside of the leaf, kidney-shaped guard cells swell with water to open the stomatal pores, allowing carbon dioxide (CO₂) to diffuse up through spongy air spaces.',
+    aDescription:
+      'K⁺ influx lowers water potential in guard cells; osmotic turgor bows their thickened inner walls apart, widening the stoma for CO₂ diffusion across spongy mesophyll spaces.',
+    keyStructures: ['Kidney Guard Cells', 'Stomatal Pore', 'Lower Epidermis', 'Spongy Air Spaces'],
+  },
+  {
+    stepNumber: 4,
+    id: 'step_calvin',
+    title: 'Step 4: Glucose Synthesis (Calvin Cycle in Stroma)',
+    shortTitle: '4. Glucose Synthesis',
+    equationBadge: '6CO₂ + 24H⁺ (ATP + NADPH) → C₆H₁₂O₆',
+    focusPart: 'spongy',
+    cameraPos: [5.6, 0.9, 5.6],
+    cameraTarget: [0.6, 0.35, 0],
+    recommendedExplode: 0.28,
+    oDescription:
+      'Inside the chloroplast stroma, hydrogen from water and carbon dioxide from the air combine using light energy to manufacture energy-rich glucose sugar (C₆H₁₂O₆).',
+    aDescription:
+      'In the chloroplast stroma, Rubisco fixes CO₂ onto RuBP (5C) to form GP (3C), which is reduced by ATP and NADPH into triose phosphate (TP) and hexose glucose (C₆H₁₂O₆).',
+    keyStructures: ['Chloroplast Stroma', 'Rubisco Enzyme', 'ATP & NADPH', 'Glucose (C₆H₁₂O₆)'],
+  },
+  {
+    stepNumber: 5,
+    id: 'step_phloem',
+    title: 'Step 5: Phloem Sugar Translocation & O₂ Release',
+    shortTitle: '5. Phloem & O₂ Out',
+    equationBadge: 'C₆H₁₂O₆ (Sucrose) → Phloem | 6O₂↑ → Atmosphere',
+    focusPart: 'phloem',
+    cameraPos: [-4.6, -1.2, 6.3],
+    cameraTarget: [-0.8, -0.25, 0],
+    recommendedExplode: 0.12,
+    oDescription:
+      'Oxygen gas (O₂) escapes out through the stomata into the air, while newly made glucose is carried down the golden Phloem sieve tubes to feed the rest of the plant.',
+    aDescription:
+      'O₂ diffuses out via intercellular air spaces and stomata, while glucose is converted to sucrose and actively loaded via companion cells into phloem sieve tubes for mass-flow translocation.',
+    keyStructures: ['Phloem Sieve Tubes', 'Sieve Plates', 'Companion Cells', 'O₂ Gas Efflux'],
   },
 ];
+
+interface PhotosynthesisLessonChapter {
+  id: number;
+  stepIdx: number;
+  title: string;
+  startSec: number;
+  endSec: number;
+  lightPct: number;
+  co2Pct: number;
+  tempC: number;
+  stomataOpen: boolean;
+  explodeLayers: number;
+  oCaption: string;
+  aCaption: string;
+}
+
+const LESSON_DURATION_SEC = 65;
+
+const PHOTO_LESSON_CHAPTERS: PhotosynthesisLessonChapter[] = [
+  {
+    id: 1,
+    stepIdx: 0,
+    title: 'Light Capture',
+    startSec: 0,
+    endSec: 13,
+    lightPct: 90,
+    co2Pct: 80,
+    tempC: 29,
+    stomataOpen: true,
+    explodeLayers: 0.22,
+    oCaption:
+      'Sunlight photons pass straight through the transparent waxy cuticle and upper epidermis into tall palisade cells packed with glowing green chloroplasts.',
+    aCaption:
+      'Photons (400–700 nm) penetrate the waxy cuticle and upper epidermis to excite chlorophyll a & b inside thylakoid grana membranes of palisade chloroplasts.',
+  },
+  {
+    id: 2,
+    stepIdx: 1,
+    title: 'Xylem & Photolysis',
+    startSec: 13,
+    endSec: 26,
+    lightPct: 90,
+    co2Pct: 80,
+    tempC: 29,
+    stomataOpen: true,
+    explodeLayers: 0.18,
+    oCaption:
+      'Blue spiral-lignified xylem vessels deliver water (H₂O) from the roots directly into the mesophyll, where light energy splits water into hydrogen and oxygen.',
+    aCaption:
+      'Transpiration pull draws H₂O along lignified xylem vessels to Photosystem II, where photolysis splits water (2H₂O → 4H⁺ + 4e⁻ + O₂↑) and supplies electrons.',
+  },
+  {
+    id: 3,
+    stepIdx: 2,
+    title: 'Stomata & CO₂ In',
+    startSec: 26,
+    endSec: 39,
+    lightPct: 85,
+    co2Pct: 90,
+    tempC: 29,
+    stomataOpen: true,
+    explodeLayers: 0.15,
+    oCaption:
+      'Look underneath the 3D leaf: turgid kidney-shaped guard cells bow apart to open the stomatal pores, letting violet CO₂ molecules diffuse up through spongy air spaces.',
+    aCaption:
+      'Active K⁺ influx lowers guard-cell water potential; osmotic turgor bows their thickened inner walls open so atmospheric CO₂ diffuses through intercellular air spaces.',
+  },
+  {
+    id: 4,
+    stepIdx: 3,
+    title: 'Glucose Synthesis',
+    startSec: 39,
+    endSec: 52,
+    lightPct: 95,
+    co2Pct: 90,
+    tempC: 30,
+    stomataOpen: true,
+    explodeLayers: 0.28,
+    oCaption:
+      'Inside the chloroplast stroma, hydrogen from water and carbon dioxide from air combine using light energy to synthesize glucose sugar (C₆H₁₂O₆).',
+    aCaption:
+      'In the stroma Calvin Cycle, Rubisco fixes CO₂ onto RuBP (5C) to form GP (3C), which ATP and NADPH reduce to triose phosphate (TP) and hexose glucose.',
+  },
+  {
+    id: 5,
+    stepIdx: 4,
+    title: 'Phloem & O₂ Output',
+    startSec: 52,
+    endSec: 65,
+    lightPct: 90,
+    co2Pct: 85,
+    tempC: 30,
+    stomataOpen: true,
+    explodeLayers: 0.12,
+    oCaption:
+      'Oxygen bubbles (O₂) escape out into the air while golden glucose crystals load into the phloem sieve tubes to feed the roots, stem, and fruits.',
+    aCaption:
+      'O₂ exits via stomata while companion cells actively load sucrose into phloem sieve tubes for mass-flow translocation from leaf source to plant sinks.',
+  },
+];
+
+function getPhotoLessonChapter(sec: number): PhotosynthesisLessonChapter {
+  for (let i = PHOTO_LESSON_CHAPTERS.length - 1; i >= 0; i--) {
+    if (sec >= PHOTO_LESSON_CHAPTERS[i].startSec) return PHOTO_LESSON_CHAPTERS[i];
+  }
+  return PHOTO_LESSON_CHAPTERS[0];
+}
+
+function formatLessonTime(sec: number): string {
+  const s = Math.max(0, Math.floor(sec));
+  const mins = Math.floor(s / 60);
+  const rem = s % 60;
+  return `${mins}:${rem < 10 ? '0' : ''}${rem}`;
+}
 
 const BIO_CHALLENGES: BioChallenge[] = [
   {
@@ -165,89 +315,93 @@ const BIO_CHALLENGES: BioChallenge[] = [
     title: 'Stomatal Gas Control',
     prompt:
       'Under bright light (≥ 70%) and optimal temperature (25–35°C), close the Stoma on the lower leaf to see CO₂ starvation!',
-    hint: 'Click directly on the stoma opening at the bottom center of the leaf (or the Stomata button at top).',
+    hint: 'Click directly on any 3D Stoma guard-cell pair under the leaf (or the Stomata button at top).',
     check: (l, _c, t, open) => !open && l >= 70 && t >= 25 && t <= 35,
   },
 ];
 
-// Normalized UV coordinates (u: 0..1 left->right, v: 0..1 bottom->top) mapped precisely to the cutaway leaf image!
-const PART_ANCHORS: Record<LeafPartId, { u: number; v: number }> = {
-  overview: { u: 0.52, v: 0.52 },
-  cuticle: { u: 0.49, v: 0.72 },
-  palisade: { u: 0.62, v: 0.56 },
-  spongy: { u: 0.69, v: 0.43 },
-  xylem: { u: 0.36, v: 0.37 },
-  phloem: { u: 0.455, v: 0.405 },
-  stomata: { u: 0.514, v: 0.305 },
-};
-
-const CALLOUT_UV_ANCHORS: LabelAnchorUV[] = [
-  { id: 'cuticle', partId: 'cuticle', text: 'Waxy cuticle & upper epidermis', u: 0.46, v: 0.725, offsetX: -115, offsetY: -42 },
-  { id: 'palisade', partId: 'palisade', text: 'Palisade chloroplasts', u: 0.675, v: 0.58, offsetX: 118, offsetY: -28 },
-  { id: 'spongy', partId: 'spongy', text: 'Spongy mesophyll & air spaces', u: 0.725, v: 0.445, offsetX: 120, offsetY: 14 },
-  { id: 'xylem', partId: 'xylem', text: 'Xylem (H₂O & minerals in)', u: 0.345, v: 0.355, offsetX: -124, offsetY: -12 },
-  { id: 'phloem', partId: 'phloem', text: 'Phloem (glucose out)', u: 0.445, v: 0.395, offsetX: -118, offsetY: 44 },
-  { id: 'stomata', partId: 'stomata', text: 'Stoma & guard cells', u: 0.514, v: 0.305, offsetX: 98, offsetY: 54 },
+const LABEL_3D_SPECS: Label3DSpec[] = [
+  {
+    id: 'cuticle',
+    partId: 'cuticle',
+    text: '1. Waxy Cuticle & Upper Epidermis',
+    subText: 'Transparent waterproof barrier',
+    basePos: [0.3, 1.72, 0.85],
+    explodeFactor: 1.35,
+    offsetX: -120,
+    offsetY: -36,
+    accentHex: '#34d399',
+  },
+  {
+    id: 'palisade',
+    partId: 'palisade',
+    text: '2. Palisade Mesophyll Cells',
+    subText: 'Packed with green chloroplasts',
+    basePos: [1.55, 0.78, 1.15],
+    explodeFactor: 0.55,
+    offsetX: 125,
+    offsetY: -22,
+    accentHex: '#10b981',
+  },
+  {
+    id: 'xylem',
+    partId: 'xylem',
+    text: '3. Xylem Vessels (H₂O In)',
+    subText: 'Blue spiral-lignified water tubes',
+    basePos: [-1.55, 0.35, 1.1],
+    explodeFactor: 0.0,
+    offsetX: -135,
+    offsetY: -12,
+    accentHex: '#38bdf8',
+  },
+  {
+    id: 'phloem',
+    partId: 'phloem',
+    text: '4. Phloem Sieve Tubes (Sugar Out)',
+    subText: 'Golden sucrose translocation tubes',
+    basePos: [-1.55, -0.35, 1.1],
+    explodeFactor: 0.0,
+    offsetX: -135,
+    offsetY: 36,
+    accentHex: '#f59e0b',
+  },
+  {
+    id: 'spongy',
+    partId: 'spongy',
+    text: '5. Spongy Mesophyll & Air Spaces',
+    subText: 'CO₂ and O₂ gas diffusion chambers',
+    basePos: [1.65, -0.35, 1.1],
+    explodeFactor: -0.35,
+    offsetX: 128,
+    offsetY: 16,
+    accentHex: '#a78bfa',
+  },
+  {
+    id: 'stomata',
+    partId: 'stomata',
+    text: '6. Stoma & Guard Cells (Underneath)',
+    subText: 'Opens for CO₂ in & O₂ / H₂O out',
+    basePos: [0.45, -1.55, 0.9],
+    explodeFactor: -1.25,
+    offsetX: 110,
+    offsetY: 44,
+    accentHex: '#22d3ee',
+  },
 ];
 
-// Xylem water flow paths (exact cyan tube + two upward vein branches into the mesophyll!)
-const XYLEM_MAIN_SEGS: CubicSeg[] = [
-  { p0: [0.258, 0.212], p1: [0.302, 0.275], p2: [0.348, 0.345], p3: [0.395, 0.415] },
-  { p0: [0.395, 0.415], p1: [0.435, 0.456], p2: [0.478, 0.486], p3: [0.525, 0.512] },
-];
-const XYLEM_BRANCH_1: CubicSeg[] = [
-  { p0: [0.258, 0.212], p1: [0.305, 0.282], p2: [0.350, 0.352], p3: [0.382, 0.405] },
-  { p0: [0.382, 0.405], p1: [0.388, 0.440], p2: [0.384, 0.470], p3: [0.372, 0.495] },
-];
-const XYLEM_BRANCH_2: CubicSeg[] = [
-  { p0: [0.258, 0.212], p1: [0.320, 0.300], p2: [0.385, 0.395], p3: [0.438, 0.456] },
-  { p0: [0.438, 0.456], p1: [0.445, 0.482], p2: [0.445, 0.502], p3: [0.442, 0.520] },
-];
-
-// Phloem sucrose translocation path (exact amber sieve tube flowing DOWN & OUT from mesophyll!)
-const PHLOEM_SEGS: CubicSeg[] = [
-  { p0: [0.572, 0.504], p1: [0.535, 0.475], p2: [0.495, 0.442], p3: [0.456, 0.408] },
-  { p0: [0.456, 0.408], p1: [0.435, 0.388], p2: [0.416, 0.372], p3: [0.402, 0.358] },
-];
-
-function evalCubic(seg: CubicSeg, t: number): [number, number] {
-  const mt = 1 - t;
-  const mt2 = mt * mt;
-  const t2 = t * t;
-  const x =
-    mt2 * mt * seg.p0[0] +
-    3 * mt2 * t * seg.p1[0] +
-    3 * mt * t2 * seg.p2[0] +
-    t2 * t * seg.p3[0];
-  const y =
-    mt2 * mt * seg.p0[1] +
-    3 * mt2 * t * seg.p1[1] +
-    3 * mt * t2 * seg.p2[1] +
-    t2 * t * seg.p3[1];
-  return [x, y];
-}
-
-function sampleUvPath(segs: CubicSeg[], tNorm: number): [number, number] {
-  const clamped = ((tNorm % 1) + 1) % 1;
-  const scaled = clamped * segs.length;
-  const idx = Math.min(segs.length - 1, Math.floor(scaled));
-  return evalCubic(segs[idx], scaled - idx);
-}
-
-// Module-scope reusable scratch math objects (zero per-frame GC allocations)
+// Reusable module-scope scratch math vectors (zero per-frame GC allocations)
 const _vProj = new THREE.Vector3();
-const _vPos = new THREE.Vector3();
+const _vCamTarget = new THREE.Vector3();
+const _vCamPos = new THREE.Vector3();
 const _matDummy = new THREE.Matrix4();
 const _quatDummy = new THREE.Quaternion();
 const _scaleDummy = new THREE.Vector3();
+const _posDummy = new THREE.Vector3();
+const _eulerDummy = new THREE.Euler();
+const _colorDummy = new THREE.Color();
 const _pointerNdc = new THREE.Vector2();
 const _raycaster = new THREE.Raycaster();
-const _eulerDummy = new THREE.Euler();
 
-/**
- * Biologically grounded Blackman's Law limiting-factors photosynthesis model
- * Returns rate in O₂ bubbles/min (0 – 64) + active limiting factor string
- */
 function computePhotosynthesisMetrics(
   lightPct: number,
   co2Pct: number,
@@ -307,236 +461,658 @@ function computePhotosynthesisMetrics(
   return { bubblesPerMin, normalizedRate, glucoseMgHr, limitingFactor, denatured };
 }
 
-function formatClock(sec: number): string {
-  const s = Math.max(0, Math.floor(sec));
-  const m = Math.floor(s / 60);
-  const r = s % 60;
-  return `${m}:${r < 10 ? '0' : ''}${r}`;
-}
+function createBotanicalLeafMaps(maxAniso: number): {
+  albedoMap: THREE.CanvasTexture;
+  bumpMap: THREE.CanvasTexture;
+} {
+  const size = 512;
+  const albedoCanvas = document.createElement('canvas');
+  albedoCanvas.width = size;
+  albedoCanvas.height = size;
+  const actx = albedoCanvas.getContext('2d');
 
-/**
- * Cleanly isolates the photorealistic studio leaf cross-section onto a 100% transparent canvas
- * using exterior edge-seeded BFS flood-fill (removing cool gray backdrop, warm top-left studio rays,
- * and detached floor shadow) + 2-pass silhouette feathering, so there is ZERO visible rectangle/screen
- * edge in both Dark and Light modes while keeping every internal cell, bubble, xylem & phloem pixel intact!
- */
-function createTransparentLeafCanvasTexture(
-  imgSrc: string,
-  maxAnisotropy: number,
-  onReady: (tex: THREE.CanvasTexture) => void
-) {
-  const img = new Image();
-  img.crossOrigin = 'anonymous';
-  img.onload = () => {
-    const w = 1024;
-    const h = 576;
-    const canvas = document.createElement('canvas');
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    if (!ctx) return;
+  const bumpCanvas = document.createElement('canvas');
+  bumpCanvas.width = size;
+  bumpCanvas.height = size;
+  const bctx = bumpCanvas.getContext('2d');
 
-    ctx.drawImage(img, 0, 0, w, h);
-    const imgData = ctx.getImageData(0, 0, w, h);
-    const data = imgData.data;
+  if (actx && bctx) {
+    // Rich natural chlorophyll leaf gradient (slightly brighter near midrib vein on left)
+    const grad = actx.createLinearGradient(0, 0, size, size);
+    grad.addColorStop(0, '#3e8e41');
+    grad.addColorStop(0.28, '#2d7a36');
+    grad.addColorStop(0.65, '#256b2e');
+    grad.addColorStop(1, '#1e5a26');
+    actx.fillStyle = grad;
+    actx.fillRect(0, 0, size, size);
 
-    const total = w * h;
-    const visited = new Uint8Array(total);
-    const isBg = new Uint8Array(total);
-    const queue = new Int32Array(total);
-    let head = 0;
-    let tail = 0;
+    bctx.fillStyle = '#787878';
+    bctx.fillRect(0, 0, size, size);
 
-    const isExteriorBackdrop = (idx: number): boolean => {
-      const p = idx * 4;
-      const r = data[p];
-      const g = data[p + 1];
-      const b = data[p + 2];
-      const maxC = Math.max(r, g, b);
-      const minC = Math.min(r, g, b);
-      const sat = maxC - minC;
-      const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-      const y = (idx - (idx % w)) / w;
-
-      // Protect all green leaf cuticle/cells and cyan xylem tube pixels
-      if (g > r + 5 && g > b + 12) return false;
-      if (g - b > 24 && g >= r - 4) return false;
-      if (b > r + 18) return false;
-
-      // 1. Neutral cool-gray studio backdrop surrounding the leaf
-      if (sat < 28 && lum > 142 && b >= r - 8) return true;
-
-      // 2. Warm top-left studio sunbeam wash (bright cream/off-white, r >= g >= b, low green excess)
-      if (lum > 176 && r >= g - 1 && g >= b - 3 && r - b < 48 && g - b < 26) return true;
-
-      // 3. Soft detached floor shadow below the leaf cutaway
-      if (y > h * 0.76 && sat < 26 && lum > 98 && g - b < 14) return true;
-
-      return false;
-    };
-
-    const enqueue = (idx: number) => {
-      if (visited[idx]) return;
-      visited[idx] = 1;
-      if (isExteriorBackdrop(idx)) {
-        isBg[idx] = 1;
-        queue[tail++] = idx;
-      }
-    };
-
-    // Seed strictly from outer edges so enclosed interior air pockets & shiny bubbles stay 100% intact
-    for (let x = 0; x < w; x++) {
-      enqueue(x);
-      enqueue((h - 1) * w + x);
-    }
-    for (let y = 0; y < h; y++) {
-      enqueue(y * w);
-      enqueue(y * w + (w - 1));
+    // Subtle organic mottled botanical pigmentation
+    for (let i = 0; i < 240; i++) {
+      const rx = ((i * 137.5) % size);
+      const ry = ((i * 223.1) % size);
+      const rr = 12 + (i % 26);
+      const mg = actx.createRadialGradient(rx, ry, 1, rx, ry, rr);
+      mg.addColorStop(0, i % 2 === 0 ? 'rgba(134, 239, 172, 0.09)' : 'rgba(20, 83, 45, 0.11)');
+      mg.addColorStop(1, 'rgba(0,0,0,0)');
+      actx.fillStyle = mg;
+      actx.beginPath();
+      actx.arc(rx, ry, rr, 0, Math.PI * 2);
+      actx.fill();
     }
 
-    while (head < tail) {
-      const idx = queue[head++];
-      const x = idx % w;
-      const y = (idx - x) / w;
-      if (x > 0) enqueue(idx - 1);
-      if (x < w - 1) enqueue(idx + 1);
-      if (y > 0) enqueue(idx - w);
-      if (y < h - 1) enqueue(idx + w);
-    }
-
-    const alphaMask = new Uint8Array(total);
-    for (let i = 0; i < total; i++) {
-      alphaMask[i] = isBg[i] ? 0 : 255;
-    }
-
-    // 2-pass silhouette feathering to eliminate any edge halo in both Dark and Light modes
-    for (let pass = 0; pass < 2; pass++) {
-      for (let y = 1; y < h - 1; y++) {
-        for (let x = 1; x < w - 1; x++) {
-          const i = y * w + x;
-          if (alphaMask[i] === 0) continue;
-          const zeroNeighbors =
-            (alphaMask[i - 1] === 0 ? 1 : 0) +
-            (alphaMask[i + 1] === 0 ? 1 : 0) +
-            (alphaMask[i - w] === 0 ? 1 : 0) +
-            (alphaMask[i + w] === 0 ? 1 : 0);
-          if (zeroNeighbors > 0) {
-            const p = i * 4;
-            const sat =
-              Math.max(data[p], data[p + 1], data[p + 2]) -
-              Math.min(data[p], data[p + 1], data[p + 2]);
-            if (sat < 48) {
-              alphaMask[i] = Math.max(0, Math.round(alphaMask[i] * (1 - zeroNeighbors * 0.24)));
-            }
-          }
+    // Microscopic rounded pavement epidermal mosaic
+    const cellStep = 28;
+    for (let y = 0; y < size + cellStep; y += cellStep * 0.86) {
+      const odd = Math.round(y / (cellStep * 0.86)) % 2 === 1;
+      for (let x = 0; x < size + cellStep; x += cellStep) {
+        const cx = x + (odd ? cellStep * 0.5 : 0);
+        // Albedo subtle cell wall highlight
+        actx.strokeStyle = 'rgba(187, 247, 208, 0.18)';
+        actx.lineWidth = 1.2;
+        actx.beginPath();
+        for (let a = 0; a < 6; a++) {
+          const ang = (Math.PI / 3) * a + Math.PI / 6;
+          const px = cx + Math.cos(ang) * (cellStep * 0.48);
+          const py = y + Math.sin(ang) * (cellStep * 0.48);
+          if (a === 0) actx.moveTo(px, py);
+          else actx.lineTo(px, py);
         }
+        actx.closePath();
+        actx.stroke();
+
+        // Bump map pillowy dome center
+        const bg = bctx.createRadialGradient(cx, y, 1, cx, y, cellStep * 0.5);
+        bg.addColorStop(0, 'rgba(215, 215, 215, 0.5)');
+        bg.addColorStop(0.75, 'rgba(145, 145, 145, 0.2)');
+        bg.addColorStop(1, 'rgba(60, 60, 60, 0.55)');
+        bctx.fillStyle = bg;
+        bctx.beginPath();
+        bctx.arc(cx, y, cellStep * 0.5, 0, Math.PI * 2);
+        bctx.fill();
       }
     }
 
-    for (let i = 0; i < total; i++) {
-      data[i * 4 + 3] = alphaMask[i];
+    // Natural branching lateral leaf veins radiating from midrib (~21% from left)
+    const midX = size * 0.21;
+    actx.strokeStyle = 'rgba(190, 242, 100, 0.52)';
+    actx.lineWidth = 7;
+    actx.beginPath();
+    actx.moveTo(midX, 0);
+    actx.lineTo(midX, size);
+    actx.stroke();
+
+    bctx.strokeStyle = '#e5e5e5';
+    bctx.lineWidth = 10;
+    bctx.beginPath();
+    bctx.moveTo(midX, 0);
+    bctx.lineTo(midX, size);
+    bctx.stroke();
+
+    for (let v = -2; v <= 9; v++) {
+      const startY = v * 64;
+      // Right-branching secondary veins
+      actx.strokeStyle = 'rgba(163, 230, 53, 0.34)';
+      actx.lineWidth = 2.6;
+      actx.beginPath();
+      actx.moveTo(midX, startY);
+      actx.quadraticCurveTo(midX + 140, startY - 22, size, startY - 95);
+      actx.stroke();
+
+      bctx.strokeStyle = 'rgba(220, 220, 220, 0.75)';
+      bctx.lineWidth = 3.2;
+      bctx.beginPath();
+      bctx.moveTo(midX, startY);
+      bctx.quadraticCurveTo(midX + 140, startY - 22, size, startY - 95);
+      bctx.stroke();
+
+      // Fine tertiary reticulate veinlets
+      actx.strokeStyle = 'rgba(163, 230, 53, 0.16)';
+      actx.lineWidth = 1.1;
+      for (let t = 1; t <= 4; t++) {
+        const bx = midX + t * 82;
+        const by = startY - t * 20;
+        actx.beginPath();
+        actx.moveTo(bx, by);
+        actx.lineTo(bx + 36, by + 34);
+        actx.stroke();
+      }
+
+      // Left-branching veins
+      actx.strokeStyle = 'rgba(163, 230, 53, 0.3)';
+      actx.lineWidth = 2.2;
+      actx.beginPath();
+      actx.moveTo(midX, startY);
+      actx.quadraticCurveTo(midX - 55, startY - 12, 0, startY - 48);
+      actx.stroke();
     }
-
-    ctx.putImageData(imgData, 0, 0);
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    tex.anisotropy = maxAnisotropy;
-    tex.needsUpdate = true;
-    onReady(tex);
-  };
-  img.src = imgSrc;
-}
-
-/**
- * Computes real-time 3D relief & physiological vertex deformation for the photorealistic cutaway leaf:
- * - Organic sculpted 3D relief depth (protruding petiole vein comes forward in +Z!)
- * - Guard-cell turgor swelling/pinching directly around the lower stomatal pore (u=0.514, v=0.305)
- * - Gentle living turgor breathing & metabolic pulse in the palisade layer
- * - Visible heat-stress edge droop when Temperature rises above 38°C!
- */
-function computeDeformedLeafPoint(
-  u: number,
-  v: number,
-  stomataAperture: number,
-  rate: number,
-  heatStress: number,
-  elapsed: number,
-  out: THREE.Vector3
-) {
-  let x = (u - 0.5) * PLANE_W;
-  let y = (v - 0.5) * PLANE_H;
-
-  // Base 3D sculptural relief: central leaf block curves gently forward, protruding vein pops toward camera
-  const dxBody = (u - 0.53) / 0.28;
-  const dyBody = (v - 0.52) / 0.25;
-  let z = 0.42 * Math.exp(-(dxBody * dxBody + dyBody * dyBody) * 0.72);
-
-  // Protruding front-left vascular vein relief (+Z depth)
-  const dxVein = (u - 0.32) / 0.14;
-  const dyVein = (v - 0.29) / 0.14;
-  z += 0.34 * Math.exp(-(dxVein * dxVein + dyVein * dyVein) * 0.85);
-
-  // 1. Living leaf turgor breathing & active photosynthetic vitality
-  const breath = Math.sin(elapsed * (1.2 + rate * 2.4)) * (0.016 + rate * 0.022);
-  const wLeaf = Math.exp(-(((u - 0.52) / 0.32) ** 2 + ((v - 0.52) / 0.3) ** 2));
-  y += breath * wLeaf;
-  z += breath * 0.6 * wLeaf;
-
-  // 2. Stomatal guard cell swelling (OPEN widens the notch outward; CLOSED pinches guard cells inward!)
-  const duStoma = u - 0.514;
-  const dvStoma = v - 0.305;
-  const wStoma = Math.exp(-(duStoma * duStoma / 0.0026 + dvStoma * dvStoma / 0.0038));
-  const poreShift = (stomataAperture - 0.5) * 0.95; // +0.475 open, -0.475 closed
-  x += duStoma * wStoma * poreShift * 2.1;
-  y -= wStoma * (stomataAperture - 0.5) * 0.04;
-  z += wStoma * stomataAperture * 0.14;
-
-  // 3. Heat stress wilting droop above 38°C (edges visibly droop & curl gently downward)
-  if (heatStress > 0.001) {
-    const edgeDist = Math.abs(u - 0.52);
-    const droop = Math.pow(edgeDist, 1.65) * heatStress * 0.78;
-    y -= droop;
-    z -= heatStress * 0.12 * wLeaf;
   }
 
-  out.set(x, y, z);
+  const albedoMap = new THREE.CanvasTexture(albedoCanvas);
+  albedoMap.colorSpace = THREE.SRGBColorSpace;
+  albedoMap.wrapS = THREE.ClampToEdgeWrapping;
+  albedoMap.wrapT = THREE.RepeatWrapping;
+  albedoMap.anisotropy = maxAniso;
+
+  const bumpMap = new THREE.CanvasTexture(bumpCanvas);
+  bumpMap.wrapS = THREE.ClampToEdgeWrapping;
+  bumpMap.wrapT = THREE.RepeatWrapping;
+  bumpMap.anisotropy = maxAniso;
+
+  return { albedoMap, bumpMap };
 }
 
-function classifyLeafPartFromUV(u: number, v: number): LeafPartId | null {
-  // Outside the leaf silhouette bounding zone
-  if (u < 0.22 || u > 0.82 || v < 0.14 || v > 0.78) return null;
-
-  // 1. Stoma & guard cells notch (generous click target at bottom-center)
-  if (Math.hypot(u - 0.514, v - 0.305) < 0.068) return 'stomata';
-
-  // 2. Xylem vessel (cyan tube from petiole up-right)
-  const distToXylem = Math.min(
-    Math.hypot(u - 0.29, v - 0.26),
-    Math.hypot(u - 0.35, v - 0.35),
-    Math.hypot(u - 0.41, v - 0.42),
-    Math.hypot(u - 0.47, v - 0.47)
-  );
-  if (distToXylem < 0.056) return 'xylem';
-
-  // 3. Phloem sieve tube (amber tube alongside/below xylem)
-  const distToPhloem = Math.min(
-    Math.hypot(u - 0.43, v - 0.38),
-    Math.hypot(u - 0.48, v - 0.43),
-    Math.hypot(u - 0.54, v - 0.48)
-  );
-  if (distToPhloem < 0.048) return 'phloem';
-
-  // 4. Cuticle & upper epidermis band
-  if (v >= 0.65 && u >= 0.25 && u <= 0.79) return 'cuticle';
-
-  // 5. Palisade mesophyll band
-  if (v >= 0.50 && v < 0.65 && u >= 0.25 && u <= 0.79) return 'palisade';
-
-  // 6. Spongy mesophyll air-space zone
-  if (v >= 0.32 && v < 0.50 && u >= 0.26 && u <= 0.79) return 'spongy';
-
-  return null;
+function createCellularBumpMap(maxAniso: number): THREE.CanvasTexture {
+  const size = 256;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    ctx.fillStyle = '#808080';
+    ctx.fillRect(0, 0, size, size);
+    // Fine fibrous cellulose microfibrils & organic pores
+    for (let i = 0; i < 420; i++) {
+      const x = (i * 53.7) % size;
+      const y = (i * 97.3) % size;
+      const r = 3 + (i % 10);
+      const g = ctx.createRadialGradient(x, y, 0.5, x, y, r);
+      const bright = i % 3 === 0 ? 195 : 100;
+      g.addColorStop(0, `rgba(${bright},${bright},${bright},0.35)`);
+      g.addColorStop(1, 'rgba(128,128,128,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.strokeStyle = 'rgba(210,210,210,0.16)';
+    ctx.lineWidth = 1;
+    for (let y = 0; y < size; y += 9) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.bezierCurveTo(size * 0.33, y + 4, size * 0.66, y - 4, size, y);
+      ctx.stroke();
+    }
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  tex.anisotropy = maxAniso;
+  return tex;
 }
+
+function createChloroplastMaps(maxAniso: number): {
+  albedoMap: THREE.CanvasTexture;
+  bumpMap: THREE.CanvasTexture;
+} {
+  const size = 256;
+  const albedoCanvas = document.createElement('canvas');
+  albedoCanvas.width = size;
+  albedoCanvas.height = size;
+  const actx = albedoCanvas.getContext('2d');
+
+  const bumpCanvas = document.createElement('canvas');
+  bumpCanvas.width = size;
+  bumpCanvas.height = size;
+  const bctx = bumpCanvas.getContext('2d');
+
+  if (actx && bctx) {
+    // Rich translucent stroma base
+    const sg = actx.createLinearGradient(0, 0, size, size);
+    sg.addColorStop(0, '#166534');
+    sg.addColorStop(0.5, '#15803d');
+    sg.addColorStop(1, '#14532d');
+    actx.fillStyle = sg;
+    actx.fillRect(0, 0, size, size);
+
+    bctx.fillStyle = '#707070';
+    bctx.fillRect(0, 0, size, size);
+
+    // Stacked Thylakoid Grana bands visible through chloroplast outer envelope
+    for (let g = 0; g < 18; g++) {
+      const gx = 24 + ((g * 67) % (size - 48));
+      const gy = 28 + ((g * 43) % (size - 56));
+      for (let d = 0; d < 4; d++) {
+        actx.fillStyle = d % 2 === 0 ? '#4ade80' : '#22c55e';
+        actx.beginPath();
+        actx.ellipse(gx, gy + d * 6, 15, 4.2, 0, 0, Math.PI * 2);
+        actx.fill();
+
+        bctx.fillStyle = '#dcdcdc';
+        bctx.beginPath();
+        bctx.ellipse(gx, gy + d * 6, 15, 4.2, 0, 0, Math.PI * 2);
+        bctx.fill();
+      }
+    }
+  }
+
+  const albedoMap = new THREE.CanvasTexture(albedoCanvas);
+  albedoMap.colorSpace = THREE.SRGBColorSpace;
+  albedoMap.anisotropy = maxAniso;
+
+  const bumpMap = new THREE.CanvasTexture(bumpCanvas);
+  bumpMap.anisotropy = maxAniso;
+
+  return { albedoMap, bumpMap };
+}
+
+function createSunbeamAlphaMap(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 64;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    const grad = ctx.createLinearGradient(0, 0, 0, 256);
+    grad.addColorStop(0, 'rgba(255,255,255,0)');
+    grad.addColorStop(0.25, 'rgba(255,255,255,0.85)');
+    grad.addColorStop(0.75, 'rgba(255,255,255,0.65)');
+    grad.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 64, 256);
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  return tex;
+}
+
+function createContactShadowTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    const grad = ctx.createRadialGradient(128, 128, 12, 128, 128, 124);
+    grad.addColorStop(0, 'rgba(8, 28, 21, 0.5)');
+    grad.addColorStop(0.55, 'rgba(8, 28, 21, 0.2)');
+    grad.addColorStop(1, 'rgba(8, 28, 21, 0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 256, 256);
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+function createEpidermalPillowGeometry(): THREE.BufferGeometry {
+  const shape = new THREE.Shape();
+  const w = 0.255;
+  const h = 0.295;
+  const r = 0.08;
+  shape.moveTo(-w + r, -h);
+  shape.lineTo(w - r, -h);
+  shape.quadraticCurveTo(w, -h, w, -h + r);
+  shape.lineTo(w, h - r);
+  shape.quadraticCurveTo(w, h, w - r, h);
+  shape.lineTo(-w + r, h);
+  shape.quadraticCurveTo(-w, h, -w, h - r);
+  shape.lineTo(-w, -h + r);
+  shape.quadraticCurveTo(-w, -h, -w + r, -h);
+
+  const geo = new THREE.ExtrudeGeometry(shape, {
+    depth: 0.14,
+    bevelEnabled: true,
+    bevelThickness: 0.055,
+    bevelSize: 0.05,
+    bevelSegments: 4,
+    curveSegments: 8,
+  });
+  geo.rotateX(Math.PI / 2);
+  geo.center();
+  geo.computeVertexNormals();
+  return geo;
+}
+
+function createPalisadeCellGeometry(): THREE.BufferGeometry {
+  // Organic rounded-cap columnar plant cell profile
+  const pts: THREE.Vector2[] = [];
+  const halfH = 0.47;
+  const radius = 0.255;
+  const steps = 18;
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    const angle = (t - 0.5) * Math.PI; // -PI/2 to +PI/2
+    const y = Math.sin(angle) * halfH;
+    // Super-ellipse / capsule-like rounded cap with gentle organic taper
+    const capProfile = Math.pow(Math.max(0.0001, Math.cos(angle)), 0.36);
+    const organicWaist = 1 + 0.05 * Math.sin(t * Math.PI * 2);
+    const r = radius * capProfile * organicWaist;
+    pts.push(new THREE.Vector2(Math.max(0.002, r), y));
+  }
+  const geo = new THREE.LatheGeometry(pts, 20);
+  geo.computeVertexNormals();
+  return geo;
+}
+
+function createSpongyParenchymaGeometry(): THREE.BufferGeometry {
+  const geo = new THREE.SphereGeometry(1, 22, 16);
+  const pos = geo.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i);
+    const y = pos.getY(i);
+    const z = pos.getZ(i);
+    // Smooth organic botanical lobes (true spongy parenchyma shape, never spiky!)
+    const lobe =
+      1 +
+      0.16 * Math.sin(x * 3.1 + y * 1.9) * Math.cos(z * 2.7) +
+      0.1 * Math.cos(y * 3.6 - z * 2.2) +
+      0.06 * Math.sin(x * 4.5 + z * 3.4);
+    pos.setXYZ(i, x * lobe, y * lobe * 0.88, z * lobe);
+  }
+  pos.needsUpdate = true;
+  geo.computeVertexNormals();
+  return geo;
+}
+
+function createHelicalLigninGeometry(radius: number, length: number, turns: number): THREE.BufferGeometry {
+  const pts: THREE.Vector3[] = [];
+  const segs = turns * 20;
+  for (let i = 0; i <= segs; i++) {
+    const t = i / segs;
+    const ang = t * Math.PI * 2 * turns;
+    const z = -length * 0.5 + t * length;
+    pts.push(new THREE.Vector3(Math.cos(ang) * radius, Math.sin(ang) * radius, z));
+  }
+  const curve = new THREE.CatmullRomCurve3(pts);
+  return new THREE.TubeGeometry(curve, segs, 0.017, 7, false);
+}
+
+function createKidneyGuardCellGeometry(): THREE.BufferGeometry {
+  // Curved bean/kidney guard cell lying in XZ plane, bowing outward toward -X
+  const curve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(0.02, 0, -0.25),
+    new THREE.Vector3(-0.14, -0.015, -0.14),
+    new THREE.Vector3(-0.2, -0.025, 0),
+    new THREE.Vector3(-0.14, -0.015, 0.14),
+    new THREE.Vector3(0.02, 0, 0.25),
+  ]);
+  const geo = new THREE.TubeGeometry(curve, 24, 0.088, 12, false);
+  // Taper tips organically so the two guard cells meet seamlessly like real plant stomata
+  const pos = geo.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i);
+    const y = pos.getY(i);
+    const z = pos.getZ(i);
+    const zNorm = Math.min(1, Math.abs(z) / 0.26);
+    const tipTaper = 0.55 + 0.45 * Math.cos(zNorm * Math.PI * 0.48);
+    const center = curve.getPointAt(Math.max(0, Math.min(1, (z + 0.25) / 0.5)));
+    pos.setXYZ(
+      i,
+      center.x + (x - center.x) * tipTaper,
+      center.y + (y - center.y) * tipTaper * 0.82,
+      z
+    );
+  }
+  pos.needsUpdate = true;
+  geo.computeVertexNormals();
+  return geo;
+}
+
+/**
+ * Neat, high-contrast, detailed scientific SVG illustration for each of the 5 steps
+ * so students see both the 3D 360° spatial model AND a textbook-grade detailed schematic!
+ */
+const StepDetailedIllustration: React.FC<{
+  stepNumber: number;
+  darkMode: boolean;
+  stomataOpen: boolean;
+  lightPct: number;
+  co2Pct: number;
+  rate: number;
+}> = ({ stepNumber, darkMode, stomataOpen, lightPct, co2Pct, rate }) => {
+  const bg = darkMode ? '#0f172a' : '#f8fafc';
+  const strokeMain = darkMode ? '#e2e8f0' : '#1e293b';
+  const textSub = darkMode ? '#94a3b8' : '#475569';
+
+  if (stepNumber === 1) {
+    return (
+      <svg viewBox="0 0 360 175" className="w-full h-40 rounded-xl border border-emerald-500/30" style={{ background: bg }}>
+        {/* Waxy Cuticle & Upper Epidermis */}
+        <rect x="16" y="18" width="150" height="14" rx="4" fill="#a7f3d0" fillOpacity="0.45" stroke="#10b981" strokeWidth="1.4" />
+        <text x="22" y="28" fill={strokeMain} fontSize="8.5" fontWeight="700">Waxy Cuticle (Transparent)</text>
+        {[0, 1, 2].map((i) => (
+          <rect key={i} x={16 + i * 50} y="34" width="48" height="20" rx="4" fill="#d1fae5" fillOpacity="0.35" stroke="#059669" strokeWidth="1.3" />
+        ))}
+        <text x="22" y="47" fill={strokeMain} fontSize="8" fontWeight="700">Upper Epidermis Cells</text>
+
+        {/* Palisade Cells with Chloroplasts */}
+        {[0, 1, 2].map((i) => (
+          <g key={`pal-${i}`}>
+            <rect x={20 + i * 48} y="58" width="42" height="96" rx="10" fill="#10b981" fillOpacity="0.18" stroke="#059669" strokeWidth="1.6" />
+            <rect x={31 + i * 48} y="74" width="20" height="62" rx="7" fill="#38bdf8" fillOpacity="0.15" stroke="#0284c7" strokeDasharray="2 2" strokeWidth="1" />
+            {[0, 1, 2, 3].map((c) => (
+              <ellipse key={c} cx={26 + i * 48 + (c % 2) * 29} cy={72 + c * 20} rx="4.5" ry="7" fill="#16a34a" stroke="#4ade80" strokeWidth="1.2" />
+            ))}
+          </g>
+        ))}
+        <text x="22" y="166" fill="#10b981" fontSize="8.5" fontWeight="700">Palisade Mesophyll Cells</text>
+
+        {/* Sun Rays Entering */}
+        <circle cx="28" cy="10" r="8" fill="#facc15" />
+        {[0, 1, 2].map((r) => (
+          <g key={`ray-${r}`} opacity={Math.max(0.25, lightPct / 100)}>
+            <line x1={32 + r * 28} y1="8" x2={56 + r * 36} y2="78" stroke="#eab308" strokeWidth="2.2" strokeDasharray="4 2" />
+            <polygon points={`${56 + r * 36},82 ${51 + r * 36},74 ${60 + r * 36},74`} fill="#eab308" />
+          </g>
+        ))}
+
+        {/* Zoomed Chloroplast & Thylakoid Grana on Right */}
+        <ellipse cx="268" cy="92" rx="76" ry="52" fill="#064e3b" fillOpacity="0.85" stroke="#34d399" strokeWidth="2" />
+        <ellipse cx="268" cy="92" rx="68" ry="44" fill="#065f46" stroke="#10b981" strokeWidth="1.2" />
+        <text x="218" y="30" fill={strokeMain} fontSize="9.5" fontWeight="800">Zoomed Chloroplast</text>
+        {/* Grana stacks */}
+        {[230, 268, 306].map((gx, idx) => (
+          <g key={gx}>
+            {[0, 1, 2, 3].map((gy) => (
+              <ellipse key={gy} cx={gx} cy={78 + gy * 9} rx="13" ry="4.2" fill="#22c55e" stroke="#bbf7d0" strokeWidth="1" />
+            ))}
+            {idx < 2 && <line x1={gx + 13} y1="90" x2={gx + 25} y2="90" stroke="#4ade80" strokeWidth="2" />}
+          </g>
+        ))}
+        <text x="222" y="124" fill="#fef08a" fontSize="8.5" fontWeight="700">Thylakoid Grana (Chlorophyll)</text>
+        <text x="235" y="158" fill={textSub} fontSize="8" fontWeight="700">Photons excite electrons (e⁻)</text>
+      </svg>
+    );
+  }
+
+  if (stepNumber === 2) {
+    return (
+      <svg viewBox="0 0 360 175" className="w-full h-40 rounded-xl border border-sky-500/30" style={{ background: bg }}>
+        {/* Left: Xylem Lignified Vessel */}
+        <text x="16" y="22" fill="#0284c7" fontSize="9.5" fontWeight="800">Xylem Vessel (H₂O Transport)</text>
+        <rect x="34" y="30" width="54" height="130" rx="8" fill="#0284c7" fillOpacity="0.18" stroke="#0ea5e9" strokeWidth="2" />
+        {/* Spiral lignin rings */}
+        {[42, 64, 86, 108, 130, 150].map((ry) => (
+          <ellipse key={ry} cx="61" cy={ry} rx="27" ry="6" fill="none" stroke="#38bdf8" strokeWidth="1.8" strokeDasharray="5 2" />
+        ))}
+        {/* Rising H2O droplets */}
+        {[135, 100, 65].map((wy, i) => (
+          <g key={wy}>
+            <circle cx="61" cy={wy} r="7" fill="#0ea5e9" stroke="#e0f2fe" strokeWidth="1.2" />
+            <text x="53" y={wy + 3} fill="#ffffff" fontSize="7" fontWeight="800">H₂O</text>
+            {i > 0 && <line x1="61" y1={wy + 16} x2="61" y2={wy + 9} stroke="#38bdf8" strokeWidth="2" />}
+          </g>
+        ))}
+        <text x="96" y="65" fill={textSub} fontSize="8" fontWeight="700">Spiral Lignin</text>
+        <text x="96" y="76" fill={textSub} fontSize="8" fontWeight="700">Walls</text>
+
+        {/* Arrow into Photolysis Chamber */}
+        <path d="M 92 52 Q 140 52 168 72" fill="none" stroke="#0ea5e9" strokeWidth="2.5" />
+        <polygon points="172,74 163,75 167,67" fill="#0ea5e9" />
+
+        {/* Right: Photolysis of Water inside Thylakoid */}
+        <rect x="172" y="26" width="172" height="134" rx="14" fill="#064e3b" fillOpacity="0.88" stroke="#34d399" strokeWidth="2" />
+        <text x="186" y="46" fill="#fef08a" fontSize="9.5" fontWeight="800">Photolysis (Water Splitting)</text>
+        <text x="186" y="62" fill="#a7f3d0" fontSize="8.5" fontWeight="700">2H₂O + Light → 4H⁺ + 4e⁻ + O₂↑</text>
+
+        {/* Central H2O splitting node */}
+        <circle cx="212" cy="104" r="17" fill="#0284c7" stroke="#bae6fd" strokeWidth="1.8" />
+        <text x="199" y="107" fill="#ffffff" fontSize="9.5" fontWeight="800">2H₂O</text>
+
+        {/* Split Branches */}
+        <line x1="229" y1="96" x2="274" y2="82" stroke="#4ade80" strokeWidth="2.2" />
+        <rect x="274" y="68" width="58" height="24" rx="6" fill="#16a34a" stroke="#bbf7d0" strokeWidth="1.2" />
+        <text x="281" y="83" fill="#ffffff" fontSize="8.5" fontWeight="800">4H⁺ + 4e⁻</text>
+
+        <line x1="229" y1="112" x2="274" y2="128" stroke="#22d3ee" strokeWidth="2.2" />
+        <rect x="274" y="116" width="58" height="24" rx="6" fill="#0891b2" stroke="#a5f3fc" strokeWidth="1.2" />
+        <text x="282" y="131" fill="#ffffff" fontSize="8.5" fontWeight="800">O₂ Gas ↑</text>
+      </svg>
+    );
+  }
+
+  if (stepNumber === 3) {
+    return (
+      <svg viewBox="0 0 360 175" className="w-full h-40 rounded-xl border border-violet-500/30" style={{ background: bg }}>
+        {/* Left: Kidney-Shaped Guard Cells & Stomatal Pore */}
+        <text x="18" y="22" fill={strokeMain} fontSize="9.5" fontWeight="800">
+          Lower Leaf Stoma ({stomataOpen ? 'OPEN' : 'CLOSED'})
+        </text>
+        {/* Left Guard Cell */}
+        <path
+          d={
+            stomataOpen
+              ? 'M 78 36 C 38 36, 38 144, 78 144 C 60 118, 60 62, 78 36 Z'
+              : 'M 78 36 C 44 36, 44 144, 78 144 C 75 118, 75 62, 78 36 Z'
+          }
+          fill="#16a34a"
+          fillOpacity="0.82"
+          stroke="#4ade80"
+          strokeWidth="2.2"
+        />
+        {/* Right Guard Cell */}
+        <path
+          d={
+            stomataOpen
+              ? 'M 86 36 C 126 36, 126 144, 86 144 C 104 118, 104 62, 86 36 Z'
+              : 'M 82 36 C 116 36, 116 144, 82 144 C 85 118, 85 62, 82 36 Z'
+          }
+          fill="#16a34a"
+          fillOpacity="0.82"
+          stroke="#4ade80"
+          strokeWidth="2.2"
+        />
+        {/* Chloroplast dots in guard cells */}
+        {[56, 80, 106, 126].map((cy) => (
+          <g key={cy}>
+            <circle cx="56" cy={cy} r="3.5" fill="#bbf7d0" />
+            <circle cx="106" cy={cy} r="3.5" fill="#bbf7d0" />
+          </g>
+        ))}
+        <text x="26" y="162" fill="#10b981" fontSize="8.5" fontWeight="700">Kidney-Shaped Guard Cells</text>
+
+        {/* Right: Cross-Section Diffusion Pathway through Spongy Air Spaces */}
+        <rect x="166" y="22" width="178" height="138" rx="12" fill="#1e293b" fillOpacity={darkMode ? 0.7 : 0.08} stroke="#64748b" strokeWidth="1.4" />
+        <text x="178" y="38" fill={strokeMain} fontSize="9" fontWeight="800">Spongy Air Space Diffusion</text>
+
+        {/* Spongy cells */}
+        <circle cx="204" cy="74" r="18" fill="#10b981" fillOpacity="0.3" stroke="#059669" strokeWidth="1.6" />
+        <circle cx="262" cy="64" r="16" fill="#10b981" fillOpacity="0.3" stroke="#059669" strokeWidth="1.6" />
+        <circle cx="312" cy="82" r="19" fill="#10b981" fillOpacity="0.3" stroke="#059669" strokeWidth="1.6" />
+        <circle cx="222" cy="118" r="15" fill="#10b981" fillOpacity="0.3" stroke="#059669" strokeWidth="1.6" />
+
+        {/* Lower Epidermis with Stoma Gap at bottom */}
+        <rect x="176" y="140" width="62" height="12" rx="3" fill="#059669" fillOpacity="0.5" />
+        <rect x="272" y="140" width="62" height="12" rx="3" fill="#059669" fillOpacity="0.5" />
+
+        {/* CO2 Diffusion Arrows upward */}
+        <g opacity={stomataOpen && co2Pct > 2 ? 1 : 0.25}>
+          <path d="M 255 156 C 255 122, 248 98, 235 52" fill="none" stroke="#a855f7" strokeWidth="2.5" strokeDasharray="4 2" />
+          <polygon points="234,47 231,56 240,54" fill="#a855f7" />
+          <circle cx="255" cy="134" r="9" fill="#7c3aed" stroke="#ddd6fe" strokeWidth="1.2" />
+          <text x="246" y="137" fill="#ffffff" fontSize="7.5" fontWeight="800">CO₂</text>
+          <circle cx="282" cy="105" r="9" fill="#7c3aed" stroke="#ddd6fe" strokeWidth="1.2" />
+          <text x="273" y="108" fill="#ffffff" fontSize="7.5" fontWeight="800">CO₂</text>
+        </g>
+      </svg>
+    );
+  }
+
+  if (stepNumber === 4) {
+    return (
+      <svg viewBox="0 0 360 175" className="w-full h-40 rounded-xl border border-amber-500/30" style={{ background: bg }}>
+        {/* Left: Light Stage Inputs (ATP & NADPH) */}
+        <rect x="14" y="28" width="96" height="118" rx="12" fill="#065f46" fillOpacity="0.88" stroke="#34d399" strokeWidth="1.6" />
+        <text x="24" y="48" fill="#fef08a" fontSize="9" fontWeight="800">Thylakoid Output</text>
+        <rect x="26" y="62" width="72" height="24" rx="6" fill="#eab308" />
+        <text x="38" y="77" fill="#0f172a" fontSize="9" fontWeight="900">ATP Energy</text>
+        <rect x="26" y="98" width="72" height="24" rx="6" fill="#10b981" />
+        <text x="31" y="113" fill="#0f172a" fontSize="8.5" fontWeight="900">NADPH (H⁺)</text>
+
+        {/* Arrows into Calvin Cycle */}
+        <line x1="110" y1="74" x2="154" y2="74" stroke="#eab308" strokeWidth="2.2" />
+        <line x1="110" y1="110" x2="154" y2="104" stroke="#10b981" strokeWidth="2.2" />
+
+        {/* Center-Right: Calvin Cycle Wheel in Chloroplast Stroma */}
+        <circle cx="222" cy="90" r="52" fill="none" stroke="#f59e0b" strokeWidth="3" strokeDasharray="7 3" />
+        <text x="190" y="86" fill={strokeMain} fontSize="10" fontWeight="900">CALVIN CYCLE</text>
+        <text x="195" y="99" fill={textSub} fontSize="8" fontWeight="700">(In Stroma)</text>
+
+        {/* CO2 Entry at top of cycle */}
+        <circle cx="222" cy="28" r="14" fill="#7c3aed" stroke="#ddd6fe" strokeWidth="1.5" />
+        <text x="209" y="31" fill="#ffffff" fontSize="8.5" fontWeight="800">6CO₂</text>
+
+        {/* RuBP & Rubisco */}
+        <rect x="144" y="44" width="46" height="20" rx="5" fill="#334155" stroke="#94a3b8" strokeWidth="1" />
+        <text x="153" y="57" fill="#f8fafc" fontSize="8" fontWeight="700">RuBP</text>
+
+        {/* GP / TP intermediate */}
+        <rect x="256" y="44" width="46" height="20" rx="5" fill="#334155" stroke="#94a3b8" strokeWidth="1" />
+        <text x="261" y="57" fill="#f8fafc" fontSize="8" fontWeight="700">GP → TP</text>
+
+        {/* Output: Glucose Crystal */}
+        <line x1="262" y1="126" x2="294" y2="136" stroke="#f59e0b" strokeWidth="2.5" />
+        <rect x="278" y="122" width="72" height="36" rx="8" fill="#f59e0b" stroke="#fef3c7" strokeWidth="1.6" />
+        <text x="288" y="138" fill="#0f172a" fontSize="9.5" fontWeight="900">C₆H₁₂O₆</text>
+        <text x="291" y="150" fill="#0f172a" fontSize="8" fontWeight="800">Glucose Sugar</text>
+      </svg>
+    );
+  }
+
+  // Step 5: Phloem Sieve Tube Translocation & O2 Release
+  return (
+    <svg viewBox="0 0 360 175" className="w-full h-40 rounded-xl border border-amber-500/30" style={{ background: bg }}>
+      {/* Left: Phloem Sieve Tube with Sieve Plates & Companion Cell */}
+      <text x="16" y="20" fill="#d97706" fontSize="9.5" fontWeight="800">Phloem Sieve Tube (Sugar Out)</text>
+      <rect x="28" y="28" width="56" height="134" rx="8" fill="#f59e0b" fillOpacity="0.18" stroke="#f59e0b" strokeWidth="2" />
+      {/* Companion Cell alongside */}
+      <rect x="86" y="38" width="32" height="114" rx="6" fill="#10b981" fillOpacity="0.2" stroke="#10b981" strokeWidth="1.4" />
+      <circle cx="102" cy="94" r="6" fill="#059669" />
+      <text x="124" y="88" fill={textSub} fontSize="8" fontWeight="700">Companion</text>
+      <text x="124" y="99" fill={textSub} fontSize="8" fontWeight="700">Cell (ATP)</text>
+
+      {/* Perforated Sieve Plates */}
+      {[68, 118].map((sy) => (
+        <line key={sy} x1="28" y1={sy} x2="84" y2={sy} stroke="#fbbf24" strokeWidth="2.6" strokeDasharray="4 3" />
+      ))}
+
+      {/* Downward moving Glucose/Sucrose crystals */}
+      {[46, 92, 138].map((gy) => (
+        <g key={gy}>
+          <polygon points={`56,${gy - 9} 66,${gy} 56,${gy + 9} 46,${gy}`} fill="#f59e0b" stroke="#fef3c7" strokeWidth="1.2" />
+          <line x1="56" y1={gy + 9} x2="56" y2={gy + 16} stroke="#fbbf24" strokeWidth="2" />
+        </g>
+      ))}
+
+      {/* Right: Oxygen Release Summary Card */}
+      <rect x="192" y="26" width="154" height="134" rx="12" fill="#083344" fillOpacity="0.88" stroke="#22d3ee" strokeWidth="1.8" />
+      <text x="206" y="46" fill="#a5f3fc" fontSize="9.5" fontWeight="800">Net Products Released</text>
+
+      <circle cx="222" cy="80" r="14" fill="#06b6d4" stroke="#cffafe" strokeWidth="1.5" />
+      <text x="211" y="83" fill="#ffffff" fontSize="9" fontWeight="900">6O₂↑</text>
+      <text x="244" y="78" fill="#ffffff" fontSize="8.5" fontWeight="700">Oxygen Gas</text>
+      <text x="244" y="90" fill="#a5f3fc" fontSize="8" fontWeight="600">
+        {Math.round(rate * 64)} bubbles/min
+      </text>
+
+      <polygon points="222,114 234,126 222,138 210,126" fill="#f59e0b" stroke="#fef3c7" strokeWidth="1.5" />
+      <text x="244" y="124" fill="#ffffff" fontSize="8.5" fontWeight="700">C₆H₁₂O₆ Sugar</text>
+      <text x="244" y="136" fill="#fde68a" fontSize="8" fontWeight="600">
+        {(rate * 18.5).toFixed(1)} mg/hr to roots/fruits
+      </text>
+    </svg>
+  );
+};
 
 export const Photosynthesis3DSimulation: React.FC<Photosynthesis3DSimulationProps> = ({
   darkMode = false,
@@ -546,20 +1122,26 @@ export const Photosynthesis3DSimulation: React.FC<Photosynthesis3DSimulationProp
   const canvasMountRef = useRef<HTMLDivElement | null>(null);
 
   // Environmental Controls
-  const [lightPct, setLightPct] = useState<number>(80);
-  const [co2Pct, setCo2Pct] = useState<number>(75);
+  const [lightPct, setLightPct] = useState<number>(85);
+  const [co2Pct, setCo2Pct] = useState<number>(80);
   const [tempC, setTempC] = useState<number>(29);
   const [stomataOpen, setStomataOpen] = useState<boolean>(true);
+  const [explodeLayers, setExplodeLayers] = useState<number>(0);
 
-  // UI & Guided Lesson State (65 seconds = 1:05)
+  // 360° & Step-by-Step + Watch Lesson State
   const [watchLessonActive, setWatchLessonActive] = useState<boolean>(false);
   const [lessonPaused, setLessonPaused] = useState<boolean>(false);
-  const [lessonTimeSec, setLessonTimeSec] = useState<number>(0);
-  const [lessonSpeed, setLessonSpeed] = useState<number>(1);
+  const [lessonTime, setLessonTime] = useState<number>(0);
+  const [lessonSpeed, setLessonSpeed] = useState<0.75 | 1 | 1.5>(1);
+  const [stepModeActive, setStepModeActive] = useState<boolean>(true);
+  const [activeStepIdx, setActiveStepIdx] = useState<number>(0);
+  const [autoPlaySteps, setAutoPlaySteps] = useState<boolean>(false);
+  const [autoRotate360, setAutoRotate360] = useState<boolean>(false);
+  const [cameraPreset, setCameraPreset] = useState<CameraPresetId>('iso360');
   const [showLabels, setShowLabels] = useState<boolean>(true);
   const [dockCollapsed, setDockCollapsed] = useState<boolean>(false);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
-  const [selectedPart, setSelectedPart] = useState<LeafPartId>('overview');
+  const [selectedPart, setSelectedPart] = useState<LeafPartId>('palisade');
   const [level, setLevel] = useState<SyllabusLevel>(() =>
     activeClass.includes('5') || activeClass.includes('6') ? 'a_level' : 'o_level'
   );
@@ -567,9 +1149,9 @@ export const Photosynthesis3DSimulation: React.FC<Photosynthesis3DSimulationProp
   const [interactionHint, setInteractionHint] = useState<string | null>(null);
   const [challengeIdx, setChallengeIdx] = useState<number | null>(null);
   const [plottedPoints, setPlottedPoints] = useState<PlottedRatePoint[]>([
-    { id: 1, light: 20, rate: 25, co2: 75 },
-    { id: 2, light: 50, rate: 45, co2: 75 },
-    { id: 3, light: 80, rate: 56, co2: 75 },
+    { id: 1, light: 20, rate: 25, co2: 80 },
+    { id: 2, light: 50, rate: 45, co2: 80 },
+    { id: 3, light: 85, rate: 57, co2: 80 },
   ]);
 
   const metrics = useMemo(
@@ -577,12 +1159,8 @@ export const Photosynthesis3DSimulation: React.FC<Photosynthesis3DSimulationProp
     [lightPct, co2Pct, tempC, stomataOpen]
   );
 
-  const activeChapter = useMemo(() => {
-    for (let i = LESSON_CHAPTERS.length - 1; i >= 0; i--) {
-      if (lessonTimeSec >= LESSON_CHAPTERS[i].startSec) return LESSON_CHAPTERS[i];
-    }
-    return LESSON_CHAPTERS[0];
-  }, [lessonTimeSec]);
+  const currentStep = PHOTOSYNTHESIS_STEPS[activeStepIdx] || PHOTOSYNTHESIS_STEPS[0];
+  const activeLessonChapter = useMemo(() => getPhotoLessonChapter(lessonTime), [lessonTime]);
 
   const activeChallenge = challengeIdx !== null ? BIO_CHALLENGES[challengeIdx] : null;
   const challengeSolved = useMemo(() => {
@@ -590,19 +1168,24 @@ export const Photosynthesis3DSimulation: React.FC<Photosynthesis3DSimulationProp
     return activeChallenge.check(lightPct, co2Pct, tempC, stomataOpen, metrics.bubblesPerMin);
   }, [activeChallenge, lightPct, co2Pct, tempC, stomataOpen, metrics.bubblesPerMin]);
 
-  // Mutable refs for stable 60fps Three.js loop
+  // Mutable refs for 60fps Three.js render loop
   const lightRef = useRef<number>(lightPct);
   const co2Ref = useRef<number>(co2Pct);
   const tempRef = useRef<number>(tempC);
   const stomataRef = useRef<boolean>(stomataOpen);
+  const explodeRef = useRef<number>(explodeLayers);
   const darkModeRef = useRef<boolean>(darkMode);
   const showLabelsRef = useRef<boolean>(showLabels);
   const selectedPartRef = useRef<LeafPartId>(selectedPart);
+  const autoRotateRef = useRef<boolean>(autoRotate360);
   const watchLessonRef = useRef<boolean>(watchLessonActive);
   const lessonPausedRef = useRef<boolean>(lessonPaused);
-  const lessonTimeRef = useRef<number>(lessonTimeSec);
   const lessonSpeedRef = useRef<number>(lessonSpeed);
-  const lastUiSyncRef = useRef<number>(0);
+  const lessonTimeRef = useRef<number>(0);
+  const lastChapterIdRef = useRef<number>(0);
+  const lastLessonUiPushRef = useRef<number>(0);
+  const desiredCamPosRef = useRef<[number, number, number] | null>(null);
+  const desiredCamTargetRef = useRef<[number, number, number] | null>(null);
   const lastLabelPushRef = useRef<number>(0);
 
   useEffect(() => {
@@ -618,6 +1201,9 @@ export const Photosynthesis3DSimulation: React.FC<Photosynthesis3DSimulationProp
     stomataRef.current = stomataOpen;
   }, [stomataOpen]);
   useEffect(() => {
+    explodeRef.current = explodeLayers;
+  }, [explodeLayers]);
+  useEffect(() => {
     darkModeRef.current = darkMode;
   }, [darkMode]);
   useEffect(() => {
@@ -627,6 +1213,9 @@ export const Photosynthesis3DSimulation: React.FC<Photosynthesis3DSimulationProp
     selectedPartRef.current = selectedPart;
   }, [selectedPart]);
   useEffect(() => {
+    autoRotateRef.current = autoRotate360;
+  }, [autoRotate360]);
+  useEffect(() => {
     watchLessonRef.current = watchLessonActive;
   }, [watchLessonActive]);
   useEffect(() => {
@@ -635,6 +1224,111 @@ export const Photosynthesis3DSimulation: React.FC<Photosynthesis3DSimulationProp
   useEffect(() => {
     lessonSpeedRef.current = lessonSpeed;
   }, [lessonSpeed]);
+
+  // Auto-advance step-by-step timer when Auto-Play Steps is toggled on (and Watch Lesson is off)
+  useEffect(() => {
+    if (!autoPlaySteps || !stepModeActive || watchLessonActive) return;
+    const timer = window.setInterval(() => {
+      setActiveStepIdx((prev) => {
+        const next = (prev + 1) % PHOTOSYNTHESIS_STEPS.length;
+        const spec = PHOTOSYNTHESIS_STEPS[next];
+        setSelectedPart(spec.focusPart);
+        desiredCamPosRef.current = [...spec.cameraPos];
+        desiredCamTargetRef.current = [...spec.cameraTarget];
+        return next;
+      });
+    }, 6500);
+    return () => window.clearInterval(timer);
+  }, [autoPlaySteps, stepModeActive, watchLessonActive]);
+
+  const applyLessonChapter = (ch: PhotosynthesisLessonChapter) => {
+    const spec = PHOTOSYNTHESIS_STEPS[ch.stepIdx] || PHOTOSYNTHESIS_STEPS[0];
+    setActiveStepIdx(ch.stepIdx);
+    setSelectedPart(spec.focusPart);
+    setLightPct(ch.lightPct);
+    setCo2Pct(ch.co2Pct);
+    setTempC(ch.tempC);
+    setStomataOpen(ch.stomataOpen);
+    setExplodeLayers(ch.explodeLayers);
+    desiredCamPosRef.current = [...spec.cameraPos];
+    desiredCamTargetRef.current = [...spec.cameraTarget];
+  };
+
+  const handleToggleWatchLesson = () => {
+    if (watchLessonActive) {
+      setWatchLessonActive(false);
+      setLessonPaused(false);
+      return;
+    }
+    setAutoPlaySteps(false);
+    setAutoRotate360(false);
+    setChallengeIdx(null);
+    lessonTimeRef.current = 0;
+    lastChapterIdRef.current = 1;
+    setLessonTime(0);
+    setLessonPaused(false);
+    lessonPausedRef.current = false;
+    setStepModeActive(true);
+    setDockCollapsed(false);
+    applyLessonChapter(PHOTO_LESSON_CHAPTERS[0]);
+    setWatchLessonActive(true);
+  };
+
+  const handleScrubLesson = (sec: number) => {
+    const clamped = Math.max(0, Math.min(LESSON_DURATION_SEC, sec));
+    lessonTimeRef.current = clamped;
+    setLessonTime(clamped);
+    const ch = getPhotoLessonChapter(clamped);
+    lastChapterIdRef.current = ch.id;
+    applyLessonChapter(ch);
+  };
+
+  const handleCycleLessonSpeed = () => {
+    setLessonSpeed((prev) => (prev === 0.75 ? 1 : prev === 1 ? 1.5 : 0.75));
+  };
+
+  const handleTakeOverFromLesson = () => {
+    setWatchLessonActive(false);
+    setLessonPaused(false);
+  };
+
+  const handleSelectStep = (idx: number) => {
+    const clamped = ((idx % PHOTOSYNTHESIS_STEPS.length) + PHOTOSYNTHESIS_STEPS.length) % PHOTOSYNTHESIS_STEPS.length;
+    const spec = PHOTOSYNTHESIS_STEPS[clamped];
+    setWatchLessonActive(false);
+    setLessonPaused(false);
+    setStepModeActive(true);
+    setActiveStepIdx(clamped);
+    setSelectedPart(spec.focusPart);
+    desiredCamPosRef.current = [...spec.cameraPos];
+    desiredCamTargetRef.current = [...spec.cameraTarget];
+    if (clamped === 2 && !stomataOpen) {
+      setStomataOpen(true);
+    }
+  };
+
+  const handleSelectCameraPreset = (preset: CameraPresetId) => {
+    setCameraPreset(preset);
+    setAutoPlaySteps(false);
+    setWatchLessonActive(false);
+    setLessonPaused(false);
+    if (preset === 'iso360') {
+      desiredCamPosRef.current = [5.2, 2.8, 6.4];
+      desiredCamTargetRef.current = [0, 0, 0];
+    } else if (preset === 'front') {
+      desiredCamPosRef.current = [0, 0.2, 7.8];
+      desiredCamTargetRef.current = [0, 0, 0];
+    } else if (preset === 'underside') {
+      desiredCamPosRef.current = [1.8, -4.4, 5.4];
+      desiredCamTargetRef.current = [0.2, -1.2, 0];
+    } else if (preset === 'vascular') {
+      desiredCamPosRef.current = [-5.4, 0.8, 5.2];
+      desiredCamTargetRef.current = [-1.3, 0, 0];
+    } else if (preset === 'top') {
+      desiredCamPosRef.current = [0.4, 6.6, 3.8];
+      desiredCamTargetRef.current = [0, 0.6, 0];
+    }
+  };
 
   const handleToggleFullscreen = () => {
     if (!containerRef.current) return;
@@ -651,7 +1345,7 @@ export const Photosynthesis3DSimulation: React.FC<Photosynthesis3DSimulationProp
     return () => document.removeEventListener('fullscreenchange', onFs);
   }, []);
 
-  // ==================== THREE.JS BORDERLESS PHOTOREALISTIC 3D LEAF RELIEF & FLOWS ====================
+  // ==================== TRUE 3D 360° VOLUMETRIC LEAF ANATOMY & MOLECULAR FLOWS ====================
   useEffect(() => {
     const mountEl = canvasMountRef.current;
     if (!mountEl) return;
@@ -674,12 +1368,13 @@ export const Photosynthesis3DSimulation: React.FC<Photosynthesis3DSimulationProp
     const height = Math.max(mountEl.clientHeight, 380);
 
     const scene = new THREE.Scene();
-    const bgDark = new THREE.Color(0x121621);
-    const bgLight = new THREE.Color(0xeaf0f7);
+    const bgDark = new THREE.Color(0x07131a);
+    const bgLight = new THREE.Color(0xeef5f0);
     scene.background = darkModeRef.current ? bgDark.clone() : bgLight.clone();
+    scene.fog = new THREE.FogExp2(darkModeRef.current ? 0x07131a : 0xeef5f0, 0.026);
 
-    const camera = new THREE.PerspectiveCamera(34, width / height, 0.1, 100);
-    camera.position.set(0.15, 0.2, 8.9);
+    const camera = new THREE.PerspectiveCamera(36, width / height, 0.1, 100);
+    camera.position.set(4.7, 2.75, 6.45);
 
     const renderer = new THREE.WebGLRenderer({
       antialias: !isSoftwareGl,
@@ -690,8 +1385,9 @@ export const Photosynthesis3DSimulation: React.FC<Photosynthesis3DSimulationProp
     renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.06;
-    renderer.shadowMap.enabled = false;
+    renderer.toneMappingExposure = 1.12;
+    renderer.shadowMap.enabled = !isSoftwareGl;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     mountEl.innerHTML = '';
     mountEl.appendChild(renderer.domElement);
 
@@ -700,30 +1396,54 @@ export const Photosynthesis3DSimulation: React.FC<Photosynthesis3DSimulationProp
     scene.environment = envTarget.texture;
     pmrem.dispose();
 
-    // Balanced studio lighting rig
-    const hemiLight = new THREE.HemisphereLight(0xf0f9ff, 0x1e293b, 1.15);
+    // Realistic Botanical 3-Point Studio + Chlorophyll Subsurface Translucency Lighting Rig
+    const hemiLight = new THREE.HemisphereLight(0xf6fff8, 0x163222, 1.05);
     scene.add(hemiLight);
 
-    const sunDirLight = new THREE.DirectionalLight(0xfffbeb, 1.85);
-    sunDirLight.position.set(-4.5, 6.2, 6.5);
+    const sunDirLight = new THREE.DirectionalLight(0xfff7dc, 2.35);
+    sunDirLight.position.set(4.2, 8.2, 5.2);
+    if (!isSoftwareGl) {
+      sunDirLight.castShadow = true;
+      sunDirLight.shadow.mapSize.set(1024, 1024);
+      sunDirLight.shadow.camera.near = 1;
+      sunDirLight.shadow.camera.far = 22;
+      sunDirLight.shadow.camera.left = -4.5;
+      sunDirLight.shadow.camera.right = 4.5;
+      sunDirLight.shadow.camera.top = 4.5;
+      sunDirLight.shadow.camera.bottom = -4.5;
+      sunDirLight.shadow.bias = -0.0006;
+      sunDirLight.shadow.normalBias = 0.025;
+    }
     scene.add(sunDirLight);
 
-    const rimLight = new THREE.DirectionalLight(0x38bdf8, 0.65);
-    rimLight.position.set(5.5, 1.5, 3.2);
+    // Warm emerald-lime subsurface transmitted backlight (mimics real sun glowing through a living leaf)
+    const subsurfaceLight = new THREE.DirectionalLight(0x86efac, 0.95);
+    subsurfaceLight.position.set(-5.0, -4.2, -4.0);
+    scene.add(subsurfaceLight);
+
+    // Subtle cool rim specular light for wet cellular membranes
+    const rimLight = new THREE.DirectionalLight(0xdbeafe, 0.65);
+    rimLight.position.set(-4.5, 3.5, 5.8);
     scene.add(rimLight);
 
-    // Constrained front-facing 3D orbit so users can tilt & inspect depth without losing the cutaway
+    // Full 360° Unclamped OrbitControls!
     const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enablePan = false;
+    controls.enablePan = true;
     controls.enableDamping = !isSoftwareGl;
     controls.dampingFactor = 0.07;
-    controls.minDistance = 5.4;
-    controls.maxDistance = 12.8;
-    controls.minAzimuthAngle = -0.44;
-    controls.maxAzimuthAngle = 0.44;
-    controls.minPolarAngle = Math.PI * 0.34;
-    controls.maxPolarAngle = Math.PI * 0.66;
-    controls.target.set(0.08, -0.05, 0.15);
+    controls.minDistance = 3.2;
+    controls.maxDistance = 14.5;
+    controls.minAzimuthAngle = -Infinity;
+    controls.maxAzimuthAngle = Infinity;
+    controls.minPolarAngle = 0.08;
+    controls.maxPolarAngle = Math.PI - 0.08;
+    controls.target.set(0, 0, 0);
+
+    const cancelScriptedCamera = () => {
+      desiredCamPosRef.current = null;
+      desiredCamTargetRef.current = null;
+    };
+    controls.addEventListener('start', cancelScriptedCamera);
 
     const geometries: THREE.BufferGeometry[] = [];
     const materials: THREE.Material[] = [];
@@ -742,211 +1462,894 @@ export const Photosynthesis3DSimulation: React.FC<Photosynthesis3DSimulationProp
       return t;
     };
 
+    const maxAniso = renderer.capabilities.getMaxAnisotropy();
+
+    // Shared High-Realism Botanical PBR Textures
+    const leafMaps = createBotanicalLeafMaps(maxAniso);
+    trackTex(leafMaps.albedoMap);
+    trackTex(leafMaps.bumpMap);
+
+    const cellularBumpTex = trackTex(createCellularBumpMap(maxAniso));
+    const chloroMaps = createChloroplastMaps(maxAniso);
+    trackTex(chloroMaps.albedoMap);
+    trackTex(chloroMaps.bumpMap);
+    const sunbeamAlphaTex = trackTex(createSunbeamAlphaMap());
+
+    // Root 3D Leaf Cross-Section Block Group
     const leafRoot = new THREE.Group();
     scene.add(leafRoot);
 
-    // ==================== 1. HIGH-RES BORDERLESS PHOTOREALISTIC 3D LEAF RELIEF MESH ====================
-    const leafGeo = trackGeo(new THREE.PlaneGeometry(PLANE_W, PLANE_H, 72, 44));
-    const leafUvAttr = leafGeo.attributes.uv as THREE.BufferAttribute;
-    const leafPosAttr = leafGeo.attributes.position as THREE.BufferAttribute;
+    // Soft grounded specimen contact shadow below the 3D leaf cutaway
+    const shadowTex = trackTex(createContactShadowTexture());
+    const shadowPlane = new THREE.Mesh(
+      trackGeo(new THREE.PlaneGeometry(8.8, 5.8)),
+      trackMat(
+        new THREE.MeshBasicMaterial({
+          map: shadowTex,
+          transparent: true,
+          depthWrite: false,
+          opacity: 0.58,
+        })
+      )
+    );
+    shadowPlane.rotation.x = -Math.PI / 2;
+    shadowPlane.position.y = -2.38;
+    scene.add(shadowPlane);
 
-    const leafMat = trackMat(
-      new THREE.MeshBasicMaterial({
-        color: new THREE.Color(0xffffff),
+    // Interactive clickable meshes array (tagged with userData.partId)
+    const clickableMeshes: THREE.Object3D[] = [];
+
+    // ==================== LAYER 1: SCULPTED ORGANIC WAXY CUTICLE, DEWDROP & UPPER EPIDERMIS ====================
+    const topLayerGroup = new THREE.Group();
+    leafRoot.add(topLayerGroup);
+
+    // Sculpted organic undulating cuticle sheet with raised midrib ridge above vascular vein (x = -1.55)
+    const cuticleGeo = trackGeo(new THREE.BoxGeometry(5.38, 0.11, 3.12, 36, 2, 22));
+    const cPos = cuticleGeo.attributes.position;
+    for (let i = 0; i < cPos.count; i++) {
+      const x = cPos.getX(i);
+      const y = cPos.getY(i);
+      const z = cPos.getZ(i);
+      const midribRidge = Math.exp(-Math.pow((x + 1.55) / 0.55, 2)) * 0.11;
+      const veinRipple = Math.sin(x * 2.4 + z * 1.8) * 0.025 + Math.cos(z * 2.6) * 0.018;
+      // Gently feather edges so it feels like a real botanical specimen slice
+      const edgeTaper = 1 - 0.12 * Math.pow(Math.abs(x) / 2.75, 4);
+      cPos.setY(i, y * edgeTaper + midribRidge + veinRipple);
+    }
+    cPos.needsUpdate = true;
+    cuticleGeo.computeVertexNormals();
+
+    const cuticleMat = trackMat(
+      new THREE.MeshPhysicalMaterial({
+        map: leafMaps.albedoMap,
+        bumpMap: leafMaps.bumpMap,
+        bumpScale: 0.035,
+        color: 0xd9f99d,
+        roughness: 0.16,
+        metalness: 0.0,
+        clearcoat: 1.0,
+        clearcoatRoughness: 0.07,
+        sheen: 0.35,
+        sheenColor: new THREE.Color(0xecfccb),
         transparent: true,
-        alphaTest: 0.03,
-        side: THREE.DoubleSide,
+        opacity: 0.84,
       })
     );
-    const leafMesh = new THREE.Mesh(leafGeo, leafMat);
-    leafRoot.add(leafMesh);
+    const cuticleMesh = new THREE.Mesh(cuticleGeo, cuticleMat);
+    cuticleMesh.position.set(0, 1.67, 0);
+    cuticleMesh.castShadow = !isSoftwareGl;
+    cuticleMesh.receiveShadow = !isSoftwareGl;
+    cuticleMesh.userData.partId = 'cuticle';
+    topLayerGroup.add(cuticleMesh);
+    clickableMeshes.push(cuticleMesh);
 
-    let disposed = false;
-    const maxAniso = renderer.capabilities.getMaxAnisotropy();
-    createTransparentLeafCanvasTexture(imgLeafCutawayStudio, maxAniso, (tex) => {
-      if (disposed) {
-        tex.dispose();
-        return;
+    // Glistening Morning Dewdrop resting on the waxy hydrophobic cuticle
+    const dewMat = trackMat(
+      new THREE.MeshPhysicalMaterial({
+        color: 0xf0fdfa,
+        roughness: 0.02,
+        metalness: 0.0,
+        clearcoat: 1.0,
+        clearcoatRoughness: 0.02,
+        ior: 1.333,
+        transmission: isSoftwareGl ? 0 : 0.92,
+        thickness: 0.45,
+        transparent: true,
+        opacity: isSoftwareGl ? 0.55 : 0.95,
+      })
+    );
+    const dewGeo = trackGeo(new THREE.SphereGeometry(0.16, 20, 16));
+    dewGeo.scale(1.18, 0.72, 1.12);
+    const dewDrop1 = new THREE.Mesh(dewGeo, dewMat);
+    dewDrop1.position.set(1.25, 1.8, 0.55);
+    const dewDrop2 = new THREE.Mesh(dewGeo, dewMat);
+    dewDrop2.scale.setScalar(0.55);
+    dewDrop2.position.set(1.62, 1.77, 0.22);
+    topLayerGroup.add(dewDrop1, dewDrop2);
+
+    // Fine Microscopic Leaf Trichomes (delicate translucent botanical hairs on upper cuticle)
+    const trichomeGeo = trackGeo(new THREE.ConeGeometry(0.014, 0.24, 6));
+    trichomeGeo.translate(0, 0.12, 0);
+    const trichomeMat = trackMat(
+      new THREE.MeshStandardMaterial({
+        color: 0xecfdf5,
+        roughness: 0.45,
+        transparent: true,
+        opacity: 0.62,
+      })
+    );
+    const trichomeInstanced = new THREE.InstancedMesh(trichomeGeo, trichomeMat, 22);
+    for (let t = 0; t < 22; t++) {
+      const tx = -2.2 + ((t * 1.17) % 4.4);
+      const tz = -1.2 + ((t * 0.89) % 2.4);
+      _posDummy.set(tx, 1.71, tz);
+      _eulerDummy.set(0.25 * Math.sin(t * 2.1), t * 1.3, 0.28 * Math.cos(t * 1.7));
+      _quatDummy.setFromEuler(_eulerDummy);
+      _scaleDummy.setScalar(0.75 + (t % 4) * 0.18);
+      _matDummy.compose(_posDummy, _quatDummy, _scaleDummy);
+      trichomeInstanced.setMatrixAt(t, _matDummy);
+    }
+    trichomeInstanced.instanceMatrix.needsUpdate = true;
+    trichomeInstanced.computeBoundingSphere();
+    topLayerGroup.add(trichomeInstanced);
+
+    // Upper Epidermis Sculpted Pillowy Botanical Cells (8 x 4 = 32 cushioned beveled cells with natural color variation)
+    const upperEpiGeo = trackGeo(createEpidermalPillowGeometry());
+    const upperEpiMat = trackMat(
+      new THREE.MeshPhysicalMaterial({
+        color: 0xffffff,
+        bumpMap: cellularBumpTex,
+        bumpScale: 0.018,
+        roughness: 0.24,
+        metalness: 0.0,
+        clearcoat: 0.65,
+        clearcoatRoughness: 0.18,
+        transparent: true,
+        opacity: 0.78,
+      })
+    );
+    const upperEpiInstanced = new THREE.InstancedMesh(upperEpiGeo, upperEpiMat, 32);
+    upperEpiInstanced.castShadow = !isSoftwareGl;
+    upperEpiInstanced.receiveShadow = !isSoftwareGl;
+    upperEpiInstanced.userData.partId = 'cuticle';
+    let uIdx = 0;
+    for (let ix = 0; ix < 8; ix++) {
+      for (let iz = 0; iz < 4; iz++) {
+        const jx = Math.sin(ix * 2.3 + iz * 1.7) * 0.018;
+        const jz = Math.cos(ix * 1.9 - iz * 2.1) * 0.018;
+        _posDummy.set(-2.22 + ix * 0.635 + jx, 1.44, -1.08 + iz * 0.72 + jz);
+        _eulerDummy.set(0, Math.sin(ix + iz) * 0.04, 0);
+        _quatDummy.setFromEuler(_eulerDummy);
+        _scaleDummy.set(0.98 + ((ix + iz) % 3) * 0.025, 0.96 + (ix % 2) * 0.07, 0.98 + (iz % 2) * 0.03);
+        _matDummy.compose(_posDummy, _quatDummy, _scaleDummy);
+        upperEpiInstanced.setMatrixAt(uIdx, _matDummy);
+        _colorDummy.setHSL(0.28 + ((ix * 7 + iz * 3) % 5) * 0.012, 0.56, 0.73 + ((ix + iz) % 3) * 0.025);
+        upperEpiInstanced.setColorAt(uIdx, _colorDummy);
+        uIdx++;
       }
-      trackTex(tex);
-      leafMat.map = tex;
-      leafMat.needsUpdate = true;
-    });
+    }
+    upperEpiInstanced.instanceMatrix.needsUpdate = true;
+    if (upperEpiInstanced.instanceColor) upperEpiInstanced.instanceColor.needsUpdate = true;
+    upperEpiInstanced.computeBoundingSphere();
+    topLayerGroup.add(upperEpiInstanced);
+    clickableMeshes.push(upperEpiInstanced);
 
-    // ==================== 2. DYNAMIC VOLUMETRIC SUNLIGHT SHAFTS (TOP-LEFT -> UPPER CUTICLE) ====================
-    const sunBeamMat = trackMat(
-      new THREE.MeshBasicMaterial({
-        color: 0xfef08a,
-        transparent: true,
-        opacity: 0.13,
-        depthWrite: false,
-        side: THREE.DoubleSide,
-      })
-    );
-    const sunBeams: THREE.Mesh[] = [];
-    const beamOffsets: Array<[number, number, number]> = [
-      [-3.15, 2.05, -0.45],
-      [-2.35, 2.25, -0.2],
-      [-1.55, 2.35, 0.05],
-      [-0.75, 2.25, 0.2],
-    ];
-    for (const [bx, by, bz] of beamOffsets) {
-      const beam = new THREE.Mesh(
-        trackGeo(new THREE.CylinderGeometry(0.18, 0.62, 3.6, 14, 1, true)),
-        sunBeamMat
-      );
-      beam.position.set(bx, by, bz);
-      beam.rotation.z = 0.62; // Angles diagonally down-right from upper-left like the studio sunlight!
-      leafRoot.add(beam);
-      sunBeams.push(beam);
+    // ==================== LAYER 2: ORGANIC ROUNDED-CAP PALISADE MESOPHYLL, VACUOLES, NUCLEI & CHLOROPLASTS ====================
+    const palisadeLayerGroup = new THREE.Group();
+    leafRoot.add(palisadeLayerGroup);
+
+    const palisadeCellPositions: Array<[number, number, number]> = [];
+    for (let ix = 0; ix < 8; ix++) {
+      const px = -2.18 + ix * 0.62;
+      for (let iz = 0; iz < 4; iz++) {
+        const pz = -1.05 + iz * 0.7;
+        // Leave organic space for the raised midrib vascular bundle on left
+        if (px < -0.82 && Math.abs(pz) < 0.85) continue;
+        const jitterX = Math.sin(ix * 3.1 + iz * 2.2) * 0.035;
+        const jitterZ = Math.cos(ix * 1.7 + iz * 3.3) * 0.035;
+        palisadeCellPositions.push([px + jitterX, 0.78, pz + jitterZ]);
+      }
     }
 
-    // ==================== 3. INTERACTIVE 3D STOMATAL GUARD-CELL INDICATOR AT LOWER PORE ====================
-    const guardCellMat = trackMat(
-      new THREE.MeshStandardMaterial({
-        color: 0x22c55e,
-        emissive: new THREE.Color(0x16a34a),
-        emissiveIntensity: 0.35,
-        roughness: 0.32,
-        metalness: 0.06,
+    const palCellGeo = trackGeo(createPalisadeCellGeometry());
+    const palCellMat = trackMat(
+      new THREE.MeshPhysicalMaterial({
+        color: 0xffffff,
+        bumpMap: cellularBumpTex,
+        bumpScale: 0.022,
+        roughness: 0.22,
+        metalness: 0.0,
+        clearcoat: 0.55,
+        clearcoatRoughness: 0.2,
         transparent: true,
-        opacity: 0.88,
-      })
-    );
-    const guardArcGeo = trackGeo(new THREE.TorusGeometry(0.145, 0.044, 12, 22, Math.PI * 0.9));
-    const guardLeft = new THREE.Mesh(guardArcGeo, guardCellMat);
-    guardLeft.rotation.z = Math.PI * 0.55;
-    const guardRight = new THREE.Mesh(guardArcGeo, guardCellMat);
-    guardRight.rotation.z = -Math.PI * 0.45;
-    const stomaGroup = new THREE.Group();
-    stomaGroup.add(guardLeft, guardRight);
-    leafRoot.add(stomaGroup);
-
-    // Subtle 3D focus ring for clicked / guided-lesson anatomy region
-    const focusRingMat = trackMat(
-      new THREE.MeshBasicMaterial({
-        color: 0x34d399,
-        transparent: true,
-        opacity: 0,
+        opacity: 0.44,
         depthWrite: false,
       })
     );
-    const focusRing = new THREE.Mesh(trackGeo(new THREE.RingGeometry(0.32, 0.39, 40)), focusRingMat);
-    leafRoot.add(focusRing);
+    const palCellInstanced = new THREE.InstancedMesh(
+      palCellGeo,
+      palCellMat,
+      palisadeCellPositions.length
+    );
+    palCellInstanced.userData.partId = 'palisade';
 
-    // ==================== 4. INSTANCED 3D MOLECULAR & VASCULAR FLOW PARTICLES ====================
-    // A. Golden Sunlight Photons (28) descending from upper-left onto upper cuticle & palisade layer
-    const PHOTON_COUNT = 28;
+    // Aqueous Central Vacuoles inside every Palisade Cell
+    const vacuoleGeo = trackGeo(createPalisadeCellGeometry());
+    vacuoleGeo.scale(0.52, 0.72, 0.52);
+    const vacuoleMat = trackMat(
+      new THREE.MeshPhysicalMaterial({
+        color: 0xdcfce7,
+        emissive: new THREE.Color(0x0ea5e9),
+        emissiveIntensity: 0.08,
+        roughness: 0.12,
+        clearcoat: 0.9,
+        transparent: true,
+        opacity: 0.36,
+        depthWrite: false,
+      })
+    );
+    const vacuoleInstanced = new THREE.InstancedMesh(
+      vacuoleGeo,
+      vacuoleMat,
+      palisadeCellPositions.length
+    );
+
+    // Distinct Biological Cell Nuclei tucked inside the cytoplasm of each Palisade cell
+    const nucleusGeo = trackGeo(new THREE.SphereGeometry(0.064, 12, 10));
+    nucleusGeo.scale(1.15, 0.88, 0.92);
+    const nucleusMat = trackMat(
+      new THREE.MeshStandardMaterial({
+        color: 0xd97706,
+        emissive: new THREE.Color(0x92400e),
+        emissiveIntensity: 0.22,
+        roughness: 0.42,
+      })
+    );
+    const nucleusInstanced = new THREE.InstancedMesh(
+      nucleusGeo,
+      nucleusMat,
+      palisadeCellPositions.length
+    );
+
+    // Rich 3D Chloroplasts (7 per palisade cell + cyclosis orbital metadata!)
+    const chloroplastsBase: Array<{
+      cx: number;
+      cy: number;
+      cz: number;
+      angle: number;
+      radius: number;
+      yOff: number;
+      speed: number;
+    }> = [];
+
+    palisadeCellPositions.forEach(([cx, cy, cz], idx) => {
+      _posDummy.set(cx, cy, cz);
+      _eulerDummy.set(Math.sin(idx) * 0.03, idx * 0.4, Math.cos(idx) * 0.03);
+      _quatDummy.setFromEuler(_eulerDummy);
+      const sy = 0.94 + (idx % 3) * 0.06;
+      _scaleDummy.set(0.96 + (idx % 2) * 0.06, sy, 0.96 + ((idx + 1) % 2) * 0.06);
+      _matDummy.compose(_posDummy, _quatDummy, _scaleDummy);
+      palCellInstanced.setMatrixAt(idx, _matDummy);
+      vacuoleInstanced.setMatrixAt(idx, _matDummy);
+
+      // Per-cell natural leaf-green tint variation
+      _colorDummy.setHSL(0.35 + (idx % 5) * 0.012, 0.62, 0.44 + (idx % 3) * 0.04);
+      palCellInstanced.setColorAt(idx, _colorDummy);
+
+      // Cell Nucleus tucked against inner cell wall
+      const nAng = idx * 1.9;
+      _posDummy.set(cx + Math.cos(nAng) * 0.12, cy - 0.18 + (idx % 3) * 0.14, cz + Math.sin(nAng) * 0.12);
+      _quatDummy.identity();
+      _scaleDummy.setScalar(1);
+      _matDummy.compose(_posDummy, _quatDummy, _scaleDummy);
+      nucleusInstanced.setMatrixAt(idx, _matDummy);
+
+      for (let c = 0; c < 7; c++) {
+        const ang = (c / 7) * Math.PI * 2 + idx * 0.65;
+        const r = 0.168;
+        const yOff = -0.33 + (c / 6) * 0.66;
+        chloroplastsBase.push({
+          cx,
+          cy,
+          cz,
+          angle: ang,
+          radius: r,
+          yOff,
+          speed: 0.22 + (c % 3) * 0.08,
+        });
+      }
+    });
+    palCellInstanced.instanceMatrix.needsUpdate = true;
+    if (palCellInstanced.instanceColor) palCellInstanced.instanceColor.needsUpdate = true;
+    palCellInstanced.computeBoundingSphere();
+    vacuoleInstanced.instanceMatrix.needsUpdate = true;
+    vacuoleInstanced.computeBoundingSphere();
+    nucleusInstanced.instanceMatrix.needsUpdate = true;
+    nucleusInstanced.computeBoundingSphere();
+    palisadeLayerGroup.add(palCellInstanced, vacuoleInstanced, nucleusInstanced);
+    clickableMeshes.push(palCellInstanced);
+
+    // Discoid Biconvex 3D Chloroplasts textured with Thylakoid Grana Map
+    const chloroGeo = trackGeo(new THREE.SphereGeometry(0.072, 14, 12));
+    chloroGeo.scale(1.15, 1.32, 0.56);
+    const chloroMat = trackMat(
+      new THREE.MeshPhysicalMaterial({
+        map: chloroMaps.albedoMap,
+        bumpMap: chloroMaps.bumpMap,
+        bumpScale: 0.015,
+        color: 0xffffff,
+        emissive: new THREE.Color(0x16a34a),
+        emissiveIntensity: 0.25,
+        roughness: 0.24,
+        clearcoat: 0.72,
+        clearcoatRoughness: 0.16,
+      })
+    );
+    const chloroInstanced = new THREE.InstancedMesh(
+      chloroGeo,
+      chloroMat,
+      chloroplastsBase.length
+    );
+    chloroInstanced.userData.partId = 'palisade';
+    chloroInstanced.frustumCulled = false;
+    palisadeLayerGroup.add(chloroInstanced);
+    clickableMeshes.push(chloroInstanced);
+
+    // ==================== LAYER 3: BOTANICAL VASCULAR BUNDLE (BUNDLE SHEATH RING, HELICAL XYLEM & PHLOEM) ====================
+    const vascularGroup = new THREE.Group();
+    leafRoot.add(vascularGroup);
+
+    // 14-Cell Organic Ring of Sculpted Bundle Sheath Parenchyma Cells surrounding the leaf vein!
+    const sheathCellGeo = trackGeo(new THREE.CylinderGeometry(0.145, 0.145, 3.04, 12));
+    sheathCellGeo.rotateX(Math.PI / 2);
+    const sheathCellMat = trackMat(
+      new THREE.MeshPhysicalMaterial({
+        color: 0xffffff,
+        bumpMap: cellularBumpTex,
+        bumpScale: 0.02,
+        roughness: 0.34,
+        clearcoat: 0.35,
+        transparent: true,
+        opacity: 0.76,
+      })
+    );
+    const SHEATH_COUNT = 16;
+    const sheathInstanced = new THREE.InstancedMesh(sheathCellGeo, sheathCellMat, SHEATH_COUNT);
+    sheathInstanced.castShadow = !isSoftwareGl;
+    sheathInstanced.receiveShadow = !isSoftwareGl;
+    for (let s = 0; s < SHEATH_COUNT; s++) {
+      const ang = (s / SHEATH_COUNT) * Math.PI * 2;
+      const sx = -1.55 + Math.cos(ang) * 0.73;
+      const sy = 0.02 + Math.sin(ang) * 0.68;
+      _posDummy.set(sx, sy, 0);
+      _eulerDummy.set(0, 0, ang);
+      _quatDummy.setFromEuler(_eulerDummy);
+      _scaleDummy.set(0.95 + (s % 2) * 0.1, 1.05, 1);
+      _matDummy.compose(_posDummy, _quatDummy, _scaleDummy);
+      sheathInstanced.setMatrixAt(s, _matDummy);
+      _colorDummy.setHSL(0.31 + (s % 4) * 0.015, 0.52, 0.56 + (s % 3) * 0.04);
+      sheathInstanced.setColorAt(s, _colorDummy);
+    }
+    sheathInstanced.instanceMatrix.needsUpdate = true;
+    if (sheathInstanced.instanceColor) sheathInstanced.instanceColor.needsUpdate = true;
+    sheathInstanced.computeBoundingSphere();
+    vascularGroup.add(sheathInstanced);
+
+    // Fibrous Sclerenchyma Cap underneath the Phloem (authentic vascular bundle support tissue)
+    const sclerenchymaMat = trackMat(
+      new THREE.MeshStandardMaterial({
+        color: 0xd6d3b1,
+        bumpMap: cellularBumpTex,
+        bumpScale: 0.025,
+        roughness: 0.68,
+      })
+    );
+    for (let f = -2; f <= 2; f++) {
+      const fiber = new THREE.Mesh(
+        trackGeo(new THREE.CylinderGeometry(0.068, 0.068, 3.06, 8)),
+        sclerenchymaMat
+      );
+      fiber.rotation.x = Math.PI / 2;
+      fiber.position.set(-1.55 + f * 0.125, -0.53 + Math.abs(f) * 0.028, 0);
+      vascularGroup.add(fiber);
+    }
+
+    // 3D Hollow Lignified Xylem Vessels with True Continuous Helical Spiral Thickenings!
+    const xylemWallMat = trackMat(
+      new THREE.MeshPhysicalMaterial({
+        color: 0x0369a1,
+        emissive: new THREE.Color(0x0c4a6e),
+        emissiveIntensity: 0.25,
+        bumpMap: cellularBumpTex,
+        bumpScale: 0.018,
+        roughness: 0.25,
+        clearcoat: 0.6,
+        transparent: true,
+        opacity: 0.66,
+        side: THREE.DoubleSide,
+      })
+    );
+    const xylemHelixMat = trackMat(
+      new THREE.MeshStandardMaterial({
+        color: 0xbae6fd,
+        emissive: new THREE.Color(0x38bdf8),
+        emissiveIntensity: 0.35,
+        roughness: 0.3,
+        metalness: 0.08,
+      })
+    );
+    const xylemOffsets: Array<[number, number, number]> = [
+      [-1.55, 0.34, 0.145],
+      [-1.83, 0.18, 0.115],
+      [-1.27, 0.18, 0.115],
+    ];
+    for (const [xx, xy, xr] of xylemOffsets) {
+      // Hollow open-ended xylem vessel conduit
+      const tube = new THREE.Mesh(
+        trackGeo(new THREE.CylinderGeometry(xr, xr, 3.28, 20, 1, true)),
+        xylemWallMat
+      );
+      tube.rotation.x = Math.PI / 2;
+      tube.position.set(xx, xy, 0);
+      tube.userData.partId = 'xylem';
+      vascularGroup.add(tube);
+      clickableMeshes.push(tube);
+
+      // End-cap collar ring showing thick lignified vessel wall thickness
+      for (const zEnd of [-1.64, 1.64]) {
+        const rim = new THREE.Mesh(
+          trackGeo(new THREE.TorusGeometry(xr, 0.022, 10, 20)),
+          xylemHelixMat
+        );
+        rim.position.set(xx, xy, zEnd);
+        rim.userData.partId = 'xylem';
+        vascularGroup.add(rim);
+      }
+
+      // Continuous 3D Helical Spiral Lignin Thickening wrapping around the Xylem vessel
+      const helixMesh = new THREE.Mesh(
+        trackGeo(createHelicalLigninGeometry(xr + 0.012, 3.16, 9)),
+        xylemHelixMat
+      );
+      helixMesh.position.set(xx, xy, 0);
+      helixMesh.userData.partId = 'xylem';
+      vascularGroup.add(helixMesh);
+      clickableMeshes.push(helixMesh);
+    }
+
+    // 3D Phloem Sieve Tubes + Perforated Sieve Plates + Companion Cells
+    const phloemMat = trackMat(
+      new THREE.MeshPhysicalMaterial({
+        color: 0xd97706,
+        emissive: new THREE.Color(0x92400e),
+        emissiveIntensity: 0.22,
+        bumpMap: cellularBumpTex,
+        bumpScale: 0.016,
+        roughness: 0.28,
+        clearcoat: 0.5,
+        transparent: true,
+        opacity: 0.72,
+        side: THREE.DoubleSide,
+      })
+    );
+    const phloemPlateMat = trackMat(
+      new THREE.MeshStandardMaterial({
+        color: 0xfef3c7,
+        emissive: new THREE.Color(0xf59e0b),
+        emissiveIntensity: 0.35,
+        roughness: 0.25,
+      })
+    );
+    const companionMat = trackMat(
+      new THREE.MeshStandardMaterial({
+        color: 0x65a30d,
+        bumpMap: cellularBumpTex,
+        bumpScale: 0.02,
+        roughness: 0.4,
+      })
+    );
+    const phloemOffsets: Array<[number, number, number]> = [
+      [-1.55, -0.3, 0.13],
+      [-1.81, -0.17, 0.1],
+      [-1.29, -0.17, 0.1],
+    ];
+    for (const [px, py, pr] of phloemOffsets) {
+      const tube = new THREE.Mesh(
+        trackGeo(new THREE.CylinderGeometry(pr, pr, 3.26, 18, 1, true)),
+        phloemMat
+      );
+      tube.rotation.x = Math.PI / 2;
+      tube.position.set(px, py, 0);
+      tube.userData.partId = 'phloem';
+      vascularGroup.add(tube);
+      clickableMeshes.push(tube);
+
+      // Companion cell running snugly beside each sieve tube
+      const comp = new THREE.Mesh(
+        trackGeo(new THREE.CylinderGeometry(pr * 0.44, pr * 0.44, 3.16, 10)),
+        companionMat
+      );
+      comp.rotation.x = Math.PI / 2;
+      comp.position.set(px + pr * 1.12, py - pr * 0.42, 0);
+      comp.userData.partId = 'phloem';
+      vascularGroup.add(comp);
+
+      // Perforated sieve plate collars along the phloem tube
+      for (let pz = -1.35; pz <= 1.35; pz += 0.54) {
+        const plateRing = new THREE.Mesh(
+          trackGeo(new THREE.TorusGeometry(pr + 0.012, 0.016, 8, 18)),
+          phloemPlateMat
+        );
+        plateRing.position.set(px, py, pz);
+        plateRing.userData.partId = 'phloem';
+        vascularGroup.add(plateRing);
+      }
+    }
+
+    // ==================== LAYER 4: ORGANIC LOBED SPONGY MESOPHYLL & INTERCELLULAR AIR CHAMBERS ====================
+    const spongyLayerGroup = new THREE.Group();
+    leafRoot.add(spongyLayerGroup);
+
+    const spongyPositions: Array<[number, number, number, number]> = [
+      [-0.45, -0.25, -0.95, 0.29],
+      [0.35, -0.18, -0.85, 0.32],
+      [1.15, -0.32, -0.92, 0.28],
+      [1.95, -0.22, -0.88, 0.31],
+      [-0.25, -0.44, -0.15, 0.3],
+      [0.72, -0.28, -0.1, 0.33],
+      [1.55, -0.45, -0.18, 0.29],
+      [2.18, -0.3, -0.05, 0.27],
+      [-0.5, -0.24, 0.85, 0.31],
+      [0.25, -0.38, 0.92, 0.29],
+      [1.08, -0.22, 0.82, 0.32],
+      [1.88, -0.36, 0.9, 0.3],
+      [-0.08, -0.74, -0.58, 0.26],
+      [1.22, -0.76, 0.46, 0.27],
+      [2.05, -0.72, -0.46, 0.26],
+      [0.38, -0.76, -0.82, 0.25],
+      [1.72, -0.75, 0.78, 0.25],
+    ];
+    const spongyGeo = trackGeo(createSpongyParenchymaGeometry());
+    const spongyMat = trackMat(
+      new THREE.MeshPhysicalMaterial({
+        color: 0xffffff,
+        bumpMap: cellularBumpTex,
+        bumpScale: 0.025,
+        emissive: new THREE.Color(0x065f46),
+        emissiveIntensity: 0.16,
+        roughness: 0.32,
+        clearcoat: 0.45,
+        clearcoatRoughness: 0.25,
+      })
+    );
+    const spongyInstanced = new THREE.InstancedMesh(
+      spongyGeo,
+      spongyMat,
+      spongyPositions.length
+    );
+    spongyInstanced.castShadow = !isSoftwareGl;
+    spongyInstanced.receiveShadow = !isSoftwareGl;
+    spongyInstanced.userData.partId = 'spongy';
+
+    // Surface chloroplasts nestled in spongy mesophyll cells too
+    const spongyChloroPositions: Array<[number, number, number]> = [];
+    spongyPositions.forEach(([sx, sy, sz, sr], idx) => {
+      _posDummy.set(sx, sy, sz);
+      _eulerDummy.set(idx * 0.85, idx * 1.25, idx * 0.45);
+      _quatDummy.setFromEuler(_eulerDummy);
+      _scaleDummy.set(sr * 1.08, sr * 0.92, sr);
+      _matDummy.compose(_posDummy, _quatDummy, _scaleDummy);
+      spongyInstanced.setMatrixAt(idx, _matDummy);
+
+      // Authentic spongy mesophyll soft chlorophyll lime-emerald tints
+      _colorDummy.setHSL(0.32 + (idx % 5) * 0.014, 0.56, 0.39 + (idx % 3) * 0.045);
+      spongyInstanced.setColorAt(idx, _colorDummy);
+
+      for (let sc = 0; sc < 3; sc++) {
+        const a = sc * 2.1 + idx;
+        spongyChloroPositions.push([
+          sx + Math.cos(a) * sr * 0.88,
+          sy + (sc - 1) * sr * 0.32,
+          sz + Math.sin(a) * sr * 0.88,
+        ]);
+      }
+    });
+    spongyInstanced.instanceMatrix.needsUpdate = true;
+    if (spongyInstanced.instanceColor) spongyInstanced.instanceColor.needsUpdate = true;
+    spongyInstanced.computeBoundingSphere();
+    spongyLayerGroup.add(spongyInstanced);
+    clickableMeshes.push(spongyInstanced);
+
+    const spongyChloroInstanced = new THREE.InstancedMesh(
+      chloroGeo,
+      chloroMat,
+      spongyChloroPositions.length
+    );
+    spongyChloroPositions.forEach(([cx, cy, cz], idx) => {
+      _posDummy.set(cx, cy, cz);
+      _eulerDummy.set(idx * 0.6, idx * 1.1, 0);
+      _quatDummy.setFromEuler(_eulerDummy);
+      _scaleDummy.setScalar(0.82);
+      _matDummy.compose(_posDummy, _quatDummy, _scaleDummy);
+      spongyChloroInstanced.setMatrixAt(idx, _matDummy);
+    });
+    spongyChloroInstanced.instanceMatrix.needsUpdate = true;
+    spongyChloroInstanced.computeBoundingSphere();
+    spongyLayerGroup.add(spongyChloroInstanced);
+
+    // ==================== LAYER 5: LOWER EPIDERMIS, MIDRIB KEEL & PLUMP KIDNEY-SHAPED 3D STOMATA ====================
+    const bottomLayerGroup = new THREE.Group();
+    leafRoot.add(bottomLayerGroup);
+
+    // Three 3D Stomatal Pore Centers on the underside of the leaf (y = -1.35)
+    const stomaCenters: Array<[number, number]> = [
+      [-0.55, 0.35],
+      [0.55, 0.0],
+      [1.65, -0.35],
+    ];
+
+    // Natural Lower Midrib Keel bulging subtly under the vascular bundle (x = -1.55)
+    const midribKeelGeo = trackGeo(new THREE.CylinderGeometry(0.46, 0.46, 3.08, 16, 1, false, Math.PI, Math.PI));
+    midribKeelGeo.rotateX(Math.PI / 2);
+    const midribKeel = new THREE.Mesh(
+      midribKeelGeo,
+      trackMat(
+        new THREE.MeshPhysicalMaterial({
+          color: 0x65a30d,
+          bumpMap: cellularBumpTex,
+          bumpScale: 0.025,
+          roughness: 0.36,
+          clearcoat: 0.4,
+          transparent: true,
+          opacity: 0.85,
+        })
+      )
+    );
+    midribKeel.position.set(-1.55, -1.24, 0);
+    midribKeel.scale.set(1.35, 0.72, 1);
+    bottomLayerGroup.add(midribKeel);
+
+    // Lower Epidermis Cushioned Pillowy Cells (leaving clear openings for the 3 stomata!)
+    const lowerEpiPositions: Array<[number, number, number]> = [];
+    for (let ix = 0; ix < 8; ix++) {
+      const lx = -2.22 + ix * 0.635;
+      for (let iz = 0; iz < 4; iz++) {
+        const lz = -1.08 + iz * 0.72;
+        const nearStoma = stomaCenters.some(([sx, sz]) => Math.hypot(lx - sx, lz - sz) < 0.56);
+        if (!nearStoma) {
+          lowerEpiPositions.push([lx, -1.32, lz]);
+        }
+      }
+    }
+    const lowerEpiInstanced = new THREE.InstancedMesh(
+      upperEpiGeo,
+      upperEpiMat,
+      lowerEpiPositions.length
+    );
+    lowerEpiInstanced.receiveShadow = !isSoftwareGl;
+    lowerEpiInstanced.userData.partId = 'stomata';
+    lowerEpiPositions.forEach(([lx, ly, lz], idx) => {
+      _posDummy.set(lx, ly, lz);
+      _quatDummy.identity();
+      _scaleDummy.set(0.98, 0.84, 0.98);
+      _matDummy.compose(_posDummy, _quatDummy, _scaleDummy);
+      lowerEpiInstanced.setMatrixAt(idx, _matDummy);
+      _colorDummy.setHSL(0.27 + (idx % 4) * 0.012, 0.5, 0.68 + (idx % 3) * 0.025);
+      lowerEpiInstanced.setColorAt(idx, _colorDummy);
+    });
+    lowerEpiInstanced.instanceMatrix.needsUpdate = true;
+    if (lowerEpiInstanced.instanceColor) lowerEpiInstanced.instanceColor.needsUpdate = true;
+    lowerEpiInstanced.computeBoundingSphere();
+    bottomLayerGroup.add(lowerEpiInstanced);
+    clickableMeshes.push(lowerEpiInstanced);
+
+    // Plump Sculpted Kidney-Shaped 3D Guard Cell Pairs + Internal Guard Chloroplasts + Substomatal Cavity!
+    const guardCellMat = trackMat(
+      new THREE.MeshPhysicalMaterial({
+        color: 0x22c55e,
+        bumpMap: cellularBumpTex,
+        bumpScale: 0.02,
+        emissive: new THREE.Color(0x15803d),
+        emissiveIntensity: 0.25,
+        roughness: 0.2,
+        clearcoat: 0.8,
+        clearcoatRoughness: 0.12,
+      })
+    );
+    const guardChloroMat = trackMat(
+      new THREE.MeshStandardMaterial({
+        color: 0x86efac,
+        emissive: new THREE.Color(0x22c55e),
+        emissiveIntensity: 0.45,
+        roughness: 0.25,
+      })
+    );
+    const guardKidneyGeo = trackGeo(createKidneyGuardCellGeometry());
+    const guardDotGeo = trackGeo(new THREE.SphereGeometry(0.028, 8, 6));
+    const stomaPairs: Array<{ left: THREE.Group; right: THREE.Group; ring: THREE.Mesh }> = [];
+    const stomaRingMat = trackMat(
+      new THREE.MeshBasicMaterial({
+        color: 0x38bdf8,
+        transparent: true,
+        opacity: 0.48,
+        side: THREE.DoubleSide,
+      })
+    );
+    const substomatalMat = trackMat(
+      new THREE.MeshBasicMaterial({
+        color: 0x052e16,
+        transparent: true,
+        opacity: 0.72,
+        side: THREE.DoubleSide,
+      })
+    );
+
+    for (const [sx, sz] of stomaCenters) {
+      const pairGroup = new THREE.Group();
+      pairGroup.position.set(sx, -1.36, sz);
+
+      // Left Kidney Guard Cell Group (sculpted bean + 3 embedded chloroplasts)
+      const leftGuardGroup = new THREE.Group();
+      const leftGuardMesh = new THREE.Mesh(guardKidneyGeo, guardCellMat);
+      leftGuardMesh.userData.partId = 'stomata';
+      leftGuardGroup.add(leftGuardMesh);
+      for (const gz of [-0.12, 0, 0.12]) {
+        const dot = new THREE.Mesh(guardDotGeo, guardChloroMat);
+        dot.position.set(-0.155, -0.055, gz);
+        leftGuardGroup.add(dot);
+      }
+
+      // Right Kidney Guard Cell Group (mirrored bean + 3 embedded chloroplasts)
+      const rightGuardGroup = new THREE.Group();
+      const rightGuardMesh = new THREE.Mesh(guardKidneyGeo, guardCellMat);
+      rightGuardMesh.scale.x = -1;
+      rightGuardMesh.userData.partId = 'stomata';
+      rightGuardGroup.add(rightGuardMesh);
+      for (const gz of [-0.12, 0, 0.12]) {
+        const dot = new THREE.Mesh(guardDotGeo, guardChloroMat);
+        dot.position.set(0.155, -0.055, gz);
+        rightGuardGroup.add(dot);
+      }
+
+      // Dark recessed substomatal air cavity shadow disc behind the pore
+      const cavity = new THREE.Mesh(
+        trackGeo(new THREE.CircleGeometry(0.24, 24)),
+        substomatalMat
+      );
+      cavity.rotation.x = Math.PI / 2;
+      cavity.position.y = 0.05;
+      cavity.userData.partId = 'stomata';
+
+      const poreRing = new THREE.Mesh(
+        trackGeo(new THREE.RingGeometry(0.32, 0.365, 32)),
+        stomaRingMat
+      );
+      poreRing.rotation.x = Math.PI / 2;
+      poreRing.position.y = -0.085;
+      poreRing.userData.partId = 'stomata';
+
+      pairGroup.add(leftGuardGroup, rightGuardGroup, cavity, poreRing);
+      bottomLayerGroup.add(pairGroup);
+      clickableMeshes.push(leftGuardMesh, rightGuardMesh, cavity, poreRing);
+      stomaPairs.push({ left: leftGuardGroup, right: rightGuardGroup, ring: poreRing });
+    }
+
+    // ==================== 6. REALISTIC 3D MOLECULAR FLOWS & SOFT VOLUMETRIC SUNBEAMS ====================
+    // A. Golden Sunlight Photons & Soft Gradient Volumetric Canopy Beams
+    const PHOTON_COUNT = 26;
     const photonMat = trackMat(
-      new THREE.MeshBasicMaterial({ color: 0xfde047, transparent: true, opacity: 0.92 })
+      new THREE.MeshBasicMaterial({ color: 0xfef9c3, transparent: true, opacity: 0.95 })
     );
     const photonInstanced = new THREE.InstancedMesh(
-      trackGeo(new THREE.SphereGeometry(0.056, 10, 8)),
+      trackGeo(new THREE.SphereGeometry(0.058, 12, 10)),
       photonMat,
       PHOTON_COUNT
     );
     photonInstanced.frustumCulled = false;
     leafRoot.add(photonInstanced);
 
-    // B. Xylem Water (H₂O) Luminous Cyan-Blue Droplets streaming UP the exact blue xylem vessel + branches (32)
-    const WATER_COUNT = 32;
+    const sunBeamMat = trackMat(
+      new THREE.MeshBasicMaterial({
+        color: 0xfef08a,
+        alphaMap: sunbeamAlphaTex,
+        transparent: true,
+        opacity: 0.18,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        side: THREE.DoubleSide,
+      })
+    );
+    const sunBeams: THREE.Mesh[] = [];
+    for (let b = -1.5; b <= 1.7; b += 1.05) {
+      const beam = new THREE.Mesh(
+        trackGeo(new THREE.CylinderGeometry(0.22, 0.62, 3.4, 18, 1, true)),
+        sunBeamMat
+      );
+      beam.position.set(b, 2.85, 0);
+      beam.rotation.z = -0.22;
+      leafRoot.add(beam);
+      sunBeams.push(beam);
+    }
+
+    // B. Glistening Translucent Xylem Water (H₂O) Droplets
+    const WATER_COUNT = 34;
     const waterMat = trackMat(
-      new THREE.MeshStandardMaterial({
-        color: 0x7dd3fc,
-        emissive: new THREE.Color(0x0ea5e9),
-        emissiveIntensity: 0.85,
-        roughness: 0.14,
+      new THREE.MeshPhysicalMaterial({
+        color: 0x38bdf8,
+        emissive: new THREE.Color(0x0284c7),
+        emissiveIntensity: 0.55,
+        roughness: 0.06,
+        clearcoat: 1.0,
+        clearcoatRoughness: 0.04,
       })
     );
     const waterInstanced = new THREE.InstancedMesh(
-      trackGeo(new THREE.SphereGeometry(0.055, 10, 8)),
+      trackGeo(new THREE.SphereGeometry(0.062, 12, 10)),
       waterMat,
       WATER_COUNT
     );
     waterInstanced.frustumCulled = false;
     leafRoot.add(waterInstanced);
 
-    // C. Phloem Glucose/Sucrose (C₆H₁₂O₆) Golden Octahedra translocating DOWN the amber phloem tube (22)
-    const GLUCOSE_COUNT = 22;
+    // C. Faceted Hexagonal Phloem Glucose (C₆H₁₂O₆) Crystals
+    const GLUCOSE_COUNT = 26;
     const glucoseMat = trackMat(
-      new THREE.MeshStandardMaterial({
+      new THREE.MeshPhysicalMaterial({
         color: 0xfbbf24,
-        emissive: new THREE.Color(0xf59e0b),
-        emissiveIntensity: 0.85,
-        roughness: 0.2,
+        emissive: new THREE.Color(0xd97706),
+        emissiveIntensity: 0.62,
+        roughness: 0.14,
+        metalness: 0.12,
+        clearcoat: 0.9,
       })
     );
+    const glucoseGeo = trackGeo(new THREE.CylinderGeometry(0.078, 0.078, 0.048, 6));
     const glucoseInstanced = new THREE.InstancedMesh(
-      trackGeo(new THREE.OctahedronGeometry(0.062, 1)),
+      glucoseGeo,
       glucoseMat,
       GLUCOSE_COUNT
     );
     glucoseInstanced.frustumCulled = false;
     leafRoot.add(glucoseInstanced);
 
-    // D. CO₂ Molecules (Violet) diffusing UP through the stoma pore into spongy air spaces (22)
-    const CO2_COUNT = 22;
+    // D. Glossy Violet CO₂ Gas Molecules entering through the Lower Stomata
+    const CO2_COUNT = 27;
     const co2Mat = trackMat(
-      new THREE.MeshStandardMaterial({
+      new THREE.MeshPhysicalMaterial({
         color: 0xc4b5fd,
         emissive: new THREE.Color(0x7c3aed),
-        emissiveIntensity: 0.72,
-        roughness: 0.24,
+        emissiveIntensity: 0.65,
+        roughness: 0.18,
+        clearcoat: 0.85,
       })
     );
-    const co2Instanced = new THREE.InstancedMesh(
-      trackGeo(new THREE.SphereGeometry(0.054, 10, 8)),
-      co2Mat,
-      CO2_COUNT
-    );
+    const co2Geo = trackGeo(new THREE.CapsuleGeometry(0.042, 0.068, 6, 10));
+    co2Geo.rotateZ(Math.PI / 2);
+    const co2Instanced = new THREE.InstancedMesh(co2Geo, co2Mat, CO2_COUNT);
     co2Instanced.frustumCulled = false;
     leafRoot.add(co2Instanced);
 
-    // E. O₂ Oxygen Bubbles (Bright Cyan-White) rising from palisade chloroplasts & air spaces (30)
+    // E. Pearlescent Iridescent O₂ Oxygen Gas Bubbles produced in Palisade Chloroplasts
     const O2_COUNT = 30;
     const o2Mat = trackMat(
-      new THREE.MeshStandardMaterial({
-        color: 0xf0f9ff,
-        emissive: new THREE.Color(0x22d3ee),
-        emissiveIntensity: 0.9,
-        roughness: 0.08,
+      new THREE.MeshPhysicalMaterial({
+        color: 0xe0f2fe,
+        emissive: new THREE.Color(0x06b6d4),
+        emissiveIntensity: 0.65,
+        roughness: 0.05,
+        clearcoat: 1.0,
+        iridescence: 0.65,
       })
     );
     const o2Instanced = new THREE.InstancedMesh(
-      trackGeo(new THREE.SphereGeometry(0.062, 12, 10)),
+      trackGeo(new THREE.SphereGeometry(0.064, 14, 12)),
       o2Mat,
       O2_COUNT
     );
     o2Instanced.frustumCulled = false;
     leafRoot.add(o2Instanced);
 
-    // F. Palisade Chloroplast Glow Pulses (subtle luminous emerald energy nodes inside palisade cells) (18)
-    const CHLORO_GLOW_COUNT = 18;
-    const chloroGlowMat = trackMat(
-      new THREE.MeshBasicMaterial({
-        color: 0x4ade80,
-        transparent: true,
-        opacity: 0.45,
-        depthWrite: false,
-      })
-    );
-    const chloroGlowInstanced = new THREE.InstancedMesh(
-      trackGeo(new THREE.SphereGeometry(0.068, 10, 8)),
-      chloroGlowMat,
-      CHLORO_GLOW_COUNT
-    );
-    chloroGlowInstanced.frustumCulled = false;
-    leafRoot.add(chloroGlowInstanced);
-
-    const chloroNodesUV: Array<[number, number]> = [];
-    for (let i = 0; i < CHLORO_GLOW_COUNT; i++) {
-      const frac = i / (CHLORO_GLOW_COUNT - 1);
-      const u = 0.28 + frac * 0.49;
-      const v = 0.545 + (i % 3 - 1) * 0.036;
-      chloroNodesUV.push([u, v]);
-    }
-
-    // ==================== 5. DIRECT UV RAYCAST INTERACTION ON THE PHOTOREALISTIC LEAF ====================
+    // ==================== 7. 3D RAYCAST INTERACTION ====================
     let pointerDown = { x: 0, y: 0 };
     let lastHover = 0;
 
@@ -955,9 +2358,9 @@ export const Photosynthesis3DSimulation: React.FC<Photosynthesis3DSimulationProp
       _pointerNdc.x = ((cx - rect.left) / rect.width) * 2 - 1;
       _pointerNdc.y = -((cy - rect.top) / rect.height) * 2 + 1;
       _raycaster.setFromCamera(_pointerNdc, camera);
-      const hits = _raycaster.intersectObject(leafMesh, false);
-      if (hits.length === 0 || !hits[0].uv) return null;
-      return classifyLeafPartFromUV(hits[0].uv.x, hits[0].uv.y);
+      const hits = _raycaster.intersectObjects(clickableMeshes, false);
+      if (hits.length === 0) return null;
+      return (hits[0].object.userData?.partId as LeafPartId) || null;
     };
 
     const onPointerDown = (e: PointerEvent) => {
@@ -965,7 +2368,7 @@ export const Photosynthesis3DSimulation: React.FC<Photosynthesis3DSimulationProp
     };
     const onPointerMove = (e: PointerEvent) => {
       const now = performance.now();
-      if (now - lastHover < 50) return;
+      if (now - lastHover < 55) return;
       lastHover = now;
       renderer.domElement.style.cursor = getHitPart(e.clientX, e.clientY) ? 'pointer' : 'grab';
     };
@@ -983,36 +2386,34 @@ export const Photosynthesis3DSimulation: React.FC<Photosynthesis3DSimulationProp
       );
 
       if (part === 'stomata') {
-        setWatchLessonActive(false);
-        setLessonPaused(false);
         setStomataOpen((prev) => {
           const next = !prev;
           setInteractionHint(
             next
-              ? 'Guard cells swelled OPEN — CO₂ now diffuses freely through the stoma into spongy air spaces!'
-              : 'Guard cells CLOSED the stoma — CO₂ intake restricted to conserve water!'
+              ? '3D Guard cells swelled OPEN — CO₂ now diffuses freely through the lower stomata!'
+              : '3D Guard cells pinched CLOSED — CO₂ entry restricted!'
           );
           return next;
         });
       } else if (part === 'palisade') {
         setInteractionHint(
-          `Palisade Mesophyll Chloroplasts — Output: ${m.bubblesPerMin} O₂ bubbles/min (Limiting: ${m.limitingFactor})`
+          `Palisade Chloroplasts — Output: ${m.bubblesPerMin} O₂ bubbles/min (Limiting: ${m.limitingFactor})`
         );
       } else if (part === 'xylem') {
         setInteractionHint(
-          'Xylem Vessel (Blue Tube) — continuous transpiration pull delivering H₂O and mineral ions upward into the leaf.'
+          '3D Xylem Vessels (Blue Lignified Tubes) — transporting H₂O & mineral ions into the mesophyll.'
         );
       } else if (part === 'phloem') {
         setInteractionHint(
-          `Phloem Sieve Tube (Amber Tube) — actively translocating ${m.glucoseMgHr.toFixed(1)} mg/hr of sucrose/glucose out of the leaf.`
+          `3D Phloem Sieve Tubes (Golden Tubes) — translocating ${m.glucoseMgHr.toFixed(1)} mg/hr of sucrose.`
         );
       } else if (part === 'cuticle') {
         setInteractionHint(
-          'Waxy Cuticle & Upper Epidermis — transparent waterproof barrier letting sunlight reach the palisade layer.'
+          'Waxy Cuticle & Upper Epidermis — transparent top barrier transmitting photons to chloroplasts.'
         );
       } else if (part === 'spongy') {
         setInteractionHint(
-          'Spongy Mesophyll & Intercellular Air Spaces — loose cells enabling rapid CO₂ and O₂ gas diffusion.'
+          'Spongy Mesophyll & 3D Air Channels — circulating CO₂ and O₂ gas molecules.'
         );
       }
     };
@@ -1035,6 +2436,7 @@ export const Photosynthesis3DSimulation: React.FC<Photosynthesis3DSimulationProp
       renderer.compile(scene, camera);
     }
 
+    let disposed = false;
     let frameId = 0;
     const clock = new THREE.Clock();
 
@@ -1042,6 +2444,7 @@ export const Photosynthesis3DSimulation: React.FC<Photosynthesis3DSimulationProp
     let dampedCo2 = co2Ref.current;
     let dampedTemp = tempRef.current;
     let dampedAperture = stomataRef.current ? 1 : 0;
+    let dampedExplode = explodeRef.current;
 
     let photonPhase = 0;
     let waterPhase = 0;
@@ -1049,27 +2452,36 @@ export const Photosynthesis3DSimulation: React.FC<Photosynthesis3DSimulationProp
     let co2Phase = 0;
     let o2Phase = 0;
 
-    function computeProjectedLabels(
-      aperture: number,
-      rate: number,
-      heatStress: number,
-      elapsed: number
-    ): ProjectedLabel[] {
+    function computeProjectedLabels(explodeAmt: number): ProjectedLabel[] {
       if (!showLabelsRef.current) return [];
       const w = renderer.domElement.clientWidth;
       const h = renderer.domElement.clientHeight;
       if (w <= 0 || h <= 0) return [];
       const out: ProjectedLabel[] = [];
-      for (const spec of CALLOUT_UV_ANCHORS) {
-        computeDeformedLeafPoint(spec.u, spec.v, aperture, rate, heatStress, elapsed, _vProj);
-        _vProj.z += 0.14;
+      for (const spec of LABEL_3D_SPECS) {
+        _vProj.set(
+          spec.basePos[0],
+          spec.basePos[1] + spec.explodeFactor * explodeAmt,
+          spec.basePos[2]
+        );
+        _vProj.applyMatrix4(leafRoot.matrixWorld);
         _vProj.project(camera);
-        if (_vProj.z > 1) continue;
+        if (_vProj.z > 1 || _vProj.z < -1) continue;
         const ax = (_vProj.x * 0.5 + 0.5) * w;
         const ay = (-_vProj.y * 0.5 + 0.5) * h;
-        const lx = Math.max(90, Math.min(w - 90, ax + spec.offsetX));
-        const ly = Math.max(26, Math.min(h - 26, ay + spec.offsetY));
-        out.push({ id: spec.id, partId: spec.partId, text: spec.text, ax, ay, lx, ly });
+        const lx = Math.max(105, Math.min(w - 105, ax + spec.offsetX));
+        const ly = Math.max(24, Math.min(h - 24, ay + spec.offsetY));
+        out.push({
+          id: spec.id,
+          partId: spec.partId,
+          text: spec.text,
+          subText: spec.subText,
+          ax,
+          ay,
+          lx,
+          ly,
+          accentHex: spec.accentHex,
+        });
       }
       return out;
     }
@@ -1096,69 +2508,65 @@ export const Photosynthesis3DSimulation: React.FC<Photosynthesis3DSimulationProp
       const delta = Math.min(clock.getDelta(), 0.08);
       const elapsed = clock.getElapsedTime();
 
-      const isDark = darkModeRef.current;
-      scene.background = isDark ? bgDark : bgLight;
+      const targetBg = darkModeRef.current ? bgDark : bgLight;
+      scene.background = targetBg;
+      if (scene.fog instanceof THREE.FogExp2) {
+        scene.fog.color.copy(targetBg);
+      }
 
-      // ==================== 65-SECOND (1:05) GUIDED LESSON CHOREOGRAPHY ====================
-      if (watchLessonRef.current) {
-        if (!lessonPausedRef.current) {
-          lessonTimeRef.current = Math.min(
-            LESSON_DURATION_SEC,
-            lessonTimeRef.current + delta * lessonSpeedRef.current
-          );
-          if (lessonTimeRef.current >= LESSON_DURATION_SEC) {
-            lessonPausedRef.current = true;
-            setLessonPaused(true);
-          }
+      // Guided Watch Lesson 60fps Timeline Progression
+      if (watchLessonRef.current && !lessonPausedRef.current) {
+        const nextT = Math.min(LESSON_DURATION_SEC, lessonTimeRef.current + delta * lessonSpeedRef.current);
+        lessonTimeRef.current = nextT;
+        const ch = getPhotoLessonChapter(nextT);
+        if (ch.id !== lastChapterIdRef.current) {
+          lastChapterIdRef.current = ch.id;
+          const spec = PHOTOSYNTHESIS_STEPS[ch.stepIdx] || PHOTOSYNTHESIS_STEPS[0];
+          setActiveStepIdx(ch.stepIdx);
+          setSelectedPart(spec.focusPart);
+          setLightPct(ch.lightPct);
+          setCo2Pct(ch.co2Pct);
+          setTempC(ch.tempC);
+          setStomataOpen(ch.stomataOpen);
+          setExplodeLayers(ch.explodeLayers);
+          desiredCamPosRef.current = [...spec.cameraPos];
+          desiredCamTargetRef.current = [...spec.cameraTarget];
         }
-        const t = lessonTimeRef.current;
-
-        if (t < 17) {
-          const f = Math.min(1, t / 14);
-          lightRef.current = Math.round(10 + f * 75);
-          co2Ref.current = 40;
-          tempRef.current = 26;
-          stomataRef.current = false;
-          selectedPartRef.current = 'palisade';
-        } else if (t < 34) {
-          const f = Math.min(1, (t - 17) / 13);
-          lightRef.current = 85;
-          co2Ref.current = Math.round(40 + f * 45);
-          tempRef.current = 28;
-          stomataRef.current = true;
-          selectedPartRef.current = 'xylem';
-        } else if (t < 50) {
-          lightRef.current = 95;
-          co2Ref.current = 90;
-          tempRef.current = 30;
-          stomataRef.current = true;
-          selectedPartRef.current = 'phloem';
-        } else {
-          const f = Math.min(1, (t - 50) / 11);
-          lightRef.current = 90;
-          co2Ref.current = 85;
-          tempRef.current = Math.round(30 + f * 15);
-          stomataRef.current = true;
-          selectedPartRef.current = 'stomata';
+        const nowLesson = performance.now();
+        if (nowLesson - lastLessonUiPushRef.current > 70) {
+          lastLessonUiPushRef.current = nowLesson;
+          setLessonTime(nextT);
         }
-
-        const nowTs = performance.now();
-        if (nowTs - lastUiSyncRef.current > 110) {
-          lastUiSyncRef.current = nowTs;
-          setLessonTimeSec(Number(t.toFixed(2)));
-          setLightPct(lightRef.current);
-          setCo2Pct(co2Ref.current);
-          setTempC(tempRef.current);
-          setStomataOpen(stomataRef.current);
-          setSelectedPart(selectedPartRef.current);
+        if (nextT >= LESSON_DURATION_SEC) {
+          lessonPausedRef.current = true;
+          setLessonPaused(true);
+          setLessonTime(LESSON_DURATION_SEC);
         }
       }
 
-      // Smoothly damp environmental parameters
+      // Smooth camera transition to step or 360° preset
+      if (desiredCamPosRef.current && desiredCamTargetRef.current) {
+        _vCamPos.set(...desiredCamPosRef.current);
+        _vCamTarget.set(...desiredCamTargetRef.current);
+        camera.position.lerp(_vCamPos, 1 - Math.exp(-5.5 * delta));
+        controls.target.lerp(_vCamTarget, 1 - Math.exp(-6.5 * delta));
+        if (
+          camera.position.distanceTo(_vCamPos) < 0.05 &&
+          controls.target.distanceTo(_vCamTarget) < 0.03
+        ) {
+          desiredCamPosRef.current = null;
+          desiredCamTargetRef.current = null;
+        }
+      }
+
+      controls.autoRotate = !isSoftwareGl && autoRotateRef.current && !watchLessonRef.current;
+      controls.autoRotateSpeed = 1.6;
+
       dampedLight = THREE.MathUtils.damp(dampedLight, lightRef.current, 6, delta);
       dampedCo2 = THREE.MathUtils.damp(dampedCo2, co2Ref.current, 6, delta);
       dampedTemp = THREE.MathUtils.damp(dampedTemp, tempRef.current, 6, delta);
       dampedAperture = THREE.MathUtils.damp(dampedAperture, stomataRef.current ? 1 : 0, 8, delta);
+      dampedExplode = THREE.MathUtils.damp(dampedExplode, explodeRef.current, 7, delta);
 
       const live = computePhotosynthesisMetrics(
         dampedLight,
@@ -1170,191 +2578,192 @@ export const Photosynthesis3DSimulation: React.FC<Photosynthesis3DSimulationProp
       const lightFrac = dampedLight / 100;
       const heatStress = THREE.MathUtils.clamp((dampedTemp - 37) / 8, 0, 1);
 
-      // 1. Deform the photorealistic 3D cutaway leaf mesh vertices in real time!
-      for (let i = 0; i < leafPosAttr.count; i++) {
-        const u = leafUvAttr.getX(i);
-        const v = leafUvAttr.getY(i);
-        computeDeformedLeafPoint(u, v, dampedAperture, rate, heatStress, elapsed, _vPos);
-        leafPosAttr.setXYZ(i, _vPos.x, _vPos.y, _vPos.z);
-      }
-      leafPosAttr.needsUpdate = true;
+      // Exploded 3D Layer separation
+      topLayerGroup.position.y = dampedExplode * 1.15;
+      palisadeLayerGroup.position.y = dampedExplode * 0.42;
+      spongyLayerGroup.position.y = -dampedExplode * 0.32;
+      bottomLayerGroup.position.y = -dampedExplode * 1.05;
 
-      // Subtle photo brightness & heat-stress tint modulation (dimmer in darkness, warm olive when overheated!)
-      const brightness = 0.7 + lightFrac * 0.34;
-      const rTint = brightness * THREE.MathUtils.lerp(1.0, 1.08, heatStress);
-      const gTint = brightness * THREE.MathUtils.lerp(1.0, 0.88, heatStress);
-      const bTint = brightness * THREE.MathUtils.lerp(1.0, 0.72, heatStress);
-      leafMat.color.setRGB(rTint, gTint, bTint);
-
-      // 2. Sunlight Intensity & Volumetric Light Shafts
-      sunDirLight.intensity = 0.5 + lightFrac * 1.95;
-      sunBeamMat.opacity = lightFrac * (isDark ? 0.17 : 0.14);
+      // Sunlight, subsurface transmitted chlorophyll glow, & soft canopy beams
+      sunDirLight.intensity = 0.72 + lightFrac * 2.15;
+      subsurfaceLight.intensity = 0.35 + lightFrac * 0.85;
+      sunBeamMat.opacity = lightFrac * (darkModeRef.current ? 0.22 : 0.14);
       sunBeams.forEach((b) => {
         b.visible = lightFrac > 0.04;
       });
 
-      // 3. Articulated 3D Guard Cells right at the lower stomatal pore (u=0.514, v=0.305)
-      computeDeformedLeafPoint(0.514, 0.305, dampedAperture, rate, heatStress, elapsed, _vPos);
-      stomaGroup.position.set(_vPos.x, _vPos.y, _vPos.z + 0.11);
-      const poreGap = THREE.MathUtils.lerp(0.025, 0.125, dampedAperture);
-      guardLeft.position.x = -poreGap;
-      guardRight.position.x = poreGap;
-      const gSwell = THREE.MathUtils.lerp(0.84, 1.14, dampedAperture);
-      guardLeft.scale.set(gSwell, gSwell, 1);
-      guardRight.scale.set(gSwell, gSwell, 1);
-      guardCellMat.emissiveIntensity = 0.18 + dampedAperture * 0.42;
-
-      // Focus ring on clicked / guided-lesson anatomical part
-      const focusId = selectedPartRef.current;
-      if (focusId !== 'overview') {
-        const anchor = PART_ANCHORS[focusId];
-        computeDeformedLeafPoint(anchor.u, anchor.v, dampedAperture, rate, heatStress, elapsed, _vPos);
-        focusRing.position.set(_vPos.x, _vPos.y, _vPos.z + 0.17);
-        const pulse = 1 + Math.sin(elapsed * 4.2) * 0.09;
-        focusRing.scale.setScalar(pulse);
-        focusRingMat.opacity = 0.72;
-        focusRingMat.color.setHex(
-          focusId === 'xylem'
-            ? 0x38bdf8
-            : focusId === 'phloem'
-            ? 0xfbbf24
-            : focusId === 'stomata'
-            ? 0xa78bfa
-            : 0x34d399
-        );
-      } else {
-        focusRingMat.opacity = 0;
-      }
-
-      // 4. Palisade Chloroplast Metabolic Energy Glow Pulses
-      chloroGlowMat.color.setHSL(
-        THREE.MathUtils.lerp(0.37, 0.14, heatStress),
-        THREE.MathUtils.lerp(0.85, 0.45, heatStress),
-        0.55
+      // Animate 3D Chloroplasts (authentic cytoplasmic streaming / cyclosis around palisade wall + heat stress tint)
+      _colorDummy.setHSL(
+        THREE.MathUtils.lerp(0.35, 0.13, heatStress),
+        THREE.MathUtils.lerp(0.45, 0.55, heatStress),
+        THREE.MathUtils.lerp(0.95, 0.65, heatStress)
       );
-      chloroGlowMat.opacity = (0.06 + rate * 0.52) * (1 - heatStress * 0.75);
-      for (let i = 0; i < CHLORO_GLOW_COUNT; i++) {
-        const [cu, cv] = chloroNodesUV[i];
-        computeDeformedLeafPoint(cu, cv, dampedAperture, rate, heatStress, elapsed, _vPos);
-        _vPos.z += 0.14;
-        const pulse = (0.6 + 0.45 * Math.sin(elapsed * (2.2 + rate * 5) + i * 1.1)) * (0.3 + rate * 0.9);
-        _quatDummy.identity();
-        _scaleDummy.setScalar(rate > 0.03 ? pulse : 0.0001);
-        _matDummy.compose(_vPos, _quatDummy, _scaleDummy);
-        chloroGlowInstanced.setMatrixAt(i, _matDummy);
-      }
-      chloroGlowInstanced.instanceMatrix.needsUpdate = true;
+      chloroMat.color.copy(_colorDummy);
+      chloroMat.emissiveIntensity = (0.1 + rate * 0.48) * (1 - heatStress * 0.72);
 
-      // 5. Golden Sunlight Photons descending diagonally from top-left onto upper cuticle & palisade
-      photonPhase = (photonPhase + delta * (0.28 + lightFrac * 0.92)) % 1;
+      const streamSpeed = 0.25 + rate * 0.9;
+      for (let i = 0; i < chloroplastsBase.length; i++) {
+        const c = chloroplastsBase[i];
+        const ang = c.angle + elapsed * c.speed * streamSpeed;
+        const px = c.cx + Math.cos(ang) * c.radius;
+        const pz = c.cz + Math.sin(ang) * c.radius;
+        const py = c.cy + c.yOff + Math.sin(elapsed * (1.2 + rate * 2.2) + i * 0.6) * 0.025;
+        _posDummy.set(px, py, pz);
+        _eulerDummy.set(0.18 * Math.sin(elapsed + i), -ang + Math.PI * 0.5, 0.12 * Math.cos(elapsed + i));
+        _quatDummy.setFromEuler(_eulerDummy);
+        _scaleDummy.setScalar(0.95 + rate * 0.14);
+        _matDummy.compose(_posDummy, _quatDummy, _scaleDummy);
+        chloroInstanced.setMatrixAt(i, _matDummy);
+      }
+      chloroInstanced.instanceMatrix.needsUpdate = true;
+
+      // Animate Plump 3D Kidney Guard Cells on the underside of the leaf (turgid bowing apart vs flaccid closing)
+      const gap = THREE.MathUtils.lerp(0.015, 0.13, dampedAperture);
+      const swellX = THREE.MathUtils.lerp(0.86, 1.15, dampedAperture);
+      const swellY = THREE.MathUtils.lerp(0.88, 1.18, dampedAperture);
+      for (const pair of stomaPairs) {
+        pair.left.position.x = -gap;
+        pair.right.position.x = gap;
+        pair.left.scale.set(swellX, swellY, 1.0);
+        pair.right.scale.set(swellX, swellY, 1.0);
+      }
+      guardCellMat.emissiveIntensity = 0.15 + dampedAperture * 0.4;
+
+      // 1. Sunlight Photons descending through Cuticle & Upper Epidermis into Palisade Cells
+      photonPhase = (photonPhase + delta * (0.3 + lightFrac * 0.95)) % 1;
       for (let i = 0; i < PHOTON_COUNT; i++) {
         const t = (i / PHOTON_COUNT + photonPhase) % 1;
-        const lane = ((i * 0.37) % 1);
-        const startU = 0.04 + lane * 0.36;
-        const startV = 0.98;
-        const endU = 0.27 + lane * 0.48;
-        const endV = 0.58 + (i % 3) * 0.04;
-        const u = THREE.MathUtils.lerp(startU, endU, t);
-        const v = THREE.MathUtils.lerp(startV, endV, t);
-        computeDeformedLeafPoint(u, v, dampedAperture, rate, heatStress, elapsed, _vPos);
-        _vPos.z += 0.28 * (1 - t) + 0.12;
+        const col = i % 7;
+        const row = Math.floor(i / 7) % 4;
+        const x = -1.8 + col * 0.62 + (1 - t) * 0.45;
+        const z = -1.0 + row * 0.66;
+        const y = THREE.MathUtils.lerp(3.2 + dampedExplode, 0.55 + dampedExplode * 0.4, t);
+        _posDummy.set(x, y, z);
         _quatDummy.identity();
-        const sc = lightFrac > 0.05 ? (0.45 + lightFrac * 0.78) * Math.sin(t * Math.PI) : 0.0001;
+        const sc = lightFrac > 0.04 ? (0.55 + lightFrac * 0.75) * Math.sin(t * Math.PI) : 0.0001;
         _scaleDummy.setScalar(sc);
-        _matDummy.compose(_vPos, _quatDummy, _scaleDummy);
+        _matDummy.compose(_posDummy, _quatDummy, _scaleDummy);
         photonInstanced.setMatrixAt(i, _matDummy);
       }
       photonInstanced.instanceMatrix.needsUpdate = true;
 
-      // 6. Xylem Water (H₂O) Blue Droplets flowing UP the exact cyan xylem tube & side-tracheids!
-      const waterSpeed = 0.22 + dampedAperture * 0.48 + rate * 0.52;
-      waterPhase = (waterPhase + delta * waterSpeed) % 1;
+      // 2. Xylem Water (H₂O) flowing along Z-axis through Xylem Tubes & branching right into Palisade
+      waterPhase = (waterPhase + delta * (0.25 + dampedAperture * 0.45 + rate * 0.55)) % 1;
       for (let i = 0; i < WATER_COUNT; i++) {
         const t = (i / WATER_COUNT + waterPhase) % 1;
-        const path =
-          i % 4 === 0 ? XYLEM_BRANCH_1 : i % 4 === 2 ? XYLEM_BRANCH_2 : XYLEM_MAIN_SEGS;
-        const [u, v] = sampleUvPath(path, t);
-        const jitter = ((i % 3) - 1) * 0.004;
-        computeDeformedLeafPoint(u + jitter, v, dampedAperture, rate, heatStress, elapsed, _vPos);
-        _vPos.z += 0.18;
+        const tubeChoice = i % 3;
+        const [tx, ty] = xylemOffsets[tubeChoice];
+        let x = tx;
+        let y = ty;
+        let z = THREE.MathUtils.lerp(-1.6, 1.6, t);
+        // Half of water droplets branch out into palisade mesophyll after t > 0.45
+        if (i % 2 === 0 && t > 0.45) {
+          const bt = (t - 0.45) / 0.55;
+          x = THREE.MathUtils.lerp(tx, 0.2 + (i % 5) * 0.45, bt);
+          y = THREE.MathUtils.lerp(ty, 0.75 + dampedExplode * 0.4, bt);
+        }
+        _posDummy.set(x, y, z);
         _quatDummy.identity();
-        const sc = (0.72 + rate * 0.42) * Math.sin(Math.min(1, Math.max(0.05, t)) * Math.PI);
-        _scaleDummy.setScalar(Math.max(0.28, sc));
-        _matDummy.compose(_vPos, _quatDummy, _scaleDummy);
+        _scaleDummy.setScalar(0.8 + rate * 0.35);
+        _matDummy.compose(_posDummy, _quatDummy, _scaleDummy);
         waterInstanced.setMatrixAt(i, _matDummy);
       }
       waterInstanced.instanceMatrix.needsUpdate = true;
 
-      // 7. Phloem Glucose/Sucrose (C₆H₁₂O₆) Golden Crystals flowing DOWN the exact amber phloem tube!
-      glucosePhase = (glucosePhase + delta * (0.1 + rate * 0.96)) % 1;
+      // 3. Phloem Glucose (C₆H₁₂O₆) synthesized in Palisade & flowing down Phloem Sieve Tubes
+      glucosePhase = (glucosePhase + delta * (0.12 + rate * 0.92)) % 1;
       for (let i = 0; i < GLUCOSE_COUNT; i++) {
         const t = (i / GLUCOSE_COUNT + glucosePhase) % 1;
-        const [u, v] = sampleUvPath(PHLOEM_SEGS, t);
-        const jitter = ((i % 3) - 1) * 0.0045;
-        computeDeformedLeafPoint(u, v + jitter, dampedAperture, rate, heatStress, elapsed, _vPos);
-        _vPos.z += 0.17;
-        _eulerDummy.set(elapsed + i, elapsed * 1.5, 0);
+        const tubeChoice = i % 3;
+        const [px, py] = phloemOffsets[tubeChoice];
+        let x: number;
+        let y: number;
+        let z: number;
+        if (t < 0.35) {
+          const bt = t / 0.35;
+          x = THREE.MathUtils.lerp(0.6 + (i % 4) * 0.4, px, bt);
+          y = THREE.MathUtils.lerp(0.65 + dampedExplode * 0.4, py, bt);
+          z = THREE.MathUtils.lerp(-0.8 + (i % 5) * 0.4, 0.4, bt);
+        } else {
+          const bt = (t - 0.35) / 0.65;
+          x = px;
+          y = py;
+          z = THREE.MathUtils.lerp(0.6, -1.6, bt);
+        }
+        _posDummy.set(x, y, z);
+        _eulerDummy.set(elapsed * 2 + i, elapsed * 1.5, 0);
         _quatDummy.setFromEuler(_eulerDummy);
-        const sc =
-          rate > 0.04 ? (0.45 + rate * 0.8) * Math.sin(Math.min(0.95, Math.max(0.08, t)) * Math.PI) : 0.0001;
+        const sc = rate > 0.03 ? (0.55 + rate * 0.75) * Math.sin(Math.max(0.08, Math.min(0.95, t)) * Math.PI) : 0.0001;
         _scaleDummy.setScalar(sc);
-        _matDummy.compose(_vPos, _quatDummy, _scaleDummy);
+        _matDummy.compose(_posDummy, _quatDummy, _scaleDummy);
         glucoseInstanced.setMatrixAt(i, _matDummy);
       }
       glucoseInstanced.instanceMatrix.needsUpdate = true;
 
-      // 8. CO₂ Molecules (Violet) diffusing UP through the stoma notch into spongy mesophyll air spaces!
+      // 4. CO₂ Molecules entering from underneath through the 3D Stomatal Pores into Spongy & Palisade
       const co2Flow = (dampedCo2 / 100) * (0.12 + dampedAperture * 0.88);
-      co2Phase = (co2Phase + delta * (0.18 + co2Flow * 0.82)) % 1;
+      co2Phase = (co2Phase + delta * (0.2 + co2Flow * 0.85)) % 1;
       for (let i = 0; i < CO2_COUNT; i++) {
         const t = (i / CO2_COUNT + co2Phase) % 1;
-        const spread = ((i % 7) - 3) * 0.048;
-        let u: number;
-        let v: number;
+        const stomaIdx = i % stomaCenters.length;
+        const [sx, sz] = stomaCenters[stomaIdx];
+        const spreadX = ((i % 5) - 2) * 0.25;
+        const spreadZ = ((i % 3) - 1) * 0.25;
+        let x: number;
+        let y: number;
+        let z: number;
+
         if (dampedAperture < 0.28) {
-          // Stoma closed: CO₂ hovers and bounces below the closed pore!
-          u = 0.514 + spread * 0.65 + Math.sin(elapsed * 2 + i) * 0.015;
-          v = 0.14 + Math.sin(t * Math.PI) * 0.11;
+          // Stomata closed: CO2 hovers below the lower epidermis
+          x = sx + spreadX + Math.sin(elapsed * 2 + i) * 0.08;
+          y = -2.1 - dampedExplode + Math.sin(t * Math.PI) * 0.45;
+          z = sz + spreadZ;
         } else {
-          // Stoma open: funnel smoothly through (0.514, 0.305) then fan across spongy mesophyll!
-          if (t < 0.42) {
-            const p = t / 0.42;
-            u = THREE.MathUtils.lerp(0.514 + spread * 0.4, 0.514, p);
-            v = THREE.MathUtils.lerp(0.13, 0.305, p);
+          if (t < 0.4) {
+            const p = t / 0.4;
+            x = THREE.MathUtils.lerp(sx + spreadX * 0.8, sx, p);
+            y = THREE.MathUtils.lerp(-2.25 - dampedExplode, -1.35 - dampedExplode, p);
+            z = THREE.MathUtils.lerp(sz + spreadZ * 0.8, sz, p);
           } else {
-            const p = (t - 0.42) / 0.58;
-            u = THREE.MathUtils.lerp(0.514, 0.52 + spread * 1.45, p);
-            v = THREE.MathUtils.lerp(0.305, 0.52 + (i % 3) * 0.03, p);
+            const p = (t - 0.4) / 0.6;
+            x = THREE.MathUtils.lerp(sx, sx + spreadX * 1.6, p);
+            y = THREE.MathUtils.lerp(-1.35 - dampedExplode, 0.72 + dampedExplode * 0.3, p);
+            z = THREE.MathUtils.lerp(sz, sz + spreadZ * 1.8, p);
           }
         }
-        computeDeformedLeafPoint(u, v, dampedAperture, rate, heatStress, elapsed, _vPos);
-        _vPos.z += 0.19;
+        _posDummy.set(x, y, z);
         _quatDummy.identity();
-        const sc =
-          dampedCo2 > 3
-            ? (0.45 + (dampedCo2 / 100) * 0.62) * Math.sin(t * Math.PI) * (dampedAperture < 0.28 ? 0.72 : 1)
-            : 0.0001;
+        const sc = dampedCo2 > 3 ? (0.55 + (dampedCo2 / 100) * 0.55) * Math.sin(t * Math.PI) : 0.0001;
         _scaleDummy.setScalar(sc);
-        _matDummy.compose(_vPos, _quatDummy, _scaleDummy);
+        _matDummy.compose(_posDummy, _quatDummy, _scaleDummy);
         co2Instanced.setMatrixAt(i, _matDummy);
       }
       co2Instanced.instanceMatrix.needsUpdate = true;
 
-      // 9. O₂ Oxygen Bubbles (Bright Cyan-White) streaming OUT of chloroplasts & air spaces!
-      o2Phase = (o2Phase + delta * (0.14 + rate * 1.38)) % 1;
+      // 5. O₂ Oxygen Bubbles produced in Palisade Chloroplasts & escaping out
+      o2Phase = (o2Phase + delta * (0.18 + rate * 1.25)) % 1;
       for (let i = 0; i < O2_COUNT; i++) {
         const t = (i / O2_COUNT + o2Phase) % 1;
         const activeBubble = i < Math.ceil(rate * O2_COUNT);
-        const startU = 0.29 + ((i * 0.19) % 0.47);
-        const startV = 0.52 + (i % 3) * 0.04;
-        const u = startU + Math.sin(elapsed * 2.4 + i) * 0.014;
-        const v = THREE.MathUtils.lerp(startV, 0.94, t);
-        computeDeformedLeafPoint(u, v, dampedAperture, rate, heatStress, elapsed, _vPos);
-        _vPos.z += 0.22 + t * 0.16;
+        const stomaIdx = i % stomaCenters.length;
+        const [sx, sz] = stomaCenters[stomaIdx];
+        const startX = -0.6 + (i % 6) * 0.5;
+        const startZ = -0.9 + (i % 4) * 0.6;
+        // Half diffuse out through bottom stomata, half rise above the leaf for clear visibility
+        const goDownStoma = i % 2 === 0 && dampedAperture > 0.3;
+        const x = goDownStoma
+          ? THREE.MathUtils.lerp(startX, sx, t)
+          : startX + Math.sin(elapsed * 2 + i) * 0.1;
+        const y = goDownStoma
+          ? THREE.MathUtils.lerp(0.75, -2.2 - dampedExplode, t)
+          : THREE.MathUtils.lerp(0.75, 2.55 + dampedExplode, t);
+        const z = goDownStoma ? THREE.MathUtils.lerp(startZ, sz, t) : startZ;
+
+        _posDummy.set(x, y, z);
         _quatDummy.identity();
-        const sc = activeBubble && rate > 0.03 ? (0.52 + rate * 0.68) * Math.sin(t * Math.PI) : 0.0001;
+        const sc = activeBubble && rate > 0.03 ? (0.58 + rate * 0.65) * Math.sin(t * Math.PI) : 0.0001;
         _scaleDummy.setScalar(sc);
-        _matDummy.compose(_vPos, _quatDummy, _scaleDummy);
+        _matDummy.compose(_posDummy, _quatDummy, _scaleDummy);
         o2Instanced.setMatrixAt(i, _matDummy);
       }
       o2Instanced.instanceMatrix.needsUpdate = true;
@@ -1363,9 +2772,9 @@ export const Photosynthesis3DSimulation: React.FC<Photosynthesis3DSimulationProp
       renderer.render(scene, camera);
 
       const now = performance.now();
-      if (now - lastLabelPushRef.current > 36) {
+      if (now - lastLabelPushRef.current > 40) {
         lastLabelPushRef.current = now;
-        setProjectedLabels(computeProjectedLabels(dampedAperture, rate, heatStress, elapsed));
+        setProjectedLabels(computeProjectedLabels(dampedExplode));
       }
 
       if (isSoftwareGl) {
@@ -1381,6 +2790,7 @@ export const Photosynthesis3DSimulation: React.FC<Photosynthesis3DSimulationProp
       disposed = true;
       cancelAnimationFrame(frameId);
       clearTimeout(frameId);
+      controls.removeEventListener('start', cancelScriptedCamera);
       renderer.domElement.removeEventListener('pointerdown', onPointerDown);
       renderer.domElement.removeEventListener('pointermove', onPointerMove);
       renderer.domElement.removeEventListener('pointerup', onPointerUp);
@@ -1394,42 +2804,17 @@ export const Photosynthesis3DSimulation: React.FC<Photosynthesis3DSimulationProp
     };
   }, []);
 
-  // ==================== LESSON & INTERACTION HANDLERS ====================
-  const handleToggleWatchLesson = () => {
-    if (watchLessonActive) {
-      setWatchLessonActive(false);
-      setLessonPaused(false);
-      setSelectedPart('overview');
-      return;
-    }
-    lessonTimeRef.current = 0;
-    setLessonTimeSec(0);
-    setLessonPaused(false);
-    lessonPausedRef.current = false;
-    setWatchLessonActive(true);
-  };
-
-  const handleTakeOverFromHere = () => {
-    setWatchLessonActive(false);
-    setLessonPaused(false);
-    setInteractionHint('You now have live control — adjust Sunlight, CO₂, Temp or click the Stoma!');
-  };
-
-  const handleJumpLessonTime = (sec: number) => {
-    const clamped = Math.max(0, Math.min(LESSON_DURATION_SEC, sec));
-    lessonTimeRef.current = clamped;
-    setLessonTimeSec(clamped);
-  };
-
   const handleResetOptimal = () => {
     setWatchLessonActive(false);
     setLessonPaused(false);
+    setAutoPlaySteps(false);
     setLightPct(85);
     setCo2Pct(80);
     setTempC(30);
     setStomataOpen(true);
-    setSelectedPart('overview');
-    setInteractionHint('Reset to optimal photosynthetic conditions (85% Light, 80% CO₂, 30°C).');
+    setExplodeLayers(0);
+    handleSelectCameraPreset('iso360');
+    setInteractionHint('Reset to optimal 3D 360° photosynthetic conditions (85% Light, 80% CO₂, 30°C).');
   };
 
   const rateCurvePoints = useMemo(() => {
@@ -1454,12 +2839,12 @@ export const Photosynthesis3DSimulation: React.FC<Photosynthesis3DSimulationProp
     return pts.join(' ');
   }, []);
 
-  const surfaceBg = darkMode ? 'bg-[#121621] text-slate-100' : 'bg-[#eaf0f7] text-slate-900';
+  const surfaceBg = darkMode ? 'bg-[#0b1120] text-slate-100' : 'bg-[#f1f5f9] text-slate-900';
   const cardBg = darkMode
-    ? 'bg-[#1a2030] border-white/[0.1] text-slate-100'
+    ? 'bg-[#151d30] border-white/[0.1] text-slate-100'
     : 'bg-white border-slate-200 text-slate-900 shadow-xs';
   const dockBg = darkMode
-    ? 'bg-[#131722] border-white/[0.12] text-slate-100'
+    ? 'bg-[#101726] border-white/[0.14] text-slate-100'
     : 'bg-white border-slate-300 text-slate-900 shadow-md';
 
   return (
@@ -1469,32 +2854,71 @@ export const Photosynthesis3DSimulation: React.FC<Photosynthesis3DSimulationProp
         darkMode ? 'border-white/[0.08]' : 'border-slate-200 shadow-sm'
       } ${isFullscreen ? 'fixed inset-0 z-[100] rounded-none border-0 h-screen' : ''}`}
     >
-      {/* TOP BAR */}
+      {/* TOP TOOLBAR: 360° Controls, Step-by-Step Toggle, Labels, Stomata & Syllabus Level */}
       <div
-        className={`px-4 py-3 border-b flex flex-wrap items-center justify-between gap-2.5 ${
-          darkMode ? 'bg-[#10141e] border-white/[0.08]' : 'bg-white border-slate-200'
+        className={`px-4 py-2.5 border-b flex flex-wrap items-center justify-between gap-2 ${
+          darkMode ? 'bg-[#0f1626] border-white/[0.08]' : 'bg-white border-slate-200'
         }`}
       >
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={handleToggleWatchLesson}
             className={`px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap shrink-0 ${
               watchLessonActive
-                ? 'bg-emerald-500 text-slate-950'
+                ? 'bg-rose-500 text-white hover:bg-rose-600'
                 : darkMode
                 ? 'bg-white text-slate-950 hover:bg-slate-200'
                 : 'bg-slate-900 text-white hover:bg-slate-800'
             }`}
           >
-            {watchLessonActive ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 fill-current" />}
+            {watchLessonActive ? (
+              <Pause className="w-3.5 h-3.5" />
+            ) : (
+              <Play className="w-3.5 h-3.5 fill-current" />
+            )}
             <span>{watchLessonActive ? 'Exit lesson' : 'Watch lesson (1:05)'}</span>
           </button>
 
           <button
             type="button"
+            onClick={() => {
+              setWatchLessonActive(false);
+              const next = !stepModeActive;
+              setStepModeActive(next);
+              if (next) handleSelectStep(activeStepIdx);
+            }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap shrink-0 border ${
+              stepModeActive && !watchLessonActive
+                ? 'bg-emerald-500 border-emerald-400 text-slate-950'
+                : darkMode
+                ? 'bg-white/[0.05] border-white/[0.12] text-slate-200 hover:bg-white/[0.1]'
+                : 'bg-slate-100 border-slate-200 text-slate-800 hover:bg-slate-200'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>Step-by-Step ({activeStepIdx + 1}/5)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setAutoRotate360((p) => !p)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold border flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap shrink-0 ${
+              autoRotate360
+                ? 'bg-sky-500 border-sky-400 text-slate-950'
+                : darkMode
+                ? 'bg-white/[0.05] border-white/[0.12] text-sky-300 hover:bg-white/[0.1]'
+                : 'bg-sky-50 border-sky-300 text-sky-900 hover:bg-sky-100'
+            }`}
+          >
+            <Compass className="w-3.5 h-3.5" />
+            <span>360° Orbit {autoRotate360 ? 'ON' : 'OFF'}</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setShowLabels((p) => !p)}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold border flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap shrink-0 ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold border flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap shrink-0 ${
               showLabels
                 ? darkMode
                   ? 'bg-emerald-500/15 border-emerald-400/60 text-emerald-200'
@@ -1505,17 +2929,13 @@ export const Photosynthesis3DSimulation: React.FC<Photosynthesis3DSimulationProp
             }`}
           >
             <Tag className="w-3.5 h-3.5" />
-            <span>Labels {showLabels ? 'On' : 'Off'}</span>
+            <span>3D Labels {showLabels ? 'On' : 'Off'}</span>
           </button>
 
           <button
             type="button"
-            onClick={() => {
-              setWatchLessonActive(false);
-              setLessonPaused(false);
-              setStomataOpen((prev) => !prev);
-            }}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold border flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap shrink-0 ${
+            onClick={() => setStomataOpen((prev) => !prev)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold border flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap shrink-0 ${
               stomataOpen
                 ? darkMode
                   ? 'bg-emerald-500/15 border-emerald-400/50 text-emerald-300'
@@ -1531,11 +2951,8 @@ export const Photosynthesis3DSimulation: React.FC<Photosynthesis3DSimulationProp
 
           <button
             type="button"
-            onClick={() => {
-              setWatchLessonActive(false);
-              setChallengeIdx((prev) => (prev === null ? 0 : null));
-            }}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold border flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap shrink-0 ${
+            onClick={() => setChallengeIdx((prev) => (prev === null ? 0 : null))}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold border flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap shrink-0 ${
               activeChallenge
                 ? 'bg-amber-400 border-amber-300 text-slate-950'
                 : darkMode
@@ -1544,20 +2961,20 @@ export const Photosynthesis3DSimulation: React.FC<Photosynthesis3DSimulationProp
             }`}
           >
             <Sparkles className="w-3.5 h-3.5" />
-            <span>{activeChallenge ? 'Exit Challenge' : 'Try Lab Challenge'}</span>
+            <span>{activeChallenge ? 'Exit Challenge' : 'Lab Challenge'}</span>
           </button>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
           <div
-            className={`inline-flex items-center p-0.5 rounded-full border text-xs ${
-              darkMode ? 'bg-[#1a1f2d] border-white/[0.1]' : 'bg-slate-100 border-slate-200'
+            className={`inline-flex items-center p-0.5 rounded-lg border text-xs ${
+              darkMode ? 'bg-[#171f32] border-white/[0.1]' : 'bg-slate-100 border-slate-200'
             }`}
           >
             <button
               type="button"
               onClick={() => setLevel('o_level')}
-              className={`px-3 py-1 rounded-full font-bold cursor-pointer transition-colors whitespace-nowrap ${
+              className={`px-2.5 py-1 rounded-md font-bold cursor-pointer transition-colors whitespace-nowrap ${
                 level === 'o_level'
                   ? darkMode
                     ? 'bg-white text-slate-950'
@@ -1572,7 +2989,7 @@ export const Photosynthesis3DSimulation: React.FC<Photosynthesis3DSimulationProp
             <button
               type="button"
               onClick={() => setLevel('a_level')}
-              className={`px-3 py-1 rounded-full font-bold cursor-pointer transition-colors whitespace-nowrap ${
+              className={`px-2.5 py-1 rounded-md font-bold cursor-pointer transition-colors whitespace-nowrap ${
                 level === 'a_level'
                   ? darkMode
                     ? 'bg-white text-slate-950'
@@ -1590,9 +3007,9 @@ export const Photosynthesis3DSimulation: React.FC<Photosynthesis3DSimulationProp
             type="button"
             onClick={handleToggleFullscreen}
             title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen 3D view'}
-            className={`p-2 rounded-xl border cursor-pointer transition-colors ${
+            className={`p-2 rounded-lg border cursor-pointer transition-colors ${
               darkMode
-                ? 'bg-[#1a1f2d] border-white/[0.1] text-slate-300 hover:text-white'
+                ? 'bg-[#171f32] border-white/[0.1] text-slate-300 hover:text-white'
                 : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
             }`}
           >
@@ -1601,39 +3018,112 @@ export const Photosynthesis3DSimulation: React.FC<Photosynthesis3DSimulationProp
         </div>
       </div>
 
-      {/* MAIN CONTENT: Photorealistic 3D Cutaway Leaf (8 cols) & Live Limiting Factors Panel (4 cols) */}
+      {/* STEP-BY-STEP PROGRESS BAR (5 Interactive Steps) */}
+      <div
+        className={`px-4 py-2 border-b flex flex-wrap items-center justify-between gap-2 ${
+          darkMode ? 'bg-[#101829] border-white/[0.08]' : 'bg-slate-50 border-slate-200'
+        }`}
+      >
+        <div className="flex items-center gap-1.5 overflow-x-auto py-0.5">
+          {PHOTOSYNTHESIS_STEPS.map((st, idx) => {
+            const isCurrent = activeStepIdx === idx;
+            return (
+              <button
+                key={st.id}
+                type="button"
+                onClick={() => handleSelectStep(idx)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-colors whitespace-nowrap shrink-0 border ${
+                  isCurrent
+                    ? 'bg-emerald-500 border-emerald-400 text-slate-950 shadow-xs'
+                    : darkMode
+                    ? 'bg-[#172033] border-white/[0.08] text-slate-300 hover:text-white hover:border-white/20'
+                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                {st.shortTitle}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => handleSelectStep(activeStepIdx - 1)}
+            className={`px-2.5 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1 cursor-pointer ${
+              darkMode
+                ? 'bg-[#172033] border-white/[0.1] text-slate-200 hover:bg-[#1e2942]'
+                : 'bg-white border-slate-300 text-slate-800 hover:bg-slate-100'
+            }`}
+          >
+            <ChevronLeft className="w-3.5 h-3.5" />
+            <span>Prev</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setStepModeActive(true);
+              setAutoPlaySteps((p) => !p);
+            }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer ${
+              autoPlaySteps
+                ? 'bg-amber-400 text-slate-950'
+                : darkMode
+                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/40'
+                : 'bg-emerald-600 text-white'
+            }`}
+          >
+            {autoPlaySteps ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 fill-current" />}
+            <span>{autoPlaySteps ? 'Pause Steps' : 'Auto-Play Steps'}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleSelectStep(activeStepIdx + 1)}
+            className={`px-2.5 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1 cursor-pointer ${
+              darkMode
+                ? 'bg-[#172033] border-white/[0.1] text-slate-200 hover:bg-[#1e2942]'
+                : 'bg-white border-slate-300 text-slate-800 hover:bg-slate-100'
+            }`}
+          >
+            <span>Next</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+
+      {/* MAIN CONTENT: 3D 360° Leaf Cutaway Viewport (7 cols) & Step-by-Step Illustrated Deck (5 cols) */}
       <div className={`grid grid-cols-1 lg:grid-cols-12 flex-1 min-h-0 ${isFullscreen ? 'h-full' : ''}`}>
-        {/* 3D LEAF CUTAWAY VIEWPORT */}
+        {/* 3D 360° LEAF VIEWPORT */}
         <div
-          className={`lg:col-span-8 relative flex flex-col overflow-hidden ${
-            isFullscreen ? 'min-h-[60vh]' : 'h-[450px] sm:h-[540px] lg:h-[600px]'
+          className={`lg:col-span-7 relative flex flex-col overflow-hidden ${
+            isFullscreen ? 'min-h-[60vh]' : 'h-[440px] sm:h-[540px] lg:h-[620px]'
           }`}
         >
           <div ref={canvasMountRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
 
-          {/* Compact Particle Legend in Top-Left of 3D Stage */}
+          {/* Top-Left Particle Legend */}
           <div
-            className={`pointer-events-none absolute left-3.5 top-3.5 px-3 py-2 rounded-xl border text-[11px] font-bold space-y-1 ${
+            className={`pointer-events-none absolute left-3 top-3 px-3 py-2 rounded-xl border text-[11px] font-bold space-y-1 ${
               darkMode
-                ? 'bg-[#10141f] border-white/[0.1] text-slate-200'
+                ? 'bg-[#0f1626] border-white/[0.12] text-slate-200'
                 : 'bg-white border-slate-300 text-slate-800 shadow-xs'
             }`}
           >
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-yellow-300" />
-              <span>Sunlight photons</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-violet-400" />
-              <span>CO₂ in (via stoma)</span>
+              <span>Sunlight photons (hν)</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-sky-400" />
-              <span>H₂O in (Xylem)</span>
+              <span>H₂O in (Blue Xylem)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-violet-400" />
+              <span>CO₂ in (Lower Stomata)</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-cyan-300" />
-              <span>O₂ bubbles out</span>
+              <span>O₂ gas bubbles out</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
@@ -1641,7 +3131,35 @@ export const Photosynthesis3DSimulation: React.FC<Photosynthesis3DSimulationProp
             </div>
           </div>
 
-          {/* 3D-to-2D Projected Callout Labels */}
+          {/* Top-Right 360° Camera Angle Quick Switcher */}
+          <div className="absolute right-3 top-3 flex flex-wrap justify-end gap-1 max-w-[260px]">
+            {(
+              [
+                ['iso360', '360° View'],
+                ['front', 'Front'],
+                ['underside', 'Bottom Stomata'],
+                ['vascular', 'Xylem/Phloem'],
+                ['top', 'Top Cuticle'],
+              ] as Array<[CameraPresetId, string]>
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => handleSelectCameraPreset(id)}
+                className={`px-2 py-1 rounded-md text-[10px] font-bold border cursor-pointer transition-colors ${
+                  cameraPreset === id
+                    ? 'bg-sky-500 border-sky-300 text-slate-950'
+                    : darkMode
+                    ? 'bg-[#0f1626] border-white/[0.14] text-slate-200 hover:border-sky-400'
+                    : 'bg-white border-slate-300 text-slate-800 hover:border-sky-500'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* 3D-to-2D Projected Callout Leader Lines & Interactive Anatomy Tags */}
           {showLabels && projectedLabels.length > 0 && (
             <svg className="pointer-events-none absolute inset-0 w-full h-full overflow-visible">
               {projectedLabels.map((lbl) => (
@@ -1651,10 +3169,10 @@ export const Photosynthesis3DSimulation: React.FC<Photosynthesis3DSimulationProp
                     y1={lbl.ay}
                     x2={lbl.lx}
                     y2={lbl.ly}
-                    stroke={darkMode ? 'rgba(226,232,240,0.68)' : 'rgba(30,41,59,0.62)'}
-                    strokeWidth="1.25"
+                    stroke={lbl.accentHex}
+                    strokeWidth="1.6"
                   />
-                  <circle cx={lbl.ax} cy={lbl.ay} r="3" fill={darkMode ? '#f8fafc' : '#0f172a'} />
+                  <circle cx={lbl.ax} cy={lbl.ay} r="3.5" fill={lbl.accentHex} />
                 </g>
               ))}
             </svg>
@@ -1669,8 +3187,6 @@ export const Photosynthesis3DSimulation: React.FC<Photosynthesis3DSimulationProp
                   onClick={() => {
                     setSelectedPart(lbl.partId);
                     if (lbl.partId === 'stomata') {
-                      setWatchLessonActive(false);
-                      setLessonPaused(false);
                       setStomataOpen((prev) => !prev);
                     }
                   }}
@@ -1679,27 +3195,57 @@ export const Photosynthesis3DSimulation: React.FC<Photosynthesis3DSimulationProp
                     top: `${lbl.ly}px`,
                     transform: 'translate(-50%, -50%)',
                   }}
-                  className={`absolute px-2.5 py-0.5 rounded-md text-[11px] font-bold whitespace-nowrap shadow-xs border cursor-pointer transition-colors ${
+                  className={`absolute px-2.5 py-1 rounded-lg text-left shadow-xs border cursor-pointer transition-colors ${
                     isSelected
                       ? 'bg-emerald-500 border-emerald-300 text-slate-950'
                       : darkMode
-                      ? 'bg-[#121622] border-white/[0.16] text-white hover:border-emerald-400/60'
+                      ? 'bg-[#0f1626] border-white/[0.18] text-white hover:border-emerald-400'
                       : 'bg-white border-slate-300 text-slate-900 hover:border-emerald-500'
                   }`}
                 >
-                  {lbl.text}
+                  <div className="text-[11px] font-extrabold whitespace-nowrap leading-tight">
+                    {lbl.text}
+                  </div>
+                  <div
+                    className={`text-[9.5px] font-semibold whitespace-nowrap leading-tight ${
+                      isSelected ? 'text-slate-900' : darkMode ? 'text-slate-400' : 'text-slate-500'
+                    }`}
+                  >
+                    {lbl.subText}
+                  </div>
                 </button>
               );
             })}
 
-          {/* Direct 3D Click Feedback Toast */}
-          {interactionHint && !watchLessonActive && (
-            <div className="pointer-events-none absolute top-3.5 inset-x-4 flex justify-center">
+          {/* Guided Watch Lesson Caption Banner */}
+          {watchLessonActive && (
+            <div className="pointer-events-none absolute bottom-10 inset-x-4 flex justify-center">
               <div
-                className={`px-3.5 py-1.5 rounded-full border text-xs font-bold shadow-sm ${
+                className={`max-w-xl px-4 py-2.5 rounded-2xl border text-center shadow-lg ${
                   darkMode
-                    ? 'bg-[#121622] border-emerald-400/45 text-emerald-200'
-                    : 'bg-white border-emerald-500/50 text-emerald-900'
+                    ? 'bg-[#0f1626]/95 border-emerald-400/50 text-white'
+                    : 'bg-white/95 border-emerald-500/50 text-slate-900'
+                }`}
+              >
+                <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-500">
+                  Lesson Chapter {activeLessonChapter.id} of {PHOTO_LESSON_CHAPTERS.length} ·{' '}
+                  {activeLessonChapter.title}
+                </div>
+                <p className="text-xs sm:text-sm font-bold mt-0.5 leading-snug">
+                  {level === 'o_level' ? activeLessonChapter.oCaption : activeLessonChapter.aCaption}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Click Feedback Toast */}
+          {interactionHint && !watchLessonActive && (
+            <div className="pointer-events-none absolute bottom-10 inset-x-4 flex justify-center">
+              <div
+                className={`px-3.5 py-1.5 rounded-lg border text-xs font-bold shadow-sm ${
+                  darkMode
+                    ? 'bg-[#0f1626] border-emerald-400/50 text-emerald-200'
+                    : 'bg-white border-emerald-500/60 text-emerald-900'
                 }`}
               >
                 {interactionHint}
@@ -1707,103 +3253,97 @@ export const Photosynthesis3DSimulation: React.FC<Photosynthesis3DSimulationProp
             </div>
           )}
 
-          {/* Editorial Guided Lesson Caption */}
-          {watchLessonActive && (
-            <div className="pointer-events-none absolute bottom-3 inset-x-4 flex justify-center">
-              <div
-                className={`max-w-2xl px-5 py-3 rounded-2xl border text-center ${
-                  darkMode
-                    ? 'bg-[#10141f] border-white/[0.14] text-white'
-                    : 'bg-white border-slate-300 text-slate-900 shadow-md'
-                }`}
-              >
-                <div className={`text-xs font-bold ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                  {activeChapter.index + 1} of {LESSON_CHAPTERS.length} · {activeChapter.title}
-                </div>
-                <p className="text-sm sm:text-base font-bold mt-1 leading-snug">
-                  {level === 'o_level' ? activeChapter.oCaption : activeChapter.aCaption}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {!watchLessonActive && !dockCollapsed && (
-            <div className="pointer-events-none absolute bottom-2 inset-x-0 text-center">
-              <span
-                className={`text-[11px] font-medium px-2.5 py-0.5 rounded-full ${
-                  darkMode ? 'text-slate-400 bg-[#121621]' : 'text-slate-600 bg-[#eaf0f7]'
-                }`}
-              >
-                Click the Stoma, Xylem, Phloem or Chloroplasts directly · Drag gently to tilt in 3D
-              </span>
-            </div>
-          )}
+          <div className="pointer-events-none absolute bottom-2 inset-x-0 text-center">
+            <span
+              className={`text-[11px] font-semibold px-3 py-0.5 rounded-md border ${
+                darkMode
+                  ? 'text-slate-300 bg-[#0f1626] border-white/10'
+                  : 'text-slate-700 bg-white border-slate-200'
+              }`}
+            >
+              Drag anywhere to rotate 360° (including under the leaf) · Scroll/Pinch to zoom · Click any 3D layer
+            </span>
+          </div>
         </div>
 
-        {/* RIGHT SCIENTIFIC READOUT, LIMITING FACTOR GRAPH & CHALLENGES PANEL (4 cols) */}
+        {/* RIGHT PANEL: STEP-BY-STEP DETAILED ILLUSTRATION DECK & LIVE METRICS (5 cols) */}
         <aside
-          className={`lg:col-span-4 border-t lg:border-t-0 lg:border-l p-4 sm:p-5 flex flex-col justify-between gap-3.5 lg:max-h-[600px] overflow-y-auto ${
-            darkMode ? 'bg-[#131722] border-white/[0.08]' : 'bg-white border-slate-200'
+          className={`lg:col-span-5 border-t lg:border-t-0 lg:border-l p-4 sm:p-5 flex flex-col justify-between gap-3.5 lg:max-h-[620px] overflow-y-auto ${
+            darkMode ? 'bg-[#101726] border-white/[0.08]' : 'bg-white border-slate-200'
           }`}
         >
           <div className="space-y-3.5">
-            {/* Hero O₂ Photosynthesis Rate Readout */}
-            <div>
-              <div className="flex items-baseline gap-1.5 tabular-nums">
-                <span className="text-4xl sm:text-5xl font-serif font-bold tracking-tight">
-                  {metrics.bubblesPerMin}
+            {/* STEP-BY-STEP ILLUSTRATED CARD */}
+            <div className={`p-3.5 rounded-xl border space-y-2.5 ${cardBg}`}>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-500">
+                  Step {currentStep.stepNumber} of 5 · Interactive Breakdown
                 </span>
-                <span className={`text-sm font-semibold ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                  O₂ bubbles/min
+                <span
+                  className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded-md ${
+                    darkMode ? 'bg-emerald-500/15 text-emerald-300' : 'bg-emerald-50 text-emerald-800'
+                  }`}
+                >
+                  {currentStep.equationBadge}
                 </span>
               </div>
-              <p className={`text-xs mt-0.5 tabular-nums ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                Phloem sucrose export: <strong className="text-amber-500">{metrics.glucoseMgHr.toFixed(1)} mg/hr</strong>
+
+              <h3 className="text-sm sm:text-base font-black leading-snug">
+                {currentStep.title}
+              </h3>
+
+              {/* Detailed Scientific SVG Schematic for the Current Step */}
+              <StepDetailedIllustration
+                stepNumber={currentStep.stepNumber}
+                darkMode={darkMode}
+                stomataOpen={stomataOpen}
+                lightPct={lightPct}
+                co2Pct={co2Pct}
+                rate={metrics.normalizedRate}
+              />
+
+              <p className={`text-xs leading-relaxed font-medium ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                {level === 'o_level' ? currentStep.oDescription : currentStep.aDescription}
               </p>
 
-              {/* Active Limiting Factor Indicator (Text-paired, not hue-only) */}
-              <div className="mt-2.5 flex items-center gap-2">
+              {/* Unboxed Metadata Key Structures */}
+              <div className={`text-[11px] font-semibold ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                <span className="font-bold text-emerald-500">Key structures: </span>
+                {currentStep.keyStructures.join(' · ')}
+              </div>
+            </div>
+
+            {/* Live Rate & Limiting Factor Readout */}
+            <div className={`p-3.5 rounded-xl border ${cardBg}`}>
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <div className="flex items-baseline gap-1.5 tabular-nums">
+                  <span className="text-3xl sm:text-4xl font-serif font-bold tracking-tight">
+                    {metrics.bubblesPerMin}
+                  </span>
+                  <span className={`text-xs font-semibold ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    O₂ bubbles/min
+                  </span>
+                </div>
+                <div className="text-xs font-bold tabular-nums">
+                  Glucose export: <span className="text-amber-500">{metrics.glucoseMgHr.toFixed(1)} mg/hr</span>
+                </div>
+              </div>
+
+              <div className="mt-2 flex items-center justify-between gap-2 text-xs">
                 <span
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border ${
+                  className={`font-bold ${
                     metrics.denatured || !stomataOpen
-                      ? darkMode
-                        ? 'bg-rose-500/15 border-rose-400/40 text-rose-300'
-                        : 'bg-rose-50 border-rose-300 text-rose-800'
+                      ? 'text-rose-500'
                       : metrics.limitingFactor === 'Optimum Conditions'
-                      ? darkMode
-                        ? 'bg-emerald-500/15 border-emerald-400/40 text-emerald-300'
-                        : 'bg-emerald-50 border-emerald-300 text-emerald-800'
-                      : darkMode
-                      ? 'bg-amber-500/15 border-amber-400/40 text-amber-300'
-                      : 'bg-amber-50 border-amber-300 text-amber-800'
+                      ? 'text-emerald-500'
+                      : 'text-amber-500'
                   }`}
                 >
                   Limiting factor: {metrics.limitingFactor}
                 </span>
-              </div>
-            </div>
-
-            {/* 3-Card Live Environmental Metrics */}
-            <div className="grid grid-cols-3 gap-2 tabular-nums">
-              <div className={`p-2 rounded-xl border text-center ${cardBg}`}>
-                <div className={`text-[10px] font-bold ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                  Light
-                </div>
-                <div className="text-sm font-black text-amber-500">{lightPct}%</div>
-              </div>
-              <div className={`p-2 rounded-xl border text-center ${cardBg}`}>
-                <div className={`text-[10px] font-bold ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                  CO₂
-                </div>
-                <div className="text-sm font-black text-violet-500">{co2Pct}%</div>
-              </div>
-              <div className={`p-2 rounded-xl border text-center ${cardBg}`}>
-                <div className={`text-[10px] font-bold ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                  Temp
-                </div>
-                <div className={`text-sm font-black ${tempC >= 40 ? 'text-rose-500' : 'text-emerald-500'}`}>
-                  {tempC}°C
-                </div>
+                <span className={`text-[11px] tabular-nums ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  Light {lightPct}% · CO₂ {co2Pct}% · {tempC}°C
+                </span>
               </div>
             </div>
 
@@ -1849,7 +3389,7 @@ export const Photosynthesis3DSimulation: React.FC<Photosynthesis3DSimulationProp
               </div>
             )}
 
-            {/* LIVE LIMITING FACTORS GRAPH (Rate vs Light Intensity) + Plot Point */}
+            {/* LIVE LIMITING FACTORS GRAPH (Rate vs Light Intensity) */}
             <div className={`p-3 rounded-xl border space-y-2 ${cardBg}`}>
               <div className="flex items-center justify-between gap-2 text-[11px] font-bold">
                 <span className={darkMode ? 'text-slate-200' : 'text-slate-800'}>
@@ -1887,7 +3427,7 @@ export const Photosynthesis3DSimulation: React.FC<Photosynthesis3DSimulationProp
                   )}
                 </div>
               </div>
-              <svg viewBox="0 0 240 112" className="w-full h-24">
+              <svg viewBox="0 0 240 104" className="w-full h-20">
                 {[18, 44, 70, 96].map((y) => (
                   <line
                     key={y}
@@ -1933,14 +3473,14 @@ export const Photosynthesis3DSimulation: React.FC<Photosynthesis3DSimulationProp
                 <circle
                   cx={30 + (lightPct / 100) * 196}
                   cy={96 - (metrics.bubblesPerMin / 64) * 82}
-                  r="5"
+                  r="4.8"
                   fill="#f59e0b"
                   stroke={darkMode ? '#ffffff' : '#0f172a'}
                   strokeWidth="1.8"
                 />
 
                 <text x="5" y="18" fill={darkMode ? '#94a3b8' : '#475569'} fontSize="8.5" fontWeight="700">O₂</text>
-                <text x="166" y="108" fill={darkMode ? '#94a3b8' : '#475569'} fontSize="8.5" fontWeight="700">
+                <text x="166" y="103" fill={darkMode ? '#94a3b8' : '#475569'} fontSize="8" fontWeight="700">
                   Light Intensity %
                 </text>
               </svg>
@@ -1955,197 +3495,245 @@ export const Photosynthesis3DSimulation: React.FC<Photosynthesis3DSimulationProp
                 : 'bg-emerald-50 border-emerald-200 text-emerald-950'
             }`}
           >
-            <div className="font-bold">6CO₂ + 6H₂O → C₆H₁₂O₆ + 6O₂</div>
-            <div className="text-[11px] mt-0.5 opacity-90">
-              {level === 'o_level'
-                ? 'Requires sunlight & green chlorophyll in palisade chloroplasts.'
-                : 'Light-dependent reaction (thylakoids: ATP, NADPH, O₂) + Calvin cycle (stroma: RuBP → triose phosphate).'}
-            </div>
+            <div className="font-mono font-bold">6CO₂ + 6H₂O —(Light &amp; Chlorophyll)→ C₆H₁₂O₆ + 6O₂</div>
           </div>
         </aside>
       </div>
 
-      {/* UNIFIED BOTTOM DOCK: 1:05 VIDEO LESSON SCRUBBER OR ENVIRONMENTAL SLIDERS */}
+      {/* UNIFIED COLLAPSIBLE BOTTOM CONTROL DOCK: Sunlight, CO2, Temperature, Explode 3D Layers & Reset */}
       <div
         className={`border-t transition-all ${
-          darkMode ? 'border-white/[0.08] bg-[#10141e]' : 'border-slate-200 bg-slate-50'
+          darkMode ? 'border-white/[0.08] bg-[#0f1626]' : 'border-slate-200 bg-slate-50'
         }`}
       >
-        {!watchLessonActive && (
-          <div className="flex justify-center -mt-3">
-            <button
-              type="button"
-              onClick={() => setDockCollapsed((p) => !p)}
-              className={`px-3 py-0.5 rounded-full border text-[11px] font-bold flex items-center gap-1 cursor-pointer ${dockBg}`}
-            >
-              {dockCollapsed ? (
-                <>
-                  <ChevronUp className="w-3.5 h-3.5" />
-                  <span>Show Controls</span>
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="w-3.5 h-3.5" />
-                  <span>Hide Controls</span>
-                </>
-              )}
-            </button>
-          </div>
-        )}
+        <div className="flex justify-center -mt-3">
+          <button
+            type="button"
+            onClick={() => setDockCollapsed((p) => !p)}
+            className={`px-3 py-0.5 rounded-lg border text-[11px] font-bold flex items-center gap-1 cursor-pointer ${dockBg}`}
+          >
+            {dockCollapsed ? (
+              <>
+                <ChevronUp className="w-3.5 h-3.5" />
+                <span>Show Controls</span>
+              </>
+            ) : (
+              <>
+                <ChevronDown className="w-3.5 h-3.5" />
+                <span>Hide Controls</span>
+              </>
+            )}
+          </button>
+        </div>
 
-        {watchLessonActive ? (
-          <div className="px-4 py-3 max-w-5xl mx-auto flex flex-wrap sm:flex-nowrap items-center gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                if (lessonTimeSec >= LESSON_DURATION_SEC - 0.1) {
-                  handleJumpLessonTime(0);
-                  setLessonPaused(false);
-                  lessonPausedRef.current = false;
-                } else {
-                  setLessonPaused((p) => !p);
-                }
-              }}
-              className={`p-2 rounded-xl cursor-pointer shrink-0 transition-colors ${
-                darkMode
-                  ? 'bg-white text-slate-950 hover:bg-slate-200'
-                  : 'bg-slate-900 text-white hover:bg-slate-800'
-              }`}
-              title={lessonPaused ? 'Play lesson' : 'Pause lesson'}
-            >
-              {lessonPaused ? <Play className="w-4 h-4 fill-current" /> : <Pause className="w-4 h-4" />}
-            </button>
+        {!dockCollapsed && watchLessonActive && (
+          <div className="px-4 py-3.5 max-w-5xl mx-auto space-y-2.5">
+            <div className="flex flex-wrap sm:flex-nowrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  if (lessonTime >= LESSON_DURATION_SEC - 0.1) {
+                    handleScrubLesson(0);
+                    setLessonPaused(false);
+                  } else {
+                    setLessonPaused((prev) => !prev);
+                  }
+                }}
+                className={`w-9 h-9 rounded-full flex items-center justify-center cursor-pointer shrink-0 transition-colors ${
+                  darkMode
+                    ? 'bg-white text-slate-950 hover:bg-slate-200'
+                    : 'bg-slate-900 text-white hover:bg-slate-800'
+                }`}
+                aria-label={lessonPaused ? 'Resume lesson' : 'Pause lesson'}
+              >
+                {lessonPaused ? (
+                  <Play className="w-4 h-4 fill-current ml-0.5" />
+                ) : (
+                  <Pause className="w-4 h-4 fill-current" />
+                )}
+              </button>
 
-            <span className="text-xs font-mono font-bold tabular-nums shrink-0 min-w-[74px]">
-              {formatClock(lessonTimeSec)} / {formatClock(LESSON_DURATION_SEC)}
-            </span>
+              <span className="text-xs font-mono font-bold tabular-nums shrink-0 opacity-85">
+                {formatLessonTime(lessonTime)} / {formatLessonTime(LESSON_DURATION_SEC)}
+              </span>
 
-            <div className="flex-1 min-w-[200px] grid grid-cols-4 gap-1.5 items-center">
-              {LESSON_CHAPTERS.map((ch) => {
-                const segLen = ch.endSec - ch.startSec;
-                const fill = Math.max(0, Math.min(1, (lessonTimeSec - ch.startSec) / segLen));
+              <div className="flex-1 min-w-[200px] grid grid-cols-5 gap-1.5 items-center">
+                {PHOTO_LESSON_CHAPTERS.map((ch) => {
+                  const span = ch.endSec - ch.startSec;
+                  const fillPct =
+                    Math.max(0, Math.min(1, (lessonTime - ch.startSec) / span)) * 100;
+                  return (
+                    <button
+                      key={ch.id}
+                      type="button"
+                      onClick={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const ratio = Math.max(
+                          0,
+                          Math.min(1, (e.clientX - rect.left) / rect.width)
+                        );
+                        handleScrubLesson(ch.startSec + ratio * span);
+                      }}
+                      title={`${ch.id}. ${ch.title}`}
+                      className={`h-2.5 rounded-full overflow-hidden cursor-pointer relative ${
+                        darkMode ? 'bg-white/[0.12]' : 'bg-slate-200'
+                      }`}
+                    >
+                      <div
+                        className="h-full bg-emerald-500 rounded-full transition-[width] duration-75"
+                        style={{ width: `${fillPct}%` }}
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                type="button"
+                onClick={handleCycleLessonSpeed}
+                className={`px-2.5 py-1.5 rounded-lg border text-xs font-mono font-bold cursor-pointer shrink-0 ${
+                  darkMode
+                    ? 'bg-[#172033] border-white/[0.12] text-slate-200 hover:bg-[#222f4a]'
+                    : 'bg-white border-slate-300 text-slate-800 hover:bg-slate-100'
+                }`}
+              >
+                {lessonSpeed}×
+              </button>
+
+              <button
+                type="button"
+                onClick={handleTakeOverFromLesson}
+                className={`px-3.5 py-1.5 rounded-xl border text-xs font-bold cursor-pointer shrink-0 transition-colors ${
+                  darkMode
+                    ? 'bg-emerald-500/15 border-emerald-400/50 text-emerald-200 hover:bg-emerald-500/25'
+                    : 'bg-emerald-50 border-emerald-400 text-emerald-900 hover:bg-emerald-100'
+                }`}
+              >
+                Take over from here
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
+              {PHOTO_LESSON_CHAPTERS.map((ch) => {
+                const isCurrent = activeLessonChapter.id === ch.id;
                 return (
                   <button
-                    key={ch.index}
+                    key={`chap-${ch.id}`}
                     type="button"
-                    onClick={() => handleJumpLessonTime(ch.startSec + 0.1)}
-                    title={`Jump to ${ch.index + 1}. ${ch.title}`}
-                    className={`h-2.5 rounded-full overflow-hidden cursor-pointer ${
-                      darkMode ? 'bg-white/15' : 'bg-slate-300'
+                    onClick={() => handleScrubLesson(ch.startSec + 0.1)}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold text-left truncate cursor-pointer transition-colors ${
+                      isCurrent
+                        ? darkMode
+                          ? 'bg-emerald-500/20 text-emerald-200 border border-emerald-400/40'
+                          : 'bg-emerald-50 text-emerald-900 border border-emerald-300'
+                        : darkMode
+                        ? 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                     }`}
                   >
-                    <div
-                      className="h-full bg-emerald-500 transition-all duration-100"
-                      style={{ width: `${Math.round(fill * 100)}%` }}
-                    />
+                    {ch.id}. {ch.title}
                   </button>
                 );
               })}
             </div>
-
-            <button
-              type="button"
-              onClick={() => setLessonSpeed((s) => (s === 1 ? 0.75 : s === 0.75 ? 1.5 : 1))}
-              className={`px-2.5 py-1.5 rounded-xl border text-xs font-mono font-bold cursor-pointer shrink-0 ${
-                darkMode
-                  ? 'bg-[#1a2030] border-white/[0.12] text-slate-200 hover:bg-[#242c42]'
-                  : 'bg-white border-slate-300 text-slate-800 hover:bg-slate-100'
-              }`}
-              title="Change lesson speed"
-            >
-              {lessonSpeed}×
-            </button>
-
-            <button
-              type="button"
-              onClick={handleTakeOverFromHere}
-              className={`px-3.5 py-1.5 rounded-xl border text-xs font-bold cursor-pointer shrink-0 transition-colors ${
-                darkMode
-                  ? 'bg-[#1c2231] border-white/[0.16] text-white hover:bg-[#273046]'
-                  : 'bg-white border-slate-300 text-slate-900 hover:bg-slate-100'
-              }`}
-            >
-              Take over from here
-            </button>
           </div>
-        ) : (
-          !dockCollapsed && (
-            <div className="px-4 py-3.5 max-w-5xl mx-auto">
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3.5 items-center text-xs">
-                <label className="space-y-1">
-                  <div className="flex items-center justify-between font-bold tabular-nums">
-                    <span className="flex items-center gap-1.5">
-                      <Sun className="w-3.5 h-3.5 text-amber-500" />
-                      <span>Sunlight</span>
-                    </span>
-                    <span className="text-amber-500">{lightPct}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min={0}
-                    max={100}
-                    step={5}
-                    value={lightPct}
-                    onChange={(e) => setLightPct(Number(e.target.value))}
-                    className="w-full accent-amber-500 cursor-pointer"
-                  />
-                </label>
+        )}
 
-                <label className="space-y-1">
-                  <div className="flex items-center justify-between font-bold tabular-nums">
-                    <span className="flex items-center gap-1.5">
-                      <Wind className="w-3.5 h-3.5 text-violet-500" />
-                      <span>CO₂ Level</span>
-                    </span>
-                    <span className="text-violet-500">{co2Pct}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min={0}
-                    max={100}
-                    step={5}
-                    value={co2Pct}
-                    onChange={(e) => setCo2Pct(Number(e.target.value))}
-                    className="w-full accent-violet-500 cursor-pointer"
-                  />
-                </label>
-
-                <label className="space-y-1">
-                  <div className="flex items-center justify-between font-bold tabular-nums">
-                    <span className="flex items-center gap-1.5">
-                      <Thermometer className="w-3.5 h-3.5 text-emerald-500" />
-                      <span>Temperature</span>
-                    </span>
-                    <span className={tempC >= 40 ? 'text-rose-500' : 'text-emerald-500'}>{tempC}°C</span>
-                  </div>
-                  <input
-                    type="range"
-                    min={5}
-                    max={46}
-                    step={1}
-                    value={tempC}
-                    onChange={(e) => setTempC(Number(e.target.value))}
-                    className="w-full accent-emerald-500 cursor-pointer"
-                  />
-                </label>
-
-                <div className="flex items-center justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={handleResetOptimal}
-                    className={`w-full sm:w-auto px-3.5 py-2 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors ${
-                      darkMode
-                        ? 'bg-[#1a2030] border-white/[0.12] text-slate-200 hover:bg-[#252d40]'
-                        : 'bg-white border-slate-300 text-slate-800 hover:bg-slate-100'
-                    }`}
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    <span>Optimal Reset</span>
-                  </button>
+        {!dockCollapsed && !watchLessonActive && (
+          <div className="px-4 py-3 max-w-6xl mx-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-5 gap-3.5 items-center text-xs">
+              <label className="space-y-1">
+                <div className="flex items-center justify-between font-bold tabular-nums">
+                  <span className="flex items-center gap-1.5">
+                    <Sun className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Sunlight</span>
+                  </span>
+                  <span className="text-amber-500">{lightPct}%</span>
                 </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={5}
+                  value={lightPct}
+                  onChange={(e) => setLightPct(Number(e.target.value))}
+                  className="w-full accent-amber-500 cursor-pointer"
+                />
+              </label>
+
+              <label className="space-y-1">
+                <div className="flex items-center justify-between font-bold tabular-nums">
+                  <span className="flex items-center gap-1.5">
+                    <Wind className="w-3.5 h-3.5 text-violet-500" />
+                    <span>CO₂ Level</span>
+                  </span>
+                  <span className="text-violet-500">{co2Pct}%</span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={5}
+                  value={co2Pct}
+                  onChange={(e) => setCo2Pct(Number(e.target.value))}
+                  className="w-full accent-violet-500 cursor-pointer"
+                />
+              </label>
+
+              <label className="space-y-1">
+                <div className="flex items-center justify-between font-bold tabular-nums">
+                  <span className="flex items-center gap-1.5">
+                    <Thermometer className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>Temperature</span>
+                  </span>
+                  <span className={tempC >= 40 ? 'text-rose-500' : 'text-emerald-500'}>{tempC}°C</span>
+                </div>
+                <input
+                  type="range"
+                  min={5}
+                  max={46}
+                  step={1}
+                  value={tempC}
+                  onChange={(e) => setTempC(Number(e.target.value))}
+                  className="w-full accent-emerald-500 cursor-pointer"
+                />
+              </label>
+
+              <label className="space-y-1">
+                <div className="flex items-center justify-between font-bold tabular-nums">
+                  <span className="flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 text-sky-400" />
+                    <span>Explode 3D Layers</span>
+                  </span>
+                  <span className="text-sky-400">{Math.round(explodeLayers * 100)}%</span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={explodeLayers}
+                  onChange={(e) => setExplodeLayers(Number(e.target.value))}
+                  className="w-full accent-sky-400 cursor-pointer"
+                />
+              </label>
+
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={handleResetOptimal}
+                  className={`w-full sm:w-auto px-3.5 py-2 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors ${
+                    darkMode
+                      ? 'bg-[#172033] border-white/[0.12] text-slate-200 hover:bg-[#222f4a]'
+                      : 'bg-white border-slate-300 text-slate-800 hover:bg-slate-100'
+                  }`}
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Reset 360°</span>
+                </button>
               </div>
             </div>
-          )
+          </div>
         )}
       </div>
     </div>

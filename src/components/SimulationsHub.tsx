@@ -13,7 +13,6 @@ import {
   Search,
   Sigma,
   Sparkles,
-  TestTubes,
   TrendingUp,
   Waves,
   Zap,
@@ -25,8 +24,6 @@ import { TIE_CURRICULUM_SUBJECTS } from '../data/curriculumData';
 // Static studio 3D preview renders for every simulation card
 import imgMitosis3D from '../assets/images/sim_mitosis_3d_1795215064560.jpg';
 import imgPhotosynthesis from '../assets/images/sim_photosynthesis_1795215064101.jpg';
-import imgFoodTests from '../assets/images/sim_food_tests_1795215064071.jpg';
-import imgCellClassification from '../assets/images/sim_cell_classification_1795215064252.jpg';
 import imgOhmCircuit from '../assets/images/sim_ohm_circuit_1795215064440.jpg';
 import imgOhmRheostat from '../assets/images/sim_ohm_rheostat_1795215064682.jpg';
 import imgPendulum from '../assets/images/sim_pendulum_1795215117886.jpg';
@@ -268,29 +265,13 @@ const SIMULATION_CATALOG: SimulationItem[] = [
     keywords: ['photosynthesis', 'xylem', 'phloem', 'leaf', 'chloroplast', 'stomata', 'co2', 'light', 'glucose', '3d'],
   },
   {
-    id: 'bio-food-tests',
-    title: 'Biochemical Food Tests',
-    shortDesc:
-      'Add Iodine, Benedict’s, Biuret and Sudan III reagents to unknown extracts, watch colour changes in 3D and record NECTA observations.',
-    subject: 'biology',
-    subtopicId: 'bio_biochem',
-    subtopicLabel: 'Nutrition & Biochemistry',
-    categoryTag: '3D VISUALISATION',
-    previewImage: imgFoodTests,
-    engine: 'lab',
-    labSubject: 'biology',
-    labSubMode: 'food_tests',
-    has3D: true,
-    keywords: ['food tests', 'starch', 'iodine', 'benedict', 'biuret', 'sudan', 'protein', 'lipid', 'sugar'],
-  },
-  {
     id: 'bio-osmosis-3d',
     title: 'Plant Cell Osmosis & Plasmolysis',
     shortDesc:
       'Immerse a 3D plant cell in hypotonic, isotonic and hypertonic sucrose solutions. Watch H₂O flow, vacuole swelling, membrane retraction and live % mass change curves.',
     subject: 'biology',
     subtopicId: 'bio_cells',
-    subtopicLabel: 'Cells & Classification',
+    subtopicLabel: 'Cells & Osmosis',
     categoryTag: '3D VISUALISATION',
     previewImage: imgPlantOsmosis3D,
     engine: 'osmosis3d',
@@ -308,22 +289,6 @@ const SIMULATION_CATALOG: SimulationItem[] = [
       'cell wall',
       '3d',
     ],
-  },
-  {
-    id: 'bio-classification',
-    title: 'Specimens A–F Classification Lab',
-    shortDesc:
-      'Inspect and classify NECTA Biology practical specimens — Moss, Fern, Maize, Bean, Grasshopper and Earthworm — with diagnostic features and adaptations.',
-    subject: 'biology',
-    subtopicId: 'bio_cells',
-    subtopicLabel: 'Cells & Classification',
-    categoryTag: 'QUANTITATIVE LAB',
-    previewImage: imgCellClassification,
-    engine: 'lab',
-    labSubject: 'biology',
-    labSubMode: 'classification',
-    has3D: true,
-    keywords: ['specimen', 'classification', 'moss', 'fern', 'maize', 'bean', 'arthropoda', 'necta'],
   },
 
   // PHYSICS (3)
@@ -461,8 +426,6 @@ function getSubtopicIcon(subtopicId: string) {
       return <Dna className="w-4 h-4 text-pink-500" />;
     case 'bio_energy':
       return <Leaf className="w-4 h-4 text-emerald-500" />;
-    case 'bio_biochem':
-      return <TestTubes className="w-4 h-4 text-rose-500" />;
     case 'bio_cells':
       return <Microscope className="w-4 h-4 text-cyan-500" />;
     case 'phys_electricity':

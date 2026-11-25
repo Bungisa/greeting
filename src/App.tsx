@@ -1986,8 +1986,8 @@ export default function App() {
     } else if (window.location.hash === '#play') {
       setPlayRoute('hub');
       setActivePage('game');
-    } else if (window.location.hash === '#stem-builder') {
-      setPlayRoute('stem_builder');
+    } else if (window.location.hash === '#gold-ball' || window.location.hash === '#stem-builder') {
+      setPlayRoute('gold_ball');
       setActivePage('game');
     } else if (window.location.hash === '#treasure-hunt') {
       setPlayRoute('treasure_hunt');
@@ -2022,8 +2022,8 @@ export default function App() {
       } else if (window.location.hash === '#play') {
         setPlayRoute('hub');
         setActivePage('game');
-      } else if (window.location.hash === '#stem-builder') {
-        setPlayRoute('stem_builder');
+      } else if (window.location.hash === '#gold-ball' || window.location.hash === '#stem-builder') {
+        setPlayRoute('gold_ball');
         setActivePage('game');
       } else if (window.location.hash === '#treasure-hunt') {
         setPlayRoute('treasure_hunt');
