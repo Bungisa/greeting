@@ -249,7 +249,7 @@ export const ElimikaPlayHub: React.FC<ElimikaPlayHubProps> = ({
   // ==================== ELIMIKA GOLD BALL – THE ULTIMATE TRACKING CHALLENGE ====================
   if (activeRoute === 'gold_ball' || activeRoute === 'stem_builder') {
     return (
-      <div className="pb-16 lg:pb-0 max-w-6xl mx-auto p-2 sm:p-4">
+      <div className="pb-16 lg:pb-0 w-full max-w-6xl min-w-0 overflow-x-hidden mx-auto p-1.5 sm:p-4">
         <Suspense fallback={gameLoadingFallback}>
           <ElimikaGoldBallGame onBackToHub={() => navigateToGame('hub')} />
         </Suspense>

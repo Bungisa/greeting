@@ -725,7 +725,7 @@ export const ElimikaGoldBallGame: React.FC<ElimikaGoldBallGameProps> = ({ onBack
       GOLD_BALL_LEVELS.find((l) => l.level === progress.highestUnlockedLevel) || GOLD_BALL_LEVELS[0];
 
     return (
-      <div className="min-h-[calc(100vh-80px)] w-full bg-gradient-to-b from-[#02161b] via-[#05262e] to-[#03191f] text-white p-4 sm:p-6 flex flex-col justify-between rounded-3xl border border-teal-500/25 shadow-2xl space-y-6">
+      <div className="min-h-[calc(100vh-80px)] w-full max-w-full min-w-0 overflow-x-hidden bg-gradient-to-b from-[#02161b] via-[#05262e] to-[#03191f] text-white p-3 sm:p-6 flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-teal-500/25 shadow-2xl space-y-5">
         {/* Top Bar: Back to Games Hub + Audio / Vibration Controls */}
         <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-teal-500/20">
           <div className="flex items-center gap-3">
@@ -1281,9 +1281,9 @@ export const ElimikaGoldBallGame: React.FC<ElimikaGoldBallGameProps> = ({ onBack
   // SCREEN C: GAMEPLAY SCREEN
   // ============================================================================
   return (
-    <div className="min-h-[calc(100vh-80px)] w-full bg-gradient-to-b from-[#02161b] via-[#04232b] to-[#021419] text-white p-3 sm:p-5 rounded-3xl border border-teal-500/30 shadow-2xl flex flex-col justify-between gap-3 relative">
+    <div className="min-h-[calc(100vh-80px)] w-full max-w-full min-w-0 overflow-x-hidden bg-gradient-to-b from-[#02161b] via-[#04232b] to-[#021419] text-white p-2 sm:p-5 rounded-2xl sm:rounded-3xl border border-teal-500/30 shadow-2xl flex flex-col justify-between gap-2.5 sm:gap-3 relative">
       {/* Top Gameplay HUD */}
-      <div className="grid grid-cols-2 sm:grid-cols-12 items-center gap-2.5 bg-[#031c22]/95 border border-teal-500/30 rounded-2xl px-3.5 py-2.5 shadow-lg">
+      <div className="w-full max-w-full min-w-0 grid grid-cols-2 sm:grid-cols-12 items-center gap-2 bg-[#031c22]/95 border border-teal-500/30 rounded-2xl px-2.5 sm:px-3.5 py-2 shadow-lg">
         <div className="sm:col-span-4 flex items-center gap-2.5">
           <div
             className="px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wider shrink-0"
@@ -1382,9 +1382,9 @@ export const ElimikaGoldBallGame: React.FC<ElimikaGoldBallGameProps> = ({ onBack
       </div>
 
       {/* 1-Tap Live 9-Mode Formation Switcher Bar right inside the Gameplay Screen */}
-      <div className="bg-[#031c22]/95 border border-teal-500/30 rounded-xl px-2.5 py-1.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-        <span className="text-[10px] font-black uppercase tracking-wider text-amber-300 shrink-0 px-1.5">
-          Arena Mode:
+      <div className="w-full max-w-full min-w-0 bg-[#031c22]/95 border border-teal-500/30 rounded-xl px-2 py-1.5 flex flex-wrap items-center gap-1.5">
+        <span className="text-[10px] font-black uppercase tracking-wider text-amber-300 shrink-0 px-1">
+          Mode:
         </span>
         {SPOTQUEST_REEL_PRESETS.map((preset) => {
           const isCurrent = activeLevelConfig.reelMode === preset.id;
@@ -1393,7 +1393,7 @@ export const ElimikaGoldBallGame: React.FC<ElimikaGoldBallGameProps> = ({ onBack
               key={preset.id}
               type="button"
               onClick={() => startLevel(activeLevelNum, preset.id)}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-black uppercase tracking-wide shrink-0 transition-all cursor-pointer border ${
+              className={`px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg text-[10px] sm:text-[11px] font-black uppercase tracking-wide transition-all cursor-pointer border ${
                 isCurrent
                   ? 'bg-amber-400 text-slate-950 border-amber-200 shadow-sm'
                   : 'bg-teal-950/85 hover:bg-teal-900 text-teal-100 border-teal-500/35'
@@ -1408,7 +1408,7 @@ export const ElimikaGoldBallGame: React.FC<ElimikaGoldBallGameProps> = ({ onBack
       {/* Live Instruction / Phase Feedback Banner */}
       {feedbackBanner && (
         <div
-          className={`px-4 py-2 rounded-xl border text-center transition-all flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-3 ${
+          className={`w-full max-w-full min-w-0 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl border text-center transition-all flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-3 ${
             feedbackBanner.tone === 'gold'
               ? 'bg-amber-950/60 border-amber-400/50 text-amber-200'
               : feedbackBanner.tone === 'rose'
@@ -1426,7 +1426,7 @@ export const ElimikaGoldBallGame: React.FC<ElimikaGoldBallGameProps> = ({ onBack
       )}
 
       {/* Center 3D Game Environment Viewport */}
-      <div className="relative flex-1 min-h-[400px] sm:min-h-[460px] w-full rounded-2xl overflow-hidden border border-teal-500/30 shadow-inner">
+      <div className="relative w-full max-w-full min-w-0 rounded-2xl overflow-hidden border border-teal-500/30 shadow-inner">
         <GoldBall3DScene
           levelConfig={activeLevelConfig}
           phase={phase}

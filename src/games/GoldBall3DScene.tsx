@@ -1160,7 +1160,14 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
       });
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio || 1, 2));
-      renderer.setSize(container.clientWidth || 800, container.clientHeight || 520);
+      renderer.domElement.style.width = '100%';
+      renderer.domElement.style.height = '100%';
+      renderer.domElement.style.display = 'block';
+      renderer.setSize(
+        Math.max(1, container.clientWidth || 340),
+        Math.max(1, container.clientHeight || 420),
+        false
+      );
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
       renderer.toneMappingExposure = 1.18;
       renderer.shadowMap.enabled = !isSoftwareGl;
@@ -1175,16 +1182,14 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(levelConfig.environment.bgTop);
-    scene.fog = new THREE.FogExp2(levelConfig.environment.fogColor, 0.025);
+    scene.fog = new THREE.FogExp2(levelConfig.environment.fogColor, 0.022);
 
     const camera = new THREE.PerspectiveCamera(
-      44,
-      (container.clientWidth || 800) / (container.clientHeight || 520),
+      45,
+      Math.max(1, container.clientWidth || 340) / Math.max(1, container.clientHeight || 420),
       0.1,
-      75
+      85
     );
-    camera.position.set(0, 9.3, 8.9);
-    camera.lookAt(0, 0.15, 0.25);
 
     const pmremGenerator = new THREE.PMREMGenerator(renderer);
     const roomEnv = new RoomEnvironment();
@@ -1709,26 +1714,84 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
     renderer.domElement.addEventListener('pointermove', handlePointerMove);
     renderer.domElement.addEventListener('pointerdown', handlePointerDown);
 
-    const handleResize = () => {
-      if (!container) return;
-      const w = Math.max(300, container.clientWidth);
-      const h = Math.max(300, container.clientHeight);
+    let lastViewportW = 0;
+    let lastViewportH = 0;
+    let lastFramedMode: ReelChallengeMode | null = null;
+
+    const fitCameraToViewport = (rawW: number, rawH: number, mode: ReelChallengeMode) => {
+      const w = Math.max(1, Math.floor(rawW));
+      const h = Math.max(1, Math.floor(rawH));
+      lastViewportW = w;
+      lastViewportH = h;
+      lastFramedMode = mode;
+
       const aspect = w / h;
       camera.aspect = aspect;
-      // Close, wide-angle framing so the wide gaps between compact cups are unmistakably clear on mobile & desktop
-      if (aspect < 0.85) {
-        camera.position.set(0, 11.6, 11.4);
-      } else if (aspect < 1.15) {
-        camera.position.set(0, 10.2, 10.0);
-      } else {
-        camera.position.set(0, 9.3, 8.9);
+
+      // Compute exact outer slot bounds of the current formation so all cups & parallel passing lanes fit inside portrait screens
+      const slots = getFormationBaseSlots(mode);
+      let maxSlotX = 2.72;
+      let maxSlotZ = 2.54;
+      for (const s of slots) {
+        maxSlotX = Math.max(maxSlotX, Math.abs(s.x));
+        maxSlotZ = Math.max(maxSlotZ, Math.abs(s.z));
       }
-      camera.lookAt(0, 0.15, 0.25);
+      if (mode === 'crimson_die_oval_8') {
+        maxSlotX = Math.max(maxSlotX, 4.25);
+        maxSlotZ = Math.max(maxSlotZ, 4.95);
+      }
+
+      // Required visible half-width & half-depth (includes cup radius 0.45, halo 0.64, and out-swinging parallel passing lanes)
+      const reqHalfWidth = maxSlotX + 1.55;
+      const reqHalfDepth = maxSlotZ + 1.65;
+
+      // Steeper overhead studio angle on portrait screens (like 9:16 Reels) prevents front-row horizontal clipping
+      const elevDeg = aspect < 0.95 ? 56 : 47;
+      const elevRad = THREE.MathUtils.degToRad(elevDeg);
+      const dirY = Math.sin(elevRad);
+      const dirZ = Math.cos(elevRad);
+
+      const vFovRad = THREE.MathUtils.degToRad(camera.fov);
+      const tanHalfVFov = Math.tan(vFovRad / 2);
+      const tanHalfHFov = Math.max(0.12, tanHalfVFov * aspect);
+
+      const lookAtY = 0.12;
+      const lookAtZ = 0.22;
+      const frontAdvance = Math.max(0, (maxSlotZ - lookAtZ) * dirZ + 0.58);
+
+      // 1. Distance required so [-reqHalfWidth, +reqHalfWidth] at the front-most row fits 100% horizontally
+      const distForWidth = reqHalfWidth / tanHalfHFov + frontAdvance;
+
+      // 2. Distance required so [-reqHalfDepth, +reqHalfDepth] fits vertically between the top title and bottom cup dock
+      const projectedHalfHeight = reqHalfDepth * dirY + 0.95 * dirZ;
+      const distForHeight = projectedHalfHeight / (0.65 * tanHalfVFov) + 1.15;
+
+      const dist = Math.max(distForWidth, distForHeight);
+
+      camera.position.set(0, lookAtY + dirY * dist, lookAtZ + dirZ * dist);
+      camera.lookAt(0, lookAtY, lookAtZ);
       camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
+      renderer.setSize(w, h, false);
+    };
+
+    const handleResize = () => {
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      const w = Math.max(1, Math.floor(rect.width || container.clientWidth || 340));
+      const h = Math.max(1, Math.floor(rect.height || container.clientHeight || 420));
+      fitCameraToViewport(w, h, stateRef.current.levelConfig.reelMode);
     };
     handleResize();
+
+    let resizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(() => {
+        handleResize();
+      });
+      resizeObserver.observe(container);
+    }
     window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleResize);
 
     // --- 60FPS ANIMATION LOOP ---
     let animFrameId = 0;
@@ -1745,6 +1808,15 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
       const eng = shuffleEngineRef.current;
       const cfg = st.levelConfig;
       const cupCount = cfg.cupCount;
+
+      const cw = container.clientWidth;
+      const ch = container.clientHeight;
+      if (
+        (cw > 0 && ch > 0 && (cw !== lastViewportW || ch !== lastViewportH)) ||
+        cfg.reelMode !== lastFramedMode
+      ) {
+        fitCameraToViewport(cw || lastViewportW || 340, ch || lastViewportH || 420, cfg.reelMode);
+      }
 
       scene.background = new THREE.Color(cfg.environment.bgTop);
       if (scene.fog instanceof THREE.FogExp2) {
@@ -2106,7 +2178,11 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
 
     return () => {
       cancelAnimationFrame(animFrameId);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
       renderer.domElement.removeEventListener('pointermove', handlePointerMove);
       renderer.domElement.removeEventListener('pointerdown', handlePointerDown);
 
@@ -2217,16 +2293,16 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
   }
 
   return (
-    <div className="relative w-full h-full min-h-[410px] select-none overflow-hidden rounded-2xl">
+    <div className="relative w-full max-w-full min-w-0 h-[390px] sm:h-[460px] select-none overflow-hidden rounded-2xl">
       {/* Main Three.js Interactive 3D Canvas Container */}
-      <div ref={containerRef} className="w-full h-full min-h-[410px] touch-none" />
+      <div ref={containerRef} className="w-full max-w-full min-w-0 h-full touch-none overflow-hidden" />
 
       {/* Authentic Bold Top Center Title Overlay inside the 3D Arena */}
-      <div className="pointer-events-none absolute top-3 inset-x-4 flex flex-col items-center text-center">
-        <div className="text-2xl sm:text-3xl font-black tracking-tight text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)] uppercase">
+      <div className="pointer-events-none absolute top-2.5 inset-x-2 sm:inset-x-4 flex flex-col items-center text-center">
+        <div className="text-lg sm:text-3xl font-black tracking-tight text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)] uppercase leading-tight">
           {levelConfig.reelHeaderTitle}
         </div>
-        <div className="text-xs sm:text-sm font-extrabold tracking-widest text-slate-100 drop-shadow-[0_1px_6px_rgba(0,0,0,0.9)] uppercase mt-0.5">
+        <div className="text-[10px] sm:text-sm font-extrabold tracking-widest text-slate-100 drop-shadow-[0_1px_6px_rgba(0,0,0,0.9)] uppercase mt-0.5">
           {renderStyledSubtitle(levelConfig.reelHeaderSubtitle)}
         </div>
       </div>

@@ -57,7 +57,7 @@ export default defineConfig(() => {
               urlPattern: ({ request }) => request.mode === 'navigate',
               handler: 'NetworkFirst',
               options: {
-                cacheName: 'elimika-html-shell-v6-2027',
+                cacheName: 'elimika-html-shell-v7-2027',
                 networkTimeoutSeconds: 3,
                 expiration: {
                   maxEntries: 5,
@@ -69,7 +69,7 @@ export default defineConfig(() => {
               urlPattern: /\/assets\/.*\.(?:js|css)$/i,
               handler: 'NetworkFirst',
               options: {
-                cacheName: 'elimika-app-bundles-v6-2027',
+                cacheName: 'elimika-app-bundles-v7-2027',
                 networkTimeoutSeconds: 3,
                 expiration: {
                   maxEntries: 40,

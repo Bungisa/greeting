@@ -5,13 +5,13 @@ import './index.css';
 if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     try {
-      const slimKey = 'elimika_cache_slimmed_v6_2027';
+      const slimKey = 'elimika_cache_slimmed_v7_2027';
       if (!localStorage.getItem(slimKey) && 'caches' in window) {
         caches
           .keys()
           .then((keys) => {
             keys.forEach((k) => {
-              if (!k.includes('v6-2027')) {
+              if (!k.includes('v7-2027')) {
                 caches.delete(k);
               }
             });
