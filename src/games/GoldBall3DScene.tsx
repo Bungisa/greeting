@@ -2475,8 +2475,10 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
       }
 
       // 3. Synchronize Primary Target: Shiny Golden Ball OR 3D Golden Die!
+      // NEVER reveal target or its floor glow/ring while hovering during SELECTING (unless X-Ray Extra Vision is active)
+      const canRevealTargets = st.phase === 'OBSERVE' || st.phase === 'REVEALING';
       const ballOwnerPos = eng.cupWorldPos[st.ballCupId] || { x: 0, z: 0, liftY: 0 };
-      const isPrimaryVisible = ballOwnerPos.liftY > 0.035 || st.extraVisionActive;
+      const isPrimaryVisible = st.extraVisionActive || (canRevealTargets && ballOwnerPos.liftY > 0.08);
       const isGoldenDieMode = cfg.targetType === 'golden_die' || cfg.reelMode === 'crimson_die_oval_8';
 
       if (isGoldenDieMode) {
@@ -2508,7 +2510,7 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
         const pinkOwnerPos = eng.cupWorldPos[st.secondaryBallCupId] || { x: 0, z: 0, liftY: 0 };
         pinkBallGroup.position.x = pinkOwnerPos.x;
         pinkBallGroup.position.z = pinkOwnerPos.z;
-        const isPinkVisible = pinkOwnerPos.liftY > 0.035 || st.extraVisionActive;
+        const isPinkVisible = st.extraVisionActive || (canRevealTargets && pinkOwnerPos.liftY > 0.08);
         pinkBallGroup.visible = isPinkVisible;
         if (isPinkVisible) {
           pinkBallMesh.position.y = 0.34 + Math.max(0, Math.cos(now * 0.005) * 0.035);
@@ -2517,7 +2519,8 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
         pinkBallGroup.visible = false;
       }
 
-      // 5. Synchronize Decoy Balls (Mind Trap)
+      // 5. Synchronize Decoy Balls (Mind Trap) — never visible on hover during SELECTING
+      const canRevealDecoys = st.phase === 'OBSERVE' || st.phase === 'SHUFFLING' || st.phase === 'REVEALING';
       for (let dIdx = 0; dIdx < MAX_DECOYS; dIdx++) {
         const dGroup = decoyBallGroups[dIdx];
         const dCupId = st.decoyCupIds[dIdx];
@@ -2525,7 +2528,7 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
           const dPos = eng.cupWorldPos[dCupId] || { x: 0, z: 0, liftY: 0 };
           dGroup.position.x = dPos.x;
           dGroup.position.z = dPos.z;
-          dGroup.visible = dPos.liftY > 0.04;
+          dGroup.visible = canRevealDecoys && dPos.liftY > 0.08;
         } else {
           dGroup.visible = false;
         }

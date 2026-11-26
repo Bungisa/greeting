@@ -4,6 +4,7 @@ import {
   ArrowUpRight,
   Atom,
   BookOpen,
+  Box,
   Dna,
   FlaskConical,
   Gauge,
@@ -34,6 +35,8 @@ import imgQuadraticGraph from '../assets/images/sim_quadratic_graph_179521511875
 import imgTrigWaves from '../assets/images/sim_trig_waves_1795220663340.jpg';
 import imgPlantOsmosis3D from '../assets/images/sim_plant_osmosis_3d_1795279369839.jpg';
 import imgHumanHeart3D from '../assets/images/sim_human_heart_3d_1795283136171.jpg';
+import imgSolidFigures3D from '../assets/images/sim_3d_figures_nets_1795692464162.jpg';
+import imgGraphSketcherXY from '../assets/images/sim_graph_sketcher_xy_1795697295076.jpg';
 
 const InteractiveDiagramLab = React.lazy(() =>
   import('./InteractiveDiagramLab').then((m) => ({ default: m.InteractiveDiagramLab }))
@@ -68,6 +71,12 @@ const Osmosis3DSimulation = React.lazy(() =>
 const Heart3DSimulation = React.lazy(() =>
   import('./Heart3DSimulation').then((m) => ({ default: m.Heart3DSimulation }))
 );
+const SolidFigures3DSimulation = React.lazy(() =>
+  import('./SolidFigures3DSimulation').then((m) => ({ default: m.SolidFigures3DSimulation }))
+);
+const GraphSketcherXYSimulation = React.lazy(() =>
+  import('./GraphSketcherXYSimulation').then((m) => ({ default: m.GraphSketcherXYSimulation }))
+);
 
 export type SimulationSubjectKey = 'biology' | 'physics' | 'chemistry' | 'mathematics';
 
@@ -91,7 +100,9 @@ export interface SimulationItem {
     | 'quadratic3d'
     | 'trig3d'
     | 'osmosis3d'
-    | 'heart3d';
+    | 'heart3d'
+    | 'solids3d'
+    | 'graphxy';
   diagramPreset?: DiagramPreset;
   labSubject?: VirtualLabSubject;
   labSubMode?: VirtualLabSubMode;
@@ -416,6 +427,134 @@ const SIMULATION_CATALOG: SimulationItem[] = [
     has3D: true,
     keywords: ['trigonometry', 'unit circle', 'sine', 'cosine', 'wave', 'radian', 'amplitude', 'frequency', '3d'],
   },
+  {
+    id: 'math-solid-figures-nets',
+    title: '3D Figures, Nets & Plane–Line Intersections',
+    shortDesc:
+      'Manipulate 14 3D solids (Cube, Cuboid, Triangular/Pentagonal/Hexagonal Prisms & Pyramids, Tetrahedron, Cylinder, Cone, Sphere, Hemisphere): rotate, zoom, unfold 2D nets, resize dimensions, and explore classification, construction, net sketching, and Plane–Line intersections.',
+    subject: 'mathematics',
+    subtopicId: 'math_3d_geometry',
+    subtopicLabel: '3D Figures, Nets & Intersections',
+    categoryTag: '3D VISUALISATION',
+    previewImage: imgSolidFigures3D,
+    engine: 'solids3d',
+    has3D: true,
+    keywords: [
+      '3d',
+      'three dimensional',
+      'figures',
+      'solids',
+      'classification',
+      'characteristics',
+      'construction',
+      'sketching',
+      'net',
+      'nets',
+      'unfold',
+      'cube',
+      'cuboid',
+      'pyramid',
+      'triangular pyramid',
+      'pentagonal pyramid',
+      'hexagonal pyramid',
+      'prism',
+      'pentagonal prism',
+      'hexagonal prism',
+      'tetrahedron',
+      'cylinder',
+      'cone',
+      'sphere',
+      'hemisphere',
+      'plane',
+      'planes',
+      'line',
+      'intersection',
+      'dihedral',
+      'projection',
+      'perpendicular',
+      'parallel',
+      'surface area',
+      'volume',
+      'geometry',
+    ],
+  },
+  {
+    id: 'math-graph-sketcher-xy',
+    title: 'XY Plane Graph Sketcher',
+    shortDesc:
+      'All-in-one XY coordinate plane for Straight Lines, Quadratics, Cubics, Linear Programming (unwanted regions shaded so feasible region stays clear), Rational Functions & Asymptotes, Trigonometry (sin/cos/tan in Deg & Rad), Exponential & Log, Circles & Conics, Modulus & Piecewise, Simultaneous Intersections, and Calculus (Tangent, Normal & Area Integral).',
+    subject: 'mathematics',
+    subtopicId: 'math_functions',
+    subtopicLabel: 'Functions, Algebra & Graphing',
+    categoryTag: 'INTERACTIVE DIAGRAM',
+    previewImage: imgGraphSketcherXY,
+    engine: 'graphxy',
+    has3D: false,
+    keywords: [
+      'graph',
+      'sketcher',
+      'xy plane',
+      'cartesian',
+      'straight line',
+      'linear',
+      'gradient',
+      'slope',
+      'intercept',
+      'quadratic',
+      'parabola',
+      'vertex',
+      'roots',
+      'cubic',
+      'polynomial',
+      'inflection',
+      'turning point',
+      'linear programming',
+      'inequality',
+      'inequalities',
+      'feasible region',
+      'unwanted region',
+      'shading',
+      'objective function',
+      'corner points',
+      'rational',
+      'rational function',
+      'asymptote',
+      'asymptotes',
+      'vertical asymptote',
+      'horizontal asymptote',
+      'oblique asymptote',
+      'slant asymptote',
+      'hole',
+      'trigonometry',
+      'sine',
+      'cosine',
+      'tangent',
+      'degrees',
+      'radians',
+      'exponential',
+      'logarithm',
+      'logarithmic',
+      'inverse',
+      'circle',
+      'ellipse',
+      'hyperbola',
+      'conic',
+      'conics',
+      'modulus',
+      'absolute value',
+      'piecewise',
+      'step function',
+      'floor',
+      'simultaneous',
+      'intersection',
+      'calculus',
+      'derivative',
+      'normal',
+      'integral',
+      'area under curve',
+      'mathematics',
+    ],
+  },
 ];
 
 function getSubtopicIcon(subtopicId: string) {
@@ -440,6 +579,8 @@ function getSubtopicIcon(subtopicId: string) {
       return <TrendingUp className="w-4 h-4 text-amber-500" />;
     case 'math_trig':
       return <Waves className="w-4 h-4 text-violet-500" />;
+    case 'math_3d_geometry':
+      return <Box className="w-4 h-4 text-amber-500" />;
     default:
       return <BookOpen className="w-4 h-4 text-slate-400" />;
   }
@@ -815,7 +956,9 @@ export const SimulationsHub: React.FC<SimulationsHubProps> = ({
               activeSimulation.engine === 'quadratic3d' ||
               activeSimulation.engine === 'trig3d' ||
               activeSimulation.engine === 'osmosis3d' ||
-              activeSimulation.engine === 'heart3d'
+              activeSimulation.engine === 'heart3d' ||
+              activeSimulation.engine === 'solids3d' ||
+              activeSimulation.engine === 'graphxy'
                 ? ''
                 : 'text-slate-900'
             }
@@ -846,6 +989,10 @@ export const SimulationsHub: React.FC<SimulationsHubProps> = ({
                 <Osmosis3DSimulation darkMode={darkMode} activeClass={activeClass} />
               ) : activeSimulation.engine === 'heart3d' ? (
                 <Heart3DSimulation darkMode={darkMode} activeClass={activeClass} />
+              ) : activeSimulation.engine === 'solids3d' ? (
+                <SolidFigures3DSimulation darkMode={darkMode} activeClass={activeClass} />
+              ) : activeSimulation.engine === 'graphxy' ? (
+                <GraphSketcherXYSimulation darkMode={darkMode} activeClass={activeClass} />
               ) : activeSimulation.engine === 'diagram' ? (
                 <InteractiveDiagramLab
                   initialPreset={activeSimulation.diagramPreset}
