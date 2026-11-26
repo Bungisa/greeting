@@ -316,24 +316,8 @@ export const ElimikaGoldBallGame: React.FC<ElimikaGoldBallGameProps> = ({ onBack
       setCountdownNum(null);
       setPhase('OBSERVE');
 
-      const modeHint =
-        cfg.reelMode === 'split_brain_2x3'
-          ? 'Track BOTH the Top Gold Ball AND Bottom Pink Ball as cups pass in wide lanes!'
-          : cfg.targetType === 'golden_die' || cfg.reelMode === 'crimson_die_oval_8'
-          ? 'Lock your eyes on the 3D GOLDEN DIE as the 8 crimson cups pass each other!'
-          : cfg.reelMode === 'infinity_figure8_12'
-          ? 'Follow the golden sphere along the Figure-8 Infinity loop and passing lanes!'
-          : cfg.reelMode === 'chaos_trefoil_12'
-          ? 'Follow the golden sphere across the 3-petal clover lobes and roundabout passes!'
-          : cfg.decoyBallsCount > 0
-          ? 'Ignore the silver decoy balls — lock your eyes ONLY on the GOLD BALL!'
-          : cfg.reelMode === 'orbit_ring_8'
-          ? 'The 8-cup ring will keep spinning while cups pass each other across wide arcs!'
-          : `Memorize which of the ${cfg.cupCount} widely spaced cups covers the golden ball!`;
-
       setFeedbackBanner({
-        text: `ROUND ${roundNumber} OF ${cfg.roundsCount} — ${cfg.reelHeaderTitle}`,
-        subtext: modeHint,
+        text: `ROUND ${roundNumber}/${cfg.roundsCount} — WATCH`,
         tone: 'gold',
       });
       goldBallFX.playCupLift(soundOn);
@@ -380,8 +364,7 @@ export const ElimikaGoldBallGame: React.FC<ElimikaGoldBallGameProps> = ({ onBack
       setPhase('COUNTDOWN');
       setCountdownNum(3);
       setFeedbackBanner({
-        text: 'GET READY TO TRACK!',
-        subtext: `${activeLevelConfig.complexityLabel} • ${activeLevelConfig.speedLabel}`,
+        text: 'READY',
         tone: 'teal',
       });
       goldBallFX.playCountdownTick(false, progress.soundEnabled, progress.vibrationEnabled);
@@ -402,13 +385,10 @@ export const ElimikaGoldBallGame: React.FC<ElimikaGoldBallGameProps> = ({ onBack
         setFeedbackBanner({
           text:
             activeLevelConfig.reelMode === 'split_brain_2x3'
-              ? 'SPLIT BRAIN SHUFFLE — TRACK TOP & BOTTOM!'
-              : activeLevelConfig.reelMode === 'orbit_ring_8'
-              ? 'ORBIT SHUFFLE — THE CUPS NEVER STOP SPINNING!'
-              : activeLevelConfig.decoyBallsCount > 0
-              ? 'MIND TRAP SHUFFLE — FOLLOW GOLD, TRUST NOTHING!'
-              : 'SHUFFLING — FOLLOW THE GOLD BALL!',
-          subtext: 'Use FREEZE, SLOW MOTION, or EXTRA VISION if you need a tactical edge.',
+              ? 'TRACK BOTH BALLS'
+              : activeLevelConfig.targetType === 'golden_die'
+              ? 'TRACK THE DIE'
+              : 'FOLLOW THE GOLD',
           tone: 'teal',
         });
         goldBallFX.playCountdownTick(true, progress.soundEnabled, progress.vibrationEnabled);
@@ -424,12 +404,8 @@ export const ElimikaGoldBallGame: React.FC<ElimikaGoldBallGameProps> = ({ onBack
     setFeedbackBanner({
       text:
         activeLevelConfig.reelMode === 'split_brain_2x3'
-          ? 'SELECT BOTH CUPS: 1 TOP (GOLD) + 1 BOTTOM (PINK)!'
-          : 'WHICH CUP? TAP THE 3D CUP OR NUMBER!',
-      subtext:
-        activeLevelConfig.reelMode === 'split_brain_2x3'
-          ? 'Tap one cup in the Top row and one cup in the Bottom row.'
-          : `Tap the cup (1–${activeLevelConfig.cupCount}) hiding the shiny golden ball!`,
+          ? 'PICK 1 TOP + 1 BOTTOM'
+          : 'WHICH CUP?',
       tone: 'gold',
     });
   }, [activeLevelConfig]);
@@ -482,12 +458,7 @@ export const ElimikaGoldBallGame: React.FC<ElimikaGoldBallGameProps> = ({ onBack
         }));
 
         setFeedbackBanner({
-          text: isSplitBrain
-            ? `DUAL-BRAIN BULLSEYE! +${roundGain} PTS`
-            : `BRILLIANT TRACKING! +${roundGain} PTS`,
-          subtext: `Base +${basePts} • Speed Bonus +${speedBonus}${
-            streakPts > 0 ? ` • Streak ×${newStreak} (+${streakPts})` : ''
-          }`,
+          text: `CORRECT! +${roundGain} PTS`,
           tone: 'gold',
         });
 
@@ -536,8 +507,7 @@ export const ElimikaGoldBallGame: React.FC<ElimikaGoldBallGameProps> = ({ onBack
           }
           goldBallFX.playCupLift(progress.soundEnabled);
           setFeedbackBanner({
-            text: 'SECOND CHANCE SHIELD USED!',
-            subtext: 'Empty cup revealed without losing a life! Pick again now.',
+            text: 'SECOND CHANCE — PICK AGAIN',
             tone: 'purple',
           });
           return;
@@ -561,11 +531,7 @@ export const ElimikaGoldBallGame: React.FC<ElimikaGoldBallGameProps> = ({ onBack
 
         goldBallFX.playWrongSelection(progress.soundEnabled, progress.vibrationEnabled);
         setFeedbackBanner({
-          text: nextLives > 0 ? `MISSED! 1 LIFE LOST (${nextLives} REMAINING)` : 'ALL 3 LIVES EXHAUSTED!',
-          subtext:
-            nextLives > 0
-              ? 'Watch where the true ball was hiding — get ready to retry this round!'
-              : 'You ran out of lives before completing the level.',
+          text: nextLives > 0 ? `MISSED (${nextLives} LIVES LEFT)` : 'GAME OVER',
           tone: 'rose',
         });
 
@@ -614,10 +580,7 @@ export const ElimikaGoldBallGame: React.FC<ElimikaGoldBallGameProps> = ({ onBack
           evaluateSelectionOutcome(nextPrimary, nextSecondary);
         } else {
           setFeedbackBanner({
-            text: isTopCup
-              ? 'TOP CUP LOCKED IN! NOW PICK A BOTTOM CUP (4–6)'
-              : 'BOTTOM CUP LOCKED IN! NOW PICK A TOP CUP (1–3)',
-            subtext: 'Split Brain requires tracking both the Top Gold Ball and Bottom Pink Ball!',
+            text: isTopCup ? 'NOW PICK A BOTTOM CUP (4–6)' : 'NOW PICK A TOP CUP (1–3)',
             tone: 'gold',
           });
         }
@@ -655,19 +618,11 @@ export const ElimikaGoldBallGame: React.FC<ElimikaGoldBallGameProps> = ({ onBack
       freezeTimerRef.current = window.setTimeout(() => {
         setFreezeActive(false);
       }, 2500);
-      setFeedbackBanner({
-        text: 'FREEZE ACTIVATED!',
-        subtext: 'All cups and orbital rings frozen mid-trajectory for 2.5 seconds!',
-        tone: 'teal',
-      });
+      setFeedbackBanner({ text: 'FREEZE', tone: 'teal' });
     } else if (type === 'slow_motion') {
       if ((phase !== 'SHUFFLING' && phase !== 'COUNTDOWN' && phase !== 'OBSERVE') || slowMotionActive) return;
       setSlowMotionActive(true);
-      setFeedbackBanner({
-        text: 'SLOW MOTION ENGAGED!',
-        subtext: 'Shuffle and orbit speed reduced by 50% for this round.',
-        tone: 'teal',
-      });
+      setFeedbackBanner({ text: 'SLOW MOTION', tone: 'teal' });
     } else if (type === 'extra_vision') {
       if ((phase !== 'SHUFFLING' && phase !== 'SELECTING') || extraVisionActive) return;
       setExtraVisionActive(true);
@@ -675,19 +630,11 @@ export const ElimikaGoldBallGame: React.FC<ElimikaGoldBallGameProps> = ({ onBack
       extraVisionTimerRef.current = window.setTimeout(() => {
         setExtraVisionActive(false);
       }, 1750);
-      setFeedbackBanner({
-        text: 'EXTRA VISION X-RAY PULSE!',
-        subtext: 'Revealing the true ball(s) through their cups!',
-        tone: 'gold',
-      });
+      setFeedbackBanner({ text: 'EXTRA VISION', tone: 'gold' });
     } else if (type === 'second_chance') {
       if ((phase !== 'SELECTING' && phase !== 'SHUFFLING') || secondChanceArmed) return;
       setSecondChanceArmed(true);
-      setFeedbackBanner({
-        text: 'SECOND CHANCE SHIELD ARMED!',
-        subtext: 'Your next wrong selection in this round will not cost a life!',
-        tone: 'purple',
-      });
+      setFeedbackBanner({ text: 'SECOND CHANCE ARMED', tone: 'purple' });
     }
 
     const updated: GoldBallProgressState = {
@@ -725,23 +672,20 @@ export const ElimikaGoldBallGame: React.FC<ElimikaGoldBallGameProps> = ({ onBack
       GOLD_BALL_LEVELS.find((l) => l.level === progress.highestUnlockedLevel) || GOLD_BALL_LEVELS[0];
 
     return (
-      <div className="min-h-[calc(100vh-80px)] w-full max-w-full min-w-0 overflow-x-hidden bg-gradient-to-b from-[#02161b] via-[#05262e] to-[#03191f] text-white p-3 sm:p-6 flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-teal-500/25 shadow-2xl space-y-5">
-        {/* Top Bar: Back to Games Hub + Audio / Vibration Controls */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-teal-500/20">
-          <div className="flex items-center gap-3">
+      <div className="min-h-[calc(100vh-80px)] w-full max-w-full min-w-0 overflow-x-hidden bg-[radial-gradient(ellipse_at_top,_#082f3a_0%,_#03151b_55%,_#010b0e_100%)] text-white p-3.5 sm:p-6 flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-amber-400/25 shadow-[0_24px_64px_rgba(0,0,0,0.65)] space-y-6">
+        {/* Top Bar: Back to Games Hub + Audio / Haptics Controls */}
+        <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-amber-400/15">
+          <div className="flex items-center gap-2">
             {onBackToHub && (
               <button
                 type="button"
                 onClick={onBackToHub}
-                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-teal-950/80 hover:bg-teal-900/90 border border-teal-500/35 text-teal-100 text-xs sm:text-sm font-semibold transition-all cursor-pointer"
+                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#041d24]/90 hover:bg-[#072a34] border border-teal-500/30 text-teal-100 text-xs sm:text-sm font-semibold transition-all cursor-pointer"
               >
-                <ArrowLeft className="w-4 h-4 text-teal-300" />
-                <span>Elimika Games Hub</span>
+                <ArrowLeft className="w-4 h-4 text-amber-300" />
+                <span>Games Hub</span>
               </button>
             )}
-            <div className="px-3 py-1 rounded-lg bg-amber-500/15 border border-amber-400/40 text-amber-300 text-xs font-bold tracking-wider uppercase">
-              9 Viral Reel Modes • Wide-Gap Two-Lane Passing
-            </div>
           </div>
 
           <div className="flex items-center gap-2">
@@ -750,12 +694,12 @@ export const ElimikaGoldBallGame: React.FC<ElimikaGoldBallGameProps> = ({ onBack
               onClick={handleToggleSound}
               className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
                 progress.soundEnabled
-                  ? 'bg-teal-900/70 border-teal-400/45 text-teal-100'
-                  : 'bg-slate-900/70 border-slate-700 text-slate-400'
+                  ? 'bg-[#05232b] border-amber-400/35 text-amber-100'
+                  : 'bg-slate-900/70 border-slate-700/70 text-slate-400'
               }`}
             >
-              {progress.soundEnabled ? <Volume2 className="w-4 h-4 text-teal-300" /> : <VolumeX className="w-4 h-4" />}
-              <span>Sound {progress.soundEnabled ? 'ON' : 'OFF'}</span>
+              {progress.soundEnabled ? <Volume2 className="w-4 h-4 text-amber-300" /> : <VolumeX className="w-4 h-4" />}
+              <span>Sound</span>
             </button>
 
             <button
@@ -763,12 +707,12 @@ export const ElimikaGoldBallGame: React.FC<ElimikaGoldBallGameProps> = ({ onBack
               onClick={handleToggleVibration}
               className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
                 progress.vibrationEnabled
-                  ? 'bg-teal-900/70 border-teal-400/45 text-teal-100'
-                  : 'bg-slate-900/70 border-slate-700 text-slate-400'
+                  ? 'bg-[#05232b] border-amber-400/35 text-amber-100'
+                  : 'bg-slate-900/70 border-slate-700/70 text-slate-400'
               }`}
             >
               <Smartphone className={`w-4 h-4 ${progress.vibrationEnabled ? 'text-amber-300' : ''}`} />
-              <span>Haptics {progress.vibrationEnabled ? 'ON' : 'OFF'}</span>
+              <span>Haptics</span>
             </button>
           </div>
         </div>
@@ -776,110 +720,101 @@ export const ElimikaGoldBallGame: React.FC<ElimikaGoldBallGameProps> = ({ onBack
         {/* Hero Section */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
           <div className="lg:col-span-7 space-y-4">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-amber-500/20 to-teal-500/20 border border-amber-400/40 text-amber-200 text-xs font-bold tracking-widest uppercase">
-              <Sparkles className="w-4 h-4 text-amber-400" />
-              <span>ELIMIKA TANZANIA • 3D VISUAL TRACKING ARENA</span>
+            <div className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.24em] text-amber-300/90">
+              <span className="h-px w-6 bg-amber-400/70" />
+              <span>3D STUDIO EDITION</span>
             </div>
 
-            <h1 className="text-3xl sm:text-5xl font-black tracking-tight leading-none text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-teal-200">
+            <h1 className="text-3xl sm:text-5xl font-black tracking-tight leading-[0.98] text-transparent bg-clip-text bg-gradient-to-r from-amber-100 via-yellow-400 to-amber-200 drop-shadow-[0_4px_24px_rgba(245,158,11,0.2)]">
               ELIMIKA GOLD BALL
             </h1>
-            <p className="text-sm sm:text-base font-bold text-teal-200 tracking-wide uppercase">
-              9 Viral Challenge Modes: 8 Cups One Die • Mission Impossible • Figure-8 Infinity • Chaos Clover • 3×3 Insane • Brain Breaker • Orbit • Split Brain • Mind Trap
-            </p>
-            <p className="text-xs sm:text-sm text-teal-100/80 max-w-xl leading-relaxed">
-              Track the gleaming 24K golden sphere or 3D Golden Die across wide-spaced formations where cups clearly{' '}
-              <span className="text-amber-300 font-semibold">pass each other in separated lanes</span> from{' '}
-              <span className="text-teal-300 font-semibold">Level 1: Rookie</span> to{' '}
-              <span className="text-amber-300 font-semibold">Level 10: Insane</span>, or tap any of the 9 Viral Reel
-              modes below!
+            <p className="text-sm sm:text-base font-semibold text-teal-100/85">
+              Follow the gold. Pick the cup.
             </p>
 
             {/* Primary CTA Buttons */}
-            <div className="flex flex-wrap items-center gap-3.5 pt-1">
+            <div className="flex flex-wrap items-center gap-3 pt-1">
               <button
                 type="button"
                 onClick={() => startLevel(progress.highestUnlockedLevel, null)}
-                className="inline-flex items-center gap-3 px-7 py-4 rounded-2xl bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-500 hover:from-amber-300 hover:to-yellow-400 text-slate-950 font-black text-base sm:text-lg shadow-xl shadow-amber-500/25 active:scale-95 transition-all cursor-pointer"
+                className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-2xl bg-gradient-to-b from-amber-300 via-yellow-400 to-amber-500 hover:from-amber-200 hover:to-amber-400 text-slate-950 font-black text-base shadow-[0_10px_30px_rgba(245,158,11,0.32)] ring-1 ring-inset ring-amber-100/60 active:scale-95 transition-all cursor-pointer"
               >
                 <Play className="w-5 h-5 fill-slate-950" />
-                <span>
-                  PLAY LEVEL {progress.highestUnlockedLevel}: {currentConfig.name.toUpperCase()}
-                </span>
+                <span>PLAY LEVEL {progress.highestUnlockedLevel}</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setScreen('LEVEL_SELECT')}
-                className="inline-flex items-center gap-2.5 px-6 py-4 rounded-2xl bg-teal-900/80 hover:bg-teal-800/90 border border-teal-400/45 text-teal-50 font-bold text-sm sm:text-base shadow-lg active:scale-95 transition-all cursor-pointer"
+                className="inline-flex items-center gap-2 px-5 py-3.5 rounded-2xl bg-[#05242d]/90 hover:bg-[#08333f] border border-amber-400/30 text-amber-50 font-bold text-sm shadow-lg active:scale-95 transition-all cursor-pointer"
               >
-                <Grid className="w-5 h-5 text-teal-300" />
-                <span>LEVEL SELECTION (1–10)</span>
+                <Grid className="w-4 h-4 text-amber-300" />
+                <span>LEVELS (1–10)</span>
               </button>
             </div>
           </div>
 
-          {/* Right Column: Progress & Power-Up Inventory */}
+          {/* Right Column: Luxury Progress & Power-Up Vault */}
           <div className="lg:col-span-5">
-            <div className="p-5 rounded-2xl bg-[#031d24]/90 border border-teal-400/30 shadow-xl space-y-4">
+            <div className="p-5 rounded-2xl bg-[#03161c]/90 border border-amber-400/25 shadow-[0_14px_40px_rgba(0,0,0,0.45)] space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-xs font-bold uppercase tracking-wider text-teal-300/80">
-                    Current Campaign Stage
+                  <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-amber-300/80">
+                    Current Stage
                   </div>
-                  <div className="text-lg font-black text-white">
-                    Level {progress.highestUnlockedLevel} • {currentConfig.name} ({currentConfig.reelHeaderTitle})
+                  <div className="text-lg font-black text-white mt-0.5">
+                    Level {progress.highestUnlockedLevel} · {currentConfig.name}
                   </div>
                 </div>
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-yellow-300 via-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/30 border border-yellow-200/60">
-                  <Trophy className="w-6 h-6 text-slate-950" />
+                <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-200 via-yellow-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/25 border border-amber-100/70">
+                  <Trophy className="w-5 h-5 text-slate-950" />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 rounded-xl bg-teal-950/75 border border-teal-500/25">
-                  <div className="text-[11px] font-semibold uppercase tracking-wider text-teal-300/75">
+                <div className="p-3 rounded-xl bg-[#041f27]/80 border border-teal-500/20">
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-teal-300/75">
                     Total Score
                   </div>
-                  <div className="text-xl font-black text-amber-300 mt-0.5">
+                  <div className="text-xl font-black text-amber-300 mt-0.5 tabular-nums">
                     {progress.totalScore.toLocaleString()}
                   </div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-teal-950/75 border border-teal-500/25">
-                  <div className="text-[11px] font-semibold uppercase tracking-wider text-teal-300/75">
-                    Best Level Score
+                <div className="p-3 rounded-xl bg-[#041f27]/80 border border-teal-500/20">
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-teal-300/75">
+                    Best Score
                   </div>
-                  <div className="text-xl font-black text-teal-200 mt-0.5">
+                  <div className="text-xl font-black text-teal-100 mt-0.5 tabular-nums">
                     {progress.bestSingleLevelScore.toLocaleString()}
                   </div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-teal-950/75 border border-teal-500/25">
-                  <div className="text-[11px] font-semibold uppercase tracking-wider text-teal-300/75">
-                    Stars Earned
+                <div className="p-3 rounded-xl bg-[#041f27]/80 border border-teal-500/20">
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-teal-300/75">
+                    Stars
                   </div>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-                    <span className="text-lg font-black text-white">{totalStarsEarned} / 30</span>
+                    <span className="text-lg font-black text-white tabular-nums">{totalStarsEarned} / 30</span>
                   </div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-teal-950/75 border border-teal-500/25">
-                  <div className="text-[11px] font-semibold uppercase tracking-wider text-teal-300/75">
-                    Levels Completed
+                <div className="p-3 rounded-xl bg-[#041f27]/80 border border-teal-500/20">
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-teal-300/75">
+                    Cleared
                   </div>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                    <span className="text-lg font-black text-white">{progress.completedLevels.length} / 10</span>
+                    <span className="text-lg font-black text-white tabular-nums">{progress.completedLevels.length} / 10</span>
                   </div>
                 </div>
               </div>
 
               {/* Power-Ups */}
-              <div className="pt-2 border-t border-teal-500/20">
-                <div className="text-[11px] font-bold uppercase tracking-wider text-teal-300/80 mb-2">
-                  Tactical Power-Up Inventory
+              <div className="pt-3 border-t border-amber-400/15">
+                <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-teal-300/75 mb-2">
+                  Power-Ups
                 </div>
                 <div className="grid grid-cols-4 gap-2">
                   {(Object.keys(GOLD_BALL_POWER_UPS) as PowerUpType[]).map((key) => {
@@ -887,13 +822,13 @@ export const ElimikaGoldBallGame: React.FC<ElimikaGoldBallGameProps> = ({ onBack
                     return (
                       <div
                         key={key}
-                        className="p-2 rounded-xl bg-teal-950/90 border border-teal-500/30 flex flex-col items-center text-center"
+                        className="p-2 rounded-xl bg-[#041d24] border border-amber-400/20 flex flex-col items-center text-center"
                       >
                         <div className="flex items-center gap-1 text-amber-300 font-bold text-xs">
                           {renderPowerUpIcon(key, 'w-3.5 h-3.5')}
-                          <span>×{progress.powerUps[key]}</span>
+                          <span className="tabular-nums">×{progress.powerUps[key]}</span>
                         </div>
-                        <div className="text-[9px] font-bold text-teal-100 mt-0.5 truncate w-full">{def.name}</div>
+                        <div className="text-[9px] font-bold text-teal-100/90 mt-0.5 truncate w-full">{def.name}</div>
                       </div>
                     );
                   })}
@@ -903,48 +838,33 @@ export const ElimikaGoldBallGame: React.FC<ElimikaGoldBallGameProps> = ({ onBack
           </div>
         </div>
 
-        {/* 9 Viral Reel Challenge Modes Strip */}
-        <div className="space-y-3 pt-2 border-t border-teal-500/20">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <Layers className="w-4 h-4 text-amber-400" />
-              <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-white">
-                9 Viral Reel Challenge Formations (Tap Any Mode to Play at Level {progress.highestUnlockedLevel} Speed)
-              </span>
-            </div>
-            <span className="text-xs text-teal-300/80">
-              Wide Cup Gaps • Two-Lane Non-Overlapping Passing • Featured Across Campaign Levels 1–10
+        {/* 9 Game Modes Strip */}
+        <div className="space-y-3 pt-3 border-t border-amber-400/15">
+          <div className="flex items-center gap-2">
+            <Layers className="w-4 h-4 text-amber-400" />
+            <span className="text-xs sm:text-sm font-black uppercase tracking-[0.16em] text-amber-100">
+              Game Modes
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
             {SPOTQUEST_REEL_PRESETS.map((preset) => (
               <button
                 key={preset.id}
                 type="button"
                 onClick={() => startLevel(progress.highestUnlockedLevel, preset.id)}
-                className="text-left p-3.5 rounded-2xl bg-[#031d24]/90 hover:bg-[#062d38] border border-teal-400/35 hover:border-amber-400/70 transition-all flex flex-col justify-between gap-2.5 group cursor-pointer shadow-md"
+                className="text-left p-3 rounded-xl bg-[#03171d]/90 hover:bg-[#062832] border border-teal-500/25 hover:border-amber-400/60 transition-all flex flex-col justify-between gap-1.5 group cursor-pointer shadow-md"
               >
-                <div>
-                  <div className="flex items-center justify-between gap-1 mb-1.5">
-                    <span
-                      className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider"
-                      style={{
-                        backgroundColor: `${preset.accentColor}22`,
-                        color: preset.accentColor,
-                        border: `1px solid ${preset.accentColor}66`,
-                      }}
-                    >
-                      {preset.badge}
-                    </span>
-                    <Play className="w-3.5 h-3.5 text-amber-400 opacity-75 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
-                  </div>
-                  <div className="text-sm font-black text-white">{preset.title}</div>
-                  <div className="text-[10px] font-extrabold text-amber-300 uppercase tracking-wide mt-0.5">
-                    {preset.subtitle}
-                  </div>
-                  <p className="text-[11px] text-teal-100/75 mt-1.5 leading-snug">{preset.description}</p>
+                <div className="flex items-center justify-between gap-1">
+                  <span
+                    className="text-[10px] font-black uppercase tracking-widest"
+                    style={{ color: preset.accentColor }}
+                  >
+                    {preset.badge}
+                  </span>
+                  <Play className="w-3.5 h-3.5 text-amber-400 opacity-70 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all shrink-0" />
                 </div>
+                <div className="text-xs sm:text-sm font-black text-white leading-tight">{preset.title}</div>
               </button>
             ))}
           </div>
@@ -958,34 +878,27 @@ export const ElimikaGoldBallGame: React.FC<ElimikaGoldBallGameProps> = ({ onBack
   // ============================================================================
   if (screen === 'LEVEL_SELECT') {
     return (
-      <div className="min-h-[calc(100vh-80px)] w-full bg-gradient-to-b from-[#02161b] via-[#05262e] to-[#03191f] text-white p-4 sm:p-6 rounded-3xl border border-teal-500/25 shadow-2xl space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-teal-500/20">
+      <div className="min-h-[calc(100vh-80px)] w-full max-w-full min-w-0 overflow-x-hidden bg-[radial-gradient(ellipse_at_top,_#082f3a_0%,_#03151b_55%,_#010b0e_100%)] text-white p-4 sm:p-6 rounded-3xl border border-amber-400/25 shadow-2xl space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-amber-400/15">
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() => setScreen('HOME')}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-teal-950/80 hover:bg-teal-900/90 border border-teal-500/35 text-teal-100 text-xs sm:text-sm font-semibold transition-all cursor-pointer"
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#041d24] hover:bg-[#072a34] border border-teal-500/30 text-teal-100 text-xs sm:text-sm font-semibold transition-all cursor-pointer"
             >
-              <ArrowLeft className="w-4 h-4 text-teal-300" />
-              <span>Back to Gold Ball Home</span>
+              <ArrowLeft className="w-4 h-4 text-amber-300" />
+              <span>Home</span>
             </button>
-            <div>
-              <h2 className="text-xl sm:text-2xl font-black text-white">SELECT ARENA LEVEL (1–10)</h2>
-              <p className="text-xs text-teal-200/80">
-                Strict sequential unlocking from Level 1 (Rookie) to Level 10 (Insane 12-Cup Singularity).
-              </p>
-            </div>
+            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">LEVELS 1–10</h2>
           </div>
 
-          <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-teal-950/85 border border-teal-400/30">
-            <div className="flex items-center gap-1.5 text-amber-300 font-bold text-sm">
+          <div className="flex items-center gap-2.5 text-xs sm:text-sm font-bold">
+            <span className="inline-flex items-center gap-1.5 text-amber-300 tabular-nums">
               <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-              <span>{totalStarsEarned} / 30 Stars</span>
-            </div>
-            <span className="text-teal-600">•</span>
-            <div className="text-sm font-bold text-teal-200">
-              Unlocked: {progress.highestUnlockedLevel}/10
-            </div>
+              {totalStarsEarned} / 30
+            </span>
+            <span className="text-teal-600">·</span>
+            <span className="text-teal-200 tabular-nums">Unlocked {progress.highestUnlockedLevel}/10</span>
           </div>
         </div>
 
@@ -1001,19 +914,15 @@ export const ElimikaGoldBallGame: React.FC<ElimikaGoldBallGameProps> = ({ onBack
                 key={lvl.level}
                 className={`relative rounded-2xl border p-4 flex flex-col justify-between transition-all ${
                   isUnlocked
-                    ? 'bg-[#042229]/95 border-teal-400/45 hover:border-amber-400/70 shadow-lg'
-                    : 'bg-[#021418]/75 border-teal-900/50 opacity-75'
+                    ? 'bg-[#041d24]/95 border-amber-400/25 hover:border-amber-400/65 shadow-lg'
+                    : 'bg-[#021115]/75 border-teal-900/40 opacity-70'
                 }`}
               >
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-2.5">
                     <span
-                      className="px-2.5 py-0.5 rounded-md text-[11px] font-black tracking-wider uppercase"
-                      style={{
-                        backgroundColor: isUnlocked ? `${lvl.environment.cardAccent}22` : 'rgba(15,23,42,0.7)',
-                        color: isUnlocked ? lvl.environment.cardAccent : '#64748b',
-                        border: `1px solid ${isUnlocked ? lvl.environment.cardAccent : '#334155'}`,
-                      }}
+                      className="text-[11px] font-black tracking-widest uppercase"
+                      style={{ color: isUnlocked ? lvl.environment.cardAccent : '#64748b' }}
                     >
                       {lvl.titleBadge}
                     </span>
@@ -1030,33 +939,19 @@ export const ElimikaGoldBallGame: React.FC<ElimikaGoldBallGameProps> = ({ onBack
                         ))}
                       </div>
                     ) : (
-                      <div className="w-7 h-7 rounded-lg bg-slate-900/90 border border-slate-700 flex items-center justify-center">
-                        <Lock className="w-3.5 h-3.5 text-slate-400" />
-                      </div>
+                      <Lock className="w-4 h-4 text-slate-500" />
                     )}
                   </div>
 
-                  <h3 className="text-lg font-black text-white">{lvl.name}</h3>
-                  <div className="text-[11px] font-extrabold text-amber-300 uppercase tracking-wide mt-0.5">
-                    {lvl.reelHeaderTitle} • {lvl.cupCount} Cups
+                  <h3 className="text-base font-black text-white">{lvl.name}</h3>
+                  <div className="text-[11px] font-bold text-amber-300/90 uppercase mt-0.5">
+                    {lvl.reelHeaderTitle} · {lvl.cupCount} Cups
                   </div>
-                  <p className="text-[11px] text-teal-100/70 mt-1 line-clamp-2">{lvl.themeDescription}</p>
-
-                  <div className="mt-3 pt-2.5 border-t border-teal-500/20 space-y-1 text-[11px]">
-                    <div className="flex items-center justify-between text-teal-200/85">
-                      <span>Formation:</span>
-                      <span className="font-bold text-white">{lvl.reelHeaderTitle}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-teal-200/85">
-                      <span>Speed:</span>
-                      <span className="font-bold text-amber-300">{lvl.speedLabel}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-teal-200/85">
-                      <span>Best Score:</span>
-                      <span className="font-bold text-emerald-300">
-                        {bestScore > 0 ? bestScore.toLocaleString() : '—'}
-                      </span>
-                    </div>
+                  <div className="mt-2.5 pt-2 border-t border-teal-500/15 flex items-center justify-between text-[11px] text-teal-200/80">
+                    <span>Best</span>
+                    <span className="font-bold text-amber-200 tabular-nums">
+                      {bestScore > 0 ? bestScore.toLocaleString() : '—'}
+                    </span>
                   </div>
                 </div>
 
@@ -1067,17 +962,17 @@ export const ElimikaGoldBallGame: React.FC<ElimikaGoldBallGameProps> = ({ onBack
                       onClick={() => startLevel(lvl.level, null)}
                       className={`w-full py-2.5 px-3 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                         lvl.level === progress.highestUnlockedLevel
-                          ? 'bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 shadow-md shadow-amber-500/20 hover:from-amber-300 hover:to-yellow-400'
-                          : 'bg-teal-800/80 hover:bg-teal-700 text-teal-50 border border-teal-400/40'
+                          ? 'bg-gradient-to-b from-amber-300 to-amber-500 text-slate-950 shadow-md shadow-amber-500/20 hover:from-amber-200 hover:to-amber-400'
+                          : 'bg-[#07303b] hover:bg-[#0a3e4d] text-amber-50 border border-amber-400/25'
                       }`}
                     >
                       <Play className="w-3.5 h-3.5 fill-current" />
-                      <span>{isCompleted ? 'Replay Level' : 'Play Level'}</span>
+                      <span>{isCompleted ? 'Replay' : 'Play'}</span>
                     </button>
                   ) : (
-                    <div className="w-full py-2.5 px-3 rounded-xl bg-slate-900/90 border border-slate-800 text-slate-400 font-bold text-[11px] flex items-center justify-center gap-1.5 select-none">
+                    <div className="w-full py-2.5 px-3 rounded-xl bg-slate-950/70 border border-slate-800/80 text-slate-500 font-bold text-[11px] flex items-center justify-center gap-1.5 select-none">
                       <Lock className="w-3.5 h-3.5" />
-                      <span>Complete Level {lvl.level - 1}</span>
+                      <span>Level {lvl.level - 1} First</span>
                     </div>
                   )}
                 </div>
@@ -1101,18 +996,12 @@ export const ElimikaGoldBallGame: React.FC<ElimikaGoldBallGameProps> = ({ onBack
         <div className="max-w-xl w-full bg-[#04222a]/95 border border-amber-400/45 rounded-3xl p-6 sm:p-8 shadow-2xl text-center space-y-6">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-xl bg-amber-500/20 border border-amber-400/50 text-amber-300 text-xs font-black uppercase tracking-widest">
             <Award className="w-4 h-4" />
-            <span>
-              LEVEL {activeLevelNum} ({activeLevelConfig.name.toUpperCase()}) COMPLETE •{' '}
-              {activeLevelConfig.celebrationBadge}
-            </span>
+            <span>LEVEL {activeLevelNum} COMPLETE</span>
           </div>
 
           <h2 className="text-2xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-300">
-            {activeLevelConfig.celebrationTitle}
+            {activeLevelConfig.name.toUpperCase()} CLEARED!
           </h2>
-          <p className="text-sm text-teal-100/85 max-w-md mx-auto leading-relaxed">
-            {activeLevelConfig.celebrationSubtitle}
-          </p>
 
           <div className="flex items-center justify-center gap-4 py-2">
             {[1, 2, 3].map((starIdx) => {
@@ -1232,12 +1121,8 @@ export const ElimikaGoldBallGame: React.FC<ElimikaGoldBallGameProps> = ({ onBack
           </div>
 
           <h2 className="text-3xl sm:text-4xl font-black text-white">GAME OVER</h2>
-          <p className="text-sm text-teal-100/80 leading-relaxed">
-            The golden ball slipped past your gaze on{' '}
-            <span className="text-amber-300 font-bold">
-              Level {activeLevelNum}: {activeLevelConfig.name} ({activeLevelConfig.reelHeaderTitle})
-            </span>
-            . Sharpen your focus and retry the level to unlock the next stage!
+          <p className="text-sm font-bold text-amber-300">
+            Level {activeLevelNum} • {activeLevelConfig.name}
           </p>
 
           <div className="p-4 rounded-2xl bg-teal-950/80 border border-teal-500/30 space-y-2 text-sm">
@@ -1281,79 +1166,82 @@ export const ElimikaGoldBallGame: React.FC<ElimikaGoldBallGameProps> = ({ onBack
   // SCREEN C: GAMEPLAY SCREEN
   // ============================================================================
   return (
-    <div className="min-h-[calc(100vh-80px)] w-full max-w-full min-w-0 overflow-x-hidden bg-gradient-to-b from-[#02161b] via-[#04232b] to-[#021419] text-white p-2 sm:p-5 rounded-2xl sm:rounded-3xl border border-teal-500/30 shadow-2xl flex flex-col justify-between gap-2.5 sm:gap-3 relative">
-      {/* Top Gameplay HUD */}
-      <div className="w-full max-w-full min-w-0 grid grid-cols-2 sm:grid-cols-12 items-center gap-2 bg-[#031c22]/95 border border-teal-500/30 rounded-2xl px-2.5 sm:px-3.5 py-2 shadow-lg">
-        <div className="sm:col-span-4 flex items-center gap-2.5">
-          <div
-            className="px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wider shrink-0"
-            style={{
-              backgroundColor: `${activeLevelConfig.environment.cardAccent}25`,
-              color: activeLevelConfig.environment.cardAccent,
-              border: `1px solid ${activeLevelConfig.environment.cardAccent}66`,
-            }}
+    <div className="min-h-[calc(100vh-80px)] w-full max-w-full min-w-0 overflow-x-hidden bg-[radial-gradient(ellipse_at_top,_#062731_0%,_#021318_58%,_#010a0d_100%)] text-white p-2 sm:p-5 rounded-2xl sm:rounded-3xl border border-amber-400/25 shadow-[0_24px_64px_rgba(0,0,0,0.65)] flex flex-col justify-between gap-2.5 sm:gap-3 relative">
+      {/* Top Luxury Gameplay HUD */}
+      <div className="w-full max-w-full min-w-0 grid grid-cols-2 sm:grid-cols-12 items-center gap-2 bg-[#03161c]/90 border border-amber-400/20 rounded-2xl px-3 sm:px-4 py-2.5 shadow-lg">
+        {/* Level · Round Progress Dots */}
+        <div className="sm:col-span-5 flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0">
+          <span
+            className="text-xs font-black uppercase tracking-wider shrink-0"
+            style={{ color: activeLevelConfig.environment.cardAccent }}
           >
-            LVL {activeLevelConfig.level} • {activeLevelConfig.name}
-          </div>
-          <div className="text-xs text-teal-200/90 font-semibold truncate">
-            Round{' '}
-            <span className="text-white font-black">
-              {currentRound}/{activeLevelConfig.roundsCount}
+            LVL {activeLevelConfig.level} · {activeLevelConfig.name}
+          </span>
+          <span className="text-teal-700 text-xs">·</span>
+          <div className="flex items-center gap-1.5" title={`Round ${currentRound} of ${activeLevelConfig.roundsCount}`}>
+            <span className="text-[11px] text-teal-200/80 font-bold tabular-nums">
+              R{currentRound}/{activeLevelConfig.roundsCount}
             </span>
-            <span className="ml-1.5 text-amber-300 font-bold">({activeLevelConfig.cupCount} Cups)</span>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: activeLevelConfig.roundsCount }, (_, rIdx) => {
+                const rNum = rIdx + 1;
+                const isDone = rNum < currentRound;
+                const isNow = rNum === currentRound;
+                return (
+                  <span
+                    key={rNum}
+                    className={`h-1.5 rounded-full transition-all ${
+                      isDone
+                        ? 'w-1.5 bg-amber-400'
+                        : isNow
+                        ? 'w-3.5 bg-amber-300 shadow-[0_0_8px_rgba(251,191,36,0.7)]'
+                        : 'w-1.5 bg-teal-800/80'
+                    }`}
+                  />
+                );
+              })}
+            </div>
           </div>
+          <span className="text-[11px] text-amber-300/80 font-bold hidden md:inline">
+            · {activeLevelConfig.cupCount} Cups
+          </span>
         </div>
 
         {/* Three Animated Heart Lives */}
-        <div className="sm:col-span-4 flex items-center justify-end sm:justify-center gap-2">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-teal-300/80 hidden md:inline">
-            Lives:
-          </span>
+        <div className="sm:col-span-3 flex items-center justify-end sm:justify-center gap-2">
           <div className={`flex items-center gap-1.5 ${lostHeartAnim ? 'scale-110' : ''} transition-transform`}>
             {[1, 2, 3].map((heartIndex) => {
               const alive = heartIndex <= lives;
               return (
-                <div
+                <Heart
                   key={heartIndex}
-                  className={`w-8 h-8 rounded-xl flex items-center justify-center border transition-all duration-300 ${
+                  className={`w-5 h-5 transition-all duration-300 ${
                     alive
-                      ? 'bg-rose-500/20 border-rose-400/50 scale-100 shadow-sm shadow-rose-500/20'
-                      : 'bg-slate-900/70 border-slate-800 scale-90 opacity-40'
+                      ? 'text-rose-400 fill-rose-500 drop-shadow-[0_0_8px_rgba(244,63,94,0.45)] scale-100'
+                      : 'text-slate-700 scale-90 opacity-45'
                   }`}
-                >
-                  <Heart
-                    className={`w-4 h-4 transition-all ${
-                      alive ? 'text-rose-400 fill-rose-500' : 'text-slate-600'
-                    }`}
-                  />
-                </div>
+                />
               );
             })}
           </div>
           {secondChanceArmed && (
-            <span
-              className="px-2 py-0.5 rounded-md bg-purple-950 border border-purple-400/60 text-purple-200 text-[10px] font-bold uppercase"
-              title="Second Chance Shield Armed"
-            >
-              Shield On
-            </span>
+            <ShieldCheck className="w-4 h-4 text-purple-300 drop-shadow-[0_0_8px_rgba(192,132,252,0.7)]" />
           )}
         </div>
 
         {/* Animated Score + Streak + Sound + Pause */}
-        <div className="col-span-2 sm:col-span-4 flex items-center justify-between sm:justify-end gap-2.5 pt-1 sm:pt-0 border-t sm:border-t-0 border-teal-500/20">
-          <div className="flex items-center gap-2">
-            <div className="px-3 py-1 rounded-xl bg-teal-950/90 border border-amber-400/40 flex items-center gap-1.5">
-              <Trophy className="w-3.5 h-3.5 text-amber-400" />
-              <span className="text-xs text-teal-300 font-semibold">Score:</span>
-              <span className="text-sm font-black text-amber-300 tabular-nums">
+        <div className="col-span-2 sm:col-span-4 flex items-center justify-between sm:justify-end gap-3 pt-1.5 sm:pt-0 border-t sm:border-t-0 border-amber-400/15">
+          <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-1.5">
+              <Trophy className="w-4 h-4 text-amber-400" />
+              <span className="text-sm sm:text-base font-black text-amber-300 tabular-nums">
                 {displayedScore.toLocaleString()}
               </span>
             </div>
 
             {streak >= 2 && (
-              <div className="px-2 py-1 rounded-xl bg-amber-500/20 border border-amber-400/50 text-amber-300 text-xs font-black flex items-center gap-1">
-                <Flame className="w-3.5 h-3.5 fill-amber-400" />
+              <div className="flex items-center gap-0.5 text-amber-300 text-xs font-black tabular-nums">
+                <Flame className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                 <span>×{streak}</span>
               </div>
             )}
@@ -1363,28 +1251,28 @@ export const ElimikaGoldBallGame: React.FC<ElimikaGoldBallGameProps> = ({ onBack
             <button
               type="button"
               onClick={handleToggleSound}
-              className="p-2 rounded-xl bg-teal-950/80 hover:bg-teal-900 border border-teal-500/35 text-teal-200 cursor-pointer"
+              className="p-2 rounded-xl bg-[#041f27] hover:bg-[#072e39] border border-teal-500/25 text-amber-200 cursor-pointer transition-colors"
               title={progress.soundEnabled ? 'Mute Sound' : 'Unmute Sound'}
             >
-              {progress.soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4 text-slate-400" />}
+              {progress.soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4 text-slate-500" />}
             </button>
 
             <button
               type="button"
               onClick={() => setIsPaused(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-teal-900/80 hover:bg-teal-800 border border-teal-400/45 text-teal-50 text-xs font-bold cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#05252e] hover:bg-[#083440] border border-amber-400/30 text-amber-50 text-xs font-bold cursor-pointer transition-colors"
             >
-              <Pause className="w-3.5 h-3.5" />
+              <Pause className="w-3.5 h-3.5 text-amber-300" />
               <span>Pause</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* 1-Tap Live 9-Mode Formation Switcher Bar right inside the Gameplay Screen */}
-      <div className="w-full max-w-full min-w-0 bg-[#031c22]/95 border border-teal-500/30 rounded-xl px-2 py-1.5 flex flex-wrap items-center gap-1.5">
-        <span className="text-[10px] font-black uppercase tracking-wider text-amber-300 shrink-0 px-1">
-          Mode:
+      {/* 1-Tap Live 9-Mode Formation Switcher Bar */}
+      <div className="w-full max-w-full min-w-0 bg-[#03161c]/90 border border-amber-400/15 rounded-xl px-2.5 py-1.5 flex flex-wrap items-center gap-1.5">
+        <span className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-300/85 shrink-0 pr-1">
+          Mode
         </span>
         {SPOTQUEST_REEL_PRESETS.map((preset) => {
           const isCurrent = activeLevelConfig.reelMode === preset.id;
@@ -1395,8 +1283,8 @@ export const ElimikaGoldBallGame: React.FC<ElimikaGoldBallGameProps> = ({ onBack
               onClick={() => startLevel(activeLevelNum, preset.id)}
               className={`px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg text-[10px] sm:text-[11px] font-black uppercase tracking-wide transition-all cursor-pointer border ${
                 isCurrent
-                  ? 'bg-amber-400 text-slate-950 border-amber-200 shadow-sm'
-                  : 'bg-teal-950/85 hover:bg-teal-900 text-teal-100 border-teal-500/35'
+                  ? 'bg-gradient-to-b from-amber-300 to-amber-500 text-slate-950 border-amber-100 shadow-sm shadow-amber-500/25'
+                  : 'bg-[#041e25] hover:bg-[#072c36] text-teal-100/90 border-teal-500/25'
               }`}
             >
               {preset.title}
@@ -1405,28 +1293,28 @@ export const ElimikaGoldBallGame: React.FC<ElimikaGoldBallGameProps> = ({ onBack
         })}
       </div>
 
-      {/* Live Instruction / Phase Feedback Banner */}
+      {/* Live Phase Cue Bar */}
       {feedbackBanner && (
         <div
-          className={`w-full max-w-full min-w-0 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl border text-center transition-all flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-3 ${
+          className={`w-full max-w-full min-w-0 px-3 py-1.5 rounded-xl border text-center transition-all flex items-center justify-center gap-2 ${
             feedbackBanner.tone === 'gold'
-              ? 'bg-amber-950/60 border-amber-400/50 text-amber-200'
+              ? 'bg-amber-950/45 border-amber-400/40 text-amber-200'
               : feedbackBanner.tone === 'rose'
-              ? 'bg-rose-950/70 border-rose-400/50 text-rose-200'
+              ? 'bg-rose-950/60 border-rose-400/45 text-rose-200'
               : feedbackBanner.tone === 'purple'
-              ? 'bg-purple-950/70 border-purple-400/50 text-purple-200'
-              : 'bg-teal-950/75 border-teal-400/45 text-teal-100'
+              ? 'bg-purple-950/60 border-purple-400/45 text-purple-200'
+              : 'bg-[#041f27]/85 border-teal-400/30 text-teal-100'
           }`}
         >
-          <span className="text-xs sm:text-sm font-black tracking-wide uppercase">{feedbackBanner.text}</span>
+          <span className="text-xs sm:text-sm font-black tracking-[0.14em] uppercase">{feedbackBanner.text}</span>
           {feedbackBanner.subtext && (
             <span className="text-[11px] sm:text-xs opacity-85">{feedbackBanner.subtext}</span>
           )}
         </div>
       )}
 
-      {/* Center 3D Game Environment Viewport */}
-      <div className="relative w-full max-w-full min-w-0 rounded-2xl overflow-hidden border border-teal-500/30 shadow-inner">
+      {/* Center 3D Studio Arena Viewport */}
+      <div className="relative w-full max-w-full min-w-0 rounded-2xl overflow-hidden border border-amber-400/25 shadow-[0_12px_40px_rgba(0,0,0,0.55)]">
         <GoldBall3DScene
           levelConfig={activeLevelConfig}
           phase={phase}
@@ -1450,17 +1338,14 @@ export const ElimikaGoldBallGame: React.FC<ElimikaGoldBallGameProps> = ({ onBack
       </div>
 
       {/* Bottom Power-Up Control Bar */}
-      <div className="bg-[#031c22]/95 border border-teal-500/30 rounded-2xl p-3 shadow-lg space-y-2">
-        <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-teal-300/85 px-1">
-          <span className="font-bold uppercase tracking-wider">Tactical Power-Ups (Tap to Activate)</span>
-          {activePowerUpInfo && (
-            <span className="text-amber-300 font-semibold">
-              {GOLD_BALL_POWER_UPS[activePowerUpInfo].name}: {GOLD_BALL_POWER_UPS[activePowerUpInfo].description}
-            </span>
-          )}
-        </div>
+      <div className="w-full max-w-full min-w-0 bg-[#03161c]/90 border border-amber-400/20 rounded-2xl p-2 sm:p-3 shadow-lg space-y-1.5">
+        {activePowerUpInfo && (
+          <div className="text-[11px] text-amber-300 font-semibold px-1 text-center">
+            {GOLD_BALL_POWER_UPS[activePowerUpInfo].name}: {GOLD_BALL_POWER_UPS[activePowerUpInfo].shortLabel}
+          </div>
+        )}
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {(Object.keys(GOLD_BALL_POWER_UPS) as PowerUpType[]).map((type) => {
             const def = GOLD_BALL_POWER_UPS[type];
             const count = progress.powerUps[type] || 0;
@@ -1482,7 +1367,7 @@ export const ElimikaGoldBallGame: React.FC<ElimikaGoldBallGameProps> = ({ onBack
             return (
               <div
                 key={type}
-                className="relative rounded-xl border p-2.5 flex items-center justify-between gap-2 transition-all"
+                className="relative rounded-xl border p-2 flex items-center justify-between gap-1.5 transition-all"
                 style={{
                   background: def.bgGradient,
                   borderColor: isCurrentlyActive ? '#fbbf24' : def.borderColor,
@@ -1493,27 +1378,24 @@ export const ElimikaGoldBallGame: React.FC<ElimikaGoldBallGameProps> = ({ onBack
                   type="button"
                   disabled={count <= 0 || !isUsablePhase}
                   onClick={() => handleUsePowerUp(type)}
-                  className="flex-1 flex items-center gap-2.5 text-left cursor-pointer disabled:cursor-not-allowed"
+                  className="flex-1 flex items-center gap-2 text-left cursor-pointer disabled:cursor-not-allowed min-w-0"
                 >
                   <div
-                    className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border"
+                    className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border"
                     style={{
                       backgroundColor: 'rgba(2, 22, 27, 0.65)',
                       borderColor: def.borderColor,
                       color: def.accentColor,
                     }}
                   >
-                    {renderPowerUpIcon(type, 'w-5 h-5')}
+                    {renderPowerUpIcon(type, 'w-4 h-4')}
                   </div>
                   <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-black text-white truncate">{def.name}</span>
-                      <span className="px-1.5 py-0.2 rounded bg-slate-950/80 text-amber-300 text-[10px] font-black">
+                    <div className="flex items-center gap-1">
+                      <span className="text-[11px] font-black text-white truncate">{def.name}</span>
+                      <span className="px-1 rounded bg-slate-950/80 text-amber-300 text-[10px] font-black shrink-0">
                         ×{count}
                       </span>
-                    </div>
-                    <div className="text-[10px] text-teal-100/80 truncate">
-                      {isCurrentlyActive ? 'ACTIVE NOW' : def.shortLabel}
                     </div>
                   </div>
                 </button>
@@ -1521,8 +1403,8 @@ export const ElimikaGoldBallGame: React.FC<ElimikaGoldBallGameProps> = ({ onBack
                 <button
                   type="button"
                   onClick={() => setActivePowerUpInfo(activePowerUpInfo === type ? null : type)}
-                  className="p-1.5 rounded-lg bg-slate-950/50 hover:bg-slate-950/80 text-teal-200/80 cursor-pointer"
-                  title={def.description}
+                  className="p-1 rounded-lg bg-slate-950/50 hover:bg-slate-950/80 text-teal-200/80 cursor-pointer shrink-0"
+                  title={def.shortLabel}
                 >
                   <Info className="w-3.5 h-3.5" />
                 </button>

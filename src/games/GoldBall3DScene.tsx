@@ -10,18 +10,18 @@ export type RoundPhase =
   | 'SELECTING'
   | 'REVEALING';
 
-// Wide-Gap Non-Overlapping Passing Trajectories:
-// 1. PASS_BY_LANE: Two or three cups exchange positions by pulling into wide, separated parallel/curved passing lanes
-//    with an asymmetric lead/follow timing offset so you clearly watch them PASS by each other with >1.3 units of open space between them (never colliding or flipping in place).
-// 2. PERIMETER_RING_SPIN: Smooth carousel stream rotation around the outer perimeter / oval / figure-8 loop.
+// Natural Tabletop Glide Trajectories:
+// 1. PASS_BY_LANE: Two cups glide smoothly past each other along continuous C2 curved lanes with clear floor separation.
+// 2. PERIMETER_RING_SPIN: Smooth circular/oval carousel glide around the outer perimeter or stadium oval.
+// 3. TRACK_SPLINE_GLIDE: Cups glide smoothly directly along the Figure-8 Infinity or 3-Petal Clover spline tracks.
 export type SpotQuestMoveTrajectory =
   | {
       kind: 'PASS_BY_LANE';
       cupId: number;
       fromSlot: number;
       toSlot: number;
-      laneOffsetWorld: number; // Signed perpendicular passing lane distance in world units (guarantees wide visible gap between passing cups)
-      leadLagBias: number;     // Asymmetric lead (+0.11) vs follow (-0.11) timing offset so one cup visibly leads while the other passes alongside
+      laneOffsetWorld: number;
+      leadLagBias: number;
       isFeint: boolean;
       peekDecoyLift: boolean;
     }
@@ -38,6 +38,17 @@ export type SpotQuestMoveTrajectory =
       endRadiusZ: number;
       ringRadiusX: number;
       ringRadiusZ: number;
+    }
+  | {
+      kind: 'TRACK_SPLINE_GLIDE';
+      cupId: number;
+      fromSlot: number;
+      toSlot: number;
+      trackKind: 'figure8' | 'trefoil';
+      chainIndex: number; // 0 for figure8, 0..3 for trefoil petal/roundabout chains
+      fromNodeIdx: number;
+      deltaSteps: number; // +1, +2, -1, -2 stations along the closed spline
+      totalNodes: number;
     };
 
 export interface ShuffleWaveStep {
@@ -452,28 +463,181 @@ function createGoldenDieFaceTextures(): THREE.CanvasTexture[] {
   });
 }
 
-// Create a crisp transparent decal texture with the cup number (1..12) printed directly on the front wall of the 3D cup
-function createCupNumberDecalTexture(num: number): THREE.CanvasTexture {
+// Create a premium camera-facing gold-rimmed circular medallion texture for cup numbers (1..12)
+function createPremiumNumberBadgeTexture(num: number): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
   canvas.width = 256;
   canvas.height = 256;
   const ctx = canvas.getContext('2d')!;
   ctx.clearRect(0, 0, 256, 256);
 
-  ctx.font = '900 138px Inter, system-ui, -apple-system, sans-serif';
+  // Soft outer ambient gold halo
+  const halo = ctx.createRadialGradient(128, 128, 80, 128, 128, 126);
+  halo.addColorStop(0, 'rgba(251, 191, 36, 0.36)');
+  halo.addColorStop(0.65, 'rgba(251, 191, 36, 0.12)');
+  halo.addColorStop(1, 'rgba(251, 191, 36, 0)');
+  ctx.fillStyle = halo;
+  ctx.beginPath();
+  ctx.arc(128, 128, 124, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Deep obsidian-emerald jewel medallion fill
+  const bgGrad = ctx.createRadialGradient(108, 92, 16, 128, 128, 96);
+  bgGrad.addColorStop(0, '#0c3b45');
+  bgGrad.addColorStop(0.65, '#041d24');
+  bgGrad.addColorStop(1, '#020e12');
+  ctx.fillStyle = bgGrad;
+  ctx.beginPath();
+  ctx.arc(128, 128, 92, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Brushed 24K metallic gold outer rim
+  const rimGrad = ctx.createLinearGradient(36, 36, 220, 220);
+  rimGrad.addColorStop(0, '#fef08a');
+  rimGrad.addColorStop(0.32, '#f59e0b');
+  rimGrad.addColorStop(0.65, '#fde047');
+  rimGrad.addColorStop(1, '#b45309');
+  ctx.strokeStyle = rimGrad;
+  ctx.lineWidth = 10;
+  ctx.beginPath();
+  ctx.arc(128, 128, 92, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Hairline inner gold ring
+  ctx.strokeStyle = 'rgba(254, 240, 138, 0.45)';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.arc(128, 128, 79, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Subtle glass top highlight crescent
+  const sheen = ctx.createLinearGradient(128, 42, 128, 126);
+  sheen.addColorStop(0, 'rgba(255, 255, 255, 0.22)');
+  sheen.addColorStop(1, 'rgba(255, 255, 255, 0)');
+  ctx.fillStyle = sheen;
+  ctx.beginPath();
+  ctx.ellipse(128, 78, 56, 26, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Crisp high-contrast numeral
+  ctx.font = '900 104px Inter, system-ui, -apple-system, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-
-  ctx.lineWidth = 7;
-  ctx.strokeStyle = 'rgba(241, 245, 249, 0.45)';
-  ctx.strokeText(String(num), 128, 134);
-
-  ctx.fillStyle = '#02171b';
-  ctx.fillText(String(num), 128, 134);
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.72)';
+  ctx.shadowBlur = 10;
+  ctx.shadowOffsetY = 3;
+  ctx.fillStyle = '#fffbeb';
+  ctx.fillText(String(num), 128, 133);
 
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
+}
+
+// Create a luxury radial-brushed obsidian studio tabletop texture with fine gold inlay rings
+function createStudioTableTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 1024;
+  const ctx = canvas.getContext('2d')!;
+  const cx = 512;
+  const cy = 512;
+
+  // Center spotlight falloff to deep velvet studio perimeter
+  const baseGrad = ctx.createRadialGradient(cx, cy, 40, cx, cy, 512);
+  baseGrad.addColorStop(0, '#c8d8dc');
+  baseGrad.addColorStop(0.32, '#96aeb5');
+  baseGrad.addColorStop(0.65, '#597178');
+  baseGrad.addColorStop(0.9, '#2b3d42');
+  baseGrad.addColorStop(1, '#182428');
+  ctx.fillStyle = baseGrad;
+  ctx.fillRect(0, 0, 1024, 1024);
+
+  // Subtle radial brushed micro-grooves
+  ctx.save();
+  ctx.translate(cx, cy);
+  for (let i = 0; i < 180; i++) {
+    const a = (i / 180) * Math.PI * 2;
+    ctx.strokeStyle = i % 2 === 0 ? 'rgba(255,255,255,0.028)' : 'rgba(0,0,0,0.032)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(a) * 48, Math.sin(a) * 48);
+    ctx.lineTo(Math.cos(a) * 500, Math.sin(a) * 500);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // Concentric brushed-gold architectural inlay rings
+  const ringSpecs = [
+    { r: 162, w: 2.0, alpha: 0.24 },
+    { r: 248, w: 1.5, alpha: 0.16 },
+    { r: 342, w: 2.8, alpha: 0.34 },
+    { r: 356, w: 1.2, alpha: 0.20 },
+  ];
+  for (const ring of ringSpecs) {
+    ctx.strokeStyle = `rgba(251, 191, 36, ${ring.alpha})`;
+    ctx.lineWidth = ring.w;
+    ctx.beginPath();
+    ctx.arc(cx, cy, ring.r, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // Delicate compass cardinal ticks on outer gold ring
+  ctx.strokeStyle = 'rgba(253, 224, 71, 0.32)';
+  ctx.lineWidth = 2;
+  for (let i = 0; i < 24; i++) {
+    const a = (i / 24) * Math.PI * 2;
+    const inner = i % 6 === 0 ? 330 : 336;
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(a) * inner, cy + Math.sin(a) * inner);
+    ctx.lineTo(cx + Math.cos(a) * 342, cy + Math.sin(a) * 342);
+    ctx.stroke();
+  }
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
+  return tex;
+}
+
+// Compute frozen, natural visual reading order (top-to-bottom rows, left-to-right) once cups stop moving
+function computeVisualCupOrdering(
+  cupWorldPos: Array<{ x: number; z: number }>,
+  cupCount: number
+): { displayNumByCup: number[]; orderedCupIds: number[] } {
+  const items = Array.from({ length: cupCount }, (_, cupId) => ({
+    cupId,
+    x: cupWorldPos[cupId]?.x ?? 0,
+    z: cupWorldPos[cupId]?.z ?? 0,
+  }));
+
+  // Sort by z ascending (top of screen -> bottom of screen) first, then cluster into visual rows
+  items.sort((a, b) => a.z - b.z);
+  const rows: Array<typeof items> = [];
+  const ROW_Z_THRESHOLD = 0.85;
+  for (const item of items) {
+    const lastRow = rows[rows.length - 1];
+    if (lastRow && Math.abs(item.z - lastRow[0].z) <= ROW_Z_THRESHOLD) {
+      lastRow.push(item);
+    } else {
+      rows.push([item]);
+    }
+  }
+
+  const orderedCupIds: number[] = [];
+  for (const row of rows) {
+    row.sort((a, b) => a.x - b.x);
+    for (const item of row) {
+      orderedCupIds.push(item.cupId);
+    }
+  }
+
+  const displayNumByCup = Array.from({ length: MAX_CUPS }, (_, i) => i + 1);
+  orderedCupIds.forEach((cupId, idx) => {
+    displayNumByCup[cupId] = idx + 1;
+  });
+
+  return { displayNumByCup, orderedCupIds };
 }
 
 function createRadialGlowTexture(hexColor: string): THREE.CanvasTexture {
@@ -535,12 +699,12 @@ function buildSpotQuestChoreographyPlan(
 
   for (let step = 0; step < totalSteps; step++) {
     const progressRatio = totalSteps > 1 ? step / (totalSteps - 1) : 1;
-    // Smooth accelerando with slightly longer base glide so the wide lane passing motion is crystal clear
-    const durationScale = 1.26 - progressRatio * 0.40;
-    const holdPauseSec = Math.max(0.042, 0.075 - progressRatio * 0.025);
+    // Natural accelerando with fluid transitions (no clunky mechanical pauses between moves)
+    const durationScale = 1.18 - progressRatio * 0.34;
+    const holdPauseSec = Math.max(0.012, 0.026 - progressRatio * 0.012);
 
     // -------------------------------------------------------------------------
-    // 1. SPLIT BRAIN MODE (Reel DgJ68l6HJVw: 3 Top + 3 Bottom Simultaneous Wide Passes)
+    // 1. SPLIT BRAIN MODE (Reel DgJ68l6HJVw: 3 Top + 3 Bottom Simultaneous Smooth Passes)
     // -------------------------------------------------------------------------
     if (cfg.reelMode === 'split_brain_2x3') {
       const topSlots = [0, 1, 2];
@@ -571,7 +735,7 @@ function buildSpotQuestChoreographyPlan(
           fromSlot: t1,
           toSlot: t2,
           laneOffsetWorld: topLane,
-          leadLagBias: 0.11,
+          leadLagBias: 0.045,
           isFeint: topFeint,
           peekDecoyLift: false,
         },
@@ -581,7 +745,7 @@ function buildSpotQuestChoreographyPlan(
           fromSlot: t2,
           toSlot: t1,
           laneOffsetWorld: topLane,
-          leadLagBias: -0.11,
+          leadLagBias: -0.045,
           isFeint: topFeint,
           peekDecoyLift: false,
         },
@@ -591,7 +755,7 @@ function buildSpotQuestChoreographyPlan(
           fromSlot: b1,
           toSlot: b2,
           laneOffsetWorld: botLane,
-          leadLagBias: 0.11,
+          leadLagBias: 0.045,
           isFeint: botFeint,
           peekDecoyLift: false,
         },
@@ -601,7 +765,7 @@ function buildSpotQuestChoreographyPlan(
           fromSlot: b2,
           toSlot: b1,
           laneOffsetWorld: botLane,
-          leadLagBias: -0.11,
+          leadLagBias: -0.045,
           isFeint: botFeint,
           peekDecoyLift: false,
         },
@@ -625,11 +789,12 @@ function buildSpotQuestChoreographyPlan(
     }
 
     // -------------------------------------------------------------------------
-    // 2. FIGURE-8 INFINITY LOOP STREAM PASSING (Reel DfLSUkHvDeD — 12 Cups)
+    // 2. FIGURE-8 INFINITY LOOP SPLINE GLIDE (Reel DfLSUkHvDeD — 12 Cups)
     // -------------------------------------------------------------------------
-    if (cfg.reelMode === 'infinity_figure8_12' && step % 3 === 1) {
-      // Shift all 12 cups smoothly along the Figure-8 Infinity track by +1 or -1 station so they glide past each other along the ∞ loop!
-      const shift = step % 2 === 0 ? 1 : -1;
+    if (cfg.reelMode === 'infinity_figure8_12' && step % 2 === 0) {
+      // Smoothly glide all 12 cups directly along the glowing Figure-8 spline track
+      const shiftOptions = [1, 2, -1, -2];
+      const shift = shiftOptions[Math.floor(step / 2) % shiftOptions.length];
       const trajectories: SpotQuestMoveTrajectory[] = [];
       const newCupAtSlot = [...cupAtSlot];
 
@@ -638,77 +803,115 @@ function buildSpotQuestChoreographyPlan(
         const toSlot = FIGURE8_LOOP_ORDER[(idx + shift + 12) % 12];
         const cupId = cupAtSlot[fromSlot];
         trajectories.push({
-          kind: 'PASS_BY_LANE',
+          kind: 'TRACK_SPLINE_GLIDE',
           cupId,
           fromSlot,
           toSlot,
-          laneOffsetWorld: 0.45 * shift,
-          leadLagBias: 0,
-          isFeint: false,
-          peekDecoyLift: false,
+          trackKind: 'figure8',
+          chainIndex: 0,
+          fromNodeIdx: idx,
+          deltaSteps: shift,
+          totalNodes: 12,
         });
         currentSlotOfCup[cupId] = toSlot;
         newCupAtSlot[toSlot] = cupId;
       }
       for (let s = 0; s < 12; s++) cupAtSlot[s] = newCupAtSlot[s];
-      plan.push({ trajectories, durationScale: durationScale * 1.15, holdPauseSec });
+      plan.push({
+        trajectories,
+        durationScale: durationScale * (Math.abs(shift) > 1 ? 1.48 : 1.15),
+        holdPauseSec: holdPauseSec + 0.01,
+      });
       continue;
     }
 
     // -------------------------------------------------------------------------
-    // 3. CHAOS MODE 3-PETAL CLOVER LOBE STREAM PASSING (Reel DfpCaSfMD1v — 12 Cups)
+    // 3. CHAOS MODE 3-PETAL CLOVER SPLINE GLIDE (Reel DfpCaSfMD1v — 12 Cups)
     // -------------------------------------------------------------------------
-    if (cfg.reelMode === 'chaos_trefoil_12' && step % 2 === 1) {
-      // Rotate one or two 4-cup clover petals in a smooth continuous stream around their petal loop!
+    if (cfg.reelMode === 'chaos_trefoil_12' && step % 3 !== 2) {
+      // Glide cups directly along their clover petal spline loops or central roundabout triangle
       const ballSlot = currentSlotOfCup[ballCupId];
-      const activeChain =
-        TREFOIL_PETAL_CHAINS.find((ch) => ch.includes(ballSlot)) ||
-        TREFOIL_PETAL_CHAINS[step % TREFOIL_PETAL_CHAINS.length];
-      const reverse = step % 4 === 3;
-      const ordered = reverse ? [...activeChain].reverse() : activeChain;
-      const n = ordered.length;
+      const useCenterTriangle = step % 4 === 1 && TREFOIL_PETAL_CHAINS[3].includes(ballSlot);
+      const chainIndex = useCenterTriangle
+        ? 3
+        : (() => {
+            const idx = TREFOIL_PETAL_CHAINS.slice(0, 3).findIndex((ch) => ch.includes(ballSlot));
+            return idx >= 0 ? idx : step % 3;
+          })();
+      const activeChain = TREFOIL_PETAL_CHAINS[chainIndex];
+      const deltaSteps = step % 4 === 3 ? -1 : 1;
+      const n = activeChain.length;
       const trajectories: SpotQuestMoveTrajectory[] = [];
-      const movedCups = ordered.map((s) => cupAtSlot[s]);
+      const movedCups = activeChain.map((s) => cupAtSlot[s]);
 
       for (let i = 0; i < n; i++) {
-        const fromSlot = ordered[i];
-        const toSlot = ordered[(i + 1) % n];
+        const fromSlot = activeChain[i];
+        const toSlot = activeChain[(i + deltaSteps + n) % n];
         const cupId = movedCups[i];
         trajectories.push({
-          kind: 'PASS_BY_LANE',
+          kind: 'TRACK_SPLINE_GLIDE',
           cupId,
           fromSlot,
           toSlot,
-          laneOffsetWorld: reverse ? -0.68 : 0.68,
-          leadLagBias: 0,
-          isFeint: false,
-          peekDecoyLift: false,
+          trackKind: 'trefoil',
+          chainIndex,
+          fromNodeIdx: i,
+          deltaSteps,
+          totalNodes: n,
         });
         currentSlotOfCup[cupId] = toSlot;
         cupAtSlot[toSlot] = cupId;
       }
-      plan.push({ trajectories, durationScale: durationScale * 1.12, holdPauseSec });
+
+      // On petal rotations, also gently rotate a second non-overlapping petal simultaneously for fluid Reels energy
+      if (chainIndex < 3 && cfg.simultaneousSwaps >= 2) {
+        const secondChainIndex = (chainIndex + 1) % 3;
+        const secondChain = TREFOIL_PETAL_CHAINS[secondChainIndex];
+        const secondDelta = -deltaSteps;
+        const secondCups = secondChain.map((s) => cupAtSlot[s]);
+        for (let i = 0; i < secondChain.length; i++) {
+          const fromSlot = secondChain[i];
+          const toSlot = secondChain[(i + secondDelta + secondChain.length) % secondChain.length];
+          const cupId = secondCups[i];
+          trajectories.push({
+            kind: 'TRACK_SPLINE_GLIDE',
+            cupId,
+            fromSlot,
+            toSlot,
+            trackKind: 'trefoil',
+            chainIndex: secondChainIndex,
+            fromNodeIdx: i,
+            deltaSteps: secondDelta,
+            totalNodes: secondChain.length,
+          });
+          currentSlotOfCup[cupId] = toSlot;
+          cupAtSlot[toSlot] = cupId;
+        }
+      }
+
+      plan.push({ trajectories, durationScale: durationScale * 1.18, holdPauseSec });
       continue;
     }
 
     // -------------------------------------------------------------------------
-    // 4. SIGNATURE 8-CUP OUTER PERIMETER CAROUSEL RING ROTATION
-    //    (On Classic 3x3 Grid, Mission Impossible 8-Ring+Center, and 8-Cup Crimson Die Oval!)
+    // 4. SIGNATURE 8-CUP OUTER PERIMETER / STADIUM OVAL CAROUSEL ROTATION
+    //    (On Classic 3x3 Grid, Mission Impossible 8-Ring+Center, and 8-Cup Crimson Die Oval)
     // -------------------------------------------------------------------------
     const is3x3Grid = cfg.reelMode === 'classic_3x3' && cupCount === 9;
     const isMissionImpossible = cfg.reelMode === 'mission_impossible_9' && cupCount === 9;
     const isCrimsonOval = cfg.reelMode === 'crimson_die_oval_8' && cupCount === 8;
 
     const shouldTriggerPerimeterRing =
-      (is3x3Grid || isMissionImpossible || isCrimsonOval) &&
-      totalSteps >= 6 &&
-      (step === Math.floor(totalSteps * 0.35) ||
-        step === Math.floor(totalSteps * 0.68) ||
-        (totalSteps >= 14 && step === Math.floor(totalSteps * 0.85)));
+      ((isCrimsonOval || isMissionImpossible) && step % 3 === 1) ||
+      (is3x3Grid &&
+        totalSteps >= 6 &&
+        (step === Math.floor(totalSteps * 0.35) ||
+          step === Math.floor(totalSteps * 0.68) ||
+          (totalSteps >= 14 && step === Math.floor(totalSteps * 0.85))));
 
     if (shouldTriggerPerimeterRing) {
       const ringSlots = is3x3Grid ? PERIMETER_CW_SLOTS_3X3 : MISSION_IMPOSSIBLE_RING_SLOTS;
-      const shiftOptions = [2, -2, 3, -3];
+      const shiftOptions = [2, -2, 3, -3, 1, -1];
       const shiftSteps = shiftOptions[step % shiftOptions.length];
       const ringRx = is3x3Grid ? 3.35 : isMissionImpossible ? 3.45 : 3.25;
       const ringRz = is3x3Grid ? 3.20 : isMissionImpossible ? 3.95 : 3.95;
@@ -742,10 +945,18 @@ function buildSpotQuestChoreographyPlan(
           toSlot,
           startAngle,
           deltaAngle,
-          startRadiusX: Math.abs(fromCoord.x) > 0.01 ? Math.hypot(fromCoord.x, fromCoord.z * (ringRx / ringRz)) : ringRx,
-          startRadiusZ: Math.abs(fromCoord.z) > 0.01 ? Math.hypot(fromCoord.x * (ringRz / ringRx), fromCoord.z) : ringRz,
-          endRadiusX: Math.abs(toCoord.x) > 0.01 ? Math.hypot(toCoord.x, toCoord.z * (ringRx / ringRz)) : ringRx,
-          endRadiusZ: Math.abs(toCoord.z) > 0.01 ? Math.hypot(toCoord.x * (ringRz / ringRx), toCoord.z) : ringRz,
+          startRadiusX: is3x3Grid
+            ? Math.hypot(fromCoord.x, fromCoord.z * (ringRx / ringRz))
+            : ringRx,
+          startRadiusZ: is3x3Grid
+            ? Math.hypot(fromCoord.x * (ringRz / ringRx), fromCoord.z)
+            : ringRz,
+          endRadiusX: is3x3Grid
+            ? Math.hypot(toCoord.x, toCoord.z * (ringRx / ringRz))
+            : ringRx,
+          endRadiusZ: is3x3Grid
+            ? Math.hypot(toCoord.x * (ringRz / ringRx), toCoord.z)
+            : ringRz,
           ringRadiusX: ringRx,
           ringRadiusZ: ringRz,
         });
@@ -758,15 +969,14 @@ function buildSpotQuestChoreographyPlan(
 
       plan.push({
         trajectories,
-        durationScale: Math.max(1.28, durationScale * 1.45),
-        holdPauseSec: holdPauseSec + 0.025,
+        durationScale: Math.max(1.22, durationScale * (Math.abs(shiftSteps) >= 3 ? 1.52 : 1.32)),
+        holdPauseSec: holdPauseSec + 0.012,
       });
       continue;
     }
 
     // -------------------------------------------------------------------------
     // 5. 3-CUP COLUMN / DIAGONAL "SNAKE STREAM" PASS (On 3x3 Grid)
-    //    Cups 1 and 2 glide forward along one lane while Cup 3 loops wide in the outer passing lane!
     // -------------------------------------------------------------------------
     const shouldTriggerSnakeTrain =
       is3x3Grid &&
@@ -795,8 +1005,8 @@ function buildSpotQuestChoreographyPlan(
           cupId: c0,
           fromSlot: s0,
           toSlot: s1,
-          laneOffsetWorld: 0.72 * sideSign,
-          leadLagBias: 0.08,
+          laneOffsetWorld: 0.42 * sideSign,
+          leadLagBias: 0.04,
           isFeint: false,
           peekDecoyLift: false,
         },
@@ -805,8 +1015,8 @@ function buildSpotQuestChoreographyPlan(
           cupId: c1,
           fromSlot: s1,
           toSlot: s2,
-          laneOffsetWorld: 0.72 * sideSign,
-          leadLagBias: 0.08,
+          laneOffsetWorld: 0.42 * sideSign,
+          leadLagBias: 0.04,
           isFeint: false,
           peekDecoyLift: false,
         },
@@ -815,8 +1025,8 @@ function buildSpotQuestChoreographyPlan(
           cupId: c2,
           fromSlot: s2,
           toSlot: s0,
-          laneOffsetWorld: 1.65 * sideSign, // Loops wide around the outside lane so it clearly passes the other two cups!
-          leadLagBias: -0.08,
+          laneOffsetWorld: 1.52 * sideSign,
+          leadLagBias: -0.04,
           isFeint: false,
           peekDecoyLift: false,
         },
@@ -838,9 +1048,7 @@ function buildSpotQuestChoreographyPlan(
     }
 
     // -------------------------------------------------------------------------
-    // 6. WIDE TWO-LANE PASS-BY EXCHANGES (PASS_BY_LANE)
-    //    Two cups exchange positions by pulling into wide left/right passing lanes
-    //    with lead/follow timing offset so you clearly see them pass each other!
+    // 6. SMOOTH CURVED PASS-BY EXCHANGES (All Modes)
     // -------------------------------------------------------------------------
     const usedSlots = new Set<number>();
     const usedPairMidpoints: Array<{ x: number; z: number }> = [];
@@ -860,7 +1068,10 @@ function buildSpotQuestChoreographyPlan(
 
       const ballSlot = currentSlotOfCup[ballCupId];
       let slot1: number;
-      if (!usedSlots.has(ballSlot) && p === 0 && Math.random() < 0.84) {
+      if (isMissionImpossible && p === 0 && step % 2 === 0 && !usedSlots.has(8)) {
+        // Keep the center hub cup actively flowing with outer ring cups in Mission Impossible
+        slot1 = 8;
+      } else if (!usedSlots.has(ballSlot) && p === 0 && Math.random() < 0.84) {
         slot1 = ballSlot;
       } else {
         slot1 = freeSlots[Math.floor(Math.random() * freeSlots.length)];
@@ -876,13 +1087,11 @@ function buildSpotQuestChoreographyPlan(
         const near = candidates.filter((s) => {
           const c2 = baseSlots[s];
           const d = Math.hypot(c1.x - c2.x, c1.z - c2.z);
-          return d >= 1.6 && d <= 4.6;
+          return d >= 1.5 && d <= 4.6;
         });
         if (near.length > 0) candidates = near;
       }
 
-      // If this is a 2nd simultaneous pair (p > 0), filter candidates so its midpoint is far (>= 3.3 units) from Pair 1
-      // so the two passing pairs NEVER cross or overlap each other in the middle of the arena!
       if (usedPairMidpoints.length > 0) {
         const c1 = baseSlots[slot1];
         candidates = candidates.filter((s) => {
@@ -913,17 +1122,13 @@ function buildSpotQuestChoreographyPlan(
       const laneSign: 1 | -1 = (step + p) % 2 === 0 ? 1 : -1;
       const laneOffsetWorld = computeWidePassLaneOffset(baseSlots[slot1], baseSlots[slot2], laneSign);
 
-      // Notice: because cup1 goes from slot1 -> slot2 and cup2 goes from slot2 -> slot1,
-      // their forward vectors (to - from) are opposite, so using the same signed laneOffsetWorld
-      // pushes cup1 to the LEFT passing lane and cup2 to the RIGHT passing lane!
-      // And leadLagBias (+0.11 vs -0.11) makes cup1 visibly lead through its lane while cup2 passes by in the opposite lane!
       trajectories.push({
         kind: 'PASS_BY_LANE',
         cupId: cup1,
         fromSlot: slot1,
         toSlot: slot2,
         laneOffsetWorld,
-        leadLagBias: 0.11,
+        leadLagBias: 0.045,
         isFeint,
         peekDecoyLift: peekDecoy1,
       });
@@ -933,7 +1138,7 @@ function buildSpotQuestChoreographyPlan(
         fromSlot: slot2,
         toSlot: slot1,
         laneOffsetWorld,
-        leadLagBias: -0.11,
+        leadLagBias: -0.045,
         isFeint,
         peekDecoyLift: peekDecoy2,
       });
@@ -947,9 +1152,19 @@ function buildSpotQuestChoreographyPlan(
     }
 
     if (trajectories.length > 0) {
+      // Scale step duration smoothly by actual travel distance so short & long passes share natural physical speed
+      let maxDist = 2.8;
+      for (const tr of trajectories) {
+        const c1 = baseSlots[tr.fromSlot];
+        const c2 = baseSlots[tr.toSlot];
+        if (c1 && c2) {
+          maxDist = Math.max(maxDist, Math.hypot(c2.x - c1.x, c2.z - c1.z));
+        }
+      }
+      const distFactor = Math.max(0.86, Math.min(1.32, maxDist / 3.25));
       plan.push({
         trajectories,
-        durationScale,
+        durationScale: durationScale * distFactor,
         holdPauseSec,
       });
     }
@@ -982,7 +1197,8 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [webglFallback, setWebglFallback] = useState(false);
   const [hoveredCupId, setHoveredCupId] = useState<number | null>(null);
-  const [cupSlotPositions, setCupSlotPositions] = useState<number[]>(
+  // Frozen visual-order mapping (index i -> cupId labeled i + 1) computed ONCE when cups come to a full stop
+  const [orderedCupIds, setOrderedCupIds] = useState<number[]>(
     Array.from({ length: MAX_CUPS }, (_, i) => i)
   );
 
@@ -1049,21 +1265,41 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
   const shuffleEngineRef = useRef<{
     cupSlots: number[];
     cupWorldPos: Array<{ x: number; z: number; liftY: number }>;
+    cupMotion: Array<{
+      prevX: number;
+      prevZ: number;
+      spinY: number;
+      spinVelY: number;
+      leanX: number;
+      leanZ: number;
+    }>;
+    displayNumByCup: number[];
     orbitAngle: number;
     activePlan: ShuffleWaveStep[];
     currentStepIndex: number;
     stepProgress: number;
     pauseRemainingSec: number;
+    finalSettleSec: number;
     isShuffling: boolean;
     burstTimer: number;
   }>({
     cupSlots: Array.from({ length: MAX_CUPS }, (_, i) => i),
     cupWorldPos: Array.from({ length: MAX_CUPS }, () => ({ x: 0, z: 0, liftY: 0 })),
+    cupMotion: Array.from({ length: MAX_CUPS }, () => ({
+      prevX: 0,
+      prevZ: 0,
+      spinY: 0,
+      spinVelY: 0,
+      leanX: 0,
+      leanZ: 0,
+    })),
+    displayNumByCup: Array.from({ length: MAX_CUPS }, (_, i) => i + 1),
     orbitAngle: 0,
     activePlan: [],
     currentStepIndex: 0,
     stepProgress: 0,
     pauseRemainingSec: 0,
+    finalSettleSec: 0,
     isShuffling: false,
     burstTimer: 0,
   });
@@ -1100,12 +1336,19 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
     const baseSlots = getFormationBaseSlots(levelConfig.reelMode);
     eng.cupSlots = Array.from({ length: MAX_CUPS }, (_, i) => i);
     eng.orbitAngle = 0;
+    eng.finalSettleSec = 0;
     for (let i = 0; i < MAX_CUPS; i++) {
       const s = baseSlots[i] || { x: 0, z: 0 };
       eng.cupWorldPos[i] = { x: s.x, z: s.z, liftY: 0 };
+      eng.cupMotion[i] = { prevX: s.x, prevZ: s.z, spinY: 0, spinVelY: 0, leanX: 0, leanZ: 0 };
     }
-    setCupSlotPositions([...eng.cupSlots]);
-  }, [levelConfig.level, levelConfig.reelMode]);
+    const { displayNumByCup, orderedCupIds: initialOrder } = computeVisualCupOrdering(
+      eng.cupWorldPos,
+      levelConfig.cupCount
+    );
+    eng.displayNumByCup = displayNumByCup;
+    setOrderedCupIds(initialOrder);
+  }, [levelConfig.level, levelConfig.reelMode, levelConfig.cupCount]);
 
   // Start shuffling when phase transitions to 'SHUFFLING'
   useEffect(() => {
@@ -1122,6 +1365,7 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
       eng.currentStepIndex = 0;
       eng.stepProgress = 0;
       eng.pauseRemainingSec = 0;
+      eng.finalSettleSec = 0;
       eng.isShuffling = true;
       if (plan.length > 0) {
         stateRef.current.onShuffleStepSound(
@@ -1129,10 +1373,17 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
         );
       } else {
         eng.isShuffling = false;
+        const { displayNumByCup, orderedCupIds: frozenOrder } = computeVisualCupOrdering(
+          eng.cupWorldPos,
+          levelConfig.cupCount
+        );
+        eng.displayNumByCup = displayNumByCup;
+        setOrderedCupIds(frozenOrder);
         stateRef.current.onShuffleComplete();
       }
     } else {
       eng.isShuffling = false;
+      eng.finalSettleSec = 0;
     }
   }, [phase, levelConfig, ballCupId, secondaryBallCupId, decoyCupIds]);
 
@@ -1205,9 +1456,10 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
       emerald_mirror: createCupSkinTexture('emerald_mirror', '#059669'),
     };
 
-    const numberDecalTextures: THREE.CanvasTexture[] = Array.from({ length: MAX_CUPS }, (_, idx) =>
-      createCupNumberDecalTexture(idx + 1)
+    const numberBadgeTextures: THREE.CanvasTexture[] = Array.from({ length: MAX_CUPS }, (_, idx) =>
+      createPremiumNumberBadgeTexture(idx + 1)
     );
+    const studioTableTex = createStudioTableTexture();
 
     const dieFaceTextures = createGoldenDieFaceTextures();
     const dieFaceMaterials = dieFaceTextures.map(
@@ -1255,20 +1507,36 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
     rimLight.position.set(0, 11.5, -8.5);
     scene.add(rimLight);
 
-    // --- SEAMLESS DARK RADIAL STUDIO FLOOR ---
+    // --- LUXURY BRUSHED-OBSIDIAN & GOLD-INLAY STUDIO FLOOR ---
     const arenaGroup = new THREE.Group();
     scene.add(arenaGroup);
 
     const tableMat = new THREE.MeshStandardMaterial({
+      map: studioTableTex,
       color: new THREE.Color(levelConfig.environment.tableBaseColor),
-      roughness: 0.42,
-      metalness: 0.18,
+      roughness: 0.36,
+      metalness: 0.24,
     });
-    const tableBody = new THREE.Mesh(new THREE.PlaneGeometry(32, 32), tableMat);
+    const tableBody = new THREE.Mesh(new THREE.PlaneGeometry(24, 24), tableMat);
     tableBody.rotation.x = -Math.PI / 2;
     tableBody.position.y = 0.0;
     tableBody.receiveShadow = true;
     arenaGroup.add(tableBody);
+
+    // Subtle luxury brushed-gold studio stage rim ring
+    const stageRimGeo = new THREE.TorusGeometry(6.35, 0.032, 16, 96);
+    const stageRimMat = new THREE.MeshPhysicalMaterial({
+      color: new THREE.Color('#f5c84c'),
+      emissive: new THREE.Color('#92400e'),
+      emissiveIntensity: 0.16,
+      metalness: 0.92,
+      roughness: 0.18,
+      clearcoat: 0.9,
+    });
+    const stageRimMesh = new THREE.Mesh(stageRimGeo, stageRimMat);
+    stageRimMesh.rotation.x = Math.PI / 2;
+    stageRimMesh.position.y = 0.025;
+    arenaGroup.add(stageRimMesh);
 
     // 1. Split-Brain horizontal white divider line & plum bottom floor plane
     const splitDividerGroup = new THREE.Group();
@@ -1331,9 +1599,11 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
       opacity: 0.44,
     });
     const trefoilGeos: THREE.BufferGeometry[] = [];
+    const trefoilCurves: THREE.CatmullRomCurve3[] = [];
     for (const chain of TREFOIL_PETAL_CHAINS) {
       const pts = chain.map((idx) => new THREE.Vector3(trefoilSlots[idx].x, 0.018, trefoilSlots[idx].z));
       const curve = new THREE.CatmullRomCurve3(pts, true, 'centripetal', 0.5);
+      trefoilCurves.push(curve);
       const geo = new THREE.TubeGeometry(curve, 64, 0.024, 8, true);
       trefoilGeos.push(geo);
       trefoilTrackGroup.add(new THREE.Mesh(geo, trefoilTrackMat));
@@ -1370,6 +1640,17 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
     goldFloorGlow.rotation.x = -Math.PI / 2;
     goldFloorGlow.position.y = 0.022;
     goldBallGroup.add(goldFloorGlow);
+
+    const goldRevealRingGeo = new THREE.TorusGeometry(0.56, 0.022, 14, 48);
+    const goldRevealRingMat = new THREE.MeshBasicMaterial({
+      color: new THREE.Color('#fde047'),
+      transparent: true,
+      opacity: 0.85,
+    });
+    const goldRevealRing = new THREE.Mesh(goldRevealRingGeo, goldRevealRingMat);
+    goldRevealRing.rotation.x = Math.PI / 2;
+    goldRevealRing.position.y = 0.028;
+    goldBallGroup.add(goldRevealRing);
 
     // --- 3D GOLDEN DIE TARGET (Reel DeU6nw4yeSM: "8 CUPS. ONE DIE.") ---
     const goldenDieGroup = new THREE.Group();
@@ -1460,29 +1741,18 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
       decoyBallGroups.push(dGroup);
     }
 
-    // --- 12 SLEEK INVERTED 3D CUPS (COMPACT FOOTPRINT FOR >2X CUP-WIDTH GAPS + FRONT-WALL NUMBER DECALS) ---
+    // --- 12 LUXURY INVERTED 3D CUPS (GOLD METALLIC COLLARS + FLOATING MEDALLION NUMBER BADGES) ---
     const cupWallGeo = new THREE.CylinderGeometry(0.30, 0.45, 1.08, 48, 1, true);
     cupWallGeo.translate(0, 0.55, 0);
-
-    const numberPatchGeo = new THREE.CylinderGeometry(
-      0.34,
-      0.415,
-      0.54,
-      24,
-      1,
-      true,
-      -Math.PI * 0.22,
-      Math.PI * 0.44
-    );
-    numberPatchGeo.translate(0, 0.52, 0.012);
 
     const innerCavityGeo = new THREE.CylinderGeometry(0.28, 0.43, 1.04, 36, 1, true);
     innerCavityGeo.translate(0, 0.53, 0);
 
     const whiteTopCapGeo = new THREE.CircleGeometry(0.285, 48);
     const topRimBevelGeo = new THREE.TorusGeometry(0.295, 0.02, 16, 48);
+    const goldCollarGeo = new THREE.TorusGeometry(0.326, 0.015, 14, 48);
     const bottomLipTorusGeo = new THREE.TorusGeometry(0.448, 0.022, 16, 48);
-    const contactShadowGeo = new THREE.CircleGeometry(0.52, 36);
+    const contactShadowGeo = new THREE.CircleGeometry(0.54, 36);
 
     const innerCavityMat = new THREE.MeshStandardMaterial({
       color: new THREE.Color('#021317'),
@@ -1491,28 +1761,38 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
     });
 
     const whiteTopCapMat = new THREE.MeshPhysicalMaterial({
-      color: new THREE.Color('#f1f5f9'),
+      color: new THREE.Color('#f8fafc'),
       emissive: new THREE.Color('#cbd5e1'),
-      emissiveIntensity: 0.16,
-      roughness: 0.22,
-      metalness: 0.08,
-      clearcoat: 0.6,
+      emissiveIntensity: 0.14,
+      roughness: 0.2,
+      metalness: 0.1,
+      clearcoat: 0.7,
     });
 
     const crimsonTopCapMat = new THREE.MeshPhysicalMaterial({
       color: new THREE.Color('#ef4444'),
       emissive: new THREE.Color('#991b1b'),
       emissiveIntensity: 0.18,
-      roughness: 0.2,
-      metalness: 0.15,
-      clearcoat: 0.85,
+      roughness: 0.18,
+      metalness: 0.16,
+      clearcoat: 0.88,
     });
 
     const topBevelMat = new THREE.MeshPhysicalMaterial({
       color: new THREE.Color('#e2e8f0'),
-      roughness: 0.2,
-      metalness: 0.35,
-      clearcoat: 0.8,
+      roughness: 0.18,
+      metalness: 0.42,
+      clearcoat: 0.85,
+    });
+
+    const goldCollarMat = new THREE.MeshPhysicalMaterial({
+      color: new THREE.Color('#f7ca4f'),
+      emissive: new THREE.Color('#78350f'),
+      emissiveIntensity: 0.15,
+      metalness: 0.94,
+      roughness: 0.15,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.06,
     });
 
     interface CupVisualNode {
@@ -1522,8 +1802,8 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
       wallMesh: THREE.Mesh;
       wallMat: THREE.MeshPhysicalMaterial;
       topCapMesh: THREE.Mesh;
-      numberPatchMesh: THREE.Mesh;
-      numberPatchMat: THREE.MeshBasicMaterial;
+      numberBadgeSprite: THREE.Sprite;
+      numberBadgeMat: THREE.SpriteMaterial;
       bottomLipMat: THREE.MeshBasicMaterial;
       selectionHalo: THREE.Mesh;
       selectionHaloMat: THREE.MeshBasicMaterial;
@@ -1582,15 +1862,19 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
       wallMesh.userData = { cupId: i };
       cupLifter.add(wallMesh);
 
-      const numberPatchMat = new THREE.MeshBasicMaterial({
-        map: numberDecalTextures[i],
+      const numberBadgeMat = new THREE.SpriteMaterial({
+        map: numberBadgeTextures[i],
         transparent: true,
         opacity: 0.0,
         depthWrite: false,
       });
-      const numberPatchMesh = new THREE.Mesh(numberPatchGeo, numberPatchMat);
-      numberPatchMesh.userData = { cupId: i };
-      cupLifter.add(numberPatchMesh);
+      const numberBadgeSprite = new THREE.Sprite(numberBadgeMat);
+      numberBadgeSprite.position.set(0, 1.46, 0);
+      numberBadgeSprite.scale.set(0.66, 0.66, 1);
+      numberBadgeSprite.renderOrder = 8;
+      numberBadgeSprite.userData = { cupId: i };
+      // Attached to rootGroup so cup body rotation never tilts or hides the medallion
+      rootGroup.add(numberBadgeSprite);
 
       const innerCavity = new THREE.Mesh(innerCavityGeo, innerCavityMat);
       innerCavity.userData = { cupId: i };
@@ -1608,6 +1892,12 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
       topBevel.userData = { cupId: i };
       cupLifter.add(topBevel);
 
+      const goldCollar = new THREE.Mesh(goldCollarGeo, goldCollarMat);
+      goldCollar.rotation.x = Math.PI / 2;
+      goldCollar.position.y = 0.94;
+      goldCollar.userData = { cupId: i };
+      cupLifter.add(goldCollar);
+
       const bottomLipMat = new THREE.MeshBasicMaterial({
         color: new THREE.Color('#a7f3d0'),
       });
@@ -1624,8 +1914,8 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
         wallMesh,
         wallMat,
         topCapMesh,
-        numberPatchMesh,
-        numberPatchMat,
+        numberBadgeSprite,
+        numberBadgeMat,
         bottomLipMat,
         selectionHalo,
         selectionHaloMat,
@@ -1633,6 +1923,32 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
         shadowMat,
       });
     }
+
+    // --- AMBIENT STUDIO GOLDEN BOKEH DUST MOTES ---
+    const MOTE_COUNT = 44;
+    const motePositions = new Float32Array(MOTE_COUNT * 3);
+    const motePhases: number[] = [];
+    for (let i = 0; i < MOTE_COUNT; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const r = 4.2 + Math.random() * 5.2;
+      motePositions[i * 3] = Math.cos(a) * r;
+      motePositions[i * 3 + 1] = 0.6 + Math.random() * 4.5;
+      motePositions[i * 3 + 2] = Math.sin(a) * r;
+      motePhases.push(Math.random() * Math.PI * 2);
+    }
+    const moteGeo = new THREE.BufferGeometry();
+    moteGeo.setAttribute('position', new THREE.BufferAttribute(motePositions, 3));
+    const moteMat = new THREE.PointsMaterial({
+      map: goldGlowTex,
+      color: new THREE.Color('#fde68a'),
+      size: 0.24,
+      transparent: true,
+      opacity: 0.34,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    const ambientMotes = new THREE.Points(moteGeo, moteMat);
+    scene.add(ambientMotes);
 
     // --- GOLDEN PARTICLE SYSTEM ---
     const PARTICLE_COUNT = 90;
@@ -1669,6 +1985,7 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
     const pickableMeshes: THREE.Object3D[] = [];
     cupNodes.forEach((node) => {
       node.cupLifter.children.forEach((child) => pickableMeshes.push(child));
+      pickableMeshes.push(node.numberBadgeSprite);
     });
 
     const getCupFromEvent = (clientX: number, clientY: number): number | null => {
@@ -1797,7 +2114,7 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
     let animFrameId = 0;
     let lastTime = performance.now();
 
-    const quinticEase = (x: number) => x * x * x * (x * (x * 6 - 15) + 10);
+    const naturalEase = (x: number) => 0.5 - 0.5 * Math.cos(Math.PI * Math.max(0, Math.min(1, x)));
 
     const animate = (now: number) => {
       animFrameId = requestAnimationFrame(animate);
@@ -1834,63 +2151,98 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
 
       const dt = st.isPaused ? 0 : rawDt;
 
-      // Advance continuous orbital rotation in ORBIT / MIND TRAP modes
-      if (cfg.orbitSpeedRadPerSec > 0 && !st.isPaused && !st.freezeActive) {
+      // Advance continuous orbital rotation ONLY while SHUFFLING — cups come to a 100% full stop before numbers appear!
+      if (
+        cfg.orbitSpeedRadPerSec > 0 &&
+        st.phase === 'SHUFFLING' &&
+        eng.isShuffling &&
+        eng.finalSettleSec <= 0 &&
+        !st.isPaused &&
+        !st.freezeActive
+      ) {
         const speedMult = st.slowMotionActive ? 0.45 : 1.0;
-        const phaseMult = st.phase === 'SHUFFLING' ? 1.0 : st.phase === 'SELECTING' ? 0.32 : 0.18;
         const dirSign =
           cfg.hasMidShuffleFeints && eng.currentStepIndex >= Math.floor(cfg.shuffleSteps / 2) ? -1 : 1;
-        eng.orbitAngle += dt * cfg.orbitSpeedRadPerSec * speedMult * phaseMult * dirSign;
+        eng.orbitAngle += dt * cfg.orbitSpeedRadPerSec * speedMult * dirSign;
       }
 
       const activeWave: ShuffleWaveStep | undefined =
-        st.phase === 'SHUFFLING' && eng.isShuffling ? eng.activePlan[eng.currentStepIndex] : undefined;
+        st.phase === 'SHUFFLING' && eng.isShuffling && eng.finalSettleSec <= 0
+          ? eng.activePlan[eng.currentStepIndex]
+          : undefined;
 
-      // 1. Advance Shuffle Wave Progress (with crisp Grid-Lock Snap Pause between passes)
-      if (st.phase === 'SHUFFLING' && eng.isShuffling && activeWave && !st.isPaused && !st.freezeActive) {
+      // 1. Advance Shuffle Wave Progress (with a clean 0.24s full-stop settle beat before numbers appear)
+      if (st.phase === 'SHUFFLING' && eng.isShuffling && !st.isPaused && !st.freezeActive) {
         const speedMultiplier = st.slowMotionActive ? 0.48 : 1.0;
 
-        if (eng.pauseRemainingSec > 0) {
-          eng.pauseRemainingSec -= dt * speedMultiplier;
-          if (eng.pauseRemainingSec <= 0) {
-            eng.currentStepIndex += 1;
-            eng.stepProgress = 0;
-            eng.pauseRemainingSec = 0;
-            if (eng.currentStepIndex < eng.activePlan.length) {
-              const nextWave = eng.activePlan[eng.currentStepIndex];
-              st.onShuffleStepSound(
-                (1000 / Math.max(165, cfg.stepDurationMs * nextWave.durationScale)) * speedMultiplier
-              );
-            } else {
-              eng.isShuffling = false;
-              setCupSlotPositions([...eng.cupSlots]);
-              st.onShuffleComplete();
+        if (eng.finalSettleSec > 0) {
+          // Cups are 100% stationary — let micro-lean and spin come to total rest before numbering
+          eng.finalSettleSec -= dt;
+          if (eng.finalSettleSec <= 0) {
+            eng.finalSettleSec = 0;
+            eng.isShuffling = false;
+            // Snap exact slot coordinates & freeze visual top-to-bottom, left-to-right cup numbers ONCE
+            for (let cid = 0; cid < cupCount; cid++) {
+              const sc = getWorldSlotCoord(eng.cupSlots[cid], cfg, eng.orbitAngle);
+              eng.cupWorldPos[cid].x = sc.x;
+              eng.cupWorldPos[cid].z = sc.z;
             }
+            const { displayNumByCup, orderedCupIds: frozenOrder } = computeVisualCupOrdering(
+              eng.cupWorldPos,
+              cupCount
+            );
+            eng.displayNumByCup = displayNumByCup;
+            setOrderedCupIds(frozenOrder);
+            st.onShuffleComplete();
           }
-        } else {
-          const stepDurSec =
-            Math.max(0.16, (cfg.stepDurationMs * activeWave.durationScale) / 1000) / speedMultiplier;
-          eng.stepProgress += dt / stepDurSec;
-
-          if (eng.stepProgress >= 1.0) {
-            eng.stepProgress = 1.0;
-            for (const traj of activeWave.trajectories) {
-              const isFeint = traj.kind === 'PASS_BY_LANE' && traj.isFeint;
-              if (!isFeint) {
-                eng.cupSlots[traj.cupId] = traj.toSlot;
+        } else if (activeWave) {
+          if (eng.pauseRemainingSec > 0) {
+            eng.pauseRemainingSec -= dt * speedMultiplier;
+            if (eng.pauseRemainingSec <= 0) {
+              eng.currentStepIndex += 1;
+              eng.stepProgress = 0;
+              eng.pauseRemainingSec = 0;
+              if (eng.currentStepIndex < eng.activePlan.length) {
+                const nextWave = eng.activePlan[eng.currentStepIndex];
+                st.onShuffleStepSound(
+                  (1000 / Math.max(165, cfg.stepDurationMs * nextWave.durationScale)) * speedMultiplier
+                );
+              } else {
+                // Trigger final full-stop settle beat before showing numbers
+                eng.finalSettleSec = 0.24;
               }
-              const finalSlot = isFeint ? traj.fromSlot : traj.toSlot;
-              const slotCoord = getWorldSlotCoord(finalSlot, cfg, eng.orbitAngle);
-              eng.cupWorldPos[traj.cupId].x = slotCoord.x;
-              eng.cupWorldPos[traj.cupId].z = slotCoord.z;
             }
-            eng.pauseRemainingSec = activeWave.holdPauseSec;
+          } else {
+            const stepDurSec =
+              Math.max(0.16, (cfg.stepDurationMs * activeWave.durationScale) / 1000) / speedMultiplier;
+            eng.stepProgress += dt / stepDurSec;
+
+            if (eng.stepProgress >= 1.0) {
+              eng.stepProgress = 1.0;
+              for (const traj of activeWave.trajectories) {
+                const isFeint = traj.kind === 'PASS_BY_LANE' && traj.isFeint;
+                if (!isFeint) {
+                  eng.cupSlots[traj.cupId] = traj.toSlot;
+                }
+                const finalSlot = isFeint ? traj.fromSlot : traj.toSlot;
+                const slotCoord = getWorldSlotCoord(finalSlot, cfg, eng.orbitAngle);
+                eng.cupWorldPos[traj.cupId].x = slotCoord.x;
+                eng.cupWorldPos[traj.cupId].z = slotCoord.z;
+              }
+              if (eng.currentStepIndex + 1 >= eng.activePlan.length) {
+                eng.currentStepIndex += 1;
+                eng.finalSettleSec = 0.24;
+              } else {
+                eng.pauseRemainingSec = activeWave.holdPauseSec;
+              }
+            }
           }
         }
       }
 
-      // 2. Update each cup's 3D position (Strictly upright — wide two-lane passing trajectories!)
+      // 2. Update each cup's 3D position, natural physical rotation, micro-lean & frozen number medallion
       const damp = 1 - Math.exp(-18 * (dt || 0.016));
+      const rotDamp = 1 - Math.exp(-11 * (dt || 0.016));
       const showCupNumbers = st.phase === 'SELECTING' || st.phase === 'REVEALING';
 
       for (let cupId = 0; cupId < MAX_CUPS; cupId++) {
@@ -1910,24 +2262,26 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
           node.wallMat.needsUpdate = true;
         }
 
-        // Crimson cups have a crimson top cap & lip matching Reel DeU6nw4yeSM; other cups have white caps
         const desiredCapMat = targetSkin === 'crimson_gloss' ? crimsonTopCapMat : whiteTopCapMat;
         if (node.topCapMesh.material !== desiredCapMat) {
           node.topCapMesh.material = desiredCapMat;
         }
         node.bottomLipMat.color.set(targetSkin === 'crimson_gloss' ? '#fca5a5' : '#a7f3d0');
 
-        // Front-wall printed number decal (1..12)
-        const currentSlot = eng.cupSlots[cupId];
-        const numberTex = numberDecalTextures[currentSlot] || numberDecalTextures[0];
-        if (node.numberPatchMat.map !== numberTex) {
-          node.numberPatchMat.map = numberTex;
-          node.numberPatchMat.needsUpdate = true;
+        // Frozen gold-rimmed medallion badge (1..cupCount) — only visible once cups are 100% still!
+        const frozenDisplayNum = eng.displayNumByCup[cupId] || cupId + 1;
+        const badgeTex = numberBadgeTextures[frozenDisplayNum - 1] || numberBadgeTextures[0];
+        if (node.numberBadgeMat.map !== badgeTex) {
+          node.numberBadgeMat.map = badgeTex;
+          node.numberBadgeMat.needsUpdate = true;
         }
-        const targetNumberOpacity = showCupNumbers ? 0.95 : 0.0;
-        node.numberPatchMat.opacity += (targetNumberOpacity - node.numberPatchMat.opacity) * 0.25;
+        const targetBadgeOpacity = showCupNumbers ? 1.0 : 0.0;
+        node.numberBadgeMat.opacity += (targetBadgeOpacity - node.numberBadgeMat.opacity) * (showCupNumbers ? 0.22 : 0.35);
+        node.numberBadgeSprite.visible = node.numberBadgeMat.opacity > 0.02;
 
+        const currentSlot = eng.cupSlots[cupId];
         const posState = eng.cupWorldPos[cupId];
+        const motion = eng.cupMotion[cupId];
         const slotCoord = getWorldSlotCoord(currentSlot, cfg, eng.orbitAngle);
 
         const activeTraj =
@@ -1935,11 +2289,25 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
             ? activeWave.trajectories.find((tr) => tr.cupId === cupId)
             : undefined;
 
+        let spinDirectionHint = 0;
+
         if (activeTraj) {
           const rawT = Math.max(0, Math.min(1, eng.stepProgress));
 
-          if (activeTraj.kind === 'PERIMETER_RING_SPIN') {
-            const eT = quinticEase(rawT);
+          if (activeTraj.kind === 'TRACK_SPLINE_GLIDE') {
+            const eT = naturalEase(rawT);
+            const curve =
+              activeTraj.trackKind === 'figure8'
+                ? fig8Curve
+                : trefoilCurves[activeTraj.chainIndex] || trefoilCurves[0];
+            const uRaw = (activeTraj.fromNodeIdx + activeTraj.deltaSteps * eT) / activeTraj.totalNodes;
+            const u = ((uRaw % 1) + 1) % 1;
+            const pt = curve.getPoint(u);
+            posState.x = pt.x;
+            posState.z = pt.z;
+            spinDirectionHint = Math.sign(activeTraj.deltaSteps || 1) * 1.15;
+          } else if (activeTraj.kind === 'PERIMETER_RING_SPIN') {
+            const eT = naturalEase(rawT);
             const circleMorph = Math.sin(eT * Math.PI);
             const baseRx = activeTraj.startRadiusX + (activeTraj.endRadiusX - activeTraj.startRadiusX) * eT;
             const baseRz = activeTraj.startRadiusZ + (activeTraj.endRadiusZ - activeTraj.startRadiusZ) * eT;
@@ -1949,12 +2317,9 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
 
             posState.x = Math.cos(angleNow) * rxNow;
             posState.z = Math.sin(angleNow) * rzNow;
+            spinDirectionHint = -Math.sign(activeTraj.deltaAngle || 1) * 1.25;
           } else {
-            // TRUE 3-PHASE TRAPEZOIDAL PARALLEL PASS-BY CORRIDOR (PASS_BY_LANE):
-            // Instead of revolving in a circle ("swapping"), the two cups:
-            //   Phase 1 (0.00 -> 0.22): Step perpendicularly out into two wide, separated parallel lanes (Left Lane & Right Lane)
-            //   Phase 2 (0.22 -> 0.78): Glide in STRAIGHT PARALLEL LINES right past each other with >1.8 units of open floor between them!
-            //   Phase 3 (0.78 -> 1.00): Merge perpendicularly from their parallel passing lanes into their destination positions!
+            // Natural C2 Continuous Smooth Pass-By Curve
             const fromNow = getWorldSlotCoord(activeTraj.fromSlot, cfg, eng.orbitAngle);
             const toNow = getWorldSlotCoord(activeTraj.toSlot, cfg, eng.orbitAngle);
 
@@ -1967,25 +2332,13 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
             let laneFactor: number;
 
             if (activeTraj.isFeint) {
-              // Mind Trap feint: steps into the passing lane, glides halfway along the parallel track, and backs up
-              forwardT = Math.sin(rawT * Math.PI) * 0.48;
-              laneFactor = Math.sin(rawT * Math.PI);
-            } else if (warpedT < 0.20) {
-              // Phase 1: Step out into the parallel passing lane while beginning forward acceleration
-              const p1 = quinticEase(warpedT / 0.20);
-              laneFactor = p1;
-              forwardT = p1 * 0.10;
-            } else if (warpedT < 0.80) {
-              // Phase 2: Glide straight past the other cup along parallel passing lanes (constant wide lateral separation!)
-              const p2 = (warpedT - 0.20) / 0.60;
-              const smoothP2 = p2 * p2 * (3 - 2 * p2);
-              laneFactor = 1.0;
-              forwardT = 0.10 + smoothP2 * 0.80;
+              const feint = Math.sin(rawT * Math.PI);
+              forwardT = feint * 0.44;
+              laneFactor = Math.pow(feint, 0.85);
             } else {
-              // Phase 3: Having completely passed each other, merge smoothly from the parallel lane into the target slot
-              const p3 = quinticEase((warpedT - 0.80) / 0.20);
-              laneFactor = 1.0 - p3;
-              forwardT = 0.90 + p3 * 0.10;
+              const eT = naturalEase(warpedT);
+              forwardT = eT;
+              laneFactor = Math.pow(Math.sin(Math.PI * eT), 0.78);
             }
 
             const dx = toNow.x - fromNow.x;
@@ -1994,20 +2347,41 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
             const ux = dx / dist;
             const uz = dz / dist;
 
-            // Unit perpendicular normal pointing to the left of the cup's travel direction
             const nx = -uz;
             const nz = ux;
 
-            // Clamp lateral offset so outer cups stay well inside the camera viewport while maintaining >= 1.75 units between passing cups
-            const laneShift = Math.sign(activeTraj.laneOffsetWorld) * Math.min(1.02, Math.abs(activeTraj.laneOffsetWorld) * 0.76);
+            const baseShift = Math.min(1.16, Math.abs(activeTraj.laneOffsetWorld) * 0.82);
+            const laneShift = Math.sign(activeTraj.laneOffsetWorld) * (dist > 4.5 ? Math.max(1.14, baseShift) : baseShift);
 
             posState.x = fromNow.x + dx * forwardT + nx * laneShift * laneFactor;
             posState.z = fromNow.z + dz * forwardT + nz * laneShift * laneFactor;
+            spinDirectionHint = Math.sign(activeTraj.laneOffsetWorld || 1);
           }
         } else {
           posState.x += (slotCoord.x - posState.x) * damp;
           posState.z += (slotCoord.z - posState.z) * damp;
         }
+
+        // Compute natural instantaneous velocity for organic 3D spin & subtle inertial micro-lean
+        let vx = 0;
+        let vz = 0;
+        if (dt > 0.0005 && !st.isPaused) {
+          vx = (posState.x - motion.prevX) / dt;
+          vz = (posState.z - motion.prevZ) / dt;
+        }
+        motion.prevX = posState.x;
+        motion.prevZ = posState.z;
+
+        const speed = Math.hypot(vx, vz);
+        const isActivelyMoving = st.phase === 'SHUFFLING' && !st.freezeActive && eng.finalSettleSec <= 0 && speed > 0.08;
+
+        // Smooth physical Y-rotation proportional to glide speed & arc direction (settles cleanly to rest)
+        const targetSpinVel = isActivelyMoving
+          ? (spinDirectionHint || (cupId % 2 === 0 ? 1 : -1)) * Math.min(4.8, speed * 0.42)
+          : 0;
+        motion.spinVelY += (targetSpinVel - motion.spinVelY) * rotDamp;
+        if (Math.abs(motion.spinVelY) < 0.004) motion.spinVelY = 0;
+        motion.spinY += motion.spinVelY * dt;
 
         // Determine target vertical lift (liftY)
         let targetLiftY = 0;
@@ -2043,9 +2417,23 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
 
         posState.liftY += (targetLiftY - posState.liftY) * damp;
 
-        // Strictly upright tabletop glide
+        // Subtle inertial lean during glides + graceful reveal tilt-back when lifting a cup
+        const liftTiltX = -0.1 * Math.min(1, posState.liftY / 1.38);
+        const targetLeanZ = isActivelyMoving ? Math.max(-0.055, Math.min(0.055, -vx * 0.0085)) : 0;
+        const targetLeanX =
+          (isActivelyMoving ? Math.max(-0.055, Math.min(0.055, vz * 0.0085)) : 0) + liftTiltX;
+        motion.leanX += (targetLeanX - motion.leanX) * rotDamp;
+        motion.leanZ += (targetLeanZ - motion.leanZ) * rotDamp;
+
         node.rootGroup.position.set(posState.x, 0, posState.z);
         node.cupLifter.position.y = posState.liftY;
+        node.cupLifter.rotation.set(motion.leanX, motion.spinY, motion.leanZ);
+
+        // Smoothly float the gold medallion right above the cup crown (scales gently on hover or reveal)
+        const isHovered = st.phase === 'SELECTING' && st.hoveredCupId === cupId;
+        const badgeScale = (0.56 + 0.14 * node.numberBadgeMat.opacity) * (isHovered ? 1.12 : 1.0);
+        node.numberBadgeSprite.scale.set(badgeScale, badgeScale, 1);
+        node.numberBadgeSprite.position.set(0, 1.44 + posState.liftY, 0);
 
         const shadowScale = Math.max(0.52, 1 - posState.liftY * 0.22);
         node.shadowDisc.scale.set(shadowScale, shadowScale, 1);
@@ -2078,9 +2466,9 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
             (cupId === st.selectedSecondaryCupId && cupId === st.secondaryBallCupId);
           node.selectionHaloMat.color.set(isRight ? '#fbbf24' : '#f43f5e');
           node.selectionHaloMat.opacity = 0.92;
-        } else if (st.phase === 'SELECTING' && st.hoveredCupId === cupId) {
-          node.selectionHaloMat.color.set('#2dd4bf');
-          node.selectionHaloMat.opacity = 0.78;
+        } else if (isHovered) {
+          node.selectionHaloMat.color.set('#fbbf24');
+          node.selectionHaloMat.opacity = 0.82;
         } else {
           node.selectionHaloMat.opacity *= 0.85;
         }
@@ -2108,6 +2496,10 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
         goldBallGroup.visible = isPrimaryVisible;
         if (isPrimaryVisible) {
           goldBallMesh.position.y = 0.34 + Math.max(0, Math.sin(now * 0.005) * 0.035);
+          goldBallMesh.rotation.y = now * 0.0014;
+          const ringPulse = 1 + Math.sin(now * 0.006) * 0.07;
+          goldRevealRing.scale.set(ringPulse, ringPulse, 1);
+          goldRevealRingMat.opacity = 0.62 + Math.sin(now * 0.006) * 0.26;
         }
       }
 
@@ -2171,6 +2563,15 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
         particleMat.opacity = Math.max(0, particleMat.opacity - dt * 3.5);
       }
 
+      // 7. Gentle Ambient Studio Bokeh Drift
+      ambientMotes.rotation.y = now * 0.00008;
+      const moteAttr = moteGeo.getAttribute('position') as THREE.BufferAttribute;
+      for (let i = 0; i < MOTE_COUNT; i++) {
+        const yBase = moteAttr.getY(i);
+        moteAttr.setY(i, yBase + Math.sin(now * 0.001 + motePhases[i]) * 0.0012);
+      }
+      moteAttr.needsUpdate = true;
+
       renderer.render(scene, camera);
     };
 
@@ -2187,12 +2588,14 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
       renderer.domElement.removeEventListener('pointerdown', handlePointerDown);
 
       cupWallGeo.dispose();
-      numberPatchGeo.dispose();
       innerCavityGeo.dispose();
       whiteTopCapGeo.dispose();
       topRimBevelGeo.dispose();
+      goldCollarGeo.dispose();
       bottomLipTorusGeo.dispose();
       contactShadowGeo.dispose();
+      stageRimGeo.dispose();
+      goldRevealRingGeo.dispose();
       dieBoxGeo.dispose();
       dieRingGeo.dispose();
       ovalTubeGeo.dispose();
@@ -2202,6 +2605,9 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
       whiteTopCapMat.dispose();
       crimsonTopCapMat.dispose();
       topBevelMat.dispose();
+      goldCollarMat.dispose();
+      stageRimMat.dispose();
+      goldRevealRingMat.dispose();
       goldBallMat.dispose();
       goldFloorGlowMat.dispose();
       dieRingMat.dispose();
@@ -2212,6 +2618,7 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
       decoyBallMat.dispose();
       decoyGlowMat.dispose();
       tableMat.dispose();
+      studioTableTex.dispose();
       dividerLineMat.dispose();
       bottomHalfFloorMat.dispose();
       ovalTubeMat.dispose();
@@ -2219,16 +2626,18 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
       trefoilTrackMat.dispose();
       particleGeo.dispose();
       particleMat.dispose();
+      moteGeo.dispose();
+      moteMat.dispose();
       goldGlowTex.dispose();
       pinkGlowTex.dispose();
       decoyGlowTex.dispose();
-      numberDecalTextures.forEach((t) => t.dispose());
+      numberBadgeTextures.forEach((t) => t.dispose());
       Object.values(skinTextures).forEach((t) => t.dispose());
       envMap.dispose();
       pmremGenerator.dispose();
       cupNodes.forEach((n) => {
         n.wallMat.dispose();
-        n.numberPatchMat.dispose();
+        n.numberBadgeMat.dispose();
         n.bottomLipMat.dispose();
         n.selectionHaloMat.dispose();
         n.shadowMat.dispose();
@@ -2238,12 +2647,12 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const getCupAtGridSlot = (slotIdx: number): number => {
-    const found = cupSlotPositions.slice(0, levelConfig.cupCount).indexOf(slotIdx);
-    return found >= 0 ? found : slotIdx;
+  const getCupForDisplayIndex = (displayIdx: number): number => {
+    return orderedCupIds[displayIdx] ?? displayIdx;
   };
 
-  const trueBallSlotNumber = (cupSlotPositions[ballCupId] ?? ballCupId) + 1;
+  const trueBallDisplayIdx = orderedCupIds.slice(0, levelConfig.cupCount).indexOf(ballCupId);
+  const trueBallSlotNumber = trueBallDisplayIdx >= 0 ? trueBallDisplayIdx + 1 : ballCupId + 1;
 
   const renderStyledSubtitle = (subtitle: string) => {
     const parts = subtitle.split(/(GOLD|DIE|BOTH BALLS|NEVER STOP SPINNING|INFINITY|TREFOIL)/g);
@@ -2265,20 +2674,20 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
 
   if (webglFallback) {
     return (
-      <div className="relative w-full h-full min-h-[380px] flex flex-col items-center justify-center p-4 bg-gradient-to-b from-[#03161b] to-[#072a32] rounded-2xl border border-teal-500/30">
+      <div className="relative w-full h-full min-h-[380px] flex flex-col items-center justify-center p-4 bg-gradient-to-b from-[#03161b] to-[#072a32] rounded-2xl border border-amber-400/25">
         <div className="grid grid-cols-3 gap-4 max-w-sm w-full">
-          {Array.from({ length: levelConfig.cupCount }, (_, slotIdx) => {
-            const cupId = getCupAtGridSlot(slotIdx);
+          {Array.from({ length: levelConfig.cupCount }, (_, displayIdx) => {
+            const cupId = getCupForDisplayIndex(displayIdx);
             const isBallHere = cupId === ballCupId || cupId === secondaryBallCupId;
             return (
               <button
-                key={slotIdx}
+                key={displayIdx}
                 type="button"
                 disabled={phase !== 'SELECTING' || revealedEmptyCupIds.includes(cupId)}
                 onClick={() => phase === 'SELECTING' && onSelectCup(cupId)}
-                className="h-24 rounded-2xl border border-teal-400/40 bg-teal-900/50 flex flex-col items-center justify-center text-white font-black"
+                className="h-24 rounded-2xl border border-amber-400/35 bg-teal-900/50 flex flex-col items-center justify-center text-white font-black"
               >
-                <span>Cup #{slotIdx + 1}</span>
+                <span>Cup #{displayIdx + 1}</span>
                 {phase === 'OBSERVE' && isBallHere && (
                   <span className="text-amber-300 text-xs">
                     ● {levelConfig.targetType === 'golden_die' ? 'DIE' : 'BALL'}
@@ -2293,89 +2702,81 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
   }
 
   return (
-    <div className="relative w-full max-w-full min-w-0 h-[390px] sm:h-[460px] select-none overflow-hidden rounded-2xl">
+    <div className="relative w-full max-w-full min-w-0 h-[390px] sm:h-[465px] select-none overflow-hidden rounded-2xl bg-[#021216]">
       {/* Main Three.js Interactive 3D Canvas Container */}
       <div ref={containerRef} className="w-full max-w-full min-w-0 h-full touch-none overflow-hidden" />
 
-      {/* Authentic Bold Top Center Title Overlay inside the 3D Arena */}
-      <div className="pointer-events-none absolute top-2.5 inset-x-2 sm:inset-x-4 flex flex-col items-center text-center">
-        <div className="text-lg sm:text-3xl font-black tracking-tight text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)] uppercase leading-tight">
+      {/* Subtle studio vignette frame */}
+      <div className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-inset ring-amber-400/20 shadow-[inset_0_0_48px_rgba(0,0,0,0.55)]" />
+
+      {/* Top Center Studio Title Overlay */}
+      <div className="pointer-events-none absolute top-3 inset-x-3 flex flex-col items-center text-center">
+        <div className="text-lg sm:text-3xl font-black tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)] uppercase leading-none">
           {levelConfig.reelHeaderTitle}
         </div>
-        <div className="text-[10px] sm:text-sm font-extrabold tracking-widest text-slate-100 drop-shadow-[0_1px_6px_rgba(0,0,0,0.9)] uppercase mt-0.5">
-          {renderStyledSubtitle(levelConfig.reelHeaderSubtitle)}
+        <div className="mt-1 flex items-center gap-2">
+          <span className="h-px w-6 bg-gradient-to-r from-transparent to-amber-400/70" />
+          <span className="text-[10px] sm:text-xs font-extrabold tracking-[0.2em] text-slate-100/95 drop-shadow-[0_1px_6px_rgba(0,0,0,0.9)] uppercase">
+            {renderStyledSubtitle(levelConfig.reelHeaderSubtitle)}
+          </span>
+          <span className="h-px w-6 bg-gradient-to-l from-transparent to-amber-400/70" />
         </div>
       </div>
 
-      {/* Active Power-Up Status Ribbons */}
-      <div className="pointer-events-none absolute top-16 left-3 flex flex-wrap gap-2">
-        {freezeActive && (
-          <div className="px-3 py-1 rounded-lg bg-sky-950/90 border border-sky-400/60 text-sky-200 text-xs font-bold tracking-wider uppercase shadow-lg">
-            FREEZE ACTIVE — PASSING PAUSED
-          </div>
-        )}
-        {slowMotionActive && (
-          <div className="px-3 py-1 rounded-lg bg-teal-950/90 border border-teal-400/60 text-teal-200 text-xs font-bold tracking-wider uppercase shadow-lg">
-            SLOW MOTION — 50% SPEED
-          </div>
-        )}
-        {extraVisionActive && (
-          <div className="px-3 py-1 rounded-lg bg-amber-950/90 border border-amber-400/70 text-amber-200 text-xs font-bold tracking-wider uppercase shadow-lg">
-            EXTRA VISION — X-RAY PULSE
-          </div>
-        )}
-      </div>
+      {/* Active Power-Up Status Indicators */}
+      {(freezeActive || slowMotionActive || extraVisionActive) && (
+        <div className="pointer-events-none absolute top-14 left-3 flex items-center gap-2 text-[11px] font-black tracking-widest uppercase drop-shadow-[0_2px_6px_rgba(0,0,0,0.95)]">
+          {freezeActive && <span className="text-sky-300">FREEZE</span>}
+          {slowMotionActive && <span className="text-teal-300">SLOW-MO</span>}
+          {extraVisionActive && <span className="text-amber-300">X-RAY</span>}
+        </div>
+      )}
 
-      {/* Authentic Bottom-Center Countdown (3... 2... 1...) */}
+      {/* Countdown (3... 2... 1...) */}
       {phase === 'COUNTDOWN' && countdownNum !== null && countdownNum !== undefined && (
-        <div className="pointer-events-none absolute bottom-4 inset-x-0 flex items-center justify-center">
-          <span className="text-5xl sm:text-6xl font-black text-white drop-shadow-[0_4px_14px_rgba(0,0,0,0.95)] tabular-nums">
+        <div className="pointer-events-none absolute bottom-5 inset-x-0 flex items-center justify-center">
+          <span className="text-5xl sm:text-6xl font-black text-amber-300 drop-shadow-[0_4px_18px_rgba(0,0,0,0.95)] tabular-nums">
             {countdownNum}
           </span>
         </div>
       )}
 
-      {/* Authentic Bottom-Center "WHICH CUP?" + Numbered Dock */}
+      {/* Direct "WHICH CUP?" + Frozen Gold-Trimmed Numbered Dock */}
       {phase === 'SELECTING' && !isPaused && (
         <div className="absolute bottom-2.5 inset-x-3 flex flex-col items-center justify-center pointer-events-none gap-1.5">
           <div className="text-center drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]">
-            <div className="text-lg sm:text-xl font-black text-white tracking-wide uppercase leading-none">
-              {levelConfig.targetType === 'golden_die' ? 'WHICH CUP HIDES THE DIE?' : 'WHICH CUP?'}
-            </div>
-            <div className="text-[11px] sm:text-xs font-semibold text-slate-200 mt-0.5">
-              {levelConfig.reelMode === 'split_brain_2x3'
-                ? 'Tap 1 Top Cup (1–3) & 1 Bottom Cup (4–6)'
-                : 'Tap the numbered cup on screen or below'}
+            <div className="text-sm sm:text-base font-black text-amber-200 tracking-[0.18em] uppercase leading-none">
+              {levelConfig.reelMode === 'split_brain_2x3' ? 'PICK 1 TOP + 1 BOTTOM' : 'PICK A CUP'}
             </div>
           </div>
 
-          <div className="pointer-events-auto bg-[#021418]/90 border border-teal-400/35 rounded-xl px-2.5 py-1.5 shadow-xl flex items-center gap-1.5 flex-wrap justify-center">
-            {Array.from({ length: levelConfig.cupCount }, (_, slotIdx) => {
-              const cupId = getCupAtGridSlot(slotIdx);
+          <div className="pointer-events-auto bg-[#021116]/90 backdrop-blur-md border border-amber-400/35 rounded-2xl px-2.5 py-1.5 shadow-[0_8px_28px_rgba(0,0,0,0.65)] flex items-center gap-1.5 flex-wrap justify-center">
+            {Array.from({ length: levelConfig.cupCount }, (_, displayIdx) => {
+              const cupId = getCupForDisplayIndex(displayIdx);
               const isDisabled =
                 revealedEmptyCupIds.includes(cupId) ||
                 selectedCupId === cupId ||
                 selectedSecondaryCupId === cupId;
               return (
                 <button
-                  key={slotIdx}
+                  key={displayIdx}
                   type="button"
                   disabled={isDisabled}
                   onMouseEnter={() => setHoveredCupId(cupId)}
                   onMouseLeave={() => setHoveredCupId(null)}
                   onClick={() => onSelectCup(cupId)}
-                  className={`w-7 h-7 rounded-lg text-xs font-black transition-all ${
+                  className={`w-8 h-8 rounded-full text-xs font-black transition-all cursor-pointer tabular-nums ${
                     selectedCupId === cupId || selectedSecondaryCupId === cupId
-                      ? 'bg-amber-400 text-slate-950 border border-white'
+                      ? 'bg-gradient-to-b from-amber-300 to-amber-500 text-slate-950 border-2 border-amber-100 shadow-md shadow-amber-500/30'
                       : isDisabled
-                      ? 'bg-slate-800/60 text-slate-500 border border-slate-700/40 cursor-not-allowed'
+                      ? 'bg-slate-900/60 text-slate-600 border border-slate-700/40 cursor-not-allowed'
                       : hoveredCupId === cupId
-                      ? 'bg-amber-400 text-slate-950 border border-amber-200 scale-105 shadow-md'
-                      : 'bg-teal-900/85 text-teal-100 border border-teal-500/45 hover:bg-teal-700/85 active:scale-95'
+                      ? 'bg-gradient-to-b from-amber-300 to-amber-500 text-slate-950 border border-amber-100 scale-110 shadow-lg shadow-amber-400/35'
+                      : 'bg-[#04242c] text-amber-100 border border-amber-400/45 hover:border-amber-300 hover:bg-[#063440] active:scale-95'
                   }`}
-                  title={`Select Cup #${slotIdx + 1}`}
+                  title={`Cup ${displayIdx + 1}`}
                 >
-                  {slotIdx + 1}
+                  {displayIdx + 1}
                 </button>
               );
             })}
@@ -2383,14 +2784,11 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
         </div>
       )}
 
-      {/* Authentic Bottom-Center Reveal Caption ("IT WAS CUP 4 — Did you get it?") */}
+      {/* Reveal Caption */}
       {phase === 'REVEALING' && (
-        <div className="pointer-events-none absolute bottom-3 inset-x-4 flex flex-col items-center text-center drop-shadow-[0_2px_10px_rgba(0,0,0,0.95)]">
-          <div className="text-xl sm:text-2xl font-black text-amber-400 tracking-wide uppercase">
-            IT WAS CUP {trueBallSlotNumber}
-          </div>
-          <div className="text-xs sm:text-sm font-bold text-white mt-0.5">
-            {selectedCupId === ballCupId ? 'Bullseye! You nailed it!' : 'Did you get it?'}
+        <div className="pointer-events-none absolute bottom-3.5 inset-x-4 flex flex-col items-center text-center drop-shadow-[0_2px_12px_rgba(0,0,0,0.95)]">
+          <div className="text-xl sm:text-2xl font-black text-amber-300 tracking-[0.14em] uppercase">
+            CUP {trueBallSlotNumber}
           </div>
         </div>
       )}
