@@ -11,6 +11,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   getDocFromServer,
   getFirestore,
   limit,
@@ -297,3 +298,112 @@ export function subscribeToNationalLeaderboard(
     }
   );
 }
+
+// ==================== WRONG WAY LIVE FRIEND MULTIPLAYER ROOMS ====================
+export interface WrongWayLiveRoomDoc {
+  roomId: string;
+  hostId: string;
+  hostName: string;
+  guestId: string;
+  guestName: string;
+  status: 'waiting' | 'playing' | 'finished';
+  turnIndex: number;
+  starterIndex: number;
+  moveCount: number;
+  p0R: number;
+  p0C: number;
+  p0Walls: number;
+  p1R: number;
+  p1C: number;
+  p1Walls: number;
+  wallsJson: string;
+  winnerIndex: number;
+  equalizerPendingIndex: number;
+  updatedAt: string;
+}
+
+export function sanitizeWrongWayRoomDoc(room: WrongWayLiveRoomDoc): WrongWayLiveRoomDoc {
+  const cleanRoomId = String(room.roomId || '')
+    .replace(/[^a-zA-Z0-9_-]/g, '')
+    .slice(0, 20);
+  return {
+    roomId: cleanRoomId,
+    hostId: String(room.hostId || 'host').slice(0, 80),
+    hostName: String(room.hostName || 'Player 1 (Cyan)').slice(0, 60),
+    guestId: String(room.guestId || '').slice(0, 80),
+    guestName: String(room.guestName || 'Friend (Pink)').slice(0, 60),
+    status:
+      room.status === 'playing' || room.status === 'finished' ? room.status : 'waiting',
+    turnIndex: room.turnIndex === 1 ? 1 : 0,
+    starterIndex: room.starterIndex === 1 ? 1 : 0,
+    moveCount: Math.max(0, Math.min(1000, Math.round(Number(room.moveCount) || 0))),
+    p0R: Math.max(0, Math.min(10, Math.round(Number(room.p0R) || 0))),
+    p0C: Math.max(0, Math.min(10, Math.round(Number(room.p0C) || 0))),
+    p0Walls: Math.max(0, Math.min(20, Math.round(Number(room.p0Walls) || 0))),
+    p1R: Math.max(0, Math.min(10, Math.round(Number(room.p1R) || 0))),
+    p1C: Math.max(0, Math.min(10, Math.round(Number(room.p1C) || 0))),
+    p1Walls: Math.max(0, Math.min(20, Math.round(Number(room.p1Walls) || 0))),
+    wallsJson: String(room.wallsJson || '[]').slice(0, 15000),
+    winnerIndex: Math.max(-1, Math.min(2, Math.round(Number(room.winnerIndex) ?? -1))),
+    equalizerPendingIndex: Math.max(
+      -1,
+      Math.min(1, Math.round(Number(room.equalizerPendingIndex) ?? -1))
+    ),
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+export async function saveWrongWayLiveRoomToCloud(
+  room: WrongWayLiveRoomDoc
+): Promise<boolean> {
+  const safeRoom = sanitizeWrongWayRoomDoc(room);
+  if (!safeRoom.roomId) return false;
+  try {
+    await setDoc(doc(db, 'wrongWayRooms', safeRoom.roomId), safeRoom);
+    return true;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, `wrongWayRooms/${safeRoom.roomId}`);
+    return false;
+  }
+}
+
+export async function getWrongWayLiveRoomFromCloud(
+  roomId: string
+): Promise<WrongWayLiveRoomDoc | null> {
+  const cleanId = String(roomId || '')
+    .replace(/[^a-zA-Z0-9_-]/g, '')
+    .slice(0, 20);
+  if (!cleanId) return null;
+  try {
+    const snap = await getDoc(doc(db, 'wrongWayRooms', cleanId));
+    if (!snap.exists()) return null;
+    return snap.data() as WrongWayLiveRoomDoc;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.GET, `wrongWayRooms/${cleanId}`);
+    return null;
+  }
+}
+
+export function subscribeToWrongWayLiveRoom(
+  roomId: string,
+  onUpdate: (room: WrongWayLiveRoomDoc | null) => void
+): () => void {
+  const cleanId = String(roomId || '')
+    .replace(/[^a-zA-Z0-9_-]/g, '')
+    .slice(0, 20);
+  if (!cleanId) return () => {};
+  return onSnapshot(
+    doc(db, 'wrongWayRooms', cleanId),
+    (snap) => {
+      if (!snap.exists()) {
+        onUpdate(null);
+        return;
+      }
+      onUpdate(snap.data() as WrongWayLiveRoomDoc);
+    },
+    (error) => {
+      handleFirestoreError(error, OperationType.GET, `wrongWayRooms/${cleanId}`);
+    }
+  );
+}
+

@@ -89,6 +89,40 @@ service cloud.firestore {
         data.updatedAt is string && data.updatedAt.size() < 60;
     }
 
+    function isValidWrongWayRoom(data, roomId) {
+      return data.keys().hasAll([
+          'roomId', 'hostId', 'hostName', 'guestId', 'guestName', 'status',
+          'turnIndex', 'starterIndex', 'moveCount',
+          'p0R', 'p0C', 'p0Walls', 'p1R', 'p1C', 'p1Walls',
+          'wallsJson', 'winnerIndex', 'equalizerPendingIndex', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'roomId', 'hostId', 'hostName', 'guestId', 'guestName', 'status',
+          'turnIndex', 'starterIndex', 'moveCount',
+          'p0R', 'p0C', 'p0Walls', 'p1R', 'p1C', 'p1Walls',
+          'wallsJson', 'winnerIndex', 'equalizerPendingIndex', 'updatedAt'
+        ]) &&
+        data.roomId is string && data.roomId == roomId && isValidId(data.roomId) &&
+        data.hostId is string && data.hostId.size() > 0 && data.hostId.size() <= 80 &&
+        data.hostName is string && data.hostName.size() > 0 && data.hostName.size() <= 60 &&
+        data.guestId is string && data.guestId.size() <= 80 &&
+        data.guestName is string && data.guestName.size() <= 60 &&
+        data.status in ['waiting', 'playing', 'finished'] &&
+        data.turnIndex is number && data.turnIndex >= 0 && data.turnIndex <= 1 &&
+        data.starterIndex is number && data.starterIndex >= 0 && data.starterIndex <= 1 &&
+        data.moveCount is number && data.moveCount >= 0 && data.moveCount <= 1000 &&
+        data.p0R is number && data.p0R >= 0 && data.p0R <= 10 &&
+        data.p0C is number && data.p0C >= 0 && data.p0C <= 10 &&
+        data.p0Walls is number && data.p0Walls >= 0 && data.p0Walls <= 20 &&
+        data.p1R is number && data.p1R >= 0 && data.p1R <= 10 &&
+        data.p1C is number && data.p1C >= 0 && data.p1C <= 10 &&
+        data.p1Walls is number && data.p1Walls >= 0 && data.p1Walls <= 20 &&
+        data.wallsJson is string && data.wallsJson.size() >= 2 && data.wallsJson.size() <= 15000 &&
+        data.winnerIndex is number && data.winnerIndex >= -1 && data.winnerIndex <= 2 &&
+        data.equalizerPendingIndex is number && data.equalizerPendingIndex >= -1 && data.equalizerPendingIndex <= 1 &&
+        data.updatedAt is string && data.updatedAt.size() > 0 && data.updatedAt.size() <= 60;
+    }
+
     // ===============================================================
     // Collection Rules
     // ===============================================================
@@ -120,6 +154,15 @@ service cloud.firestore {
         (request.resource.data.role in ['student', 'teacher'] || isAdmin());
       allow update: if isAuthenticated() && isValidUserProfile(request.resource.data, userId) &&
         ((isOwner(userId) && request.resource.data.role == resource.data.role) || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    match /wrongWayRooms/{roomId} {
+      allow get: if isValidId(roomId);
+      allow list: if false;
+      allow create: if isValidId(roomId) && isValidWrongWayRoom(request.resource.data, roomId);
+      allow update: if isValidId(roomId) && isValidWrongWayRoom(request.resource.data, roomId) &&
+        request.resource.data.hostId == resource.data.hostId;
       allow delete: if isAdmin();
     }
   }

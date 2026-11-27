@@ -14,6 +14,8 @@ import {
   Sparkles,
   Tag,
 } from 'lucide-react';
+import { MathFormula } from './MathFormula';
+import { naturalMathToLatex, parseQuadraticCoefficients } from './mathFormulaParser';
 
 export interface Quadratic3DSimulationProps {
   darkMode?: boolean;
@@ -167,6 +169,21 @@ export const Quadratic3DSimulation: React.FC<Quadratic3DSimulationProps> = ({
   const [aVal, setAVal] = useState<number>(1.0);
   const [bVal, setBVal] = useState<number>(-2.0);
   const [cVal, setCVal] = useState<number>(-3.0);
+  const [writtenQuadText, setWrittenQuadText] = useState<string>('x^2 - 2x - 3');
+  const [writtenQuadError, setWrittenQuadError] = useState<string>('');
+
+  const handleApplyWrittenQuad = () => {
+    const parsed = parseQuadraticCoefficients(writtenQuadText);
+    if (!parsed) {
+      setWrittenQuadError('Write a quadratic or linear formula in x, e.g. x^2 - 2x - 3');
+      return;
+    }
+    setWrittenQuadError('');
+    setWatchLessonActive(false);
+    setAVal(Math.max(-3, Math.min(3, parsed.a)));
+    setBVal(Math.max(-6, Math.min(6, parsed.b)));
+    setCVal(Math.max(-5, Math.min(5, parsed.c)));
+  };
 
   const [watchLessonActive, setWatchLessonActive] = useState<boolean>(false);
   const [lessonPaused, setLessonPaused] = useState<boolean>(false);
@@ -892,17 +909,61 @@ export const Quadratic3DSimulation: React.FC<Quadratic3DSimulationProps> = ({
               <div className={`text-xs font-semibold ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                 {mathProps.isLinear ? 'Linear Function' : 'Quadratic Function'}
               </div>
-              <h2 className="text-2xl sm:text-3xl font-serif font-bold tracking-tight mt-0.5 text-amber-500">
-                {formatEquation(aVal, bVal, cVal)}
-              </h2>
+              <div className="text-xl sm:text-2xl font-bold tracking-tight mt-1 text-amber-500">
+                <MathFormula tex={naturalMathToLatex(formatEquation(aVal, bVal, cVal), '')} />
+              </div>
               <p className={`text-xs mt-1 font-semibold ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>
                 {mathProps.rootType}
               </p>
             </div>
 
+            {/* Direct Write Formula Option */}
+            <div className={`p-2.5 rounded-xl border space-y-1.5 ${cardBg}`}>
+              <div className="flex items-center justify-between text-[11px] font-bold">
+                <span className="text-amber-500 uppercase tracking-wider">Write Quadratic Formula</span>
+                <span className="opacity-75">
+                  <MathFormula tex={naturalMathToLatex(writtenQuadText, 'y = ')} />
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="text"
+                  value={writtenQuadText}
+                  onChange={(e) => {
+                    setWrittenQuadText(e.target.value);
+                    setWrittenQuadError('');
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleApplyWrittenQuad();
+                    }
+                  }}
+                  placeholder="e.g. x^2 - 2x - 3 or -x^2 + 4"
+                  className={`flex-1 min-w-0 px-2.5 py-1.5 rounded-lg border text-xs font-mono font-bold focus:outline-none focus:ring-2 focus:ring-amber-500/40 ${
+                    darkMode
+                      ? 'bg-[#121622] border-white/[0.14] text-white'
+                      : 'bg-slate-50 border-slate-300 text-slate-900'
+                  }`}
+                />
+                <button
+                  type="button"
+                  onClick={handleApplyWrittenQuad}
+                  className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black cursor-pointer shrink-0"
+                >
+                  Plot
+                </button>
+              </div>
+              {writtenQuadError && (
+                <div className="text-[11px] font-bold text-rose-500">{writtenQuadError}</div>
+              )}
+            </div>
+
             <div className="grid grid-cols-2 gap-2 text-xs tabular-nums">
               <div className={`p-2.5 rounded-xl border ${cardBg}`}>
-                <div className="text-[10px] font-bold uppercase text-sky-500">Vertex (h, k)</div>
+                <div className="text-[10px] font-bold uppercase text-sky-500">
+                  Vertex <MathFormula tex="(h, k)" />
+                </div>
                 <div className="font-mono font-black text-sm mt-0.5">
                   {mathProps.vertex
                     ? `(${mathProps.vertex.x.toFixed(2)}, ${mathProps.vertex.y.toFixed(2)})`
@@ -910,7 +971,9 @@ export const Quadratic3DSimulation: React.FC<Quadratic3DSimulationProps> = ({
                 </div>
               </div>
               <div className={`p-2.5 rounded-xl border ${cardBg}`}>
-                <div className="text-[10px] font-bold uppercase text-emerald-500">Discriminant Δ</div>
+                <div className="text-[10px] font-bold uppercase text-emerald-500">
+                  Discriminant <MathFormula tex="\Delta = b^2 - 4ac" />
+                </div>
                 <div className="font-mono font-black text-sm mt-0.5">
                   {mathProps.discriminant !== null ? mathProps.discriminant.toFixed(2) : '—'}
                 </div>
@@ -918,9 +981,13 @@ export const Quadratic3DSimulation: React.FC<Quadratic3DSimulationProps> = ({
               <div className={`p-2.5 rounded-xl border col-span-2 ${cardBg}`}>
                 <div className="text-[10px] font-bold uppercase text-violet-500">Real x-intercepts (Roots)</div>
                 <div className="font-mono font-black text-sm mt-0.5">
-                  {mathProps.roots.length === 0
-                    ? 'None (curve does not cross x-axis)'
-                    : mathProps.roots.map((r, i) => `x${i + 1} = ${r.toFixed(2)}`).join(' , ')}
+                  {mathProps.roots.length === 0 ? (
+                    'None (curve does not cross x-axis)'
+                  ) : (
+                    <MathFormula
+                      tex={mathProps.roots.map((r, i) => `x_{${i + 1}} = ${r.toFixed(2)}`).join(', \\; ')}
+                    />
+                  )}
                 </div>
               </div>
             </div>
@@ -977,15 +1044,36 @@ export const Quadratic3DSimulation: React.FC<Quadratic3DSimulationProps> = ({
               darkMode ? 'bg-amber-500/10 border-amber-400/25 text-amber-100' : 'bg-amber-50 border-amber-200 text-amber-950'
             }`}
           >
-            <div className="font-bold">
-              {level === 'o_level'
-                ? 'Axis of symmetry: x = −b / (2a)'
-                : `Derivative: dy/dx = ${(2 * aVal).toFixed(1)}x ${bVal >= 0 ? '+' : '−'} ${Math.abs(bVal).toFixed(1)}`}
+            <div className="font-bold flex flex-wrap items-center gap-1.5">
+              {level === 'o_level' ? (
+                <>
+                  <span>Axis of symmetry:</span>
+                  <MathFormula tex="x = -\frac{b}{2a}" />
+                </>
+              ) : (
+                <>
+                  <span>Derivative:</span>
+                  <MathFormula
+                    tex={`\\frac{dy}{dx} = ${(2 * aVal).toFixed(1)}x ${
+                      bVal >= 0 ? '+' : '-'
+                    } ${Math.abs(bVal).toFixed(1)}`}
+                  />
+                </>
+              )}
             </div>
-            <div className="text-[11px] mt-0.5 opacity-90">
-              {level === 'o_level'
-                ? 'Quadratic formula: x = (−b ± √(b² − 4ac)) / (2a)'
-                : `Second derivative: d²y/dx² = ${(2 * aVal).toFixed(1)} (${aVal > 0 ? 'Minimum' : aVal < 0 ? 'Maximum' : 'Inflection/Linear'})`}
+            <div className="text-[11px] mt-1 opacity-90 flex flex-wrap items-center gap-1.5">
+              {level === 'o_level' ? (
+                <>
+                  <span>Quadratic formula:</span>
+                  <MathFormula tex="x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}" />
+                </>
+              ) : (
+                <>
+                  <span>Second derivative:</span>
+                  <MathFormula tex={`\\frac{d^2y}{dx^2} = ${(2 * aVal).toFixed(1)}`} />
+                  <span>({aVal > 0 ? 'Minimum' : aVal < 0 ? 'Maximum' : 'Inflection/Linear'})</span>
+                </>
+              )}
             </div>
           </div>
         </aside>

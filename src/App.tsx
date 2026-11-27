@@ -71,10 +71,8 @@ import {
 import type { DiagramPreset } from './components/InteractiveDiagramLab';
 import { OfflineIndicator, PWAInstallButton } from './components/PWAInstallButton';
 import type { PlayGameRoute } from './components/ElimikaPlayHub';
+import { SimulationsHub } from './components/SimulationsHub';
 
-const SimulationsHub = React.lazy(() =>
-  import('./components/SimulationsHub').then((m) => ({ default: m.SimulationsHub }))
-);
 const ElimikaPlayHub = React.lazy(() =>
   import('./components/ElimikaPlayHub').then((m) => ({ default: m.ElimikaPlayHub }))
 );
@@ -1989,6 +1987,12 @@ export default function App() {
     } else if (window.location.hash === '#gold-ball' || window.location.hash === '#stem-builder') {
       setPlayRoute('gold_ball');
       setActivePage('game');
+    } else if (
+      window.location.hash.startsWith('#wrong-way') ||
+      new URLSearchParams(window.location.search).has('wrongWayRoom')
+    ) {
+      setPlayRoute('wrong_way');
+      setActivePage('game');
     } else if (window.location.hash === '#treasure-hunt') {
       setPlayRoute('treasure_hunt');
       setActivePage('game');
@@ -2024,6 +2028,12 @@ export default function App() {
         setActivePage('game');
       } else if (window.location.hash === '#gold-ball' || window.location.hash === '#stem-builder') {
         setPlayRoute('gold_ball');
+        setActivePage('game');
+      } else if (
+        window.location.hash.startsWith('#wrong-way') ||
+        new URLSearchParams(window.location.search).has('wrongWayRoom')
+      ) {
+        setPlayRoute('wrong_way');
         setActivePage('game');
       } else if (window.location.hash === '#treasure-hunt') {
         setPlayRoute('treasure_hunt');
@@ -4757,17 +4767,18 @@ export default function App() {
 
   return (
     <div className="min-h-screen w-full max-w-full overflow-x-hidden flex flex-col bg-[var(--bg-canvas)] text-[var(--text-primary)] transition-colors">
-      {/* TOP HEADER BAR — Matches uploaded reference design */}
+      {/* UNIFIED FLOATING TOP GLASS NAVIGATION BAR */}
       {activePage !== 'moha' && activePage !== 'game' && (
-      <header className="sticky top-0 z-40 bg-white/85 dark:bg-slate-900/85 backdrop-blur-md border-b border-slate-200/70 dark:border-slate-800 transition-colors print:hidden">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+      <header className="sticky top-0 z-40 px-3 sm:px-6 pt-2.5 pb-1 transition-colors print:hidden">
+        <div className="max-w-5xl mx-auto h-14 sm:h-16 px-4 sm:px-5 rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/90 shadow-[0_8px_30px_rgba(15,23,42,0.06)] flex items-center justify-between gap-6">
+          {/* Zone 1: Single-line Brand Wordmark */}
           <a
             href="#home"
             onClick={(e) => {
               e.preventDefault();
               resetToStep1();
             }}
-            className="flex items-center gap-2.5 sm:gap-3 shrink-0 group"
+            className="flex items-center gap-2.5 sm:gap-3 shrink-0 group whitespace-nowrap"
           >
             <img
               src="/pwa-192x192.png"
@@ -4776,29 +4787,25 @@ export default function App() {
                 e.currentTarget.src = '/pwa-192x192.png';
               }}
               alt="Elimika Logo"
-              className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl shadow-sm shrink-0 object-cover"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl shadow-xs shrink-0 object-cover group-hover:scale-105 transition-transform duration-150"
             />
-            <div className="leading-tight">
-              <div className="text-base sm:text-xl font-black tracking-tight text-[#0A1E5E] dark:text-white">
-                ELIMIKA
-              </div>
-              <div className="text-[10px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 tracking-tight">
-                Learn &bull; Teach &bull; Excel
-              </div>
-            </div>
+            <span className="text-base sm:text-xl font-black tracking-tight text-[#0A1E5E] dark:text-white whitespace-nowrap shrink-0">
+              ELIMIKA
+            </span>
           </a>
 
-          <nav className="hidden lg:flex items-center gap-5 text-sm font-semibold text-slate-600 dark:text-slate-300">
+          {/* Zone 2: Clean Single-Line Text Navigation Links */}
+          <nav className="hidden lg:flex items-center gap-6 text-sm font-semibold text-slate-600 dark:text-slate-300">
             <button
               onClick={() => resetToStep1()}
-              className={`hover:text-blue-700 transition-colors whitespace-nowrap shrink-0 cursor-pointer flex items-center gap-1.5 ${
+              className={`hover:text-blue-700 dark:hover:text-blue-400 transition-colors whitespace-nowrap shrink-0 cursor-pointer flex items-center gap-1.5 py-1 ${
                 activePage === 'home' ||
                 activePage === 'papers' ||
                 activePage === 'books' ||
                 activePage === 'syllabus' ||
                 activePage === 'schemes' ||
                 activePage === 'lesson_plans'
-                  ? 'text-blue-600 font-bold underline underline-offset-4'
+                  ? 'text-blue-600 dark:text-blue-400 font-bold underline underline-offset-8 decoration-2'
                   : ''
               }`}
             >
@@ -4807,16 +4814,16 @@ export default function App() {
             </button>
             <button
               onClick={() => openDailyQuizPage()}
-              className={`hover:text-violet-700 transition-colors whitespace-nowrap shrink-0 cursor-pointer flex items-center gap-1 ${
-                activePage === 'daily_quiz' ? 'text-violet-700 font-bold underline underline-offset-4' : ''
+              className={`hover:text-violet-700 dark:hover:text-violet-400 transition-colors whitespace-nowrap shrink-0 cursor-pointer flex items-center gap-1.5 py-1 ${
+                activePage === 'daily_quiz' ? 'text-violet-700 dark:text-violet-400 font-bold underline underline-offset-8 decoration-2' : ''
               }`}
             >
-              <span>🎯 Daily Quiz</span>
+              <span>Daily Quiz</span>
             </button>
             <button
               onClick={() => openMwalimuModal()}
-              className={`hover:text-violet-700 transition-colors whitespace-nowrap shrink-0 cursor-pointer flex items-center gap-1 ${
-                (activePage as string) === 'moha' ? 'text-violet-700 font-bold underline underline-offset-4' : ''
+              className={`hover:text-violet-700 dark:hover:text-violet-400 transition-colors whitespace-nowrap shrink-0 cursor-pointer flex items-center gap-1.5 py-1 ${
+                (activePage as string) === 'moha' ? 'text-violet-700 dark:text-violet-400 font-bold underline underline-offset-8 decoration-2' : ''
               }`}
             >
               <Sparkles className="w-4 h-4" />
@@ -4827,31 +4834,31 @@ export default function App() {
                 setPlayRoute('hub');
                 setActivePage('game');
               }}
-              className={`hover:text-emerald-700 transition-colors whitespace-nowrap shrink-0 cursor-pointer flex items-center gap-1 ${
-                (activePage as string) === 'game' ? 'text-emerald-700 font-bold underline underline-offset-4' : ''
+              className={`hover:text-emerald-700 dark:hover:text-emerald-400 transition-colors whitespace-nowrap shrink-0 cursor-pointer flex items-center gap-1.5 py-1 ${
+                (activePage as string) === 'game' ? 'text-emerald-700 dark:text-emerald-400 font-bold underline underline-offset-8 decoration-2' : ''
               }`}
             >
-              <span>🎮 Play</span>
+              <span>Play</span>
             </button>
           </nav>
 
+          {/* Zone 3: Quick Actions */}
           <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
             <div className="hidden sm:block">
               <PWAInstallButton />
             </div>
 
-            {/* Circular Moon / Sun Dark Mode Toggle (Matches reference design) */}
             <button
               type="button"
               onClick={() => selectThemeMode(darkMode ? 'light' : 'dark')}
               aria-label={darkMode ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
               title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-              className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 shadow-xs hover:shadow-sm flex items-center justify-center text-[#0A1E5E] dark:text-amber-300 cursor-pointer transition-all"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700 hover:border-blue-400 dark:hover:border-amber-400/60 flex items-center justify-center text-[#0A1E5E] dark:text-amber-300 cursor-pointer transition-all duration-150 hover:scale-105 active:scale-95"
             >
               {darkMode ? (
-                <Sun className="w-5 h-5" />
+                <Sun className="w-4 h-4 sm:w-5 sm:h-5" />
               ) : (
-                <Moon className="w-5 h-5 fill-[#0A1E5E]" />
+                <Moon className="w-4 h-4 sm:w-5 sm:h-5 fill-[#0A1E5E]" />
               )}
             </button>
           </div>
@@ -4862,7 +4869,7 @@ export default function App() {
       <OfflineIndicator />
 
       <AnimatePresence mode="wait">
-      {/* ==================== HOME: YOUR LEARNING LIBRARY HUB (MATCHES UPLOADED STRUCTURE) ==================== */}
+      {/* ==================== HOME: YOUR LEARNING LIBRARY HUB (BENTO LAYOUT & MICRO-INTERACTIONS) ==================== */}
       {activePage === 'home' && (
         <motion.div
           key="view-home-library"
@@ -4870,12 +4877,27 @@ export default function App() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -6 }}
           transition={{ duration: 0.2, ease: 'easeOut' }}
-          className="flex-grow bg-gradient-to-b from-[#EAF2FF] via-[#F4F8FF] to-[#F8FAFC] dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 pb-24"
+          className="relative flex-grow overflow-hidden bg-gradient-to-b from-[#E5F0FF] via-[#F2F7FF] to-[#F8FAFC] dark:from-[#080d1a] dark:via-[#0d1527] dark:to-[#090e1c] pb-28"
         >
-          <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-6 sm:pt-9 pb-8 space-y-5">
+          {/* Decorated Academic Mesh & Subtle Drafting Grid Background */}
+          <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+            <div className="absolute -top-28 -left-24 w-96 h-96 rounded-full bg-sky-400/20 dark:bg-sky-500/10 blur-3xl" />
+            <div className="absolute top-16 -right-24 w-96 h-96 rounded-full bg-indigo-400/15 dark:bg-indigo-500/10 blur-3xl" />
+            <div className="absolute -bottom-24 left-1/3 w-96 h-96 rounded-full bg-emerald-400/15 dark:bg-emerald-500/10 blur-3xl" />
+            <div
+              className="absolute inset-0 opacity-[0.35] dark:opacity-[0.18]"
+              style={{
+                backgroundImage:
+                  'radial-gradient(rgba(37, 99, 235, 0.18) 1px, transparent 1px)',
+                backgroundSize: '24px 24px',
+              }}
+            />
+          </div>
+
+          <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6 pt-5 sm:pt-8 pb-8 space-y-6">
             {/* Hero Title & Curved Blue Underline */}
             <div className="text-center space-y-2">
-              <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-[#0A1E5E] dark:text-white">
+              <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-[#0A1E5E] dark:text-white text-balance">
                 Your Learning Library
               </h1>
               <p className="text-sm sm:text-base font-medium text-slate-600 dark:text-slate-300">
@@ -4893,275 +4915,176 @@ export default function App() {
               </div>
             </div>
 
-            {/* Unified Pill Search Bar with Voice Mic */}
-            <div ref={searchBoxContainerRef} className="relative">
-              <div className="flex items-center bg-white dark:bg-slate-900 rounded-full border border-slate-200/90 dark:border-slate-700 px-4 sm:px-5 py-3 sm:py-3.5 shadow-[0_8px_26px_rgba(15,23,42,0.06)] focus-within:border-blue-500 transition-all">
-                <Search className="w-5 h-5 text-[#0A1E5E] dark:text-slate-300 shrink-0 mr-3" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onFocus={() => setShowSearchSuggestions(true)}
-                  onClick={() => setShowSearchSuggestions(true)}
-                  onChange={(e) => {
-                    handleSmartSearchChange(e.target.value);
-                    setShowSearchSuggestions(true);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && searchQuery.trim().length >= 2) {
-                      saveRecentSearchQuery(searchQuery);
-                      setShowSearchSuggestions(false);
-                    } else if (e.key === 'Escape') {
-                      setShowSearchSuggestions(false);
-                    }
-                  }}
-                  placeholder="Search papers, books, syllabus..."
-                  className="w-full text-sm sm:text-base font-medium bg-transparent text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none"
-                />
-                {searchQuery.trim().length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSearchQuery('');
-                      setShowSearchSuggestions(true);
-                    }}
-                    className="text-slate-400 hover:text-slate-700 p-1 mr-1 cursor-pointer"
-                    title="Clear search"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-                <div className="h-5 w-px bg-slate-200 dark:bg-slate-700 mx-2.5 shrink-0" />
-                <button
-                  type="button"
-                  onClick={startVoiceSearch}
-                  className="p-1.5 rounded-full text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800 flex items-center justify-center shrink-0 cursor-pointer transition-colors"
-                  title="Voice Search"
-                >
-                  <Mic className="w-5 h-5" />
-                </button>
-              </div>
+            {/* BENTO-STYLE CATEGORY CARDS WITH MICRO-INTERACTIONS */}
+            {(() => {
+              const papersCount = allPapers.filter((p) => !p.isBook && !p.isSyllabus).length;
+              const booksCount = allPapers.filter((p) => p.isBook).length;
+              const syllabusCount = allPapers.filter((p) => p.isSyllabus).length;
 
-              {showSearchSuggestions && recentSearchQueries.length > 0 && (() => {
-                const qLower = searchQuery.trim().toLowerCase();
-                const matchingQueries = qLower
-                  ? recentSearchQueries.filter((item) => item.toLowerCase().includes(qLower))
-                  : recentSearchQueries;
-                const displayList = matchingQueries.length > 0 ? matchingQueries : recentSearchQueries;
-
-                return (
-                  <div className="absolute left-0 right-0 top-full mt-2 z-30 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xl overflow-hidden text-left">
-                    <div className="px-4 py-2.5 bg-slate-50 dark:bg-slate-800/70 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-500">Recent Searches</span>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          clearRecentSearchQueries();
-                          setShowSearchSuggestions(false);
-                        }}
-                        className="text-xs font-bold text-rose-600 hover:text-rose-700 cursor-pointer"
-                      >
-                        Clear
-                      </button>
-                    </div>
-                    <div className="max-h-52 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
-                      {displayList.map((term) => (
-                        <div
-                          key={term}
-                          className="flex items-center justify-between px-4 py-2.5 hover:bg-blue-50/70 dark:hover:bg-slate-800 transition-colors group"
-                        >
-                          <button
-                            type="button"
-                            onClick={() => {
-                              handleSmartSearchChange(term, true);
-                              setShowSearchSuggestions(false);
-                            }}
-                            className="flex items-center gap-2.5 flex-1 min-w-0 text-left cursor-pointer"
-                          >
-                            <Search className="w-4 h-4 text-slate-400 group-hover:text-blue-600 shrink-0" />
-                            <span className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 group-hover:text-blue-700 truncate">
-                              {term}
-                            </span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              removeRecentSearchQuery(term);
-                            }}
-                            className="p-1 text-slate-400 hover:text-rose-600 rounded-lg cursor-pointer shrink-0"
-                            title="Remove"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
+              return (
+                <div className="space-y-3.5 sm:space-y-4">
+                  {/* Top Featured Bento Row: Past Papers & Simulations */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
+                    {/* 1. Featured Bento: Past Papers */}
+                    <button
+                      type="button"
+                      onClick={() => openPastPapersPage()}
+                      className="relative overflow-hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-xs p-5 sm:p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-[0_10px_28px_rgba(15,23,42,0.06)] hover:shadow-[0_14px_34px_rgba(37,99,235,0.16)] hover:border-blue-400/90 dark:hover:border-blue-500/80 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 flex flex-col justify-between gap-5 text-left cursor-pointer group"
+                    >
+                      <div className="pointer-events-none absolute -right-10 -top-10 w-32 h-32 rounded-full bg-blue-500/10 dark:bg-blue-400/10 blur-2xl group-hover:bg-blue-500/20 transition-colors duration-200" />
+                      <div className="flex items-start justify-between gap-3 w-full">
+                        <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-600 text-white shadow-sm flex items-center justify-center shrink-0 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-200">
+                          <FileText className="w-6 h-6 sm:w-7 sm:h-7" />
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
+                        <span className="font-mono tabular-nums text-xs font-bold text-blue-600/80 dark:text-blue-400/80">
+                          {papersCount}+
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2 w-full">
+                        <span className="text-base sm:text-xl font-black text-[#0A1E5E] dark:text-white leading-tight truncate">
+                          Past Papers
+                        </span>
+                        <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:translate-x-1 transition-all duration-200 shrink-0" />
+                      </div>
+                    </button>
 
-            {/* 6 Category Cards Grid (2x3 Clean Learning Library Hub) */}
-            <div className="grid grid-cols-2 gap-3 sm:gap-4">
-              {/* 1. Past Papers */}
-              <button
-                type="button"
-                onClick={() => openPastPapersPage()}
-                className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-[0_8px_24px_rgba(15,23,42,0.05)] hover:shadow-md hover:border-blue-400 transition-all flex items-center justify-between gap-2.5 text-left cursor-pointer group"
-              >
-                <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-600 text-white shadow-sm flex items-center justify-center shrink-0">
-                    <FileText className="w-6 h-6 sm:w-7 sm:h-7" />
+                    {/* 2. Featured Bento: Simulations */}
+                    <button
+                      type="button"
+                      onClick={() => openVirtualLabPage(selectedClass || savedClass || mohaActiveClass || 'Form 4', 'diagrams')}
+                      className="relative overflow-hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-xs p-5 sm:p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-[0_10px_28px_rgba(15,23,42,0.06)] hover:shadow-[0_14px_34px_rgba(244,63,94,0.16)] hover:border-rose-400/90 dark:hover:border-rose-500/80 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 flex flex-col justify-between gap-5 text-left cursor-pointer group"
+                    >
+                      <div className="pointer-events-none absolute -right-10 -top-10 w-32 h-32 rounded-full bg-rose-500/10 dark:bg-rose-400/10 blur-2xl group-hover:bg-rose-500/20 transition-colors duration-200" />
+                      <div className="flex items-start justify-between gap-3 w-full">
+                        <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-600 text-white shadow-sm flex items-center justify-center shrink-0 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-200">
+                          <svg className="w-6 h-6 sm:w-7 sm:h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2" />
+                            <path d="M8.5 2h7" />
+                            <path d="M7 16h10" />
+                          </svg>
+                        </div>
+                        <span className="font-mono tabular-nums text-xs font-bold text-rose-600/80 dark:text-rose-400/80">
+                          3D &middot; Labs
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2 w-full">
+                        <span className="text-base sm:text-xl font-black text-[#0A1E5E] dark:text-white leading-tight truncate">
+                          Simulations
+                        </span>
+                        <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-rose-600 dark:group-hover:text-rose-400 group-hover:translate-x-1 transition-all duration-200 shrink-0" />
+                      </div>
+                    </button>
                   </div>
-                  <div className="min-w-0">
-                    <div className="text-sm sm:text-lg font-black text-[#0A1E5E] dark:text-white leading-tight truncate">
-                      Past Papers
-                    </div>
-                    <div className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 leading-snug mt-0.5 line-clamp-2">
-                      Exam papers &amp; revision materials
-                    </div>
+
+                  {/* Secondary 2x2 Bento Grid: Books, Syllabus, Schemes of Work, Lesson Plans */}
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                    {/* 3. Books */}
+                    <button
+                      type="button"
+                      onClick={() => openBooksPage()}
+                      className="relative overflow-hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-xs p-4 sm:p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-[0_8px_24px_rgba(15,23,42,0.05)] hover:shadow-[0_12px_28px_rgba(16,185,129,0.14)] hover:border-emerald-400/90 dark:hover:border-emerald-500/80 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 flex items-center justify-between gap-2.5 text-left cursor-pointer group"
+                    >
+                      <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
+                        <div className="w-12 h-12 sm:w-13 sm:h-13 rounded-2xl bg-gradient-to-br from-emerald-400 to-green-600 text-white shadow-sm flex items-center justify-center shrink-0 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-200">
+                          <BookOpen className="w-6 h-6" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-sm sm:text-lg font-black text-[#0A1E5E] dark:text-white leading-tight truncate">
+                            Books
+                          </div>
+                          <div className="font-mono tabular-nums text-[11px] font-semibold text-emerald-600/80 dark:text-emerald-400/80 mt-0.5">
+                            {booksCount}+
+                          </div>
+                        </div>
+                      </div>
+                      <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all duration-200 shrink-0" />
+                    </button>
+
+                    {/* 4. Syllabus */}
+                    <button
+                      type="button"
+                      onClick={() => openSyllabusPage()}
+                      className="relative overflow-hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-xs p-4 sm:p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-[0_8px_24px_rgba(15,23,42,0.05)] hover:shadow-[0_12px_28px_rgba(245,158,11,0.14)] hover:border-amber-400/90 dark:hover:border-amber-500/80 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 flex items-center justify-between gap-2.5 text-left cursor-pointer group"
+                    >
+                      <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
+                        <div className="w-12 h-12 sm:w-13 sm:h-13 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-sm flex items-center justify-center shrink-0 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-200">
+                          <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M8 21h12a2 2 0 0 0 2-2v-2H10v2a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v3h4" />
+                            <path d="M19 17V5a2 2 0 0 0-2-2H4" />
+                            <path d="M15 8h-5" />
+                            <path d="M15 12h-5" />
+                          </svg>
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-sm sm:text-lg font-black text-[#0A1E5E] dark:text-white leading-tight truncate">
+                            Syllabus
+                          </div>
+                          <div className="font-mono tabular-nums text-[11px] font-semibold text-amber-600/80 dark:text-amber-400/80 mt-0.5">
+                            {syllabusCount}+
+                          </div>
+                        </div>
+                      </div>
+                      <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 group-hover:text-amber-600 group-hover:translate-x-0.5 transition-all duration-200 shrink-0" />
+                    </button>
+
+                    {/* 5. Schemes of Work */}
+                    <button
+                      type="button"
+                      onClick={() => openSchemesOfWorkPage()}
+                      className="relative overflow-hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-xs p-4 sm:p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-[0_8px_24px_rgba(15,23,42,0.05)] hover:shadow-[0_12px_28px_rgba(139,92,246,0.14)] hover:border-violet-400/90 dark:hover:border-violet-500/80 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 flex items-center justify-between gap-2.5 text-left cursor-pointer group"
+                    >
+                      <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
+                        <div className="w-12 h-12 sm:w-13 sm:h-13 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-sm flex items-center justify-center shrink-0 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-200">
+                          <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+                            <line x1="16" x2="16" y1="2" y2="6" />
+                            <line x1="8" x2="8" y1="2" y2="6" />
+                            <line x1="3" x2="21" y1="10" y2="10" />
+                            <path d="M8 14h.01" />
+                            <path d="M12 14h.01" />
+                            <path d="M16 14h.01" />
+                            <path d="M8 18h.01" />
+                            <path d="M12 18h.01" />
+                            <path d="M16 18h.01" />
+                          </svg>
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-sm sm:text-lg font-black text-[#0A1E5E] dark:text-white leading-tight">
+                            Schemes of Work
+                          </div>
+                        </div>
+                      </div>
+                      <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 group-hover:text-violet-600 group-hover:translate-x-0.5 transition-all duration-200 shrink-0" />
+                    </button>
+
+                    {/* 6. Lesson Plans */}
+                    <button
+                      type="button"
+                      onClick={() => openLessonPlansPage()}
+                      className="relative overflow-hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-xs p-4 sm:p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-[0_8px_24px_rgba(15,23,42,0.05)] hover:shadow-[0_12px_28px_rgba(20,184,166,0.14)] hover:border-teal-400/90 dark:hover:border-teal-500/80 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 flex items-center justify-between gap-2.5 text-left cursor-pointer group"
+                    >
+                      <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
+                        <div className="w-12 h-12 sm:w-13 sm:h-13 rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600 text-white shadow-sm flex items-center justify-center shrink-0 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-200">
+                          <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M13 4h3a2 2 0 0 1 2 2v14" />
+                            <path d="M2 20h3" />
+                            <path d="M13 20h9" />
+                            <path d="M10 12v.01" />
+                            <path d="M13 4.562v16.157a1 1 0 0 1-1.242.97L5 20V5.562a2 2 0 0 1 1.515-1.94l4-1A2 2 0 0 1 13 4.561Z" />
+                          </svg>
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-sm sm:text-lg font-black text-[#0A1E5E] dark:text-white leading-tight truncate">
+                            Lesson Plans
+                          </div>
+                        </div>
+                      </div>
+                      <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 group-hover:text-teal-600 group-hover:translate-x-0.5 transition-all duration-200 shrink-0" />
+                    </button>
                   </div>
                 </div>
-                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 group-hover:text-blue-600 shrink-0" />
-              </button>
-
-              {/* 2. Books */}
-              <button
-                type="button"
-                onClick={() => openBooksPage()}
-                className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-[0_8px_24px_rgba(15,23,42,0.05)] hover:shadow-md hover:border-emerald-400 transition-all flex items-center justify-between gap-2.5 text-left cursor-pointer group"
-              >
-                <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-emerald-400 to-green-600 text-white shadow-sm flex items-center justify-center shrink-0">
-                    <BookOpen className="w-6 h-6 sm:w-7 sm:h-7" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-sm sm:text-lg font-black text-[#0A1E5E] dark:text-white leading-tight truncate">
-                      Books
-                    </div>
-                    <div className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 leading-snug mt-0.5 line-clamp-2">
-                      Textbooks &amp; reference books
-                    </div>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 group-hover:text-emerald-600 shrink-0" />
-              </button>
-
-              {/* 3. Syllabus */}
-              <button
-                type="button"
-                onClick={() => openSyllabusPage()}
-                className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-[0_8px_24px_rgba(15,23,42,0.05)] hover:shadow-md hover:border-amber-400 transition-all flex items-center justify-between gap-2.5 text-left cursor-pointer group"
-              >
-                <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-sm flex items-center justify-center shrink-0">
-                    <svg className="w-6 h-6 sm:w-7 sm:h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M8 21h12a2 2 0 0 0 2-2v-2H10v2a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v3h4" />
-                      <path d="M19 17V5a2 2 0 0 0-2-2H4" />
-                      <path d="M15 8h-5" />
-                      <path d="M15 12h-5" />
-                    </svg>
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-sm sm:text-lg font-black text-[#0A1E5E] dark:text-white leading-tight truncate">
-                      Syllabus
-                    </div>
-                    <div className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 leading-snug mt-0.5 line-clamp-2">
-                      Curriculum guide
-                    </div>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 group-hover:text-amber-600 shrink-0" />
-              </button>
-
-              {/* 4. Schemes of Work */}
-              <button
-                type="button"
-                onClick={() => openSchemesOfWorkPage()}
-                className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-[0_8px_24px_rgba(15,23,42,0.05)] hover:shadow-md hover:border-violet-400 transition-all flex items-center justify-between gap-2.5 text-left cursor-pointer group"
-              >
-                <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-sm flex items-center justify-center shrink-0">
-                    <svg className="w-6 h-6 sm:w-7 sm:h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
-                      <line x1="16" x2="16" y1="2" y2="6" />
-                      <line x1="8" x2="8" y1="2" y2="6" />
-                      <line x1="3" x2="21" y1="10" y2="10" />
-                      <path d="M8 14h.01" />
-                      <path d="M12 14h.01" />
-                      <path d="M16 14h.01" />
-                      <path d="M8 18h.01" />
-                      <path d="M12 18h.01" />
-                      <path d="M16 18h.01" />
-                    </svg>
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-sm sm:text-lg font-black text-[#0A1E5E] dark:text-white leading-tight">
-                      Schemes of Work
-                    </div>
-                    <div className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 leading-snug mt-0.5 truncate">
-                      Teaching plans
-                    </div>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 group-hover:text-violet-600 shrink-0" />
-              </button>
-
-              {/* 5. Lesson Plans */}
-              <button
-                type="button"
-                onClick={() => openLessonPlansPage()}
-                className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-[0_8px_24px_rgba(15,23,42,0.05)] hover:shadow-md hover:border-teal-400 transition-all flex items-center justify-between gap-2.5 text-left cursor-pointer group"
-              >
-                <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-600 text-white shadow-sm flex items-center justify-center shrink-0">
-                    <svg className="w-6 h-6 sm:w-7 sm:h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M13 4h3a2 2 0 0 1 2 2v14" />
-                      <path d="M2 20h3" />
-                      <path d="M13 20h9" />
-                      <path d="M10 12v.01" />
-                      <path d="M13 4.562v16.157a1 1 0 0 1-1.242.97L5 20V5.562a2 2 0 0 1 1.515-1.94l4-1A2 2 0 0 1 13 4.561Z" />
-                    </svg>
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-sm sm:text-lg font-black text-[#0A1E5E] dark:text-white leading-tight truncate">
-                      Lesson Plans
-                    </div>
-                    <div className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 leading-snug mt-0.5 line-clamp-2">
-                      Ready-to-use lesson plans
-                    </div>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 group-hover:text-teal-600 shrink-0" />
-              </button>
-
-              {/* 6. Simulations (Interactive Diagrams & Science Labs) */}
-              <button
-                type="button"
-                onClick={() => openVirtualLabPage(selectedClass || savedClass || mohaActiveClass || 'Form 4', 'diagrams')}
-                className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-[0_8px_24px_rgba(15,23,42,0.05)] hover:shadow-md hover:border-rose-400 transition-all flex items-center justify-between gap-2.5 text-left cursor-pointer group"
-              >
-                <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-600 text-white shadow-sm flex items-center justify-center shrink-0">
-                    <svg className="w-6 h-6 sm:w-7 sm:h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2" />
-                      <path d="M8.5 2h7" />
-                      <path d="M7 16h10" />
-                    </svg>
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-sm sm:text-lg font-black text-[#0A1E5E] dark:text-white leading-tight truncate">
-                      Simulations
-                    </div>
-                    <div className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 leading-snug mt-0.5 line-clamp-2">
-                      Diagrams &amp; science labs
-                    </div>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 group-hover:text-rose-600 shrink-0" />
-              </button>
-            </div>
+              );
+            })()}
 
             {/* Continue Learning Banner (Matches Reference Design) */}
             {(() => {
@@ -7492,19 +7415,19 @@ export default function App() {
       )}
       </AnimatePresence>
 
-      {/* PERSISTENT 4-TAB MOBILE BOTTOM NAVIGATION BAR (HOME, DAILY QUIZ, MOHA AI, PLAY) */}
+      {/* UNIFIED FLOATING BOTTOM GLASS NAVIGATION BAR (MOBILE) */}
       <nav
         aria-label="Mobile Primary Navigation"
-        className={`fixed bottom-0 inset-x-0 z-[70] h-16 px-2 flex items-center justify-around lg:hidden shadow-[0_-8px_24px_-12px_rgba(15,23,42,0.12)] rounded-t-3xl border-t print:hidden ${
+        className={`fixed bottom-2.5 inset-x-3 z-[70] h-15 px-2 flex items-center justify-around lg:hidden shadow-[0_10px_30px_-8px_rgba(15,23,42,0.18)] rounded-2xl border print:hidden ${
           darkMode
-            ? 'bg-slate-900/95 backdrop-blur-md border-slate-800'
-            : 'bg-white/95 backdrop-blur-md border-slate-200/80'
+            ? 'bg-slate-900/85 backdrop-blur-xl border-slate-800/90'
+            : 'bg-white/85 backdrop-blur-xl border-slate-200/85'
         }`}
       >
         <button
           type="button"
           onClick={() => resetToStep1()}
-          className={`relative flex-1 h-full flex flex-col items-center justify-center gap-0.5 text-[11px] font-extrabold cursor-pointer transition-colors ${
+          className={`relative flex-1 h-full flex flex-col items-center justify-center gap-0.5 text-[11px] font-extrabold cursor-pointer transition-all duration-150 ${
             activePage === 'home' ||
             activePage === 'papers' ||
             activePage === 'books' ||
@@ -7512,7 +7435,7 @@ export default function App() {
             activePage === 'schemes' ||
             activePage === 'lesson_plans' ||
             activePage === 'virtual_lab'
-              ? 'text-blue-600'
+              ? 'text-blue-600 dark:text-blue-400'
               : darkMode
                 ? 'text-slate-400 hover:text-slate-200'
                 : 'text-[#1e2952] hover:text-blue-600'
@@ -7530,16 +7453,16 @@ export default function App() {
             activePage === 'schemes' ||
             activePage === 'lesson_plans' ||
             activePage === 'virtual_lab') && (
-            <span className="absolute bottom-0 inset-x-3 h-1 rounded-t-full bg-blue-600" />
+            <span className="absolute bottom-1 inset-x-5 h-0.5 rounded-full bg-blue-600 dark:bg-blue-400" />
           )}
         </button>
 
         <button
           type="button"
           onClick={() => openDailyQuizPage()}
-          className={`relative flex-1 h-full flex flex-col items-center justify-center gap-0.5 text-[11px] font-extrabold cursor-pointer transition-colors ${
+          className={`relative flex-1 h-full flex flex-col items-center justify-center gap-0.5 text-[11px] font-extrabold cursor-pointer transition-all duration-150 ${
             activePage === 'daily_quiz'
-              ? 'text-blue-600'
+              ? 'text-blue-600 dark:text-blue-400'
               : darkMode
                 ? 'text-slate-400 hover:text-slate-200'
                 : 'text-[#1e2952] hover:text-blue-600'
@@ -7553,16 +7476,16 @@ export default function App() {
           </svg>
           <span>Daily Quiz</span>
           {activePage === 'daily_quiz' && (
-            <span className="absolute bottom-0 inset-x-3 h-1 rounded-t-full bg-blue-600" />
+            <span className="absolute bottom-1 inset-x-5 h-0.5 rounded-full bg-blue-600 dark:bg-blue-400" />
           )}
         </button>
 
         <button
           type="button"
           onClick={() => openMwalimuModal()}
-          className={`relative flex-1 h-full flex flex-col items-center justify-center gap-0.5 text-[11px] font-extrabold cursor-pointer transition-colors ${
+          className={`relative flex-1 h-full flex flex-col items-center justify-center gap-0.5 text-[11px] font-extrabold cursor-pointer transition-all duration-150 ${
             activePage === 'moha'
-              ? 'text-blue-600'
+              ? 'text-blue-600 dark:text-blue-400'
               : darkMode
                 ? 'text-slate-400 hover:text-slate-200'
                 : 'text-[#1e2952] hover:text-blue-600'
@@ -7571,7 +7494,7 @@ export default function App() {
           <Sparkles className="w-5 h-5" />
           <span>Moha AI</span>
           {activePage === 'moha' && (
-            <span className="absolute bottom-0 inset-x-3 h-1 rounded-t-full bg-blue-600" />
+            <span className="absolute bottom-1 inset-x-5 h-0.5 rounded-full bg-blue-600 dark:bg-blue-400" />
           )}
         </button>
 
@@ -7584,9 +7507,9 @@ export default function App() {
               window.dispatchEvent(new CustomEvent('elimika-play-return-hub'));
             }
           }}
-          className={`relative flex-1 h-full flex flex-col items-center justify-center gap-0.5 text-[11px] font-extrabold cursor-pointer transition-colors ${
+          className={`relative flex-1 h-full flex flex-col items-center justify-center gap-0.5 text-[11px] font-extrabold cursor-pointer transition-all duration-150 ${
             (activePage as string) === 'game'
-              ? 'text-blue-600'
+              ? 'text-blue-600 dark:text-blue-400'
               : darkMode
                 ? 'text-slate-400 hover:text-slate-200'
                 : 'text-[#1e2952] hover:text-blue-600'
@@ -7597,7 +7520,7 @@ export default function App() {
           </svg>
           <span>Play</span>
           {(activePage as string) === 'game' && (
-            <span className="absolute bottom-0 inset-x-3 h-1 rounded-t-full bg-blue-600" />
+            <span className="absolute bottom-1 inset-x-5 h-0.5 rounded-full bg-blue-600 dark:bg-blue-400" />
           )}
         </button>
       </nav>

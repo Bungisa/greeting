@@ -14,6 +14,7 @@ import {
   analyzeCubic,
   analyzeExpLog,
   analyzeModulus,
+  analyzePolar,
   analyzeRational,
   analyzeSimultaneous,
   analyzeTrig,
@@ -40,6 +41,7 @@ import {
   type ModulusKind,
   niceGridStep,
   type Point2D,
+  type PolarCurveKind,
   RATIONAL_PRESETS,
   type SimPairKind,
   type TrigFuncType,
@@ -49,16 +51,28 @@ import {
   drawCalculusMode,
   drawConicsMode,
   drawCubicMode,
+  drawCustomFormulaMode,
   drawExpLogMode,
   drawModulusMode,
+  drawPolarMode,
   drawSimultaneousMode,
   drawTrigMode,
+  getModeEquationLatex,
   getModeEquationTitle,
 } from './graphSketcherCanvas';
 import {
   GraphSketcherNewBottomStrip,
   GraphSketcherNewRightControls,
 } from './GraphSketcherNewControls';
+import { DEFAULT_QUICK_SYMBOLS, MathFormula } from './MathFormula';
+import {
+  naturalMathToLatex,
+  parseCubicCoefficients,
+  parseCustomFormula,
+  parseLinearCoefficients,
+  parseQuadraticCoefficients,
+  parseTrigWaveFormula,
+} from './mathFormulaParser';
 
 export interface GraphSketcherXYSimulationProps {
   darkMode?: boolean;
@@ -66,6 +80,7 @@ export interface GraphSketcherXYSimulationProps {
 }
 
 const MODE_TABS: Array<{ id: GraphMode; label: string }> = [
+  { id: 'custom', label: '✎ Write Formula' },
   { id: 'linear', label: 'Straight Line' },
   { id: 'quadratic', label: 'Quadratic' },
   { id: 'cubic', label: 'Cubic' },
@@ -77,6 +92,7 @@ const MODE_TABS: Array<{ id: GraphMode; label: string }> = [
   { id: 'modulus', label: 'Modulus & Piecewise' },
   { id: 'simultaneous', label: 'Simultaneous' },
   { id: 'calculus', label: 'Calculus (Tangent & ∫)' },
+  { id: 'polar', label: 'Polar Curves (r, θ)' },
 ];
 
 export const GraphSketcherXYSimulation: React.FC<GraphSketcherXYSimulationProps> = ({
@@ -187,6 +203,22 @@ export const GraphSketcherXYSimulation: React.FC<GraphSketcherXYSimulationProps>
   const [showTangent, setShowTangent] = useState<boolean>(true);
   const [showNormal, setShowNormal] = useState<boolean>(true);
   const [showIntegral, setShowIntegral] = useState<boolean>(true);
+
+  // 12. Polar Graphing (r = f(θ))
+  const [polarKind, setPolarKind] = useState<PolarCurveKind>('rose');
+  const [polarTrig, setPolarTrig] = useState<'cos' | 'sin'>('cos');
+  const [polarA, setPolarA] = useState<number>(4);
+  const [polarB, setPolarB] = useState<number>(2);
+  const [polarN, setPolarN] = useState<number>(3);
+  const [polarProbeDeg, setPolarProbeDeg] = useState<number>(30);
+  const [showPolarGrid, setShowPolarGrid] = useState<boolean>(true);
+  const [showPolarRay, setShowPolarRay] = useState<boolean>(true);
+
+  // 13. Direct Written Formula (y = f(x) or r = f(θ))
+  const [formulaBarText, setFormulaBarText] = useState<string>('x^2 - 2x - 3');
+  const [customSecondEnabled, setCustomSecondEnabled] = useState<boolean>(false);
+  const [customSecondText, setCustomSecondText] = useState<string>('2x - 1');
+  const [formulaStatus, setFormulaStatus] = useState<string>('');
 
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const canvasBoxRef = useRef<HTMLDivElement | null>(null);
@@ -407,6 +439,136 @@ export const GraphSketcherXYSimulation: React.FC<GraphSketcherXYSimulationProps>
   const calculusInfo = useMemo(
     () => analyzeCalculus(calcCurve, calcA, calcB, calcC, calcX0, calcIntA, calcIntB),
     [calcCurve, calcA, calcB, calcC, calcX0, calcIntA, calcIntB]
+  );
+  const polarInfo = useMemo(
+    () => analyzePolar(polarKind, polarTrig, polarA, polarB, polarN, polarProbeDeg),
+    [polarKind, polarTrig, polarA, polarB, polarN, polarProbeDeg]
+  );
+
+  const customFormulaInfo = useMemo(() => {
+    const primary = parseCustomFormula(formulaBarText);
+    const secondary = customSecondEnabled ? parseCustomFormula(customSecondText) : null;
+
+    const roots: number[] = [];
+    let yIntercept: number | null = null;
+    const table: Array<{ x: number; y: number }> = [];
+
+    if (primary.evaluate && !primary.isPolar) {
+      const fn = primary.evaluate;
+      const y0 = fn(0);
+      if (Number.isFinite(y0)) yIntercept = y0;
+
+      // Scan [-15, 15] for real roots
+      const N = 600;
+      const xStart = -15;
+      const xEnd = 15;
+      const dx = (xEnd - xStart) / N;
+      let prevX = xStart;
+      let prevY = fn(prevX);
+
+      for (let i = 1; i <= N; i++) {
+        const curX = xStart + i * dx;
+        const curY = fn(curX);
+        if (Number.isFinite(curY) && Math.abs(curY) < 1e-7) {
+          if (!roots.some((r) => Math.abs(r - curX) < 1e-2)) roots.push(curX);
+        } else if (
+          Number.isFinite(prevY) &&
+          Number.isFinite(curY) &&
+          prevY * curY < 0 &&
+          Math.abs(curY - prevY) < 25
+        ) {
+          let lo = prevX;
+          let hi = curX;
+          let fLo = prevY;
+          for (let it = 0; it < 24; it++) {
+            const mid = 0.5 * (lo + hi);
+            const fMid = fn(mid);
+            if (!Number.isFinite(fMid)) break;
+            if (fLo * fMid <= 0) {
+              hi = mid;
+            } else {
+              lo = mid;
+              fLo = fMid;
+            }
+          }
+          const root = 0.5 * (lo + hi);
+          if (Math.abs(fn(root)) < 0.05 && !roots.some((r) => Math.abs(r - root) < 1e-2)) {
+            roots.push(root);
+          }
+        }
+        prevX = curX;
+        prevY = curY;
+      }
+
+      [-3, -2, -1, 0, 1, 2, 3].forEach((x) => {
+        table.push({ x, y: fn(x) });
+      });
+    }
+
+    return {
+      primary,
+      secondary,
+      roots: roots.slice(0, 8),
+      yIntercept,
+      table,
+    };
+  }, [formulaBarText, customSecondEnabled, customSecondText]);
+
+  const handleApplyWrittenFormula = useCallback(
+    (rawInput?: string) => {
+      const text = (rawInput ?? formulaBarText).trim();
+      if (!text) return;
+
+      // Check if it matches the currently active structured mode
+      if (mode === 'linear') {
+        const lin = parseLinearCoefficients(text);
+        if (lin) {
+          setLinM(lin.m);
+          setLinC(lin.c);
+          setFormulaStatus(`Applied to Straight Line: m = ${fmtNum(lin.m)}, c = ${fmtNum(lin.c)}`);
+          return;
+        }
+      }
+      if (mode === 'quadratic') {
+        const quad = parseQuadraticCoefficients(text);
+        if (quad) {
+          setQuadA(quad.a);
+          setQuadB(quad.b);
+          setQuadC(quad.c);
+          setFormulaStatus(`Applied to Quadratic: a = ${fmtNum(quad.a)}, b = ${fmtNum(quad.b)}, c = ${fmtNum(quad.c)}`);
+          return;
+        }
+      }
+      if (mode === 'cubic') {
+        const cub = parseCubicCoefficients(text);
+        if (cub) {
+          setCubA(cub.a);
+          setCubB(cub.b);
+          setCubC(cub.c);
+          setCubD(cub.d);
+          setFormulaStatus(`Applied to Cubic: a=${fmtNum(cub.a)}, b=${fmtNum(cub.b)}, c=${fmtNum(cub.c)}, d=${fmtNum(cub.d)}`);
+          return;
+        }
+      }
+      if (mode === 'trig') {
+        const tw = parseTrigWaveFormula(text);
+        if (tw) {
+          setTrigFunc(tw.fn);
+          setTrigA(tw.a);
+          setTrigB(tw.b);
+          setTrigC(0);
+          setTrigD(tw.d);
+          setFormulaStatus(`Applied to Trig: ${tw.fn}, a = ${fmtNum(tw.a)}, b = ${fmtNum(tw.b)}`);
+          return;
+        }
+      }
+
+      // Otherwise switch to Custom Formula mode and plot directly
+      setMode('custom');
+      resetViewportForMode('custom');
+      setFormulaStatus('Plotted written formula directly on XY plane');
+    },
+    [formulaBarText, mode, resetViewportForMode]
   );
 
   // ============================================================================
@@ -1099,6 +1261,30 @@ export const GraphSketcherXYSimulation: React.FC<GraphSketcherXYSimulationProps>
         showIntegral,
         calculusInfo
       );
+    if (mode === 'polar')
+      drawPolarMode(
+        helpers,
+        polarKind,
+        polarTrig,
+        polarA,
+        polarB,
+        polarN,
+        showPolarGrid,
+        showPolarRay,
+        polarInfo
+      );
+    if (mode === 'custom')
+      drawCustomFormulaMode(
+        helpers,
+        customFormulaInfo.primary.evaluate,
+        customFormulaInfo.primary.isPolar,
+        customFormulaInfo.secondary?.evaluate ?? null,
+        customFormulaInfo.secondary?.isPolar ?? false,
+        customFormulaInfo.roots,
+        customFormulaInfo.yIntercept,
+        customFormulaInfo.table,
+        showTableDots
+      );
 
     // ==========================================================================
     // INTERACTIVE HOVER COORDINATE PROBE
@@ -1120,7 +1306,10 @@ export const GraphSketcherXYSimulation: React.FC<GraphSketcherXYSimulationProps>
 
       const hx = hoverMath.x;
       let traceY: number | null = null;
-      if (mode === 'linear') traceY = linM * hx + linC;
+      if (mode === 'custom' && customFormulaInfo.primary.evaluate && !customFormulaInfo.primary.isPolar) {
+        const v = customFormulaInfo.primary.evaluate(hx);
+        if (Number.isFinite(v)) traceY = v;
+      } else if (mode === 'linear') traceY = linM * hx + linC;
       else if (mode === 'quadratic') traceY = quadA * hx * hx + quadB * hx + quadC;
       else if (mode === 'cubic') traceY = cubA * hx * hx * hx + cubB * hx * hx + cubC * hx + cubD;
       else if (mode === 'rational') {
@@ -1237,6 +1426,15 @@ export const GraphSketcherXYSimulation: React.FC<GraphSketcherXYSimulationProps>
     showNormal,
     showIntegral,
     calculusInfo,
+    polarKind,
+    polarTrig,
+    polarA,
+    polarB,
+    polarN,
+    showPolarGrid,
+    showPolarRay,
+    polarInfo,
+    customFormulaInfo,
     showTableDots,
     hoverMath,
   ]);
@@ -1326,7 +1524,7 @@ export const GraphSketcherXYSimulation: React.FC<GraphSketcherXYSimulationProps>
     darkMode ? 'bg-[#0b1220] border-white/[0.12] text-white' : 'bg-white border-slate-300 text-slate-900'
   }`;
 
-  const equationTitle = getModeEquationTitle({
+  const equationParams = {
     mode,
     linM,
     linC,
@@ -1363,9 +1561,16 @@ export const GraphSketcherXYSimulation: React.FC<GraphSketcherXYSimulationProps>
     pwSplit,
     simKind,
     calcFormula: calculusInfo.curveFormula,
-  });
+    polarEq: polarInfo.equationText,
+    customFormulaText: customFormulaInfo.primary.raw,
+    customLatex: customFormulaInfo.primary.latex,
+  };
 
-  const supportsPlotDots = mode === 'linear' || mode === 'quadratic' || mode === 'cubic' || mode === 'trig';
+  const equationTitle = getModeEquationTitle(equationParams);
+  const equationLatex = getModeEquationLatex(equationParams);
+
+  const supportsPlotDots =
+    mode === 'custom' || mode === 'linear' || mode === 'quadratic' || mode === 'cubic' || mode === 'trig';
 
   return (
     <div
@@ -1440,6 +1645,93 @@ export const GraphSketcherXYSimulation: React.FC<GraphSketcherXYSimulationProps>
         </div>
       </div>
 
+      {/* Direct "Write Formula" Input Bar with Quick Symbols & Live MathJax Preview */}
+      <div
+        className={`mt-3 rounded-2xl border p-3 ${
+          darkMode ? 'bg-[#101829] border-white/[0.09]' : 'bg-slate-50/90 border-slate-200'
+        }`}
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+          <span className="text-xs font-black uppercase tracking-wider text-sky-500 shrink-0">
+            Write Formula:
+          </span>
+
+          <div className="flex-1 flex items-center gap-2 min-w-0">
+            <input
+              type="text"
+              value={formulaBarText}
+              onChange={(e) => {
+                setFormulaBarText(e.target.value);
+                setFormulaStatus('');
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleApplyWrittenFormula();
+                }
+              }}
+              placeholder="Type formula e.g. x^2 - 2x - 3, 2x + 1, (2x+1)/(x-2), sin(x), r = 4cos(3theta)"
+              className={`w-full px-3 py-1.5 rounded-xl border text-xs sm:text-sm font-mono font-bold focus:outline-none focus:ring-2 focus:ring-sky-500/40 ${
+                darkMode
+                  ? 'bg-[#0b1220] border-white/[0.14] text-white placeholder:text-slate-500'
+                  : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400'
+              }`}
+            />
+
+            <button
+              type="button"
+              onClick={() => handleApplyWrittenFormula()}
+              className="px-3.5 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-black tracking-wide shrink-0 cursor-pointer shadow-xs"
+            >
+              Plot Formula
+            </button>
+          </div>
+
+          {/* Live MathJax Preview Pill */}
+          <div
+            className={`px-3 py-1.5 rounded-xl border text-xs sm:text-sm font-bold flex items-center gap-2 shrink-0 max-w-full overflow-x-auto ${
+              customFormulaInfo.primary.error
+                ? 'border-rose-500/40 bg-rose-500/10 text-rose-400'
+                : darkMode
+                ? 'bg-[#0b1220] border-sky-500/30 text-sky-300'
+                : 'bg-white border-sky-200 text-sky-900'
+            }`}
+          >
+            <span className="text-[10px] font-black uppercase tracking-wider opacity-60">MathJax:</span>
+            <MathFormula tex={customFormulaInfo.primary.latex || 'y = f(x)'} />
+          </div>
+        </div>
+
+        {/* Quick Math Symbols & Example Presets */}
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-1">
+            <span className={`text-[10px] font-bold mr-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+              Insert:
+            </span>
+            {DEFAULT_QUICK_SYMBOLS.map((sym) => (
+              <button
+                key={sym.label}
+                type="button"
+                onClick={() => {
+                  setFormulaBarText((prev) => `${prev}${sym.insert}`);
+                }}
+                className={`px-2 py-0.5 rounded-md text-[11px] font-bold border cursor-pointer transition-colors ${
+                  darkMode
+                    ? 'bg-[#0b1220] hover:bg-white/[0.08] border-white/10 text-slate-200'
+                    : 'bg-white hover:bg-slate-100 border-slate-300 text-slate-700'
+                }`}
+              >
+                {sym.label}
+              </button>
+            ))}
+          </div>
+
+          {formulaStatus && (
+            <span className="text-[11px] font-bold text-emerald-500">{formulaStatus}</span>
+          )}
+        </div>
+      </div>
+
       {/* Main Split Workspace: Interactive XY Plane + Controls & Math Readout */}
       <div className="mt-4 grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
         {/* LEFT: Interactive XY Coordinate Plane */}
@@ -1463,18 +1755,23 @@ export const GraphSketcherXYSimulation: React.FC<GraphSketcherXYSimulationProps>
               className="w-full h-full block touch-none cursor-grab active:cursor-grabbing"
             />
 
-            {/* Top-Left Live Equation Header */}
+            {/* Top-Left Live MathJax Equation Header */}
             <div className="pointer-events-none absolute top-3 left-3.5 right-28">
               <div
-                className={`text-sm sm:text-base font-black tracking-tight ${
-                  darkMode ? 'text-white drop-shadow' : 'text-slate-900'
+                className={`inline-flex items-center px-2.5 py-1 rounded-xl border backdrop-blur-xs text-sm sm:text-base font-black tracking-tight ${
+                  darkMode
+                    ? 'bg-[#0b1220]/85 border-white/10 text-white'
+                    : 'bg-white/90 border-slate-200/90 text-slate-900'
                 }`}
+                title={equationTitle}
               >
-                {equationTitle}
+                <MathFormula tex={equationLatex} />
               </div>
-              <div className={`text-[11px] font-semibold mt-0.5 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+              <div className={`text-[11px] font-semibold mt-1 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
                 {hoverMath
-                  ? `Cursor: (${mode === 'trig' && trigUnit === 'deg' ? `${fmtNum(hoverMath.x)}°` : fmtNum(hoverMath.x)}, ${fmtNum(hoverMath.y)}) · Drag to pan · Scroll to zoom`
+                  ? mode === 'polar' || (mode === 'custom' && customFormulaInfo.primary.isPolar)
+                    ? `Cursor: (x=${fmtNum(hoverMath.x)}, y=${fmtNum(hoverMath.y)}) · r=${fmtNum(Math.hypot(hoverMath.x, hoverMath.y))}, θ=${fmtNum(((Math.atan2(hoverMath.y, hoverMath.x) * 180) / Math.PI + 360) % 360)}°`
+                    : `Cursor: (${mode === 'trig' && trigUnit === 'deg' ? `${fmtNum(hoverMath.x)}°` : fmtNum(hoverMath.x)}, ${fmtNum(hoverMath.y)}) · Drag to pan · Scroll to zoom`
                   : mode === 'lp'
                   ? 'Shaded/hatched = Unwanted region · Clear white area = Feasible Region (R)'
                   : 'Drag to pan · Scroll or use + / − to zoom · Hover curve to read coordinates'}
@@ -1523,7 +1820,42 @@ export const GraphSketcherXYSimulation: React.FC<GraphSketcherXYSimulationProps>
             </div>
           </div>
 
-          {/* Bottom Summary Strips: Original 4 Modes */}
+          {/* Bottom Summary Strips: Custom Written Formula & Original 4 Modes */}
+          {mode === 'custom' && !customFormulaInfo.primary.isPolar && (
+            <div className={`rounded-2xl border p-3.5 ${panelCard}`}>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-black uppercase tracking-wider">
+                  Table of Values — <MathFormula tex={customFormulaInfo.primary.latex || 'y = f(x)'} />
+                </span>
+                <span className={`text-[11px] font-semibold ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  Evaluated from your written formula
+                </span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs text-center border-collapse tabular-nums">
+                  <thead>
+                    <tr className={`border-b ${darkMode ? 'border-white/10 text-slate-400' : 'border-slate-200 text-slate-500'}`}>
+                      <th className="py-1.5 px-2 font-black text-left">x</th>
+                      {customFormulaInfo.table.map((pt) => (
+                        <th key={pt.x} className="py-1.5 px-2 font-bold">{pt.x}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td className="py-1.5 px-2 font-black text-left text-sky-500">y</td>
+                      {customFormulaInfo.table.map((pt) => (
+                        <td key={pt.x} className="py-1.5 px-2 font-extrabold">
+                          {Number.isFinite(pt.y) ? fmtNum(pt.y) : 'undef'}
+                        </td>
+                      ))}
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
           {(mode === 'linear' || mode === 'quadratic') && (
             <div className={`rounded-2xl border p-3.5 ${panelCard}`}>
               <div className="flex items-center justify-between mb-2">
@@ -1669,17 +2001,133 @@ export const GraphSketcherXYSimulation: React.FC<GraphSketcherXYSimulationProps>
             simultaneousInfo={simultaneousInfo}
             calculusInfo={calculusInfo}
             conicInfo={conicInfo}
+            polarInfo={polarInfo}
           />
         </div>
 
         {/* RIGHT: Mode Controls & Live Mathematical Properties */}
         <div className="lg:col-span-4 space-y-3 min-w-0">
+          {/* ============ MODE 0: CUSTOM WRITTEN FORMULA ============ */}
+          {mode === 'custom' && (
+            <>
+              <div className={`rounded-2xl border p-3.5 space-y-3 ${panelCard}`}>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black uppercase tracking-wider">
+                    Direct Formula Sketcher
+                  </span>
+                  <span className="text-[11px] font-bold text-sky-500">
+                    {customFormulaInfo.primary.isPolar ? 'Polar r(θ)' : 'Cartesian f(x)'}
+                  </span>
+                </div>
+
+                <div className="text-[11px] font-semibold leading-snug opacity-80">
+                  Type any formula in the bar above or choose a sample formula below to plot it with live MathJax notation:
+                </div>
+
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    { label: 'Parabola', expr: 'x^2 - 2x - 3' },
+                    { label: 'Cubic Wave', expr: '0.5x^3 - 2x' },
+                    { label: 'Rational', expr: '(2x + 1)/(x - 2)' },
+                    { label: 'Damped Sine', expr: '3sin(x) / x' },
+                    { label: 'Modulus', expr: '|x^2 - 4| - 2' },
+                    { label: 'Square Root', expr: 'sqrt(x + 4) - 1' },
+                    { label: 'Polar Rose', expr: 'r = 4cos(3theta)' },
+                    { label: 'Cardioid', expr: 'r = 2 + 2cos(theta)' },
+                  ].map((sample) => (
+                    <button
+                      key={sample.label}
+                      type="button"
+                      onClick={() => {
+                        setFormulaBarText(sample.expr);
+                        setFormulaStatus('');
+                      }}
+                      className={`px-2 py-1 rounded-lg text-[11px] font-bold border cursor-pointer ${
+                        darkMode
+                          ? 'bg-[#0b1220] border-white/10 text-slate-300 hover:text-white'
+                          : 'bg-white border-slate-300 text-slate-700 hover:text-slate-950'
+                      }`}
+                    >
+                      {sample.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="pt-2 border-t border-slate-200/80 dark:border-white/[0.08] space-y-2">
+                  <label className="flex items-center gap-2 text-xs font-bold cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={customSecondEnabled}
+                      onChange={(e) => setCustomSecondEnabled(e.target.checked)}
+                      className="accent-pink-500"
+                    />
+                    <span>Compare with 2nd Formula g(x)</span>
+                  </label>
+
+                  {customSecondEnabled && (
+                    <div className="space-y-1.5">
+                      <input
+                        type="text"
+                        value={customSecondText}
+                        onChange={(e) => setCustomSecondText(e.target.value)}
+                        placeholder="e.g. 2x - 1 or cos(x)"
+                        className={`w-full px-2.5 py-1.5 rounded-xl border text-xs font-mono font-bold ${
+                          darkMode
+                            ? 'bg-[#0b1220] border-white/[0.14] text-white'
+                            : 'bg-white border-slate-300 text-slate-900'
+                        }`}
+                      />
+                      <div className="text-xs font-bold text-pink-500 flex items-center gap-1.5">
+                        <span>g(x):</span>
+                        <MathFormula tex={customFormulaInfo.secondary?.latex || ''} />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className={`rounded-2xl border p-3.5 space-y-2 text-xs ${panelCard}`}>
+                <div className="font-black uppercase tracking-wider text-sky-500">
+                  Typeset Formula &amp; Key Features
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>Formula</span>
+                  <span className="font-bold text-sky-400">
+                    <MathFormula tex={customFormulaInfo.primary.latex || 'y = f(x)'} />
+                  </span>
+                </div>
+                {!customFormulaInfo.primary.isPolar && (
+                  <>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>y-Intercept</span>
+                      <span className="font-mono font-bold text-amber-500">
+                        {customFormulaInfo.yIntercept !== null
+                          ? `(0, ${fmtNum(customFormulaInfo.yIntercept)})`
+                          : 'Undefined'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>Real Roots (x-int)</span>
+                      <span className="font-mono font-bold text-emerald-500 text-right">
+                        {customFormulaInfo.roots.length > 0
+                          ? customFormulaInfo.roots.map((r) => fmtNum(r)).join(', ')
+                          : 'None in [-15, 15]'}
+                      </span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </>
+          )}
+
           {/* ============ MODE 1: STRAIGHT LINE ============ */}
           {mode === 'linear' && (
             <>
               <div className={`rounded-2xl border p-3.5 space-y-3 ${panelCard}`}>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-black uppercase tracking-wider">Straight Line (y = mx + c)</span>
+                  <span className="text-xs font-black uppercase tracking-wider">
+                    Straight Line (<MathFormula tex="y = mx + c" />)
+                  </span>
                   <button
                     type="button"
                     onClick={() => { setLinM(2); setLinC(-1); }}
@@ -1773,9 +2221,11 @@ export const GraphSketcherXYSimulation: React.FC<GraphSketcherXYSimulationProps>
 
               <div className={`rounded-2xl border p-3.5 space-y-2 text-xs ${panelCard}`}>
                 <div className="font-black uppercase tracking-wider text-sky-500">Line Properties</div>
-                <div className="flex justify-between gap-2">
+                <div className="flex justify-between items-center gap-2">
                   <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>Slope-Intercept Form</span>
-                  <span className="font-mono font-bold">y = {formatPoly2(0, linM, linC)}</span>
+                  <span className="font-bold">
+                    <MathFormula tex={naturalMathToLatex(`y = ${formatPoly2(0, linM, linC)}`, '')} />
+                  </span>
                 </div>
                 <div className="flex justify-between gap-2">
                   <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>y-Intercept</span>
@@ -1813,7 +2263,9 @@ export const GraphSketcherXYSimulation: React.FC<GraphSketcherXYSimulationProps>
             <>
               <div className={`rounded-2xl border p-3.5 space-y-3 ${panelCard}`}>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-black uppercase tracking-wider">Quadratic (y = ax² + bx + c)</span>
+                  <span className="text-xs font-black uppercase tracking-wider">
+                    Quadratic (<MathFormula tex="y = ax^2 + bx + c" />)
+                  </span>
                   <button
                     type="button"
                     onClick={() => { setQuadA(1); setQuadB(-2); setQuadC(-3); }}
@@ -1874,12 +2326,16 @@ export const GraphSketcherXYSimulation: React.FC<GraphSketcherXYSimulationProps>
                         ({fmtNum(quadraticInfo.vertex.x)}, {fmtNum(quadraticInfo.vertex.y)})
                       </span>
                     </div>
-                    <div className="flex justify-between gap-2">
+                    <div className="flex justify-between items-center gap-2">
                       <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>Axis of Symmetry</span>
-                      <span className="font-mono font-bold text-sky-500">x = {fmtNum(quadraticInfo.vertex.x)}</span>
+                      <span className="font-bold text-sky-500">
+                        <MathFormula tex={`x = ${fmtNum(quadraticInfo.vertex.x)}`} />
+                      </span>
                     </div>
-                    <div className="flex justify-between gap-2">
-                      <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>Discriminant (b² − 4ac)</span>
+                    <div className="flex justify-between items-center gap-2">
+                      <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>
+                        Discriminant (<MathFormula tex="\Delta = b^2 - 4ac" />)
+                      </span>
                       <span className="font-bold tabular-nums">{fmtNum(quadraticInfo.disc)}</span>
                     </div>
                   </>
@@ -2210,6 +2666,15 @@ export const GraphSketcherXYSimulation: React.FC<GraphSketcherXYSimulationProps>
             showNormal={showNormal} setShowNormal={setShowNormal}
             showIntegral={showIntegral} setShowIntegral={setShowIntegral}
             calculusInfo={calculusInfo}
+            polarKind={polarKind} setPolarKind={setPolarKind}
+            polarTrig={polarTrig} setPolarTrig={setPolarTrig}
+            polarA={polarA} setPolarA={setPolarA}
+            polarB={polarB} setPolarB={setPolarB}
+            polarN={polarN} setPolarN={setPolarN}
+            polarProbeDeg={polarProbeDeg} setPolarProbeDeg={setPolarProbeDeg}
+            showPolarGrid={showPolarGrid} setShowPolarGrid={setShowPolarGrid}
+            showPolarRay={showPolarRay} setShowPolarRay={setShowPolarRay}
+            polarInfo={polarInfo}
           />
         </div>
       </div>

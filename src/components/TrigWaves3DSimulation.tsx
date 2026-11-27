@@ -14,6 +14,8 @@ import {
   Sparkles,
   Tag,
 } from 'lucide-react';
+import { MathFormula } from './MathFormula';
+import { naturalMathToLatex, parseTrigWaveFormula } from './mathFormulaParser';
 
 export interface TrigWaves3DSimulationProps {
   darkMode?: boolean;
@@ -146,6 +148,23 @@ export const TrigWaves3DSimulation: React.FC<TrigWaves3DSimulationProps> = ({
   const [frequency, setFrequency] = useState<number>(1.0);
   const [autoRotate, setAutoRotate] = useState<boolean>(true);
   const [showCosine, setShowCosine] = useState<boolean>(true);
+  const [writtenWaveText, setWrittenWaveText] = useState<string>('1.5sin(1theta)');
+  const [writtenWaveError, setWrittenWaveError] = useState<string>('');
+
+  const handleApplyWrittenWave = () => {
+    const parsed = parseTrigWaveFormula(writtenWaveText);
+    if (!parsed) {
+      setWrittenWaveError('Write a wave like 1.5sin(2theta) or 2cos(1.5x)');
+      return;
+    }
+    setWrittenWaveError('');
+    setWatchLessonActive(false);
+    setAmplitude(Math.max(0.5, Math.min(2.5, Math.abs(parsed.a) || 1)));
+    setFrequency(Math.max(0.5, Math.min(3.0, Math.abs(parsed.b) || 1)));
+    if (parsed.fn === 'cos') {
+      setShowCosine(true);
+    }
+  };
 
   const [watchLessonActive, setWatchLessonActive] = useState<boolean>(false);
   const [lessonPaused, setLessonPaused] = useState<boolean>(false);
@@ -772,25 +791,75 @@ export const TrigWaves3DSimulation: React.FC<TrigWaves3DSimulationProps> = ({
                   {angleDeg}°
                 </span>
                 <span className={`text-sm font-mono font-bold ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                  ({(angleRad / Math.PI).toFixed(2)}π rad)
+                  (<MathFormula tex={`${(angleRad / Math.PI).toFixed(2)}\\pi \\text{ rad}`} />)
                 </span>
               </div>
-              <p className="text-xs font-mono font-bold text-cyan-500 mt-1">
-                y = {amplitude.toFixed(1)} sin({frequency.toFixed(1)}θ) · Period = {periodDeg}°
-              </p>
+              <div className="text-xs font-bold text-cyan-500 mt-1 flex flex-wrap items-center gap-2">
+                <MathFormula tex={`y = ${amplitude.toFixed(1)}\\sin(${frequency.toFixed(1)}\\theta)`} />
+                <span>·</span>
+                <MathFormula tex={`T = \\frac{360^\\circ}{${frequency.toFixed(1)}} = ${periodDeg}^\\circ`} />
+              </div>
+            </div>
+
+            {/* Direct Write Wave Formula Option */}
+            <div className={`p-2.5 rounded-xl border space-y-1.5 ${cardBg}`}>
+              <div className="flex items-center justify-between text-[11px] font-bold">
+                <span className="text-cyan-500 uppercase tracking-wider">Write Wave Formula</span>
+                <span className="opacity-75">
+                  <MathFormula tex={naturalMathToLatex(writtenWaveText, 'y = ')} />
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="text"
+                  value={writtenWaveText}
+                  onChange={(e) => {
+                    setWrittenWaveText(e.target.value);
+                    setWrittenWaveError('');
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleApplyWrittenWave();
+                    }
+                  }}
+                  placeholder="e.g. 1.5sin(2theta) or 2cos(1.5x)"
+                  className={`flex-1 min-w-0 px-2.5 py-1.5 rounded-lg border text-xs font-mono font-bold focus:outline-none focus:ring-2 focus:ring-cyan-500/40 ${
+                    darkMode
+                      ? 'bg-[#121622] border-white/[0.14] text-white'
+                      : 'bg-slate-50 border-slate-300 text-slate-900'
+                  }`}
+                />
+                <button
+                  type="button"
+                  onClick={handleApplyWrittenWave}
+                  className="px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-black cursor-pointer shrink-0"
+                >
+                  Apply
+                </button>
+              </div>
+              {writtenWaveError && (
+                <div className="text-[11px] font-bold text-rose-500">{writtenWaveError}</div>
+              )}
             </div>
 
             <div className="grid grid-cols-3 gap-2 tabular-nums text-center">
               <div className={`p-2.5 rounded-xl border ${cardBg}`}>
-                <div className="text-[10px] font-bold uppercase text-cyan-500">sin(θ)</div>
+                <div className="text-[10px] font-bold text-cyan-500">
+                  <MathFormula tex="\sin(\theta)" />
+                </div>
                 <div className="text-base font-mono font-black">{sinVal.toFixed(2)}</div>
               </div>
               <div className={`p-2.5 rounded-xl border ${cardBg}`}>
-                <div className="text-[10px] font-bold uppercase text-violet-500">cos(θ)</div>
+                <div className="text-[10px] font-bold text-violet-500">
+                  <MathFormula tex="\cos(\theta)" />
+                </div>
                 <div className="text-base font-mono font-black">{cosVal.toFixed(2)}</div>
               </div>
               <div className={`p-2.5 rounded-xl border ${cardBg}`}>
-                <div className="text-[10px] font-bold uppercase text-amber-500">tan(θ)</div>
+                <div className="text-[10px] font-bold text-amber-500">
+                  <MathFormula tex="\tan(\theta)" />
+                </div>
                 <div className="text-base font-mono font-black">{tanVal === null ? '∞' : tanVal.toFixed(2)}</div>
               </div>
             </div>
@@ -859,13 +928,20 @@ export const TrigWaves3DSimulation: React.FC<TrigWaves3DSimulationProps> = ({
               darkMode ? 'bg-cyan-500/10 border-cyan-400/25 text-cyan-100' : 'bg-cyan-50 border-cyan-200 text-cyan-950'
             }`}
           >
-            <div className="font-bold font-mono">
-              sin²({angleDeg}°) + cos²({angleDeg}°) = {(sinVal * sinVal + cosVal * cosVal).toFixed(2)}
+            <div className="font-bold">
+              <MathFormula
+                tex={`\\sin^2(${angleDeg}^\\circ) + \\cos^2(${angleDeg}^\\circ) = ${(
+                  sinVal * sinVal +
+                  cosVal * cosVal
+                ).toFixed(2)}`}
+              />
             </div>
-            <div className="text-[11px] mt-0.5 opacity-90">
-              {level === 'o_level'
-                ? 'SOH–CAH–TOA extends smoothly to all 4 quadrants via the unit circle!'
-                : 'd/dθ (sin θ) = cos θ · Period T = 2π/B · Phase shift cos θ = sin(θ + π/2).'}
+            <div className="text-[11px] mt-1 opacity-90">
+              {level === 'o_level' ? (
+                'SOH–CAH–TOA extends smoothly to all 4 quadrants via the unit circle!'
+              ) : (
+                <MathFormula tex="\frac{d}{d\theta}(\sin\theta) = \cos\theta \;\cdot\; T = \frac{2\pi}{B} \;\cdot\; \cos\theta = \sin\!\left(\theta + \frac{\pi}{2}\right)" />
+              )}
             </div>
           </div>
         </aside>

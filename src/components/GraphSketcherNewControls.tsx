@@ -14,11 +14,15 @@ import {
   type GraphMode,
   type ModulusAnalysis,
   type ModulusKind,
+  type PolarAnalysis,
+  type PolarCurveKind,
   type SimPairKind,
   type SimultaneousAnalysis,
   type TrigAnalysis,
   type TrigFuncType,
 } from './graphSketcherMath';
+import { MathFormula } from './MathFormula';
+import { naturalMathToLatex } from './mathFormulaParser';
 
 export interface NewModesControlsProps {
   mode: GraphMode;
@@ -101,6 +105,17 @@ export interface NewModesControlsProps {
   showNormal: boolean; setShowNormal: (v: boolean) => void;
   showIntegral: boolean; setShowIntegral: (v: boolean) => void;
   calculusInfo: CalculusAnalysis;
+
+  // Polar
+  polarKind: PolarCurveKind; setPolarKind: (v: PolarCurveKind) => void;
+  polarTrig: 'cos' | 'sin'; setPolarTrig: (v: 'cos' | 'sin') => void;
+  polarA: number; setPolarA: (v: number) => void;
+  polarB: number; setPolarB: (v: number) => void;
+  polarN: number; setPolarN: (v: number) => void;
+  polarProbeDeg: number; setPolarProbeDeg: (v: number) => void;
+  showPolarGrid: boolean; setShowPolarGrid: (v: boolean) => void;
+  showPolarRay: boolean; setShowPolarRay: (v: boolean) => void;
+  polarInfo: PolarAnalysis;
 }
 
 const SliderRow: React.FC<{
@@ -150,6 +165,7 @@ export const GraphSketcherNewBottomStrip: React.FC<{
   simultaneousInfo: SimultaneousAnalysis;
   calculusInfo: CalculusAnalysis;
   conicInfo: ConicAnalysis;
+  polarInfo: PolarAnalysis;
 }> = ({
   mode,
   darkMode,
@@ -161,6 +177,7 @@ export const GraphSketcherNewBottomStrip: React.FC<{
   simultaneousInfo,
   calculusInfo,
   conicInfo,
+  polarInfo,
 }) => {
   if (mode === 'cubic') {
     return (
@@ -268,11 +285,20 @@ export const GraphSketcherNewBottomStrip: React.FC<{
       <div className={`rounded-2xl border p-3.5 space-y-1.5 text-xs ${panelCard}`}>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="font-black uppercase tracking-wider">Conic Section Summary</span>
-          <span className="font-mono font-bold text-sky-500">{conicInfo.equationText}</span>
+          <span className="font-bold text-sky-500">
+            <MathFormula tex={naturalMathToLatex(conicInfo.equationText, '')} />
+          </span>
         </div>
         <div className={`text-[11px] font-semibold ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
           {conicInfo.areaOrMetric}
-          {conicInfo.expandedText ? ` · General form: ${conicInfo.expandedText}` : ''}
+          {conicInfo.expandedText ? (
+            <>
+              {' · General form: '}
+              <MathFormula tex={naturalMathToLatex(conicInfo.expandedText, '')} />
+            </>
+          ) : (
+            ''
+          )}
         </div>
       </div>
     );
@@ -341,27 +367,82 @@ export const GraphSketcherNewBottomStrip: React.FC<{
     return (
       <div className={`rounded-2xl border p-3.5 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs ${panelCard}`}>
         <div>
-          <div className="text-[11px] font-bold uppercase text-amber-500">Tangent at x₀ = {fmtNum(calculusInfo.x0)}</div>
-          <div className="font-mono font-extrabold mt-0.5">{calculusInfo.tangentEq}</div>
+          <div className="text-[11px] font-bold uppercase text-amber-500">
+            Tangent at <MathFormula tex={`x_0 = ${fmtNum(calculusInfo.x0)}`} />
+          </div>
+          <div className="font-extrabold mt-0.5">
+            <MathFormula tex={naturalMathToLatex(calculusInfo.tangentEq, '')} />
+          </div>
           <div className={`text-[11px] ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-            Slope f&apos;(x₀) = {fmtNum(calculusInfo.slopeTangent)}
+            Slope <MathFormula tex={`f'(x_0) = ${fmtNum(calculusInfo.slopeTangent)}`} />
           </div>
         </div>
         <div>
           <div className="text-[11px] font-bold uppercase text-pink-500">Normal Line</div>
-          <div className="font-mono font-extrabold mt-0.5">{calculusInfo.normalEq}</div>
+          <div className="font-extrabold mt-0.5">
+            <MathFormula tex={naturalMathToLatex(calculusInfo.normalEq, '')} />
+          </div>
           <div className={`text-[11px] ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-            mₙ = {calculusInfo.slopeNormal === null ? 'Undefined (vertical)' : fmtNum(calculusInfo.slopeNormal)}
+            <MathFormula
+              tex={`m_n = ${
+                calculusInfo.slopeNormal === null ? '\\text{undef}' : fmtNum(calculusInfo.slopeNormal)
+              }`}
+            />
           </div>
         </div>
         <div>
           <div className="text-[11px] font-bold uppercase text-emerald-500">Definite Integral</div>
-          <div className="font-mono font-extrabold mt-0.5">
-            Net ∫ = {fmtNum(calculusInfo.signedIntegral, 3)}
+          <div className="font-extrabold mt-0.5">
+            <MathFormula tex={`\\int_a^b f(x)\\,dx = ${fmtNum(calculusInfo.signedIntegral, 3)}`} />
           </div>
           <div className={`text-[11px] ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
             Total Area = {fmtNum(calculusInfo.totalArea, 3)} sq units
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (mode === 'polar') {
+    return (
+      <div className={`rounded-2xl border p-3.5 ${panelCard}`}>
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+          <span className="text-xs font-black uppercase tracking-wider">
+            Polar Coordinate Table (θ, r, x = r cos θ, y = r sin θ)
+          </span>
+          <span className={`text-[11px] font-semibold ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+            {polarInfo.curveClass}
+          </span>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs text-center border-collapse tabular-nums">
+            <thead>
+              <tr className={`border-b ${darkMode ? 'border-white/10 text-slate-400' : 'border-slate-200 text-slate-500'}`}>
+                <th className="py-1.5 px-2 font-black text-left">θ</th>
+                {polarInfo.table.map((pt) => (
+                  <th key={pt.thetaDeg} className="py-1.5 px-2 font-bold">{pt.thetaLabel}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              <tr className={`border-b ${darkMode ? 'border-white/[0.06]' : 'border-slate-200/70'}`}>
+                <td className="py-1.5 px-2 font-black text-left text-sky-500">r</td>
+                {polarInfo.table.map((pt) => (
+                  <td key={pt.thetaDeg} className="py-1.5 px-2 font-extrabold">
+                    {pt.r === null ? <span className="text-rose-500">undef</span> : fmtNum(pt.r)}
+                  </td>
+                ))}
+              </tr>
+              <tr>
+                <td className="py-1.5 px-2 font-black text-left text-emerald-500">(x, y)</td>
+                {polarInfo.table.map((pt) => (
+                  <td key={pt.thetaDeg} className="py-1.5 px-2 font-mono text-[11px] font-bold">
+                    {pt.x === null || pt.y === null ? '—' : `(${fmtNum(pt.x, 1)}, ${fmtNum(pt.y, 1)})`}
+                  </td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     );
@@ -929,16 +1010,20 @@ export const GraphSketcherNewRightControls: React.FC<NewModesControlsProps> = (p
 
         <div className={`rounded-2xl border p-3.5 space-y-2 text-xs ${panelCard}`}>
           <div className="font-black uppercase tracking-wider text-amber-500">Derivative &amp; Integral</div>
-          <div className="flex justify-between gap-2">
+          <div className="flex justify-between items-center gap-2">
             <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>Function</span>
-            <span className="font-mono font-bold">{p.calculusInfo.curveFormula}</span>
+            <span className="font-bold">
+              <MathFormula tex={naturalMathToLatex(p.calculusInfo.curveFormula, '')} />
+            </span>
           </div>
-          <div className="flex justify-between gap-2">
+          <div className="flex justify-between items-center gap-2">
             <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>Derivative</span>
-            <span className="font-mono font-bold text-amber-500">{p.calculusInfo.derivativeFormula}</span>
+            <span className="font-bold text-amber-500">
+              <MathFormula tex={naturalMathToLatex(p.calculusInfo.derivativeFormula, '')} />
+            </span>
           </div>
-          <div className="flex justify-between gap-2">
-            <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>Point P(x₀, y₀)</span>
+          <div className="flex justify-between items-center gap-2">
+            <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>Point <MathFormula tex="P(x_0, y_0)" /></span>
             <span className="font-mono font-bold text-rose-500">({fmtNum(p.calculusInfo.x0)}, {fmtNum(p.calculusInfo.y0)})</span>
           </div>
           <div className={`text-[11px] pt-1 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
@@ -949,5 +1034,193 @@ export const GraphSketcherNewRightControls: React.FC<NewModesControlsProps> = (p
     );
   }
 
+  // ==================== 12. POLAR GRAPHING (r = f(θ)) ====================
+  if (mode === 'polar') {
+    return (
+      <>
+        <div className={`rounded-2xl border p-3.5 space-y-3 ${panelCard}`}>
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-black uppercase tracking-wider">Polar Curve Family r = f(θ)</span>
+            <div className="flex gap-1">
+              {(['cos', 'sin'] as const).map((fn) => (
+                <button
+                  key={fn}
+                  type="button"
+                  onClick={() => p.setPolarTrig(fn)}
+                  disabled={p.polarKind === 'spiral'}
+                  className={`${segBtn(p.polarTrig === fn)} disabled:opacity-40`}
+                >
+                  {fn}(θ)
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-1.5">
+            {(
+              [
+                { id: 'rose', label: 'Rose Curve' },
+                { id: 'limacon', label: 'Cardioid / Limaçon' },
+                { id: 'lemniscate', label: 'Lemniscate ∞' },
+                { id: 'spiral', label: 'Spiral r=a+bθ' },
+                { id: 'circle', label: 'Polar Circle' },
+              ] as Array<{ id: PolarCurveKind; label: string }>
+            ).map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => {
+                  p.setPolarKind(opt.id);
+                  if (opt.id === 'rose') { p.setPolarA(4); p.setPolarN(3); }
+                  else if (opt.id === 'limacon') { p.setPolarA(2); p.setPolarB(2); }
+                  else if (opt.id === 'lemniscate') { p.setPolarA(4); }
+                  else if (opt.id === 'spiral') { p.setPolarA(0); p.setPolarB(0.4); }
+                  else { p.setPolarA(4); }
+                }}
+                className={segBtn(p.polarKind === opt.id)}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Quick Presets */}
+          <div className="flex flex-wrap gap-1 pt-0.5">
+            {[
+              { label: '3-Petal Rose', kind: 'rose' as PolarCurveKind, a: 4, b: 2, n: 3 },
+              { label: '8-Petal Rose (n=4)', kind: 'rose' as PolarCurveKind, a: 4, b: 2, n: 4 },
+              { label: 'Cardioid (a=b)', kind: 'limacon' as PolarCurveKind, a: 2.5, b: 2.5, n: 2 },
+              { label: 'Inner Loop (a<b)', kind: 'limacon' as PolarCurveKind, a: 1.5, b: 3, n: 2 },
+            ].map((pr) => (
+              <button
+                key={pr.label}
+                type="button"
+                onClick={() => {
+                  p.setPolarKind(pr.kind);
+                  p.setPolarA(pr.a);
+                  p.setPolarB(pr.b);
+                  p.setPolarN(pr.n);
+                }}
+                className={segBtn(false)}
+              >
+                {pr.label}
+              </button>
+            ))}
+          </div>
+
+          <SliderRow
+            label={p.polarKind === 'rose' ? 'Petal Length (a)' : p.polarKind === 'circle' ? 'Diameter (a)' : 'Parameter (a)'}
+            val={p.polarA}
+            set={p.setPolarA}
+            min={-5}
+            max={5}
+            step={0.5}
+            inputClass={inputClass}
+          />
+
+          {(p.polarKind === 'limacon' || p.polarKind === 'spiral') && (
+            <SliderRow
+              label={p.polarKind === 'spiral' ? 'Tightness (b in a + bθ)' : 'Coefficient (b)'}
+              val={p.polarB}
+              set={p.setPolarB}
+              min={p.polarKind === 'spiral' ? 0.1 : -5}
+              max={p.polarKind === 'spiral' ? 1.2 : 5}
+              step={p.polarKind === 'spiral' ? 0.1 : 0.5}
+              accent="accent-amber-500"
+              inputClass={inputClass}
+            />
+          )}
+
+          {p.polarKind === 'rose' && (
+            <SliderRow
+              label="Frequency (n in cos nθ)"
+              val={p.polarN}
+              set={p.setPolarN}
+              min={1}
+              max={8}
+              step={1}
+              accent="accent-violet-500"
+              inputClass={inputClass}
+            />
+          )}
+
+          <div className="pt-2 border-t border-slate-200/80 dark:border-white/[0.08] space-y-2">
+            <div className="flex flex-wrap gap-3 text-xs font-semibold">
+              <label className="flex items-center gap-1.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={p.showPolarGrid}
+                  onChange={(e) => p.setShowPolarGrid(e.target.checked)}
+                  className="accent-sky-500"
+                />
+                <span>Polar Radial Grid</span>
+              </label>
+              <label className="flex items-center gap-1.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={p.showPolarRay}
+                  onChange={(e) => p.setShowPolarRay(e.target.checked)}
+                  className="accent-emerald-500"
+                />
+                <span>Trace Ray Vector (r, θ)</span>
+              </label>
+            </div>
+
+            {p.showPolarRay && (
+              <SliderRow
+                label="Ray Angle θ (°)"
+                val={p.polarProbeDeg}
+                set={p.setPolarProbeDeg}
+                min={0}
+                max={p.polarKind === 'spiral' ? 720 : 360}
+                step={5}
+                accent="accent-emerald-500"
+                inputClass={inputClass}
+              />
+            )}
+          </div>
+        </div>
+
+        <div className={`rounded-2xl border p-3.5 space-y-2 text-xs ${panelCard}`}>
+          <div className="font-black uppercase tracking-wider text-sky-500">Polar Curve Analysis</div>
+          <div className="flex justify-between items-center gap-2">
+            <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>Polar Equation</span>
+            <span className="font-extrabold">
+              <MathFormula tex={naturalMathToLatex(p.polarInfo.equationText, '')} />
+            </span>
+          </div>
+          <div className="font-bold text-amber-500">{p.polarInfo.curveClass}</div>
+          <div className="flex justify-between gap-2">
+            <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>Symmetry</span>
+            <span className="font-semibold text-right">{p.polarInfo.symmetryText}</span>
+          </div>
+          <div className="flex justify-between gap-2">
+            <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>Max Radius |r|</span>
+            <span className="font-mono font-bold text-emerald-500">{fmtNum(p.polarInfo.maxRadius)}</span>
+          </div>
+          {p.showPolarRay && (
+            <div className="pt-1.5 border-t border-slate-200/80 dark:border-white/[0.08] space-y-1">
+              <div className="flex justify-between">
+                <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>At θ = {fmtNum(p.polarInfo.probeThetaDeg)}°</span>
+                <span className="font-mono font-extrabold text-emerald-500">
+                  {p.polarInfo.probeR === null ? 'Undefined (r² < 0)' : `r = ${fmtNum(p.polarInfo.probeR)}`}
+                </span>
+              </div>
+              {p.polarInfo.probeX !== null && p.polarInfo.probeY !== null && (
+                <div className="flex justify-between">
+                  <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>Cartesian (r cos θ, r sin θ)</span>
+                  <span className="font-mono font-bold">
+                    ({fmtNum(p.polarInfo.probeX)}, {fmtNum(p.polarInfo.probeY)})
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </>
+    );
+  }
+
   return null;
 };
+

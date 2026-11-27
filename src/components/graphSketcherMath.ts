@@ -9,7 +9,9 @@ export type GraphMode =
   | 'conics'
   | 'modulus'
   | 'simultaneous'
-  | 'calculus';
+  | 'calculus'
+  | 'polar'
+  | 'custom';
 
 export type InequalityOp = '<=' | '>=' | '<' | '>';
 export type TrigFuncType = 'sin' | 'cos' | 'tan';
@@ -19,6 +21,7 @@ export type ConicKind = 'circle' | 'ellipse' | 'hyperbola';
 export type ModulusKind = 'abs' | 'floor' | 'piecewise';
 export type SimPairKind = 'line_quad' | 'line_circle' | 'quad_quad';
 export type CalcCurveKind = 'quadratic' | 'cubic' | 'sine';
+export type PolarCurveKind = 'rose' | 'limacon' | 'lemniscate' | 'spiral' | 'circle';
 
 export interface LPConstraint {
   id: string;
@@ -126,6 +129,20 @@ export interface CalculusAnalysis {
   totalArea: number;
   curveFormula: string;
   derivativeFormula: string;
+}
+
+export interface PolarAnalysis {
+  kind: PolarCurveKind;
+  equationText: string;
+  curveClass: string;
+  symmetryText: string;
+  maxRadius: number;
+  domainText: string;
+  probeThetaDeg: number;
+  probeR: number | null;
+  probeX: number | null;
+  probeY: number | null;
+  table: Array<{ thetaDeg: number; thetaLabel: string; r: number | null; x: number | null; y: number | null }>;
 }
 
 export const EPS = 1e-7;
@@ -1265,3 +1282,133 @@ export const CUBIC_PRESETS = [
   { name: 'Double Root', a: 1, b: -3, c: 0, d: 4 },
   { name: 'Monotonic Inflection', a: 0.5, b: 0, c: 1, d: 0 },
 ];
+
+// ============================================================================
+// NEW MODE 12: POLAR GRAPHING (r = f(θ))
+// ============================================================================
+export function evalPolarR(
+  kind: PolarCurveKind,
+  trig: 'cos' | 'sin',
+  a: number,
+  b: number,
+  n: number,
+  thetaRad: number
+): number | null {
+  const fn = trig === 'cos' ? Math.cos : Math.sin;
+  if (kind === 'rose') {
+    return a * fn(n * thetaRad);
+  }
+  if (kind === 'limacon') {
+    return a + b * fn(thetaRad);
+  }
+  if (kind === 'lemniscate') {
+    const val = a * a * fn(2 * thetaRad);
+    if (val < -1e-7) return null;
+    return Math.sqrt(Math.max(0, val));
+  }
+  if (kind === 'spiral') {
+    return a + b * thetaRad;
+  }
+  // Polar circle through pole: r = a cos(θ) or r = a sin(θ)
+  return a * fn(thetaRad);
+}
+
+export function analyzePolar(
+  kind: PolarCurveKind,
+  trig: 'cos' | 'sin',
+  a: number,
+  b: number,
+  n: number,
+  probeThetaDeg: number
+): PolarAnalysis {
+  const safeN = Math.max(1, Math.round(Math.abs(n)));
+  let equationText = '';
+  let curveClass = '';
+  let maxRadius = Math.abs(a);
+  const symmetryText =
+    kind === 'spiral'
+      ? 'No axis symmetry (expanding spiral)'
+      : trig === 'cos'
+      ? 'Symmetric about Polar Axis (x-axis, θ = 0)'
+      : 'Symmetric about Vertical Axis (y-axis, θ = π/2)';
+
+  if (kind === 'rose') {
+    equationText = `r = ${fmtNum(a)}·${trig}(${safeN === 1 ? '' : safeN}θ)`;
+    const petals = safeN % 2 === 1 ? safeN : 2 * safeN;
+    curveClass = `Rose Curve (${petals} petals, petal length |a| = ${fmtNum(Math.abs(a))})`;
+    maxRadius = Math.abs(a);
+  } else if (kind === 'limacon') {
+    const sign = b >= 0 ? '+' : '−';
+    equationText = `r = ${fmtNum(a)} ${sign} ${fmtNum(Math.abs(b))}·${trig}(θ)`;
+    maxRadius = Math.abs(a) + Math.abs(b);
+    const ratio = Math.abs(b) > EPS ? Math.abs(a) / Math.abs(b) : 99;
+    if (Math.abs(ratio - 1) < 1e-3) {
+      curveClass = 'Cardioid (Heart-shaped curve passing through pole)';
+    } else if (ratio < 1) {
+      curveClass = `Limaçon with Inner Loop (|a/b| = ${fmtNum(ratio)} < 1)`;
+    } else if (ratio < 2) {
+      curveClass = `Dimpled Limaçon (1 < |a/b| = ${fmtNum(ratio)} < 2)`;
+    } else {
+      curveClass = `Convex Limaçon (|a/b| = ${fmtNum(ratio)} ≥ 2)`;
+    }
+  } else if (kind === 'lemniscate') {
+    equationText = `r² = ${fmtNum(a * a)}·${trig}(2θ)`;
+    curveClass = `Lemniscate of Bernoulli (Figure-eight ∞, max r = ${fmtNum(Math.abs(a))})`;
+    maxRadius = Math.abs(a);
+  } else if (kind === 'spiral') {
+    const sign = b >= 0 ? '+' : '−';
+    equationText = `r = ${fmtNum(a)} ${sign} ${fmtNum(Math.abs(b))}θ`;
+    curveClass = 'Archimedean Spiral (Constant spacing Δr = 2πb per turn)';
+    maxRadius = Math.abs(a) + Math.abs(b) * 4 * Math.PI;
+  } else {
+    equationText = `r = ${fmtNum(a)}·${trig}(θ)`;
+    curveClass =
+      trig === 'cos'
+        ? `Circle centered at (${fmtNum(a / 2)}, 0) with radius ${fmtNum(Math.abs(a) / 2)}`
+        : `Circle centered at (0, ${fmtNum(a / 2)}) with radius ${fmtNum(Math.abs(a) / 2)}`;
+    maxRadius = Math.abs(a);
+  }
+
+  const probeRad = (probeThetaDeg * Math.PI) / 180;
+  const probeR = evalPolarR(kind, trig, a, b, safeN, probeRad);
+  const probeX = probeR !== null ? probeR * Math.cos(probeRad) : null;
+  const probeY = probeR !== null ? probeR * Math.sin(probeRad) : null;
+
+  const sampleAngles = [
+    { deg: 0, label: '0° (0)' },
+    { deg: 30, label: '30° (π/6)' },
+    { deg: 45, label: '45° (π/4)' },
+    { deg: 60, label: '60° (π/3)' },
+    { deg: 90, label: '90° (π/2)' },
+    { deg: 120, label: '120° (2π/3)' },
+    { deg: 180, label: '180° (π)' },
+    { deg: 270, label: '270° (3π/2)' },
+  ];
+
+  const table = sampleAngles.map((ang) => {
+    const rad = (ang.deg * Math.PI) / 180;
+    const r = evalPolarR(kind, trig, a, b, safeN, rad);
+    return {
+      thetaDeg: ang.deg,
+      thetaLabel: ang.label,
+      r,
+      x: r !== null ? r * Math.cos(rad) : null,
+      y: r !== null ? r * Math.sin(rad) : null,
+    };
+  });
+
+  return {
+    kind,
+    equationText,
+    curveClass,
+    symmetryText,
+    maxRadius,
+    domainText: kind === 'spiral' ? 'θ ∈ [0, 4π]' : 'θ ∈ [0, 2π] (0° to 360°)',
+    probeThetaDeg,
+    probeR,
+    probeX,
+    probeY,
+    table,
+  };
+}
+

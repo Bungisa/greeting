@@ -29,6 +29,9 @@ const TugOfWarGame = React.lazy(() =>
 const ElimikaGoldBallGame = React.lazy(() =>
   import('../games/ElimikaGoldBallGame').then((m) => ({ default: m.ElimikaGoldBallGame }))
 );
+const WrongWayGame = React.lazy(() =>
+  import('../games/WrongWayGame').then((m) => ({ default: m.WrongWayGame }))
+);
 const TeacherClassroomGameStudio = React.lazy(() =>
   import('./games/TeacherClassroomGameStudio').then((m) => ({
     default: m.TeacherClassroomGameStudio,
@@ -48,6 +51,7 @@ import { PaperRecord, TIE_CURRICULUM_SUBJECTS } from '../data/curriculumData';
 export type PlayGameRoute =
   | 'hub'
   | 'gold_ball'
+  | 'wrong_way'
   | 'stem_builder'
   | 'treasure_hunt'
   | 'treasure_hunt_live'
@@ -149,6 +153,7 @@ export const ElimikaPlayHub: React.FC<ElimikaPlayHubProps> = ({
       const hashMap: Record<PlayGameRoute, string> = {
         hub: '#play',
         gold_ball: '#gold-ball',
+        wrong_way: '#wrong-way',
         stem_builder: '#gold-ball',
         treasure_hunt: '#treasure-hunt',
         treasure_hunt_live: '#treasure-hunt-live',
@@ -171,6 +176,16 @@ export const ElimikaPlayHub: React.FC<ElimikaPlayHubProps> = ({
       <div className="w-8 h-8 border-3 border-teal-500 border-t-transparent rounded-full animate-spin" />
     </div>
   );
+
+  if (activeRoute === 'wrong_way') {
+    return (
+      <div className="pb-16 lg:pb-0">
+        <Suspense fallback={gameLoadingFallback}>
+          <WrongWayGame onBackToHub={() => navigateToGame('hub')} />
+        </Suspense>
+      </div>
+    );
+  }
 
   if (activeRoute === 'stem_arena') {
     return (
@@ -504,25 +519,60 @@ export const ElimikaPlayHub: React.FC<ElimikaPlayHubProps> = ({
             </div>
           </div>
 
-          {/* GAME 5: ELIMIKA TUG OF WAR (3D Team Blue vs Team Orange Sports Arena) */}
-          <div className="sm:col-span-2 bg-gradient-to-r from-[#1D4ED8] via-[#0F172A] to-[#EA580C] text-white rounded-3xl p-5 sm:p-6 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-2 border-amber-400/50">
-            <div className="space-y-1.5 max-w-2xl">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 font-black text-[11px]">
-                <Users className="w-3.5 h-3.5" /> NEW · 3D Sports Arena · Team Blue vs Team Orange
+          {/* GAME 5: WRONG WAY – NEON QUORIDOR STRATEGY MAZE (Deep Purple, Neon Cyan & Pink Card) */}
+          <div className="bg-gradient-to-br from-[#130627] via-[#1f0b3d] to-[#31105a] text-white rounded-3xl p-5 sm:p-6 shadow-lg flex flex-col justify-between gap-4 border border-cyan-400/40">
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-1.5">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-cyan-400/20 border border-cyan-300/40 text-cyan-300 font-black text-[11px]">
+                  <Sparkles className="w-3.5 h-3.5" /> 60 Campaign Levels • Vs AI • 2P &amp; 4P Star Race
+                </span>
+                <h2 className="text-xl font-black tracking-tight">Wrong Way</h2>
+                <p className="text-xs text-purple-100 leading-relaxed">
+                  Race your glowing neon orb across the grid or drag laser walls from your tray to reroute opponents! Features straight &amp; diagonal pawn jumps, Golden Rule path checks, and 7 tactical powers.
+                </p>
+              </div>
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-400 via-purple-500 to-rose-500 text-slate-950 flex items-center justify-center shrink-0 shadow-[0_0_20px_rgba(34,211,238,0.45)] border border-cyan-200">
+                <Gamepad2 className="w-8 h-8 text-white" />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/15 text-xs">
+              <span className="text-cyan-200 font-bold truncate">
+                ⚡ 6 Zones • Boss Matches • 7 Powers
               </span>
-              <h2 className="text-xl sm:text-2xl font-black tracking-tight">
+              <button
+                type="button"
+                onClick={() => navigateToGame('wrong_way')}
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-400 to-rose-500 hover:from-cyan-300 hover:to-rose-400 text-slate-950 font-black text-xs flex items-center gap-1.5 shrink-0 cursor-pointer shadow-sm"
+              >
+                <Play className="w-4 h-4 fill-slate-950" />
+                <span>Play Wrong Way →</span>
+              </button>
+            </div>
+          </div>
+
+          {/* GAME 6: ELIMIKA TUG OF WAR (3D Team Blue vs Team Orange Sports Arena) */}
+          <div className="bg-gradient-to-r from-[#1D4ED8] via-[#0F172A] to-[#EA580C] text-white rounded-3xl p-5 sm:p-6 shadow-xl flex flex-col justify-between gap-4 border-2 border-amber-400/50">
+            <div className="space-y-1.5">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 font-black text-[11px]">
+                <Users className="w-3.5 h-3.5" /> 3D Sports Arena · Team Blue vs Team Orange
+              </span>
+              <h2 className="text-xl font-black tracking-tight">
                 Elimika Tug of War
               </h2>
-              <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
-                Compete in Two-Team Classroom Mode, Player vs Smart AI, Quick Play, or Teacher Controlled Mode! Answer {selectedLaunchClass} {selectedLaunchSubject} questions (MCQ, True/False &amp; Numerical) to heave the 3D braided rope across the winning line.
+              <p className="text-xs text-slate-200 leading-relaxed">
+                Compete in Two-Team Classroom Mode, Player vs Smart AI, Quick Play, or Teacher Controlled Mode! Answer {selectedLaunchClass} {selectedLaunchSubject} questions to heave the 3D braided rope across the winning line.
               </p>
             </div>
 
-            <div className="flex items-center gap-3 shrink-0">
+            <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/15 text-xs">
+              <span className="text-amber-200 font-bold truncate">
+                🏆 2 Teams • Smart AI • Custom Questions
+              </span>
               <button
                 type="button"
                 onClick={() => navigateToGame('tug_of_war')}
-                className="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer shadow-lg"
+                className="px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center gap-1.5 shrink-0 cursor-pointer shadow-sm"
               >
                 <Trophy className="w-4 h-4" />
                 <span>Play 3D Tug of War →</span>

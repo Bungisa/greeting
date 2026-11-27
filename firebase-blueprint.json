@@ -70,6 +70,53 @@
         "updatedAt": { "type": "string", "description": "ISO timestamp" }
       },
       "required": ["uid", "displayName", "role", "updatedAt"]
+    },
+    "WrongWayLiveRoom": {
+      "title": "WrongWayLiveRoom",
+      "description": "Real-time 2-player Wrong Way match state synced via invite link.",
+      "type": "object",
+      "properties": {
+        "roomId": { "type": "string", "description": "6-character alphanumeric room code", "maxLength": 20, "pattern": "^[a-zA-Z0-9_-]+$" },
+        "hostId": { "type": "string", "description": "Host player session token", "maxLength": 80 },
+        "hostName": { "type": "string", "description": "Host player display name", "maxLength": 60 },
+        "guestId": { "type": "string", "description": "Guest friend session token (empty until friend joins)", "maxLength": 80 },
+        "guestName": { "type": "string", "description": "Guest friend display name", "maxLength": 60 },
+        "status": { "type": "string", "enum": ["waiting", "playing", "finished"], "description": "Room match status" },
+        "turnIndex": { "type": "number", "description": "Current turn player index (0 or 1)" },
+        "starterIndex": { "type": "number", "description": "Which player opened the match (0 or 1)" },
+        "moveCount": { "type": "number", "description": "Total turns elapsed" },
+        "p0R": { "type": "number", "description": "Player 0 row (0..8)" },
+        "p0C": { "type": "number", "description": "Player 0 col (0..8)" },
+        "p0Walls": { "type": "number", "description": "Player 0 remaining walls" },
+        "p1R": { "type": "number", "description": "Player 1 row (0..8)" },
+        "p1C": { "type": "number", "description": "Player 1 col (0..8)" },
+        "p1Walls": { "type": "number", "description": "Player 1 remaining walls" },
+        "wallsJson": { "type": "string", "description": "JSON-serialized placed walls array", "maxLength": 15000 },
+        "winnerIndex": { "type": "number", "description": "-1 while playing, 0 for Host win, 1 for Friend win, 2 for Equalized Draw" },
+        "equalizerPendingIndex": { "type": "number", "description": "-1 normally, or 0/1 when first mover reached goal and 2nd mover has 1 equalizer turn" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp of latest move", "maxLength": 60 }
+      },
+      "required": [
+        "roomId",
+        "hostId",
+        "hostName",
+        "guestId",
+        "guestName",
+        "status",
+        "turnIndex",
+        "starterIndex",
+        "moveCount",
+        "p0R",
+        "p0C",
+        "p0Walls",
+        "p1R",
+        "p1C",
+        "p1Walls",
+        "wallsJson",
+        "winnerIndex",
+        "equalizerPendingIndex",
+        "updatedAt"
+      ]
     }
   },
   "firestore": {
@@ -88,6 +135,10 @@
     "/users/{userId}": {
       "schema": { "$ref": "#/entities/UserProfile" },
       "description": "Private user profile and role document. Readable and writable only by the owner or admin."
+    },
+    "/wrongWayRooms/{roomId}": {
+      "schema": { "$ref": "#/entities/WrongWayLiveRoom" },
+      "description": "Live 2-player Wrong Way multiplayer room synced across devices by room code link."
     }
   }
 }

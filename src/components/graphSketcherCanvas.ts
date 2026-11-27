@@ -17,6 +17,9 @@ import {
   type ModulusAnalysis,
   type ModulusKind,
   type Point2D,
+  type PolarAnalysis,
+  type PolarCurveKind,
+  evalPolarR,
   type SimPairKind,
   type SimultaneousAnalysis,
   type TrigAnalysis,
@@ -839,6 +842,243 @@ export function drawCalculusMode(
   );
 }
 
+// ============================================================================
+// 12. POLAR GRAPHING RENDERER (r = f(θ) with Polar Radial Grid Overlay)
+// ============================================================================
+export function drawPolarMode(
+  h: CanvasDrawHelpers,
+  kind: PolarCurveKind,
+  trig: 'cos' | 'sin',
+  a: number,
+  b: number,
+  n: number,
+  showPolarGrid: boolean,
+  showProbeRay: boolean,
+  info: PolarAnalysis
+) {
+  const { ctx, W, H, xMin, xMax, yMin, yMax, toScreenX, toScreenY, drawTag, darkMode } = h;
+  const poleX = toScreenX(0);
+  const poleY = toScreenY(0);
+  const pxPerUnit = Math.abs(toScreenX(1) - toScreenX(0));
+  const maxRView = Math.max(Math.abs(xMin), Math.abs(xMax), Math.abs(yMin), Math.abs(yMax)) * 1.4;
+
+  // 1. Optional Polar Radial Grid Overlay (concentric circles + 30° angle spokes)
+  if (showPolarGrid) {
+    const rStep = maxRView > 16 ? 2 : 1;
+    ctx.save();
+    ctx.strokeStyle = darkMode ? 'rgba(56, 189, 248, 0.16)' : 'rgba(2, 132, 199, 0.16)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+
+    for (let r = rStep; r <= maxRView; r += rStep) {
+      const radiusPx = r * pxPerUnit;
+      ctx.beginPath();
+      ctx.arc(poleX, poleY, radiusPx, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // Radial angle rays every 30°
+    const rayAngles = [30, 60, 120, 150, 210, 240, 300, 330];
+    const rayLenPx = Math.hypot(W, H);
+    ctx.strokeStyle = darkMode ? 'rgba(56, 189, 248, 0.13)' : 'rgba(2, 132, 199, 0.13)';
+    for (const deg of rayAngles) {
+      const rad = (deg * Math.PI) / 180;
+      ctx.beginPath();
+      ctx.moveTo(poleX, poleY);
+      ctx.lineTo(poleX + Math.cos(rad) * rayLenPx, poleY - Math.sin(rad) * rayLenPx);
+      ctx.stroke();
+
+      // Label angle ray at a clean visible radius
+      const labelR = Math.min(maxRView * 0.48, 4.2);
+      const lx = toScreenX(labelR * Math.cos(rad));
+      const ly = toScreenY(labelR * Math.sin(rad));
+      if (lx > 24 && lx < W - 24 && ly > 20 && ly < H - 20) {
+        drawTag(`${deg}°`, lx, ly, darkMode ? 'rgba(125,211,252,0.75)' : 'rgba(3,105,161,0.75)', 'center');
+      }
+    }
+    ctx.restore();
+  }
+
+  // 2. Plot Polar Curve r = f(θ)
+  const safeN = Math.max(1, Math.round(Math.abs(n)));
+  const maxTheta = kind === 'spiral' ? 4 * Math.PI : 2 * Math.PI;
+  const steps = kind === 'spiral' ? 960 : 720;
+
+  const strokePolarBranch = (sign: 1 | -1, color: string) => {
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    let penDown = false;
+    for (let i = 0; i <= steps; i++) {
+      const theta = (maxTheta * i) / steps;
+      const rVal = evalPolarR(kind, trig, a, b, safeN, theta);
+      if (rVal === null || !Number.isFinite(rVal)) {
+        penDown = false;
+        continue;
+      }
+      const rSigned = sign * rVal;
+      const mx = rSigned * Math.cos(theta);
+      const my = rSigned * Math.sin(theta);
+      const sx = toScreenX(mx);
+      const sy = toScreenY(my);
+      if (sx < -W || sx > W * 2 || sy < -H || sy > H * 2) {
+        penDown = false;
+        continue;
+      }
+      if (!penDown) {
+        ctx.moveTo(sx, sy);
+        penDown = true;
+      } else {
+        ctx.lineTo(sx, sy);
+      }
+    }
+    ctx.stroke();
+    ctx.restore();
+  };
+
+  strokePolarBranch(1, '#0ea5e9');
+  if (kind === 'lemniscate') {
+    // Also plot the negative root branch -sqrt(a^2 trig(2θ))
+    strokePolarBranch(-1, '#0ea5e9');
+  }
+
+  // Pole (origin) marker
+  h.drawPointDot(0, 0, '#f59e0b', 'Pole (0, 0)', 9, 14);
+
+  // 3. Interactive Polar Ray Vector from Pole to (r(θ), θ)
+  if (showProbeRay && info.probeR !== null && info.probeX !== null && info.probeY !== null) {
+    const px = toScreenX(info.probeX);
+    const py = toScreenY(info.probeY);
+
+    ctx.save();
+    ctx.strokeStyle = info.probeR >= 0 ? '#10b981' : '#f43f5e';
+    ctx.lineWidth = 2.4;
+    if (info.probeR < 0) ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    ctx.moveTo(poleX, poleY);
+    ctx.lineTo(px, py);
+    ctx.stroke();
+    ctx.restore();
+
+    h.drawPointDot(
+      info.probeX,
+      info.probeY,
+      info.probeR >= 0 ? '#10b981' : '#f43f5e',
+      `P(r=${fmtNum(info.probeR)}, θ=${fmtNum(info.probeThetaDeg)}°)`,
+      10,
+      -13
+    );
+  }
+}
+
+// ============================================================================
+// 13. CUSTOM WRITTEN FORMULA RENDERER (y = f(x) or r = f(θ))
+// ============================================================================
+export function drawCustomFormulaMode(
+  h: CanvasDrawHelpers,
+  fn1: ((v: number) => number) | null,
+  isPolar1: boolean,
+  fn2: ((v: number) => number) | null,
+  isPolar2: boolean,
+  roots: number[],
+  yIntercept: number | null,
+  table: Array<{ x: number; y: number }>,
+  showTableDots: boolean
+) {
+  const { ctx, W, H, xMin, xMax, yMin, yMax, toScreenX, toScreenY, drawTag, darkMode } = h;
+
+  const drawPolarCustom = (fn: (theta: number) => number, color: string) => {
+    const poleX = toScreenX(0);
+    const poleY = toScreenY(0);
+    const pxPerUnit = Math.abs(toScreenX(1) - toScreenX(0));
+    const maxRView = Math.max(Math.abs(xMin), Math.abs(xMax), Math.abs(yMin), Math.abs(yMax)) * 1.4;
+    const rStep = maxRView > 16 ? 2 : 1;
+
+    ctx.save();
+    ctx.strokeStyle = darkMode ? 'rgba(56, 189, 248, 0.14)' : 'rgba(2, 132, 199, 0.14)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    for (let r = rStep; r <= maxRView; r += rStep) {
+      ctx.beginPath();
+      ctx.arc(poleX, poleY, r * pxPerUnit, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    const maxTheta = 2 * Math.PI;
+    const steps = 720;
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    let penDown = false;
+    for (let i = 0; i <= steps; i++) {
+      const theta = (maxTheta * i) / steps;
+      const rVal = fn(theta);
+      if (!Number.isFinite(rVal)) {
+        penDown = false;
+        continue;
+      }
+      const mx = rVal * Math.cos(theta);
+      const my = rVal * Math.sin(theta);
+      const sx = toScreenX(mx);
+      const sy = toScreenY(my);
+      if (sx < -W || sx > W * 2 || sy < -H || sy > H * 2) {
+        penDown = false;
+        continue;
+      }
+      if (!penDown) {
+        ctx.moveTo(sx, sy);
+        penDown = true;
+      } else {
+        ctx.lineTo(sx, sy);
+      }
+    }
+    ctx.stroke();
+    ctx.restore();
+    h.drawPointDot(0, 0, '#f59e0b', 'Pole (0, 0)', 9, 14);
+  };
+
+  if (fn1) {
+    if (isPolar1) {
+      drawPolarCustom(fn1, '#0ea5e9');
+    } else {
+      strokeContinuousCurve(h, fn1, '#0ea5e9', 3.1, false, 640);
+      if (showTableDots) {
+        table.forEach((pt) => {
+          if (Number.isFinite(pt.y)) {
+            h.drawPointDot(pt.x, pt.y, '#38bdf8');
+          }
+        });
+      }
+      if (yIntercept !== null && Number.isFinite(yIntercept)) {
+        h.drawPointDot(0, yIntercept, '#f59e0b', `(0, ${fmtNum(yIntercept)})`, 9, -11);
+      }
+      roots.forEach((r, idx) => {
+        h.drawPointDot(r, 0, '#10b981', `x${idx + 1} = ${fmtNum(r)}`, 7, 15);
+      });
+    }
+  }
+
+  if (fn2) {
+    if (isPolar2) {
+      drawPolarCustom(fn2, '#ec4899');
+    } else {
+      strokeContinuousCurve(h, fn2, '#ec4899', 2.6, true, 540);
+      const midX = viewCenterLabelX(xMin, xMax);
+      const midY = fn2(midX);
+      if (Number.isFinite(midY) && midY > yMin + 0.5 && midY < yMax - 0.5) {
+        drawTag('g(x)', toScreenX(midX) + 8, toScreenY(midY) - 12, '#ec4899');
+      }
+    }
+  }
+}
+
+function viewCenterLabelX(xMin: number, xMax: number): number {
+  return xMin + (xMax - xMin) * 0.68;
+}
+
 export function getModeEquationTitle(params: {
   mode: string;
   linM: number;
@@ -876,8 +1116,12 @@ export function getModeEquationTitle(params: {
   pwSplit: number;
   simKind: SimPairKind;
   calcFormula: string;
+  polarEq?: string;
+  customFormulaText?: string;
 }): string {
   switch (params.mode) {
+    case 'custom':
+      return params.customFormulaText ? params.customFormulaText : 'y = f(x)';
     case 'linear':
       return `y = ${formatPoly2(0, params.linM, params.linC)}`;
     case 'quadratic':
@@ -975,7 +1219,162 @@ export function getModeEquationTitle(params: {
         : 'Simultaneous: Two Quadratic Curves';
     case 'calculus':
       return `${params.calcFormula}  —  Tangent, Normal & Integral`;
+    case 'polar':
+      return `Polar Curve: ${params.polarEq || 'r = f(θ)'}`;
     default:
       return 'XY Plane Graph Sketcher';
   }
 }
+
+function poly2ToLatex(a: number, b: number, c: number): string {
+  return formatPoly2(a, b, c)
+    .replace(/x²/g, 'x^2')
+    .replace(/−/g, '-');
+}
+
+export function getModeEquationLatex(params: {
+  mode: string;
+  linM: number;
+  linC: number;
+  quadA: number;
+  quadB: number;
+  quadC: number;
+  ratP2: number;
+  ratP1: number;
+  ratP0: number;
+  ratQ2: number;
+  ratQ1: number;
+  ratQ0: number;
+  cubA: number;
+  cubB: number;
+  cubC: number;
+  cubD: number;
+  trigFunc: TrigFuncType;
+  trigA: number;
+  trigB: number;
+  trigC: number;
+  trigD: number;
+  trigUnit: AngleUnit;
+  expKind: ExpLogKind;
+  expA: number;
+  expBase: number;
+  expH: number;
+  expK: number;
+  conicEq: string;
+  modKind: ModulusKind;
+  modA: number;
+  modH: number;
+  modK: number;
+  stepFreq: number;
+  pwSplit: number;
+  simKind: SimPairKind;
+  calcFormula: string;
+  polarEq?: string;
+  customLatex?: string;
+}): string {
+  switch (params.mode) {
+    case 'custom':
+      return params.customLatex || 'y = f(x)';
+    case 'linear':
+      return `y = ${poly2ToLatex(0, params.linM, params.linC)}`;
+    case 'quadratic':
+      return `y = ${poly2ToLatex(params.quadA, params.quadB, params.quadC)}`;
+    case 'lp':
+      return '\\text{Linear Programming: } Z = px + qy';
+    case 'rational':
+      return `f(x) = \\frac{${poly2ToLatex(params.ratP2, params.ratP1, params.ratP0)}}{${poly2ToLatex(params.ratQ2, params.ratQ1, params.ratQ0)}}`;
+    case 'cubic': {
+      const title = getModeEquationTitle(params);
+      return title.replace(/x³/g, 'x^3').replace(/x²/g, 'x^2').replace(/−/g, '-');
+    }
+    case 'trig': {
+      const inner = `${Math.abs(params.trigB - 1) < EPS ? '' : fmtNum(params.trigB)}x${
+        Math.abs(params.trigC) > EPS
+          ? params.trigC > 0
+            ? ` + ${fmtNum(params.trigC)}${params.trigUnit === 'deg' ? '^\\circ' : ''}`
+            : ` - ${fmtNum(Math.abs(params.trigC))}${params.trigUnit === 'deg' ? '^\\circ' : ''}`
+          : ''
+      }`;
+      const lead = Math.abs(params.trigA - 1) < EPS ? '' : Math.abs(params.trigA + 1) < EPS ? '-' : `${fmtNum(params.trigA)}`;
+      const tail =
+        Math.abs(params.trigD) > EPS
+          ? params.trigD > 0
+            ? ` + ${fmtNum(params.trigD)}`
+            : ` - ${fmtNum(Math.abs(params.trigD))}`
+          : '';
+      return `y = ${lead}\\${params.trigFunc}(${inner})${tail}`;
+    }
+    case 'explog': {
+      const b = fmtNum(Math.max(0.05, params.expBase));
+      if (params.expKind === 'inverse') return `y = ${b}^x \\;\\text{ and }\\; y = \\log_{${b}}(x)`;
+      const hShift =
+        Math.abs(params.expH) < EPS
+          ? 'x'
+          : params.expH > 0
+          ? `x - ${fmtNum(params.expH)}`
+          : `x + ${fmtNum(Math.abs(params.expH))}`;
+      const kShift =
+        Math.abs(params.expK) < EPS
+          ? ''
+          : params.expK > 0
+          ? ` + ${fmtNum(params.expK)}`
+          : ` - ${fmtNum(Math.abs(params.expK))}`;
+      const aLead = Math.abs(params.expA - 1) < EPS ? '' : Math.abs(params.expA + 1) < EPS ? '-' : `${fmtNum(params.expA)}\\cdot `;
+      return params.expKind === 'exp'
+        ? `y = ${aLead}${b}^{${hShift}}${kShift}`
+        : `y = ${aLead}\\log_{${b}}(${hShift})${kShift}`;
+    }
+    case 'conics':
+      return params.conicEq
+        .replace(/²/g, '^2')
+        .replace(/−/g, '-')
+        .replace(/\(([^()]+)\)\^2\s*\/\s*([0-9.]+)\^2/g, '\\frac{($1)^2}{$2^2}')
+        .replace(/([xy])\^2\s*\/\s*([0-9.]+)\^2/g, '\\frac{$1^2}{$2^2}');
+    case 'modulus':
+      if (params.modKind === 'abs') {
+        const inner =
+          Math.abs(params.modH) < EPS
+            ? 'x'
+            : params.modH > 0
+            ? `x - ${fmtNum(params.modH)}`
+            : `x + ${fmtNum(Math.abs(params.modH))}`;
+        const kStr =
+          Math.abs(params.modK) < EPS
+            ? ''
+            : params.modK > 0
+            ? ` + ${fmtNum(params.modK)}`
+            : ` - ${fmtNum(Math.abs(params.modK))}`;
+        const aLead = Math.abs(params.modA - 1) < EPS ? '' : Math.abs(params.modA + 1) < EPS ? '-' : fmtNum(params.modA);
+        return `y = ${aLead}\\left|${inner}\\right|${kStr}`;
+      }
+      if (params.modKind === 'floor') {
+        const kStr =
+          Math.abs(params.modK) > EPS
+            ? params.modK > 0
+              ? ` + ${fmtNum(params.modK)}`
+              : ` - ${fmtNum(Math.abs(params.modK))}`
+            : '';
+        return `y = ${fmtNum(params.modA)}\\lfloor ${fmtNum(params.stepFreq)}x \\rfloor${kStr}`;
+      }
+      return `f(x) \\text{ piecewise at } x_0 = ${fmtNum(params.pwSplit)}`;
+    case 'simultaneous':
+      return params.simKind === 'line_quad'
+        ? '\\text{Simultaneous: } y = ax^2 + bx + c \\;\\&\\; y = mx + d'
+        : params.simKind === 'line_circle'
+        ? '\\text{Simultaneous: } (x-h)^2 + (y-k)^2 = r^2 \\;\\&\\; y = mx + d'
+        : '\\text{Simultaneous: } y = a_1x^2 + b_1x + c_1 \\;\\&\\; y = a_2x^2 + b_2x + c_2';
+    case 'calculus':
+      return params.calcFormula.replace(/x³/g, 'x^3').replace(/x²/g, 'x^2').replace(/−/g, '-').replace(/sin/g, '\\sin');
+    case 'polar':
+      return (params.polarEq || 'r = f(\\theta)')
+        .replace(/²/g, '^2')
+        .replace(/−/g, '-')
+        .replace(/cos/g, '\\cos ')
+        .replace(/sin/g, '\\sin ')
+        .replace(/θ/g, '\\theta');
+    default:
+      return 'y = f(x)';
+  }
+}
+
+

@@ -10,10 +10,11 @@ export type RoundPhase =
   | 'SELECTING'
   | 'REVEALING';
 
-// Natural Tabletop Glide Trajectories:
-// 1. PASS_BY_LANE: Two cups glide smoothly past each other along continuous C2 curved lanes with clear floor separation.
-// 2. PERIMETER_RING_SPIN: Smooth circular/oval carousel glide around the outer perimeter or stadium oval.
-// 3. TRACK_SPLINE_GLIDE: Cups glide smoothly directly along the Figure-8 Infinity or 3-Petal Clover spline tracks.
+// Natural Tabletop Glide & Flexible Ring Rotation Trajectories:
+// 1. PASS_BY_LANE: Two cups revolve smoothly around their shared midpoint in a true 180° elliptical turntable orbit.
+// 2. RING_CAROUSEL_ROTATION: All cups on a full ring or sub-ring glide along the exact same unified closed polar-spline perimeter rail without switching or crossing radii.
+// 3. RING_ARC_SWAP: Two cups on a circular/oval ring weave past each other along concentric inner & outer curved ring arcs following the ring's curvature.
+// 4. TRACK_SPLINE_GLIDE: Cups glide smoothly directly along the Figure-8 Infinity or 3-Petal Clover spline tracks.
 export type SpotQuestMoveTrajectory =
   | {
       kind: 'PASS_BY_LANE';
@@ -26,18 +27,26 @@ export type SpotQuestMoveTrajectory =
       peekDecoyLift: boolean;
     }
   | {
-      kind: 'PERIMETER_RING_SPIN';
+      kind: 'RING_CAROUSEL_ROTATION';
       cupId: number;
       fromSlot: number;
       toSlot: number;
-      startAngle: number;
-      deltaAngle: number;
-      startRadiusX: number;
-      startRadiusZ: number;
-      endRadiusX: number;
-      endRadiusZ: number;
-      ringRadiusX: number;
-      ringRadiusZ: number;
+      ringSlots: number[];
+      fromRingIdx: number;
+      deltaSteps: number;
+      roundnessBlend: number;
+    }
+  | {
+      kind: 'RING_ARC_SWAP';
+      cupId: number;
+      fromSlot: number;
+      toSlot: number;
+      ringSlots: number[];
+      fromRingIdx: number;
+      deltaSteps: number;
+      radialLaneOffset: number;
+      isFeint: boolean;
+      peekDecoyLift: boolean;
     }
   | {
       kind: 'TRACK_SPLINE_GLIDE';
@@ -83,8 +92,47 @@ const MAX_CUPS = 12;
 // 8 outer perimeter slots of the 3x3 grid in clockwise order around center slot 4
 const PERIMETER_CW_SLOTS_3X3 = [0, 1, 2, 5, 8, 7, 6, 3];
 
-// 8 outer oval ring slots of Mission Impossible (slots 0..7 are the outer oval ring, slot 8 is the center hub!)
-const MISSION_IMPOSSIBLE_RING_SLOTS = [0, 1, 2, 3, 4, 5, 6, 7];
+// 4-cup 2x2 quad mini-rings and center diamond ring on the 3x3 grid (clockwise cyclic order)
+const SUB_RINGS_3X3: number[][] = [
+  [0, 1, 4, 3], // Top-left 2x2 quad ring
+  [1, 2, 5, 4], // Top-right 2x2 quad ring
+  [3, 4, 7, 6], // Bottom-left 2x2 quad ring
+  [4, 5, 8, 7], // Bottom-right 2x2 quad ring
+  [1, 5, 7, 3], // Center 4-cup diamond ring
+];
+
+// 10 outer perimeter slots of the 3x4 grid (Brain Breaker) in clockwise order around inner slots [4, 7]
+const PERIMETER_CW_SLOTS_3X4 = [0, 1, 2, 5, 8, 11, 10, 9, 6, 3];
+
+// Dual non-overlapping sub-rings on the 3x4 grid (Brain Breaker) for synchronized counter-rotating wheels
+const DUAL_SUB_RINGS_3X4: Array<[number[], number[]]> = [
+  [
+    [0, 1, 2, 5, 4, 3],     // Top 6-cup ring
+    [6, 7, 8, 11, 10, 9],   // Bottom 6-cup ring
+  ],
+  [
+    [0, 1, 4, 3],           // Top-left 2x2 quad ring
+    [7, 8, 11, 10],         // Bottom-right 2x2 quad ring
+  ],
+  [
+    [1, 2, 5, 4],           // Top-right 2x2 quad ring
+    [6, 7, 10, 9],          // Bottom-left 2x2 quad ring
+  ],
+];
+
+// 8 outer oval ring slots of Mission Impossible & 8-cup circular/oval rings
+const RING_8_CW_SLOTS = [0, 1, 2, 3, 4, 5, 6, 7];
+
+// 10 circular ring slots of Mind Trap
+const RING_10_CW_SLOTS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+// 4-cup Hub-and-Rim quadrant rings in Mission Impossible (including center hub slot 8 in clockwise cyclic order!)
+const MISSION_IMPOSSIBLE_HUB_RINGS: number[][] = [
+  [0, 1, 2, 8], // Top-right quadrant loop with center hub
+  [2, 3, 4, 8], // Bottom-right quadrant loop with center hub
+  [4, 5, 6, 8], // Bottom-left quadrant loop with center hub
+  [6, 7, 0, 8], // Top-left quadrant loop with center hub
+];
 
 // 3-slot collinear & L-shaped passing chains on the 3x3 grid
 const SNAKE_CHAINS_3X3: number[][] = [
@@ -111,7 +159,7 @@ const TREFOIL_PETAL_CHAINS: number[][] = [
 
 /**
  * Wide-Gap Formation Base Slots:
- * Every formation now has significantly increased spacing between cups so there is a wide, unobstructed
+ * Every formation has generous spacing between cups so there is a wide, unobstructed
  * dark floor gap between every cup silhouette and passing lanes never crowd or overlap.
  */
 export function getFormationBaseSlots(
@@ -120,8 +168,8 @@ export function getFormationBaseSlots(
   // 1. BRAIN BREAKER (12 Cups Wide 3x4 Grid — Reel DgIdJcEwjXV)
   if (mode === 'brain_breaker_12') {
     const slots: Array<{ x: number; z: number; group: 'all' }> = [];
-    const colSpacing = 2.82; // Increased from 2.05 -> 2.82 for crystal-clear horizontal passing lanes
-    const rowSpacing = 2.18; // Increased from 1.72 -> 2.18 for clear vertical gaps between all 4 rows
+    const colSpacing = 2.82;
+    const rowSpacing = 2.18;
     const rowOffsets = [-1.5 * rowSpacing, -0.5 * rowSpacing, 0.5 * rowSpacing, 1.5 * rowSpacing];
     const colOffsets = [-colSpacing, 0, colSpacing];
     for (let r = 0; r < 4; r++) {
@@ -135,7 +183,7 @@ export function getFormationBaseSlots(
   // 2. ORBIT RING (8 Cups Wide Circular Orbit — Reel DgJUbbThWMO)
   if (mode === 'orbit_ring_8') {
     const slots: Array<{ x: number; z: number; group: 'all' }> = [];
-    const radius = 3.72; // Increased from 3.05 -> 3.72
+    const radius = 3.72;
     for (let i = 0; i < 8; i++) {
       const angle = (i / 8) * Math.PI * 2 - Math.PI / 2;
       slots.push({
@@ -150,7 +198,7 @@ export function getFormationBaseSlots(
   // 3. MIND TRAP (10 Cups Wide Circular Ring — Reel DfXezRcqEN9)
   if (mode === 'mind_trap_ring_10') {
     const slots: Array<{ x: number; z: number; group: 'all' }> = [];
-    const radius = 4.12; // Increased from 3.45 -> 4.12
+    const radius = 4.12;
     for (let i = 0; i < 10; i++) {
       const angle = (i / 10) * Math.PI * 2 - Math.PI / 2;
       slots.push({
@@ -164,8 +212,8 @@ export function getFormationBaseSlots(
 
   // 4. SPLIT BRAIN (6 Cups Wide Dual Top & Bottom Rows — Reel DgJ68l6HJVw)
   if (mode === 'split_brain_2x3') {
-    const colSpacing = 2.92; // Increased from 2.25 -> 2.92
-    const rowZ = 2.35;       // Increased from 1.78 -> 2.35
+    const colSpacing = 2.92;
+    const rowZ = 2.35;
     return [
       { x: -colSpacing, z: -rowZ, group: 'top' },
       { x: 0, z: -rowZ, group: 'top' },
@@ -178,7 +226,6 @@ export function getFormationBaseSlots(
 
   // 5. 8 CUPS. ONE DIE. (8 Crimson Cups in Wide Stadium Oval — Reel DeU6nw4yeSM)
   if (mode === 'crimson_die_oval_8') {
-    // Matches the exact 8-cup vertical stadium oval layout from Reel DeU6nw4yeSM
     const rx = 3.25;
     const rz = 3.95;
     const angles = [
@@ -211,14 +258,13 @@ export function getFormationBaseSlots(
         group: 'all',
       });
     }
-    // Slot 8 is the Center Hub Cup (0, 0) where the gold ball is revealed at start in Reel Df0w2I2Ma2j!
+    // Slot 8 is the Center Hub Cup (0, 0)
     slots.push({ x: 0, z: 0, group: 'all' });
     return slots;
   }
 
   // 7. FOLLOW THE GOLD: FIGURE-8 INFINITY TRACK (12 Cups on Hourglass Infinity Loop — Reel DfLSUkHvDeD)
   if (mode === 'infinity_figure8_12') {
-    // Matches the 12-node vertical hourglass / figure-8 loop from Reel DfLSUkHvDeD
     return [
       { x: -0.95, z: -3.95, group: 'all' }, // 0: Top-left crown
       { x: 1.55, z: -3.65, group: 'all' },  // 1: Top-right crown (Gold start)
@@ -237,8 +283,6 @@ export function getFormationBaseSlots(
 
   // 8. CHAOS MODE: 3-PETAL CLOVER TREFOIL TRACK (12 Cups on 3-Lobe Clover — Reel DfpCaSfMD1v)
   if (mode === 'chaos_trefoil_12') {
-    // 3 clover petals at -90 deg (Top), +150 deg (Bottom-Left), and +30 deg (Bottom-Right)
-    // Each petal has 4 well-separated cup positions along its loop
     const slots: Array<{ x: number; z: number; group: 'all' }> = [];
     const lobeAngles = [-Math.PI / 2, (5 * Math.PI) / 6, Math.PI / 6];
     for (let lobe = 0; lobe < 3; lobe++) {
@@ -248,7 +292,6 @@ export function getFormationBaseSlots(
       const px = -sinT;
       const pz = cosT;
 
-      // 4 nodes forming a wide teardrop petal loop: Outer Tip, Right Flank, Left Flank, Inner Neck
       const localNodes = [
         { forward: 4.15, side: 0.0 },   // Outer tip of petal
         { forward: 2.95, side: 1.28 },  // Right arc of petal
@@ -267,8 +310,8 @@ export function getFormationBaseSlots(
   }
 
   // 9. CLASSIC 3x3 GRID (9 Cups with Wide Visibility Gaps — Reel DfcZtTayh_9 & DfRJyp0Pir4)
-  const spX = 2.72; // Increased from 2.02 -> 2.72 (+35% wider gap between columns!)
-  const spZ = 2.54; // Increased from 2.02 -> 2.54 (+26% wider gap between rows!)
+  const spX = 2.72;
+  const spZ = 2.54;
   return [
     { x: -spX, z: -spZ, group: 'all' },
     { x: 0, z: -spZ, group: 'all' },
@@ -433,7 +476,6 @@ function createGoldenDieFaceTextures(): THREE.CanvasTexture[] {
     canvas.height = 256;
     const ctx = canvas.getContext('2d')!;
 
-    // Metallic 24K gold gradient face with warm bevel border
     const grad = ctx.createLinearGradient(0, 0, 256, 256);
     grad.addColorStop(0, '#fef08a');
     grad.addColorStop(0.35, '#fbbf24');
@@ -446,7 +488,6 @@ function createGoldenDieFaceTextures(): THREE.CanvasTexture[] {
     ctx.lineWidth = 12;
     ctx.strokeRect(8, 8, 240, 240);
 
-    // Draw dark recessed pips
     for (const [px, py] of pipLayouts[faceNum]) {
       ctx.beginPath();
       ctx.arc(px, py, 21, 0, Math.PI * 2);
@@ -471,7 +512,6 @@ function createPremiumNumberBadgeTexture(num: number): THREE.CanvasTexture {
   const ctx = canvas.getContext('2d')!;
   ctx.clearRect(0, 0, 256, 256);
 
-  // Soft outer ambient gold halo
   const halo = ctx.createRadialGradient(128, 128, 80, 128, 128, 126);
   halo.addColorStop(0, 'rgba(251, 191, 36, 0.36)');
   halo.addColorStop(0.65, 'rgba(251, 191, 36, 0.12)');
@@ -481,7 +521,6 @@ function createPremiumNumberBadgeTexture(num: number): THREE.CanvasTexture {
   ctx.arc(128, 128, 124, 0, Math.PI * 2);
   ctx.fill();
 
-  // Deep obsidian-emerald jewel medallion fill
   const bgGrad = ctx.createRadialGradient(108, 92, 16, 128, 128, 96);
   bgGrad.addColorStop(0, '#0c3b45');
   bgGrad.addColorStop(0.65, '#041d24');
@@ -491,7 +530,6 @@ function createPremiumNumberBadgeTexture(num: number): THREE.CanvasTexture {
   ctx.arc(128, 128, 92, 0, Math.PI * 2);
   ctx.fill();
 
-  // Brushed 24K metallic gold outer rim
   const rimGrad = ctx.createLinearGradient(36, 36, 220, 220);
   rimGrad.addColorStop(0, '#fef08a');
   rimGrad.addColorStop(0.32, '#f59e0b');
@@ -503,14 +541,12 @@ function createPremiumNumberBadgeTexture(num: number): THREE.CanvasTexture {
   ctx.arc(128, 128, 92, 0, Math.PI * 2);
   ctx.stroke();
 
-  // Hairline inner gold ring
   ctx.strokeStyle = 'rgba(254, 240, 138, 0.45)';
   ctx.lineWidth = 2.5;
   ctx.beginPath();
   ctx.arc(128, 128, 79, 0, Math.PI * 2);
   ctx.stroke();
 
-  // Subtle glass top highlight crescent
   const sheen = ctx.createLinearGradient(128, 42, 128, 126);
   sheen.addColorStop(0, 'rgba(255, 255, 255, 0.22)');
   sheen.addColorStop(1, 'rgba(255, 255, 255, 0)');
@@ -519,7 +555,6 @@ function createPremiumNumberBadgeTexture(num: number): THREE.CanvasTexture {
   ctx.ellipse(128, 78, 56, 26, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Crisp high-contrast numeral
   ctx.font = '900 104px Inter, system-ui, -apple-system, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -543,7 +578,6 @@ function createStudioTableTexture(): THREE.CanvasTexture {
   const cx = 512;
   const cy = 512;
 
-  // Center spotlight falloff to deep velvet studio perimeter
   const baseGrad = ctx.createRadialGradient(cx, cy, 40, cx, cy, 512);
   baseGrad.addColorStop(0, '#c8d8dc');
   baseGrad.addColorStop(0.32, '#96aeb5');
@@ -553,7 +587,6 @@ function createStudioTableTexture(): THREE.CanvasTexture {
   ctx.fillStyle = baseGrad;
   ctx.fillRect(0, 0, 1024, 1024);
 
-  // Subtle radial brushed micro-grooves
   ctx.save();
   ctx.translate(cx, cy);
   for (let i = 0; i < 180; i++) {
@@ -567,7 +600,6 @@ function createStudioTableTexture(): THREE.CanvasTexture {
   }
   ctx.restore();
 
-  // Concentric brushed-gold architectural inlay rings
   const ringSpecs = [
     { r: 162, w: 2.0, alpha: 0.24 },
     { r: 248, w: 1.5, alpha: 0.16 },
@@ -582,7 +614,6 @@ function createStudioTableTexture(): THREE.CanvasTexture {
     ctx.stroke();
   }
 
-  // Delicate compass cardinal ticks on outer gold ring
   ctx.strokeStyle = 'rgba(253, 224, 71, 0.32)';
   ctx.lineWidth = 2;
   for (let i = 0; i < 24; i++) {
@@ -611,7 +642,6 @@ function computeVisualCupOrdering(
     z: cupWorldPos[cupId]?.z ?? 0,
   }));
 
-  // Sort by z ascending (top of screen -> bottom of screen) first, then cluster into visual rows
   items.sort((a, b) => a.z - b.z);
   const rows: Array<typeof items> = [];
   const ROW_Z_THRESHOLD = 0.85;
@@ -658,10 +688,102 @@ function createRadialGlowTexture(hexColor: string): THREE.CanvasTexture {
 }
 
 /**
+ * Evaluate a unified closed Polar-Spline Ring Carousel point so EVERY cup on `ringSlots`
+ * travels along the exact same continuous perimeter rail without ever switching chords or crossing radii.
+ * Guarantees 100% machine-precision agreement with `fromSlot` at eT = 0 and `toSlot` at eT = 1.
+ */
+function evaluateUnifiedRingCarouselPoint(
+  ringSlots: number[],
+  fromRingIdx: number,
+  deltaSteps: number,
+  roundnessBlend: number,
+  eT: number,
+  getSlotCoord: (slotIdx: number) => { x: number; z: number }
+): { x: number; z: number; angle: number } {
+  const m = ringSlots.length;
+  const coords = ringSlots.map((s) => getSlotCoord(s));
+
+  let cx = 0;
+  let cz = 0;
+  for (let k = 0; k < m; k++) {
+    cx += coords[k].x;
+    cz += coords[k].z;
+  }
+  cx /= m;
+  cz /= m;
+
+  const radii: number[] = new Array(m);
+  const rawAngles: number[] = new Array(m);
+  let sumR = 0;
+  for (let k = 0; k < m; k++) {
+    const dx = coords[k].x - cx;
+    const dz = coords[k].z - cz;
+    const r = Math.hypot(dx, dz);
+    radii[k] = r;
+    sumR += r;
+    rawAngles[k] = Math.atan2(dz, dx);
+  }
+  const avgR = sumR / m;
+
+  // Unwrap angles around the closed ring so [0 .. m] is strictly monotonic
+  const unwrappedAngles: number[] = new Array(m + 1);
+  unwrappedAngles[0] = rawAngles[0];
+  for (let k = 1; k <= m; k++) {
+    const a = rawAngles[k % m];
+    let diff = a - unwrappedAngles[k - 1];
+    while (diff <= -Math.PI) diff += Math.PI * 2;
+    while (diff > Math.PI) diff -= Math.PI * 2;
+    unwrappedAngles[k] = unwrappedAngles[k - 1] + diff;
+  }
+
+  const u = fromRingIdx + deltaSteps * eT;
+  const uMod = ((u % m) + m) % m;
+  const idx0 = Math.min(m - 1, Math.floor(uMod));
+  const f = uMod - idx0;
+
+  // Smooth C1 periodic Catmull-Rom radius interpolation along the shared ring curve
+  const rPrev = radii[(idx0 - 1 + m) % m];
+  const rCurr = radii[idx0];
+  const rNext = radii[(idx0 + 1) % m];
+  const rNext2 = radii[(idx0 + 2) % m];
+  const f2 = f * f;
+  const f3 = f2 * f;
+  const rBase =
+    0.5 *
+    (2 * rCurr +
+      (-rPrev + rNext) * f +
+      (2 * rPrev - 5 * rCurr + 4 * rNext - rNext2) * f2 +
+      (-rPrev + 3 * rCurr - 3 * rNext + rNext2) * f3);
+
+  // Smoothly flex polygonal grid rings toward a rounded wheel mid-spin while keeping t=0 and t=1 exact
+  const flexAlpha = Math.sin(Math.PI * Math.max(0, Math.min(1, eT))) * roundnessBlend;
+  const rFinal = (1 - flexAlpha) * rBase + flexAlpha * avgR;
+
+  // Smooth periodic angle interpolation along the ring
+  const aPrev = idx0 === 0 ? unwrappedAngles[m - 1] - (unwrappedAngles[m] - unwrappedAngles[0]) : unwrappedAngles[idx0 - 1];
+  const aCurr = unwrappedAngles[idx0];
+  const aNext = unwrappedAngles[idx0 + 1];
+  const aNext2 =
+    idx0 + 2 <= m
+      ? unwrappedAngles[idx0 + 2]
+      : unwrappedAngles[1] + (unwrappedAngles[m] - unwrappedAngles[0]);
+  const angleFinal =
+    0.5 *
+    (2 * aCurr +
+      (-aPrev + aNext) * f +
+      (2 * aPrev - 5 * aCurr + 4 * aNext - aNext2) * f2 +
+      (-aPrev + 3 * aCurr - 3 * aNext + aNext2) * f3);
+
+  return {
+    x: cx + rFinal * Math.cos(angleFinal),
+    z: cz + rFinal * Math.sin(angleFinal),
+    angle: angleFinal,
+  };
+}
+
+/**
  * Compute a wide, guaranteed non-overlapping lateral passing lane offset (in world units)
- * when two cups exchange positions between slot1 and slot2:
- * - Returns a minimum perpendicular lane bow of >= 1.22 world units from the connecting centerline,
- *   so the two passing cups stay >= 2.44 world units apart at midpoint (leaving > 1.35 units of clear empty floor between them!).
+ * when two cups revolve around their shared midpoint in a 180° elliptical turntable orbit.
  */
 function computeWidePassLaneOffset(
   c1: { x: number; z: number },
@@ -673,7 +795,43 @@ function computeWidePassLaneOffset(
   return mag * directionSign;
 }
 
-// Build the Choreography Plan where cups exchange positions by PASSING EACH OTHER in wide, clearly visible lanes
+/**
+ * Helper to append a natural unified Ring Carousel Rotation wave for any cyclic ring of slots
+ */
+function appendRingCarouselTrajectories(
+  ringSlots: number[],
+  shiftSteps: number,
+  roundnessBlend: number,
+  cupAtSlot: number[],
+  currentSlotOfCup: number[],
+  trajectories: SpotQuestMoveTrajectory[]
+): void {
+  const m = ringSlots.length;
+  const movedCups = ringSlots.map((s) => cupAtSlot[s]);
+
+  for (let idx = 0; idx < m; idx++) {
+    const fromSlot = ringSlots[idx];
+    const nextIdx = (((idx + shiftSteps) % m) + m) % m;
+    const toSlot = ringSlots[nextIdx];
+    const cupId = movedCups[idx];
+
+    trajectories.push({
+      kind: 'RING_CAROUSEL_ROTATION',
+      cupId,
+      fromSlot,
+      toSlot,
+      ringSlots,
+      fromRingIdx: idx,
+      deltaSteps: shiftSteps,
+      roundnessBlend,
+    });
+
+    currentSlotOfCup[cupId] = toSlot;
+    cupAtSlot[toSlot] = cupId;
+  }
+}
+
+// Build the Choreography Plan with natural continuous ring rotations, sub-ring carousels, curved ring-arc weaves, and 180° elliptical turntable orbits
 function buildSpotQuestChoreographyPlan(
   cfg: GoldBallLevelConfig,
   initialSlotsByCup: number[],
@@ -699,16 +857,56 @@ function buildSpotQuestChoreographyPlan(
 
   for (let step = 0; step < totalSteps; step++) {
     const progressRatio = totalSteps > 1 ? step / (totalSteps - 1) : 1;
-    // Natural accelerando with fluid transitions (no clunky mechanical pauses between moves)
-    const durationScale = 1.18 - progressRatio * 0.34;
-    const holdPauseSec = Math.max(0.012, 0.026 - progressRatio * 0.012);
+    // Fluid accelerando with near-zero micro-pause so waves blend naturally
+    const durationScale = 1.16 - progressRatio * 0.32;
+    const holdPauseSec = Math.max(0.005, 0.016 - progressRatio * 0.009);
 
     // -------------------------------------------------------------------------
-    // 1. SPLIT BRAIN MODE (Reel DgJ68l6HJVw: 3 Top + 3 Bottom Simultaneous Smooth Passes)
+    // 1. SPLIT BRAIN MODE (Reel DgJ68l6HJVw: 3 Top + 3 Bottom Simultaneous Orbits & Oval Carousels)
     // -------------------------------------------------------------------------
     if (cfg.reelMode === 'split_brain_2x3') {
       const topSlots = [0, 1, 2];
       const botSlots = [3, 4, 5];
+
+      // Every 3rd step: full 3-cup oval conveyor stream on both top and bottom rows simultaneously!
+      if (step % 3 === 1) {
+        const topDir = step % 2 === 0 ? 1 : -1;
+        const botDir = -topDir;
+        const [t0, t1, t2] = topDir > 0 ? topSlots : [2, 1, 0];
+        const [b0, b1, b2] = botDir > 0 ? botSlots : [5, 4, 3];
+        const cT0 = cupAtSlot[t0];
+        const cT1 = cupAtSlot[t1];
+        const cT2 = cupAtSlot[t2];
+        const cB0 = cupAtSlot[b0];
+        const cB1 = cupAtSlot[b1];
+        const cB2 = cupAtSlot[b2];
+
+        const trajectories: SpotQuestMoveTrajectory[] = [
+          { kind: 'PASS_BY_LANE', cupId: cT0, fromSlot: t0, toSlot: t1, laneOffsetWorld: 0.48 * topDir, leadLagBias: 0.03, isFeint: false, peekDecoyLift: false },
+          { kind: 'PASS_BY_LANE', cupId: cT1, fromSlot: t1, toSlot: t2, laneOffsetWorld: 0.48 * topDir, leadLagBias: 0.03, isFeint: false, peekDecoyLift: false },
+          { kind: 'PASS_BY_LANE', cupId: cT2, fromSlot: t2, toSlot: t0, laneOffsetWorld: 1.45 * topDir, leadLagBias: -0.03, isFeint: false, peekDecoyLift: false },
+          { kind: 'PASS_BY_LANE', cupId: cB0, fromSlot: b0, toSlot: b1, laneOffsetWorld: 0.48 * botDir, leadLagBias: 0.03, isFeint: false, peekDecoyLift: false },
+          { kind: 'PASS_BY_LANE', cupId: cB1, fromSlot: b1, toSlot: b2, laneOffsetWorld: 0.48 * botDir, leadLagBias: 0.03, isFeint: false, peekDecoyLift: false },
+          { kind: 'PASS_BY_LANE', cupId: cB2, fromSlot: b2, toSlot: b0, laneOffsetWorld: 1.45 * botDir, leadLagBias: -0.03, isFeint: false, peekDecoyLift: false },
+        ];
+
+        currentSlotOfCup[cT0] = t1;
+        currentSlotOfCup[cT1] = t2;
+        currentSlotOfCup[cT2] = t0;
+        cupAtSlot[t1] = cT0;
+        cupAtSlot[t2] = cT1;
+        cupAtSlot[t0] = cT2;
+
+        currentSlotOfCup[cB0] = b1;
+        currentSlotOfCup[cB1] = b2;
+        currentSlotOfCup[cB2] = b0;
+        cupAtSlot[b1] = cB0;
+        cupAtSlot[b2] = cB1;
+        cupAtSlot[b0] = cB2;
+
+        plan.push({ trajectories, durationScale: durationScale * 1.14, holdPauseSec: 0.006 });
+        continue;
+      }
 
       const t1 = topSlots[Math.floor(Math.random() * 3)];
       const tPool = topSlots.filter((s) => s !== t1);
@@ -735,7 +933,7 @@ function buildSpotQuestChoreographyPlan(
           fromSlot: t1,
           toSlot: t2,
           laneOffsetWorld: topLane,
-          leadLagBias: 0.045,
+          leadLagBias: 0.03,
           isFeint: topFeint,
           peekDecoyLift: false,
         },
@@ -745,7 +943,7 @@ function buildSpotQuestChoreographyPlan(
           fromSlot: t2,
           toSlot: t1,
           laneOffsetWorld: topLane,
-          leadLagBias: -0.045,
+          leadLagBias: -0.03,
           isFeint: topFeint,
           peekDecoyLift: false,
         },
@@ -755,7 +953,7 @@ function buildSpotQuestChoreographyPlan(
           fromSlot: b1,
           toSlot: b2,
           laneOffsetWorld: botLane,
-          leadLagBias: 0.045,
+          leadLagBias: 0.03,
           isFeint: botFeint,
           peekDecoyLift: false,
         },
@@ -765,7 +963,7 @@ function buildSpotQuestChoreographyPlan(
           fromSlot: b2,
           toSlot: b1,
           laneOffsetWorld: botLane,
-          leadLagBias: -0.045,
+          leadLagBias: -0.03,
           isFeint: botFeint,
           peekDecoyLift: false,
         },
@@ -791,10 +989,9 @@ function buildSpotQuestChoreographyPlan(
     // -------------------------------------------------------------------------
     // 2. FIGURE-8 INFINITY LOOP SPLINE GLIDE (Reel DfLSUkHvDeD — 12 Cups)
     // -------------------------------------------------------------------------
-    if (cfg.reelMode === 'infinity_figure8_12' && step % 2 === 0) {
-      // Smoothly glide all 12 cups directly along the glowing Figure-8 spline track
-      const shiftOptions = [1, 2, -1, -2];
-      const shift = shiftOptions[Math.floor(step / 2) % shiftOptions.length];
+    if (cfg.reelMode === 'infinity_figure8_12' && step % 3 !== 2) {
+      const shiftOptions = [1, 2, -1, 1, -2, 2];
+      const shift = shiftOptions[step % shiftOptions.length];
       const trajectories: SpotQuestMoveTrajectory[] = [];
       const newCupAtSlot = [...cupAtSlot];
 
@@ -819,8 +1016,8 @@ function buildSpotQuestChoreographyPlan(
       for (let s = 0; s < 12; s++) cupAtSlot[s] = newCupAtSlot[s];
       plan.push({
         trajectories,
-        durationScale: durationScale * (Math.abs(shift) > 1 ? 1.48 : 1.15),
-        holdPauseSec: holdPauseSec + 0.01,
+        durationScale: durationScale * (Math.abs(shift) > 1 ? 1.42 : 1.12),
+        holdPauseSec: 0.004,
       });
       continue;
     }
@@ -828,10 +1025,9 @@ function buildSpotQuestChoreographyPlan(
     // -------------------------------------------------------------------------
     // 3. CHAOS MODE 3-PETAL CLOVER SPLINE GLIDE (Reel DfpCaSfMD1v — 12 Cups)
     // -------------------------------------------------------------------------
-    if (cfg.reelMode === 'chaos_trefoil_12' && step % 3 !== 2) {
-      // Glide cups directly along their clover petal spline loops or central roundabout triangle
+    if (cfg.reelMode === 'chaos_trefoil_12' && step % 4 !== 3) {
       const ballSlot = currentSlotOfCup[ballCupId];
-      const useCenterTriangle = step % 4 === 1 && TREFOIL_PETAL_CHAINS[3].includes(ballSlot);
+      const useCenterTriangle = step % 3 === 1 && TREFOIL_PETAL_CHAINS[3].includes(ballSlot);
       const chainIndex = useCenterTriangle
         ? 3
         : (() => {
@@ -839,7 +1035,7 @@ function buildSpotQuestChoreographyPlan(
             return idx >= 0 ? idx : step % 3;
           })();
       const activeChain = TREFOIL_PETAL_CHAINS[chainIndex];
-      const deltaSteps = step % 4 === 3 ? -1 : 1;
+      const deltaSteps = step % 4 === 2 ? -1 : 1;
       const n = activeChain.length;
       const trajectories: SpotQuestMoveTrajectory[] = [];
       const movedCups = activeChain.map((s) => cupAtSlot[s]);
@@ -863,125 +1059,317 @@ function buildSpotQuestChoreographyPlan(
         cupAtSlot[toSlot] = cupId;
       }
 
-      // On petal rotations, also gently rotate a second non-overlapping petal simultaneously for fluid Reels energy
-      if (chainIndex < 3 && cfg.simultaneousSwaps >= 2) {
-        const secondChainIndex = (chainIndex + 1) % 3;
-        const secondChain = TREFOIL_PETAL_CHAINS[secondChainIndex];
-        const secondDelta = -deltaSteps;
-        const secondCups = secondChain.map((s) => cupAtSlot[s]);
-        for (let i = 0; i < secondChain.length; i++) {
-          const fromSlot = secondChain[i];
-          const toSlot = secondChain[(i + secondDelta + secondChain.length) % secondChain.length];
-          const cupId = secondCups[i];
-          trajectories.push({
-            kind: 'TRACK_SPLINE_GLIDE',
-            cupId,
-            fromSlot,
-            toSlot,
-            trackKind: 'trefoil',
-            chainIndex: secondChainIndex,
-            fromNodeIdx: i,
-            deltaSteps: secondDelta,
-            totalNodes: secondChain.length,
-          });
-          currentSlotOfCup[cupId] = toSlot;
-          cupAtSlot[toSlot] = cupId;
+      // Rotate all 3 clover petals simultaneously in alternating directions for signature @spotquestt Clover energy
+      if (chainIndex < 3) {
+        for (let offset = 1; offset <= 2; offset++) {
+          if (offset === 2 && cfg.simultaneousSwaps < 2) break;
+          const otherIdx = (chainIndex + offset) % 3;
+          const otherChain = TREFOIL_PETAL_CHAINS[otherIdx];
+          const otherDelta = offset === 1 ? -deltaSteps : deltaSteps;
+          const otherCups = otherChain.map((s) => cupAtSlot[s]);
+          for (let i = 0; i < otherChain.length; i++) {
+            const fromSlot = otherChain[i];
+            const toSlot = otherChain[(i + otherDelta + otherChain.length) % otherChain.length];
+            const cupId = otherCups[i];
+            trajectories.push({
+              kind: 'TRACK_SPLINE_GLIDE',
+              cupId,
+              fromSlot,
+              toSlot,
+              trackKind: 'trefoil',
+              chainIndex: otherIdx,
+              fromNodeIdx: i,
+              deltaSteps: otherDelta,
+              totalNodes: otherChain.length,
+            });
+            currentSlotOfCup[cupId] = toSlot;
+            cupAtSlot[toSlot] = cupId;
+          }
         }
       }
 
-      plan.push({ trajectories, durationScale: durationScale * 1.18, holdPauseSec });
+      plan.push({ trajectories, durationScale: durationScale * 1.15, holdPauseSec: 0.004 });
       continue;
     }
 
     // -------------------------------------------------------------------------
-    // 4. SIGNATURE 8-CUP OUTER PERIMETER / STADIUM OVAL CAROUSEL ROTATION
-    //    (On Classic 3x3 Grid, Mission Impossible 8-Ring+Center, and 8-Cup Crimson Die Oval)
+    // 4. DEDICATED CIRCULAR & OVAL RING MODES:
+    //    `orbit_ring_8`, `mind_trap_ring_10`, `crimson_die_oval_8`, `mission_impossible_9`
+    //    -> Natural Continuous Ring Rotations & Curved Concentric Ring-Arc Weaves (NO chord switching!)
     // -------------------------------------------------------------------------
-    const is3x3Grid = cfg.reelMode === 'classic_3x3' && cupCount === 9;
-    const isMissionImpossible = cfg.reelMode === 'mission_impossible_9' && cupCount === 9;
-    const isCrimsonOval = cfg.reelMode === 'crimson_die_oval_8' && cupCount === 8;
+    const isOrbit8 = cfg.reelMode === 'orbit_ring_8' && cupCount === 8;
+    const isMindTrap10 = cfg.reelMode === 'mind_trap_ring_10' && cupCount === 10;
+    const isCrimsonOval8 = cfg.reelMode === 'crimson_die_oval_8' && cupCount === 8;
+    const isMissionImpossible9 = cfg.reelMode === 'mission_impossible_9' && cupCount === 9;
 
-    const shouldTriggerPerimeterRing =
-      ((isCrimsonOval || isMissionImpossible) && step % 3 === 1) ||
-      (is3x3Grid &&
-        totalSteps >= 6 &&
-        (step === Math.floor(totalSteps * 0.35) ||
-          step === Math.floor(totalSteps * 0.68) ||
-          (totalSteps >= 14 && step === Math.floor(totalSteps * 0.85))));
-
-    if (shouldTriggerPerimeterRing) {
-      const ringSlots = is3x3Grid ? PERIMETER_CW_SLOTS_3X3 : MISSION_IMPOSSIBLE_RING_SLOTS;
-      const shiftOptions = [2, -2, 3, -3, 1, -1];
-      const shiftSteps = shiftOptions[step % shiftOptions.length];
-      const ringRx = is3x3Grid ? 3.35 : isMissionImpossible ? 3.45 : 3.25;
-      const ringRz = is3x3Grid ? 3.20 : isMissionImpossible ? 3.95 : 3.95;
-
+    if (isOrbit8 || isMindTrap10 || isCrimsonOval8 || isMissionImpossible9) {
+      const ringSlots = isMindTrap10 ? RING_10_CW_SLOTS : RING_8_CW_SLOTS;
+      const ringLen = ringSlots.length;
       const trajectories: SpotQuestMoveTrajectory[] = [];
-      const newCupAtSlot = [...cupAtSlot];
 
-      for (let idx = 0; idx < 8; idx++) {
-        const fromSlot = ringSlots[idx];
-        const nextRingIdx = (idx + shiftSteps + 8) % 8;
-        const toSlot = ringSlots[nextRingIdx];
-        const cupId = cupAtSlot[fromSlot];
+      // Case 4A: Mission Impossible 4-Cup Hub-and-Rim Sub-Ring Carousel Rotation (every 3rd step)
+      // Smoothly rotates the center hub cup (slot 8) and 3 outer ring cups in a continuous 4-cup circular loop!
+      if (isMissionImpossible9 && step % 3 === 0) {
+        const ballSlot = currentSlotOfCup[ballCupId];
+        const matchingHubRings = MISSION_IMPOSSIBLE_HUB_RINGS.filter((r) => r.includes(ballSlot));
+        const hubRing =
+          matchingHubRings.length > 0
+            ? matchingHubRings[step % matchingHubRings.length]
+            : MISSION_IMPOSSIBLE_HUB_RINGS[step % MISSION_IMPOSSIBLE_HUB_RINGS.length];
+        const shift = step % 2 === 0 ? 1 : -1;
+        appendRingCarouselTrajectories(hubRing, shift, 0.52, cupAtSlot, currentSlotOfCup, trajectories);
+        plan.push({
+          trajectories,
+          durationScale: durationScale * 1.15,
+          holdPauseSec: 0.005,
+        });
+        continue;
+      }
 
-        const fromCoord = baseSlots[fromSlot];
-        const toCoord = baseSlots[toSlot];
+      // Case 4B: Full-Ring Unified Carousel Rotation (50% of steps in ring modes)
+      // All 8 or 10 cups glide around the exact circular/oval perimeter track in lockstep!
+      if (step % 2 === 0) {
+        const shiftOptions = [2, -1, 1, -2, 3, -2];
+        const shiftSteps = shiftOptions[step % shiftOptions.length];
+        appendRingCarouselTrajectories(ringSlots, shiftSteps, 0.0, cupAtSlot, currentSlotOfCup, trajectories);
+        plan.push({
+          trajectories,
+          durationScale: Math.max(1.08, durationScale * (Math.abs(shiftSteps) >= 3 ? 1.44 : Math.abs(shiftSteps) === 2 ? 1.24 : 1.06)),
+          holdPauseSec: 0.004,
+        });
+        continue;
+      }
 
-        const startAngle = Math.atan2(fromCoord.z / ringRz, fromCoord.x / ringRx);
-        const endAngle = Math.atan2(toCoord.z / ringRz, toCoord.x / ringRx);
+      // Case 4C: Curved Concentric Ring-Arc Weaves (`RING_ARC_SWAP`) along the ring circumference!
+      // Pairs of adjacent or near cups overtake each other along concentric inner/outer circular arcs following the ring curve!
+      const usedRingIndices = new Set<number>();
+      const maxPairs = cfg.simultaneousSwaps >= 2 ? 2 : 1;
+      const ballSlot = currentSlotOfCup[ballCupId];
+      const ballRingIdx = ringSlots.indexOf(ballSlot);
 
-        let deltaAngle = endAngle - startAngle;
-        if (shiftSteps > 0) {
-          while (deltaAngle <= 0) deltaAngle += Math.PI * 2;
+      for (let p = 0; p < maxPairs; p++) {
+        let idx1 = -1;
+        if (p === 0 && ballRingIdx >= 0 && !usedRingIndices.has(ballRingIdx)) {
+          idx1 = ballRingIdx;
         } else {
-          while (deltaAngle >= 0) deltaAngle -= Math.PI * 2;
+          const available = Array.from({ length: ringLen }, (_, i) => i).filter((i) => !usedRingIndices.has(i));
+          if (available.length < 2) break;
+          idx1 = available[Math.floor(Math.random() * available.length)];
         }
 
-        trajectories.push({
-          kind: 'PERIMETER_RING_SPIN',
-          cupId,
-          fromSlot,
-          toSlot,
-          startAngle,
-          deltaAngle,
-          startRadiusX: is3x3Grid
-            ? Math.hypot(fromCoord.x, fromCoord.z * (ringRx / ringRz))
-            : ringRx,
-          startRadiusZ: is3x3Grid
-            ? Math.hypot(fromCoord.x * (ringRz / ringRx), fromCoord.z)
-            : ringRz,
-          endRadiusX: is3x3Grid
-            ? Math.hypot(toCoord.x, toCoord.z * (ringRx / ringRz))
-            : ringRx,
-          endRadiusZ: is3x3Grid
-            ? Math.hypot(toCoord.x * (ringRz / ringRx), toCoord.z)
-            : ringRz,
-          ringRadiusX: ringRx,
-          ringRadiusZ: ringRz,
+        // Pick a neighbor 1 or 2 steps away along the ring circumference so the weave follows the ring arc naturally
+        const stepOffsets = [1, -1, 2, -2];
+        const validOffsets = stepOffsets.filter((off) => {
+          const targetIdx = (idx1 + off + ringLen) % ringLen;
+          if (usedRingIndices.has(targetIdx)) return false;
+          // If step is ±2, also ensure the intermediate slot isn't colliding with another pair
+          if (Math.abs(off) === 2) {
+            const midIdx = (idx1 + Math.sign(off) + ringLen) % ringLen;
+            if (usedRingIndices.has(midIdx)) return false;
+          }
+          return true;
         });
 
-        currentSlotOfCup[cupId] = toSlot;
-        newCupAtSlot[toSlot] = cupId;
+        if (validOffsets.length === 0) continue;
+        const deltaSteps = validOffsets[Math.floor(Math.random() * validOffsets.length)];
+        const idx2 = (idx1 + deltaSteps + ringLen) % ringLen;
+
+        usedRingIndices.add(idx1);
+        usedRingIndices.add(idx2);
+        if (Math.abs(deltaSteps) === 2) {
+          usedRingIndices.add((idx1 + Math.sign(deltaSteps) + ringLen) % ringLen);
+        }
+
+        const slot1 = ringSlots[idx1];
+        const slot2 = ringSlots[idx2];
+        const cup1 = cupAtSlot[slot1];
+        const cup2 = cupAtSlot[slot2];
+
+        const isFeint = cfg.hasMidShuffleFeints && p > 0 && step % 4 === 3;
+        const peekDecoy1 = cfg.decoyBallsCount > 0 && decoyCupIds.includes(cup1) && step % 3 === 1;
+        const peekDecoy2 = cfg.decoyBallsCount > 0 && decoyCupIds.includes(cup2) && step % 3 === 1;
+        const radialMag = Math.abs(deltaSteps) === 2 ? 0.72 : 0.62;
+        const radialSign = (step + p) % 2 === 0 ? 1 : -1;
+
+        trajectories.push({
+          kind: 'RING_ARC_SWAP',
+          cupId: cup1,
+          fromSlot: slot1,
+          toSlot: slot2,
+          ringSlots,
+          fromRingIdx: idx1,
+          deltaSteps,
+          radialLaneOffset: radialMag * radialSign,
+          isFeint,
+          peekDecoyLift: peekDecoy1,
+        });
+        trajectories.push({
+          kind: 'RING_ARC_SWAP',
+          cupId: cup2,
+          fromSlot: slot2,
+          toSlot: slot1,
+          ringSlots,
+          fromRingIdx: idx2,
+          deltaSteps: -deltaSteps,
+          radialLaneOffset: -radialMag * radialSign,
+          isFeint,
+          peekDecoyLift: peekDecoy2,
+        });
+
+        if (!isFeint) {
+          currentSlotOfCup[cup1] = slot2;
+          currentSlotOfCup[cup2] = slot1;
+          cupAtSlot[slot2] = cup1;
+          cupAtSlot[slot1] = cup2;
+        }
       }
 
-      for (let s = 0; s < cupCount; s++) cupAtSlot[s] = newCupAtSlot[s];
-
-      plan.push({
-        trajectories,
-        durationScale: Math.max(1.22, durationScale * (Math.abs(shiftSteps) >= 3 ? 1.52 : 1.32)),
-        holdPauseSec: holdPauseSec + 0.012,
-      });
-      continue;
+      if (trajectories.length > 0) {
+        plan.push({
+          trajectories,
+          durationScale: durationScale * 1.12,
+          holdPauseSec: 0.005,
+        });
+        continue;
+      }
     }
 
     // -------------------------------------------------------------------------
-    // 5. 3-CUP COLUMN / DIAGONAL "SNAKE STREAM" PASS (On 3x3 Grid)
+    // 5. BRAIN BREAKER 3x4 GRID (12 Cups):
+    //    10-Cup Outer Perimeter Ring Carousel + Dual Counter-Rotating 6-Cup / 2x2 Sub-Rings
+    // -------------------------------------------------------------------------
+    const isBrainBreaker12 = cfg.reelMode === 'brain_breaker_12' && cupCount === 12;
+    if (isBrainBreaker12 && step % 2 === 1) {
+      const trajectories: SpotQuestMoveTrajectory[] = [];
+
+      if (step % 4 === 1) {
+        // Full 10-cup outer perimeter carousel rotation + simultaneous 180° inner hub turntable orbit on slots [4, 7]!
+        const shiftOptions = [2, -1, 1, -2];
+        const shift = shiftOptions[Math.floor(step / 4) % shiftOptions.length];
+        appendRingCarouselTrajectories(
+          PERIMETER_CW_SLOTS_3X4,
+          shift,
+          0.62,
+          cupAtSlot,
+          currentSlotOfCup,
+          trajectories
+        );
+
+        // Simultaneously orbit the two inner column hub cups (slots 4 and 7) around each other
+        const c4 = cupAtSlot[4];
+        const c7 = cupAtSlot[7];
+        const innerLane = computeWidePassLaneOffset(baseSlots[4], baseSlots[7], shift > 0 ? 1 : -1);
+        trajectories.push(
+          {
+            kind: 'PASS_BY_LANE',
+            cupId: c4,
+            fromSlot: 4,
+            toSlot: 7,
+            laneOffsetWorld: innerLane,
+            leadLagBias: 0.02,
+            isFeint: false,
+            peekDecoyLift: false,
+          },
+          {
+            kind: 'PASS_BY_LANE',
+            cupId: c7,
+            fromSlot: 7,
+            toSlot: 4,
+            laneOffsetWorld: innerLane,
+            leadLagBias: -0.02,
+            isFeint: false,
+            peekDecoyLift: false,
+          }
+        );
+        currentSlotOfCup[c4] = 7;
+        currentSlotOfCup[c7] = 4;
+        cupAtSlot[7] = c4;
+        cupAtSlot[4] = c7;
+
+        plan.push({
+          trajectories,
+          durationScale: durationScale * (Math.abs(shift) > 1 ? 1.34 : 1.16),
+          holdPauseSec: 0.005,
+        });
+        continue;
+      } else {
+        // Dual Simultaneous Counter-Rotating Sub-Rings (Top & Bottom 6-Cup Rings or Diagonal 2x2 Quads)
+        const pairIdx = Math.floor(step / 2) % DUAL_SUB_RINGS_3X4.length;
+        const [ringA, ringB] = DUAL_SUB_RINGS_3X4[pairIdx];
+        const shiftA = step % 3 === 0 ? 2 : 1;
+        const shiftB = -shiftA;
+        appendRingCarouselTrajectories(ringA, shiftA, 0.65, cupAtSlot, currentSlotOfCup, trajectories);
+        appendRingCarouselTrajectories(ringB, shiftB, 0.65, cupAtSlot, currentSlotOfCup, trajectories);
+        plan.push({
+          trajectories,
+          durationScale: durationScale * 1.18,
+          holdPauseSec: 0.005,
+        });
+        continue;
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 6. CLASSIC 3x3 GRID (9 Cups):
+    //    8-Cup Outer Perimeter Ring Carousel + 4-Cup 2x2 Quad / Diamond Sub-Ring Carousels
+    // -------------------------------------------------------------------------
+    const is3x3Grid = cfg.reelMode === 'classic_3x3' && cupCount === 9;
+
+    if (is3x3Grid && step % 3 === 1) {
+      const trajectories: SpotQuestMoveTrajectory[] = [];
+      const useFullOuterPerimeter = step % 6 === 1 || step === totalSteps - 2;
+
+      if (useFullOuterPerimeter) {
+        // Unified 8-cup outer perimeter ring rotation around center slot 4
+        const shiftOptions = [2, -1, 1, -2, 3, -2];
+        const shiftSteps = shiftOptions[step % shiftOptions.length];
+        appendRingCarouselTrajectories(
+          PERIMETER_CW_SLOTS_3X3,
+          shiftSteps,
+          0.74,
+          cupAtSlot,
+          currentSlotOfCup,
+          trajectories
+        );
+        plan.push({
+          trajectories,
+          durationScale: Math.max(1.14, durationScale * (Math.abs(shiftSteps) >= 3 ? 1.45 : Math.abs(shiftSteps) === 2 ? 1.26 : 1.12)),
+          holdPauseSec: 0.004,
+        });
+        continue;
+      } else {
+        // 4-Cup 2x2 Quad Mini-Ring or Center Diamond Ring Carousel Rotation!
+        const ballSlot = currentSlotOfCup[ballCupId];
+        const matchingSubRings = SUB_RINGS_3X3.filter((r) => r.includes(ballSlot));
+        const subRing =
+          matchingSubRings.length > 0
+            ? matchingSubRings[step % matchingSubRings.length]
+            : SUB_RINGS_3X3[step % SUB_RINGS_3X3.length];
+        const shiftSteps = step % 2 === 0 ? 1 : -1;
+        appendRingCarouselTrajectories(
+          subRing,
+          shiftSteps,
+          0.72,
+          cupAtSlot,
+          currentSlotOfCup,
+          trajectories
+        );
+        plan.push({
+          trajectories,
+          durationScale: durationScale * 1.12,
+          holdPauseSec: 0.005,
+        });
+        continue;
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 7. 3-CUP COLUMN / DIAGONAL "SNAKE STREAM" PASS (On 3x3 Grid)
     // -------------------------------------------------------------------------
     const shouldTriggerSnakeTrain =
       is3x3Grid &&
       step > 1 &&
-      (step % 4 === 2 || (cfg.simultaneousSwaps >= 2 && step % 3 === 1));
+      step % 4 === 2;
 
     if (shouldTriggerSnakeTrain) {
       const ballSlot = currentSlotOfCup[ballCupId];
@@ -1005,8 +1393,8 @@ function buildSpotQuestChoreographyPlan(
           cupId: c0,
           fromSlot: s0,
           toSlot: s1,
-          laneOffsetWorld: 0.42 * sideSign,
-          leadLagBias: 0.04,
+          laneOffsetWorld: 0.45 * sideSign,
+          leadLagBias: 0.03,
           isFeint: false,
           peekDecoyLift: false,
         },
@@ -1015,8 +1403,8 @@ function buildSpotQuestChoreographyPlan(
           cupId: c1,
           fromSlot: s1,
           toSlot: s2,
-          laneOffsetWorld: 0.42 * sideSign,
-          leadLagBias: 0.04,
+          laneOffsetWorld: 0.45 * sideSign,
+          leadLagBias: 0.03,
           isFeint: false,
           peekDecoyLift: false,
         },
@@ -1026,7 +1414,7 @@ function buildSpotQuestChoreographyPlan(
           fromSlot: s2,
           toSlot: s0,
           laneOffsetWorld: 1.52 * sideSign,
-          leadLagBias: -0.04,
+          leadLagBias: -0.03,
           isFeint: false,
           peekDecoyLift: false,
         },
@@ -1048,7 +1436,7 @@ function buildSpotQuestChoreographyPlan(
     }
 
     // -------------------------------------------------------------------------
-    // 6. SMOOTH CURVED PASS-BY EXCHANGES (All Modes)
+    // 8. 180° ELLIPTICAL TURNTABLE PAIR ORBITS (All Modes)
     // -------------------------------------------------------------------------
     const usedSlots = new Set<number>();
     const usedPairMidpoints: Array<{ x: number; z: number }> = [];
@@ -1068,8 +1456,7 @@ function buildSpotQuestChoreographyPlan(
 
       const ballSlot = currentSlotOfCup[ballCupId];
       let slot1: number;
-      if (isMissionImpossible && p === 0 && step % 2 === 0 && !usedSlots.has(8)) {
-        // Keep the center hub cup actively flowing with outer ring cups in Mission Impossible
+      if (isMissionImpossible9 && p === 0 && !usedSlots.has(8)) {
         slot1 = 8;
       } else if (!usedSlots.has(ballSlot) && p === 0 && Math.random() < 0.84) {
         slot1 = ballSlot;
@@ -1128,7 +1515,7 @@ function buildSpotQuestChoreographyPlan(
         fromSlot: slot1,
         toSlot: slot2,
         laneOffsetWorld,
-        leadLagBias: 0.045,
+        leadLagBias: 0.025,
         isFeint,
         peekDecoyLift: peekDecoy1,
       });
@@ -1138,7 +1525,7 @@ function buildSpotQuestChoreographyPlan(
         fromSlot: slot2,
         toSlot: slot1,
         laneOffsetWorld,
-        leadLagBias: -0.045,
+        leadLagBias: -0.025,
         isFeint,
         peekDecoyLift: peekDecoy2,
       });
@@ -1152,7 +1539,6 @@ function buildSpotQuestChoreographyPlan(
     }
 
     if (trajectories.length > 0) {
-      // Scale step duration smoothly by actual travel distance so short & long passes share natural physical speed
       let maxDist = 2.8;
       for (const tr of trajectories) {
         const c1 = baseSlots[tr.fromSlot];
@@ -1275,6 +1661,7 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
     }>;
     displayNumByCup: number[];
     orbitAngle: number;
+    orbitVel: number;
     activePlan: ShuffleWaveStep[];
     currentStepIndex: number;
     stepProgress: number;
@@ -1295,6 +1682,7 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
     })),
     displayNumByCup: Array.from({ length: MAX_CUPS }, (_, i) => i + 1),
     orbitAngle: 0,
+    orbitVel: 0,
     activePlan: [],
     currentStepIndex: 0,
     stepProgress: 0,
@@ -1336,6 +1724,7 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
     const baseSlots = getFormationBaseSlots(levelConfig.reelMode);
     eng.cupSlots = Array.from({ length: MAX_CUPS }, (_, i) => i);
     eng.orbitAngle = 0;
+    eng.orbitVel = 0;
     eng.finalSettleSec = 0;
     for (let i = 0; i < MAX_CUPS; i++) {
       const s = baseSlots[i] || { x: 0, z: 0 };
@@ -1366,6 +1755,7 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
       eng.stepProgress = 0;
       eng.pauseRemainingSec = 0;
       eng.finalSettleSec = 0;
+      eng.orbitVel = 0;
       eng.isShuffling = true;
       if (plan.length > 0) {
         stateRef.current.onShuffleStepSound(
@@ -1384,6 +1774,7 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
     } else {
       eng.isShuffling = false;
       eng.finalSettleSec = 0;
+      eng.orbitVel = 0;
     }
   }, [phase, levelConfig, ballCupId, secondaryBallCupId, decoyCupIds]);
 
@@ -2151,7 +2542,8 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
 
       const dt = st.isPaused ? 0 : rawDt;
 
-      // Advance continuous orbital rotation ONLY while SHUFFLING — cups come to a 100% full stop before numbers appear!
+      // Smoothly damp continuous orbital angular velocity so rings accelerate, reverse, and settle without abrupt snaps
+      let targetOrbitVel = 0;
       if (
         cfg.orbitSpeedRadPerSec > 0 &&
         st.phase === 'SHUFFLING' &&
@@ -2163,7 +2555,15 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
         const speedMult = st.slowMotionActive ? 0.45 : 1.0;
         const dirSign =
           cfg.hasMidShuffleFeints && eng.currentStepIndex >= Math.floor(cfg.shuffleSteps / 2) ? -1 : 1;
-        eng.orbitAngle += dt * cfg.orbitSpeedRadPerSec * speedMult * dirSign;
+        targetOrbitVel = cfg.orbitSpeedRadPerSec * speedMult * dirSign;
+      }
+      const orbitDamp = 1 - Math.exp(-7.5 * (dt || 0.016));
+      eng.orbitVel += (targetOrbitVel - eng.orbitVel) * orbitDamp;
+      if (Math.abs(eng.orbitVel) < 0.002 && targetOrbitVel === 0) {
+        eng.orbitVel = 0;
+      }
+      if (!st.isPaused && !st.freezeActive) {
+        eng.orbitAngle += dt * eng.orbitVel;
       }
 
       const activeWave: ShuffleWaveStep | undefined =
@@ -2180,6 +2580,7 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
           eng.finalSettleSec -= dt;
           if (eng.finalSettleSec <= 0) {
             eng.finalSettleSec = 0;
+            eng.orbitVel = 0;
             eng.isShuffling = false;
             // Snap exact slot coordinates & freeze visual top-to-bottom, left-to-right cup numbers ONCE
             for (let cid = 0; cid < cupCount; cid++) {
@@ -2220,7 +2621,8 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
             if (eng.stepProgress >= 1.0) {
               eng.stepProgress = 1.0;
               for (const traj of activeWave.trajectories) {
-                const isFeint = traj.kind === 'PASS_BY_LANE' && traj.isFeint;
+                const isFeint =
+                  (traj.kind === 'PASS_BY_LANE' || traj.kind === 'RING_ARC_SWAP') && traj.isFeint;
                 if (!isFeint) {
                   eng.cupSlots[traj.cupId] = traj.toSlot;
                 }
@@ -2290,6 +2692,7 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
             : undefined;
 
         let spinDirectionHint = 0;
+        let glideHoverY = 0;
 
         if (activeTraj) {
           const rawT = Math.max(0, Math.min(1, eng.stepProgress));
@@ -2306,20 +2709,50 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
             posState.x = pt.x;
             posState.z = pt.z;
             spinDirectionHint = Math.sign(activeTraj.deltaSteps || 1) * 1.15;
-          } else if (activeTraj.kind === 'PERIMETER_RING_SPIN') {
+            glideHoverY = Math.sin(eT * Math.PI) * 0.032;
+          } else if (activeTraj.kind === 'RING_CAROUSEL_ROTATION') {
+            // Unified Polar-Spline Ring Carousel: all cups on the ring/sub-ring evaluate the exact same periodic curve
             const eT = naturalEase(rawT);
-            const circleMorph = Math.sin(eT * Math.PI);
-            const baseRx = activeTraj.startRadiusX + (activeTraj.endRadiusX - activeTraj.startRadiusX) * eT;
-            const baseRz = activeTraj.startRadiusZ + (activeTraj.endRadiusZ - activeTraj.startRadiusZ) * eT;
-            const rxNow = baseRx * (1 - circleMorph * 0.85) + activeTraj.ringRadiusX * (circleMorph * 0.85);
-            const rzNow = baseRz * (1 - circleMorph * 0.85) + activeTraj.ringRadiusZ * (circleMorph * 0.85);
-            const angleNow = activeTraj.startAngle + activeTraj.deltaAngle * eT;
-
-            posState.x = Math.cos(angleNow) * rxNow;
-            posState.z = Math.sin(angleNow) * rzNow;
-            spinDirectionHint = -Math.sign(activeTraj.deltaAngle || 1) * 1.25;
+            const ringPt = evaluateUnifiedRingCarouselPoint(
+              activeTraj.ringSlots,
+              activeTraj.fromRingIdx,
+              activeTraj.deltaSteps,
+              activeTraj.roundnessBlend,
+              eT,
+              (s) => getWorldSlotCoord(s, cfg, eng.orbitAngle)
+            );
+            posState.x = ringPt.x;
+            posState.z = ringPt.z;
+            spinDirectionHint = -Math.sign(activeTraj.deltaSteps || 1) * 1.3;
+            glideHoverY = Math.sin(eT * Math.PI) * 0.036;
+          } else if (activeTraj.kind === 'RING_ARC_SWAP') {
+            // Curved Concentric Ring-Arc Weave: cups overtake along the ring's natural circular arc instead of chord switching
+            let forwardT: number;
+            let radialFactor: number;
+            if (activeTraj.isFeint) {
+              const feint = Math.sin(rawT * Math.PI);
+              forwardT = feint * 0.45;
+              radialFactor = Math.pow(feint, 0.85);
+            } else {
+              const eT = naturalEase(rawT);
+              forwardT = eT;
+              radialFactor = Math.sin(eT * Math.PI);
+            }
+            const ringPt = evaluateUnifiedRingCarouselPoint(
+              activeTraj.ringSlots,
+              activeTraj.fromRingIdx,
+              activeTraj.deltaSteps,
+              0,
+              forwardT,
+              (s) => getWorldSlotCoord(s, cfg, eng.orbitAngle)
+            );
+            const rShift = activeTraj.radialLaneOffset * radialFactor;
+            posState.x = ringPt.x + Math.cos(ringPt.angle) * rShift;
+            posState.z = ringPt.z + Math.sin(ringPt.angle) * rShift;
+            spinDirectionHint = -Math.sign(activeTraj.deltaSteps || 1) * 1.25;
+            glideHoverY = Math.sin(rawT * Math.PI) * 0.04;
           } else {
-            // Natural C2 Continuous Smooth Pass-By Curve
+            // True 180-degree Elliptical Turntable Orbit around the pair's shared midpoint (smooth C2 circular swap)
             const fromNow = getWorldSlotCoord(activeTraj.fromSlot, cfg, eng.orbitAngle);
             const toNow = getWorldSlotCoord(activeTraj.toSlot, cfg, eng.orbitAngle);
 
@@ -2328,34 +2761,41 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
               Math.min(1, rawT + activeTraj.leadLagBias * Math.sin(rawT * Math.PI))
             );
 
-            let forwardT: number;
-            let laneFactor: number;
+            let phi: number;
+            let lateralEnvelope: number;
 
             if (activeTraj.isFeint) {
               const feint = Math.sin(rawT * Math.PI);
-              forwardT = feint * 0.44;
-              laneFactor = Math.pow(feint, 0.85);
+              phi = feint * (Math.PI * 0.44);
+              lateralEnvelope = Math.sin(phi);
             } else {
               const eT = naturalEase(warpedT);
-              forwardT = eT;
-              laneFactor = Math.pow(Math.sin(Math.PI * eT), 0.78);
+              phi = Math.PI * eT;
+              lateralEnvelope = Math.sin(phi);
             }
 
+            const mx = (fromNow.x + toNow.x) * 0.5;
+            const mz = (fromNow.z + toNow.z) * 0.5;
             const dx = toNow.x - fromNow.x;
             const dz = toNow.z - fromNow.z;
             const dist = Math.max(0.001, Math.hypot(dx, dz));
+            const halfDist = dist * 0.5;
             const ux = dx / dist;
             const uz = dz / dist;
 
             const nx = -uz;
             const nz = ux;
 
-            const baseShift = Math.min(1.16, Math.abs(activeTraj.laneOffsetWorld) * 0.82);
-            const laneShift = Math.sign(activeTraj.laneOffsetWorld) * (dist > 4.5 ? Math.max(1.14, baseShift) : baseShift);
+            const baseShift = Math.min(1.18, Math.abs(activeTraj.laneOffsetWorld) * 0.84);
+            const laneShift = Math.sign(activeTraj.laneOffsetWorld) * (dist > 4.5 ? Math.max(1.15, baseShift) : baseShift);
 
-            posState.x = fromNow.x + dx * forwardT + nx * laneShift * laneFactor;
-            posState.z = fromNow.z + dz * forwardT + nz * laneShift * laneFactor;
-            spinDirectionHint = Math.sign(activeTraj.laneOffsetWorld || 1);
+            const alongOffset = -halfDist * Math.cos(phi);
+            const sideOffset = laneShift * lateralEnvelope;
+
+            posState.x = mx + ux * alongOffset + nx * sideOffset;
+            posState.z = mz + uz * alongOffset + nz * sideOffset;
+            spinDirectionHint = Math.sign(activeTraj.laneOffsetWorld || 1) * 1.15;
+            glideHoverY = lateralEnvelope * 0.038;
           }
         } else {
           posState.x += (slotCoord.x - posState.x) * damp;
@@ -2377,7 +2817,7 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
 
         // Smooth physical Y-rotation proportional to glide speed & arc direction (settles cleanly to rest)
         const targetSpinVel = isActivelyMoving
-          ? (spinDirectionHint || (cupId % 2 === 0 ? 1 : -1)) * Math.min(4.8, speed * 0.42)
+          ? (spinDirectionHint || (cupId % 2 === 0 ? 1 : -1)) * Math.min(5.2, speed * 0.45)
           : 0;
         motion.spinVelY += (targetSpinVel - motion.spinVelY) * rotDamp;
         if (Math.abs(motion.spinVelY) < 0.004) motion.spinVelY = 0;
@@ -2394,8 +2834,14 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
             targetLiftY = 1.38;
           }
         } else if (st.phase === 'SHUFFLING') {
-          if (activeTraj && activeTraj.kind === 'PASS_BY_LANE' && activeTraj.peekDecoyLift) {
+          if (
+            activeTraj &&
+            (activeTraj.kind === 'PASS_BY_LANE' || activeTraj.kind === 'RING_ARC_SWAP') &&
+            activeTraj.peekDecoyLift
+          ) {
             targetLiftY = Math.sin(eng.stepProgress * Math.PI) * 0.68;
+          } else {
+            targetLiftY = glideHoverY;
           }
         } else if (st.phase === 'SELECTING') {
           if (st.revealedEmptyCupIds.includes(cupId)) {
@@ -2417,11 +2863,11 @@ export const GoldBall3DScene: React.FC<GoldBall3DSceneProps> = ({
 
         posState.liftY += (targetLiftY - posState.liftY) * damp;
 
-        // Subtle inertial lean during glides + graceful reveal tilt-back when lifting a cup
+        // Subtle inertial lean + gentle centrifugal banking during ring rotations
         const liftTiltX = -0.1 * Math.min(1, posState.liftY / 1.38);
-        const targetLeanZ = isActivelyMoving ? Math.max(-0.055, Math.min(0.055, -vx * 0.0085)) : 0;
+        const targetLeanZ = isActivelyMoving ? Math.max(-0.075, Math.min(0.075, -vx * 0.011)) : 0;
         const targetLeanX =
-          (isActivelyMoving ? Math.max(-0.055, Math.min(0.055, vz * 0.0085)) : 0) + liftTiltX;
+          (isActivelyMoving ? Math.max(-0.075, Math.min(0.075, vz * 0.011)) : 0) + liftTiltX;
         motion.leanX += (targetLeanX - motion.leanX) * rotDamp;
         motion.leanZ += (targetLeanZ - motion.leanZ) * rotDamp;
 

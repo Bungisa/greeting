@@ -5,9 +5,11 @@ import {
   Atom,
   BookOpen,
   Box,
+  Compass,
   Dna,
   FlaskConical,
   Gauge,
+  Globe,
   Heart,
   Leaf,
   Microscope,
@@ -20,6 +22,7 @@ import {
 } from 'lucide-react';
 import type { DiagramPreset } from './InteractiveDiagramLab';
 import type { VirtualLabSubMode, VirtualLabSubject } from './VirtualScienceLab';
+import type { GeographySimMode } from './geographySimulationsData';
 import { TIE_CURRICULUM_SUBJECTS } from '../data/curriculumData';
 
 // Static studio 3D preview renders for every simulation card
@@ -37,48 +40,67 @@ import imgPlantOsmosis3D from '../assets/images/sim_plant_osmosis_3d_17952793698
 import imgHumanHeart3D from '../assets/images/sim_human_heart_3d_1795283136171.jpg';
 import imgSolidFigures3D from '../assets/images/sim_3d_figures_nets_1795692464162.jpg';
 import imgGraphSketcherXY from '../assets/images/sim_graph_sketcher_xy_1795697295076.jpg';
+import imgGeoMapSurveying from '../assets/images/sim_geo_map_surveying_1795742496940.jpg';
+import imgGeoEarthWeather from '../assets/images/sim_geo_earth_weather_1795742496693.jpg';
+import imgGeoTectonicsRivers from '../assets/images/sim_geo_tectonics_rivers_1795742498641.jpg';
+import imgGeoStatsSoil from '../assets/images/sim_geo_stats_soil_1795742499483.jpg';
 
-const InteractiveDiagramLab = React.lazy(() =>
+import { GeographySimulationSuite } from './GeographySimulationSuite';
+import { GraphSketcherXYSimulation } from './GraphSketcherXYSimulation';
+
+function lazyWithRetry<T extends React.ComponentType<any>>(
+  factory: () => Promise<{ default: T }>
+): React.LazyExoticComponent<T> {
+  return React.lazy(() =>
+    factory().catch(
+      () =>
+        new Promise<{ default: T }>((resolve, reject) => {
+          setTimeout(() => {
+            factory().then(resolve).catch(reject);
+          }, 350);
+        })
+    )
+  );
+}
+
+const InteractiveDiagramLab = lazyWithRetry(() =>
   import('./InteractiveDiagramLab').then((m) => ({ default: m.InteractiveDiagramLab }))
 );
-const VirtualScienceLab = React.lazy(() =>
+const VirtualScienceLab = lazyWithRetry(() =>
   import('./VirtualScienceLab').then((m) => ({ default: m.VirtualScienceLab }))
 );
-const Mitosis3DSimulation = React.lazy(() =>
+const Mitosis3DSimulation = lazyWithRetry(() =>
   import('./Mitosis3DSimulation').then((m) => ({ default: m.Mitosis3DSimulation }))
 );
-const OhmsLaw3DSimulation = React.lazy(() =>
+const OhmsLaw3DSimulation = lazyWithRetry(() =>
   import('./OhmsLaw3DSimulation').then((m) => ({ default: m.OhmsLaw3DSimulation }))
 );
-const Titration3DSimulation = React.lazy(() =>
+const Titration3DSimulation = lazyWithRetry(() =>
   import('./Titration3DSimulation').then((m) => ({ default: m.Titration3DSimulation }))
 );
-const Photosynthesis3DSimulation = React.lazy(() =>
+const Photosynthesis3DSimulation = lazyWithRetry(() =>
   import('./Photosynthesis3DSimulation').then((m) => ({ default: m.Photosynthesis3DSimulation }))
 );
-const Pendulum3DSimulation = React.lazy(() =>
+const Pendulum3DSimulation = lazyWithRetry(() =>
   import('./Pendulum3DSimulation').then((m) => ({ default: m.Pendulum3DSimulation }))
 );
-const Quadratic3DSimulation = React.lazy(() =>
+const Quadratic3DSimulation = lazyWithRetry(() =>
   import('./Quadratic3DSimulation').then((m) => ({ default: m.Quadratic3DSimulation }))
 );
-const TrigWaves3DSimulation = React.lazy(() =>
+const TrigWaves3DSimulation = lazyWithRetry(() =>
   import('./TrigWaves3DSimulation').then((m) => ({ default: m.TrigWaves3DSimulation }))
 );
-const Osmosis3DSimulation = React.lazy(() =>
+const Osmosis3DSimulation = lazyWithRetry(() =>
   import('./Osmosis3DSimulation').then((m) => ({ default: m.Osmosis3DSimulation }))
 );
-const Heart3DSimulation = React.lazy(() =>
+const Heart3DSimulation = lazyWithRetry(() =>
   import('./Heart3DSimulation').then((m) => ({ default: m.Heart3DSimulation }))
 );
-const SolidFigures3DSimulation = React.lazy(() =>
+const SolidFigures3DSimulation = lazyWithRetry(() =>
   import('./SolidFigures3DSimulation').then((m) => ({ default: m.SolidFigures3DSimulation }))
 );
-const GraphSketcherXYSimulation = React.lazy(() =>
-  import('./GraphSketcherXYSimulation').then((m) => ({ default: m.GraphSketcherXYSimulation }))
-);
 
-export type SimulationSubjectKey = 'biology' | 'physics' | 'chemistry' | 'mathematics';
+export type SimulationSubjectKey = 'biology' | 'physics' | 'chemistry' | 'mathematics' | 'geography';
 
 export interface SimulationItem {
   id: string;
@@ -102,10 +124,12 @@ export interface SimulationItem {
     | 'osmosis3d'
     | 'heart3d'
     | 'solids3d'
-    | 'graphxy';
+    | 'graphxy'
+    | 'geography';
   diagramPreset?: DiagramPreset;
   labSubject?: VirtualLabSubject;
   labSubMode?: VirtualLabSubMode;
+  geoMode?: GeographySimMode;
   has3D?: boolean;
   keywords: string[];
 }
@@ -201,6 +225,22 @@ const SUBJECT_META: SubjectMeta[] = [
     iconColorDark: 'text-amber-300',
     iconColorLight: 'text-amber-600',
     renderIcon: (cls = 'w-5 h-5') => <Sigma className={cls} />,
+  },
+  {
+    key: 'geography',
+    label: 'Geography',
+    accentHex: '#2dd4bf',
+    lightAccentHex: '#0d9488',
+    topBarClass: 'from-teal-400 via-emerald-400 to-cyan-500',
+    textActiveDark: 'text-teal-300',
+    textActiveLight: 'text-teal-700',
+    borderActiveDark: 'border-teal-400/60 shadow-[0_0_24px_-8px_rgba(45,212,191,0.45)]',
+    borderActiveLight: 'border-teal-500/70 shadow-md shadow-teal-500/10',
+    iconBgDark: 'bg-teal-500/10 border-teal-400/20',
+    iconBgLight: 'bg-teal-50 border-teal-200',
+    iconColorDark: 'text-teal-300',
+    iconColorLight: 'text-teal-600',
+    renderIcon: (cls = 'w-5 h-5') => <Globe className={cls} />,
   },
 ];
 
@@ -482,7 +522,7 @@ const SIMULATION_CATALOG: SimulationItem[] = [
     id: 'math-graph-sketcher-xy',
     title: 'XY Plane Graph Sketcher',
     shortDesc:
-      'All-in-one XY coordinate plane for Straight Lines, Quadratics, Cubics, Linear Programming (unwanted regions shaded so feasible region stays clear), Rational Functions & Asymptotes, Trigonometry (sin/cos/tan in Deg & Rad), Exponential & Log, Circles & Conics, Modulus & Piecewise, Simultaneous Intersections, and Calculus (Tangent, Normal & Area Integral).',
+      'All-in-one XY coordinate plane for Straight Lines, Quadratics, Cubics, Linear Programming (unwanted regions shaded so feasible region stays clear), Rational Functions & Asymptotes, Trigonometry, Exponential & Log, Circles & Conics, Modulus & Piecewise, Simultaneous Intersections, Calculus (Tangent, Normal & Area Integral), and Polar Curves r = f(θ).',
     subject: 'mathematics',
     subtopicId: 'math_functions',
     subtopicLabel: 'Functions, Algebra & Graphing',
@@ -552,7 +592,270 @@ const SIMULATION_CATALOG: SimulationItem[] = [
       'normal',
       'integral',
       'area under curve',
+      'polar',
+      'polar curve',
+      'rose curve',
+      'cardioid',
+      'limacon',
+      'lemniscate',
+      'spiral',
       'mathematics',
+    ],
+  },
+
+  // GEOGRAPHY (8 — Aligned with TIE Syllabus & NECTA FTNA/CSEE/ACSEE)
+  {
+    id: 'geo-map-reading',
+    title: 'Map Reading, Grid Reference & Cross-Section Lab',
+    shortDesc:
+      'Drag points A and B across a 1:50,000 East African topographic sheet to measure 4- and 6-figure grid references, forward/back bearings, scale distance, irregular forest area, gradient, vertical exaggeration, and live relief cross-sections with line-of-sight intervisibility.',
+    subject: 'geography',
+    subtopicId: 'geo_map_surveying',
+    subtopicLabel: 'Map Reading & Elementary Surveying',
+    categoryTag: 'QUANTITATIVE LAB',
+    previewImage: imgGeoMapSurveying,
+    engine: 'geography',
+    geoMode: 'map_reading',
+    has3D: false,
+    keywords: [
+      'geography',
+      'map reading',
+      'topographic map',
+      'grid reference',
+      '4 figure',
+      '6 figure',
+      'easting',
+      'northing',
+      'bearing',
+      'forward bearing',
+      'back bearing',
+      'scale',
+      'cross section',
+      'intervisibility',
+      'gradient',
+      'vertical exaggeration',
+      'contour',
+      'necta',
+    ],
+  },
+  {
+    id: 'geo-surveying-lab',
+    title: 'Elementary Surveying: Chain, Compass & Levelling',
+    shortDesc:
+      'Practice chain & tape right-angle offsets around pond obstacles, check prismatic compass traverses for local attraction (|FB - BB| = 180°), and sight a Sopwith levelling staff to compute Reduced Levels via Rise & Fall and Height of Collimation.',
+    subject: 'geography',
+    subtopicId: 'geo_map_surveying',
+    subtopicLabel: 'Map Reading & Elementary Surveying',
+    categoryTag: 'QUANTITATIVE LAB',
+    previewImage: imgGeoMapSurveying,
+    engine: 'geography',
+    geoMode: 'surveying_lab',
+    has3D: false,
+    keywords: [
+      'geography',
+      'surveying',
+      'chain surveying',
+      'prismatic compass',
+      'levelling',
+      'leveling',
+      'back sight',
+      'fore sight',
+      'intermediate sight',
+      'rise and fall',
+      'collimation',
+      'reduced level',
+      'local attraction',
+      'offset',
+      'obstacle',
+    ],
+  },
+  {
+    id: 'geo-earth-time-seasons',
+    title: 'Earth Movements, Local Time & Seasons Orbit',
+    shortDesc:
+      'Calculate local time between any two longitudes using 15° = 1 hr (1° = 4 min) and East Gain Add / West Lose Subtract, and orbit a 23.5°-tilted Earth around the Sun to inspect solstices, equinoxes, day length, and solar/lunar eclipses.',
+    subject: 'geography',
+    subtopicId: 'geo_earth_climate',
+    subtopicLabel: 'Earth Movements, Weather & Climate',
+    categoryTag: 'INTERACTIVE DIAGRAM',
+    previewImage: imgGeoEarthWeather,
+    engine: 'geography',
+    geoMode: 'earth_time',
+    has3D: true,
+    keywords: [
+      'geography',
+      'earth',
+      'rotation',
+      'revolution',
+      'longitude',
+      'local time',
+      'greenwich',
+      'seasons',
+      'solstice',
+      'equinox',
+      'eclipse',
+      'solar eclipse',
+      'lunar eclipse',
+      'perihelion',
+      'aphelion',
+    ],
+  },
+  {
+    id: 'geo-weather-climographs',
+    title: 'Weather Station Instruments & Climograph Plotter',
+    shortDesc:
+      "Read Six's Maximum & Minimum thermometer and Wet & Dry bulb hygrometer (Relative Humidity), and explore interactive combined temperature & rainfall climographs for Dodoma, Dar es Salaam, Lake Victoria, Sahara Desert, and Cape Town.",
+    subject: 'geography',
+    subtopicId: 'geo_earth_climate',
+    subtopicLabel: 'Earth Movements, Weather & Climate',
+    categoryTag: 'QUANTITATIVE LAB',
+    previewImage: imgGeoEarthWeather,
+    engine: 'geography',
+    geoMode: 'weather_climate',
+    has3D: false,
+    keywords: [
+      'geography',
+      'weather',
+      'climate',
+      'climograph',
+      'stevenson screen',
+      'six thermometer',
+      'hygrometer',
+      'relative humidity',
+      'diurnal range',
+      'annual temperature range',
+      'rainfall',
+      'equatorial',
+      'savanna',
+      'desert',
+      'mediterranean',
+    ],
+  },
+  {
+    id: 'geo-tectonics-vulcanicity',
+    title: 'Internal Forces: Folding, Rift Valley Faulting & Vulcanicity',
+    shortDesc:
+      'Apply compressional and tensional forces to crustal strata to form anticlines, synclines, overthrust folds, the East African Rift Valley (Graben), Block Mountains (Horst), intrusive dykes/sills/batholiths, composite volcanoes, and P/S/L seismic waves.',
+    subject: 'geography',
+    subtopicId: 'geo_landforms',
+    subtopicLabel: 'Internal & External Landforms',
+    categoryTag: '3D VISUALISATION',
+    previewImage: imgGeoTectonicsRivers,
+    engine: 'geography',
+    geoMode: 'tectonics_vulcanicity',
+    has3D: true,
+    keywords: [
+      'geography',
+      'folding',
+      'faulting',
+      'rift valley',
+      'graben',
+      'horst',
+      'block mountain',
+      'anticline',
+      'syncline',
+      'vulcanicity',
+      'volcano',
+      'batholith',
+      'sill',
+      'dyke',
+      'laccolith',
+      'earthquake',
+      'focus',
+      'epicenter',
+    ],
+  },
+  {
+    id: 'geo-rivers-coasts',
+    title: 'External Forces: River Profile, Ox-Bow Lakes & Coasts',
+    shortDesc:
+      'Step through Youthful waterfalls and plunge pools, Mature meander river cliffs and slip-off slopes, Old-stage meander neck narrowing into an Ox-Bow Lake and floodplain delta, plus coastal wave cliffs, arches, stacks, and coral reefs.',
+    subject: 'geography',
+    subtopicId: 'geo_landforms',
+    subtopicLabel: 'Internal & External Landforms',
+    categoryTag: 'INTERACTIVE DIAGRAM',
+    previewImage: imgGeoTectonicsRivers,
+    engine: 'geography',
+    geoMode: 'rivers_coasts',
+    has3D: false,
+    keywords: [
+      'geography',
+      'river',
+      'waterfall',
+      'plunge pool',
+      'meander',
+      'river cliff',
+      'slip off slope',
+      'ox bow lake',
+      'floodplain',
+      'levee',
+      'delta',
+      'coastal',
+      'cave',
+      'arch',
+      'stack',
+      'stump',
+      'coral reef',
+    ],
+  },
+  {
+    id: 'geo-statistical-graphs',
+    title: 'Statistical Graphs, Pie Charts & Population Pyramids',
+    shortDesc:
+      'Plot and edit Tanzania cash crop production data across Comparative Bar Graphs, Compound (Divided) Bar Graphs, Divided Circles (360° Pie Charts), and interactive Age–Sex Population Pyramids with live Dependency Ratio calculations.',
+    subject: 'geography',
+    subtopicId: 'geo_stats_soil',
+    subtopicLabel: 'Statistics, Soils & Rock Cycle',
+    categoryTag: 'QUANTITATIVE LAB',
+    previewImage: imgGeoStatsSoil,
+    engine: 'geography',
+    geoMode: 'statistical_graphs',
+    has3D: false,
+    keywords: [
+      'geography',
+      'statistics',
+      'bar graph',
+      'comparative bar',
+      'divided bar',
+      'compound bar',
+      'pie chart',
+      'divided circle',
+      'population pyramid',
+      'dependency ratio',
+      'demography',
+      'tanzania',
+    ],
+  },
+  {
+    id: 'geo-soil-rocks',
+    title: 'Soil Profile Horizons (O–A–B–C–R) & Rock Cycle Lab',
+    shortDesc:
+      'Simulate rainfall percolation and leaching (eluviation & illuviation) across soil horizons O, A, B, C, and R, mix sand/silt/clay percentages to classify Loam soil, and trace transformations among Igneous, Sedimentary, and Metamorphic rocks.',
+    subject: 'geography',
+    subtopicId: 'geo_stats_soil',
+    subtopicLabel: 'Statistics, Soils & Rock Cycle',
+    categoryTag: 'INTERACTIVE DIAGRAM',
+    previewImage: imgGeoStatsSoil,
+    engine: 'geography',
+    geoMode: 'soil_rocks',
+    has3D: false,
+    keywords: [
+      'geography',
+      'soil',
+      'soil profile',
+      'horizon',
+      'leaching',
+      'eluviation',
+      'illuviation',
+      'loam',
+      'soil texture',
+      'rock cycle',
+      'igneous',
+      'sedimentary',
+      'metamorphic',
+      'granite',
+      'limestone',
+      'marble',
     ],
   },
 ];
@@ -581,6 +884,14 @@ function getSubtopicIcon(subtopicId: string) {
       return <Waves className="w-4 h-4 text-violet-500" />;
     case 'math_3d_geometry':
       return <Box className="w-4 h-4 text-amber-500" />;
+    case 'geo_map_surveying':
+      return <Compass className="w-4 h-4 text-teal-500" />;
+    case 'geo_earth_climate':
+      return <Globe className="w-4 h-4 text-sky-500" />;
+    case 'geo_landforms':
+      return <Waves className="w-4 h-4 text-amber-500" />;
+    case 'geo_stats_soil':
+      return <TrendingUp className="w-4 h-4 text-emerald-500" />;
     default:
       return <BookOpen className="w-4 h-4 text-slate-400" />;
   }
@@ -596,6 +907,8 @@ function getCardMedallionIcon(subject: SimulationSubjectKey) {
       return <FlaskConical className="w-4 h-4" />;
     case 'mathematics':
       return <Sigma className="w-4 h-4" />;
+    case 'geography':
+      return <Globe className="w-4 h-4" />;
   }
 }
 
@@ -655,6 +968,7 @@ export const SimulationsHub: React.FC<SimulationsHubProps> = ({
       physics: 0,
       chemistry: 0,
       mathematics: 0,
+      geography: 0,
     };
     for (const item of SIMULATION_CATALOG) {
       counts[item.subject] += 1;
@@ -958,7 +1272,8 @@ export const SimulationsHub: React.FC<SimulationsHubProps> = ({
               activeSimulation.engine === 'osmosis3d' ||
               activeSimulation.engine === 'heart3d' ||
               activeSimulation.engine === 'solids3d' ||
-              activeSimulation.engine === 'graphxy'
+              activeSimulation.engine === 'graphxy' ||
+              activeSimulation.engine === 'geography'
                 ? ''
                 : 'text-slate-900'
             }
@@ -993,6 +1308,12 @@ export const SimulationsHub: React.FC<SimulationsHubProps> = ({
                 <SolidFigures3DSimulation darkMode={darkMode} activeClass={activeClass} />
               ) : activeSimulation.engine === 'graphxy' ? (
                 <GraphSketcherXYSimulation darkMode={darkMode} activeClass={activeClass} />
+              ) : activeSimulation.engine === 'geography' ? (
+                <GeographySimulationSuite
+                  darkMode={darkMode}
+                  activeClass={activeClass}
+                  initialMode={activeSimulation.geoMode || 'map_reading'}
+                />
               ) : activeSimulation.engine === 'diagram' ? (
                 <InteractiveDiagramLab
                   initialPreset={activeSimulation.diagramPreset}
@@ -1017,7 +1338,7 @@ export const SimulationsHub: React.FC<SimulationsHubProps> = ({
         <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 space-y-7">
           {/* SUBJECT CATEGORY CARDS GRID */}
           <section aria-label="Subjects">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
               {SUBJECT_META.map((subj) => {
                 const count = subjectCounts[subj.key];
                 const isSelected = selectedSubject === subj.key;

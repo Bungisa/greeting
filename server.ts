@@ -3774,6 +3774,134 @@ CRITICAL RULES:
   }
 });
 
+// ==================== WRONG WAY REAL-TIME MULTIPLAYER ROOM SERVER + SSE ====================
+interface ServerWrongWayRoom {
+  roomId: string;
+  hostId: string;
+  hostName: string;
+  guestId: string;
+  guestName: string;
+  status: 'waiting' | 'playing' | 'finished';
+  turnIndex: number;
+  starterIndex: number;
+  moveCount: number;
+  p0R: number;
+  p0C: number;
+  p0Walls: number;
+  p1R: number;
+  p1C: number;
+  p1Walls: number;
+  wallsJson: string;
+  winnerIndex: number;
+  equalizerPendingIndex: number;
+  updatedAt: string;
+}
+
+const wrongWayRoomsStore = new Map<string, ServerWrongWayRoom>();
+const wrongWaySseClients = new Map<string, Set<express.Response>>();
+
+function broadcastWrongWayRoom(room: ServerWrongWayRoom) {
+  const clients = wrongWaySseClients.get(room.roomId);
+  if (!clients || clients.size === 0) return;
+  const payload = `data: ${JSON.stringify(room)}\n\n`;
+  for (const res of clients) {
+    try {
+      res.write(payload);
+    } catch {
+      clients.delete(res);
+    }
+  }
+}
+
+app.get('/api/wrong-way/rooms/:roomId', (req, res) => {
+  const cleanId = String(req.params.roomId || '')
+    .replace(/[^a-zA-Z0-9_-]/g, '')
+    .toUpperCase()
+    .slice(0, 20);
+  const room = wrongWayRoomsStore.get(cleanId);
+  if (!room) {
+    return res.status(404).json({ error: 'Room not found' });
+  }
+  return res.json({ room });
+});
+
+app.post('/api/wrong-way/rooms', (req, res) => {
+  const body = (req.body || {}) as Partial<ServerWrongWayRoom>;
+  const cleanId = String(body.roomId || '')
+    .replace(/[^a-zA-Z0-9_-]/g, '')
+    .toUpperCase()
+    .slice(0, 20);
+  if (!cleanId) {
+    return res.status(400).json({ error: 'Invalid roomId' });
+  }
+  const existing = wrongWayRoomsStore.get(cleanId);
+  const updated: ServerWrongWayRoom = {
+    roomId: cleanId,
+    hostId: String(body.hostId || existing?.hostId || 'host').slice(0, 80),
+    hostName: String(body.hostName || existing?.hostName || 'Player 1 (Cyan)').slice(0, 60),
+    guestId: String(body.guestId ?? existing?.guestId ?? '').slice(0, 80),
+    guestName: String(body.guestName ?? existing?.guestName ?? 'Friend (Pink)').slice(0, 60),
+    status:
+      body.status === 'playing' || body.status === 'finished' ? body.status : 'waiting',
+    turnIndex: body.turnIndex === 1 ? 1 : 0,
+    starterIndex: body.starterIndex === 1 ? 1 : 0,
+    moveCount: Math.max(0, Math.min(1000, Math.round(Number(body.moveCount) || 0))),
+    p0R: Math.max(0, Math.min(10, Math.round(Number(body.p0R) ?? 8))),
+    p0C: Math.max(0, Math.min(10, Math.round(Number(body.p0C) ?? 4))),
+    p0Walls: Math.max(0, Math.min(20, Math.round(Number(body.p0Walls) ?? 10))),
+    p1R: Math.max(0, Math.min(10, Math.round(Number(body.p1R) ?? 0))),
+    p1C: Math.max(0, Math.min(10, Math.round(Number(body.p1C) ?? 4))),
+    p1Walls: Math.max(0, Math.min(20, Math.round(Number(body.p1Walls) ?? 11))),
+    wallsJson: String(body.wallsJson || '[]').slice(0, 15000),
+    winnerIndex: Math.max(-1, Math.min(2, Math.round(Number(body.winnerIndex) ?? -1))),
+    equalizerPendingIndex: Math.max(
+      -1,
+      Math.min(1, Math.round(Number(body.equalizerPendingIndex) ?? -1))
+    ),
+    updatedAt: new Date().toISOString(),
+  };
+
+  wrongWayRoomsStore.set(cleanId, updated);
+  broadcastWrongWayRoom(updated);
+  return res.json({ room: updated });
+});
+
+app.get('/api/wrong-way/rooms/:roomId/events', (req, res) => {
+  const cleanId = String(req.params.roomId || '')
+    .replace(/[^a-zA-Z0-9_-]/g, '')
+    .toUpperCase()
+    .slice(0, 20);
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders?.();
+
+  let set = wrongWaySseClients.get(cleanId);
+  if (!set) {
+    set = new Set();
+    wrongWaySseClients.set(cleanId, set);
+  }
+  set.add(res);
+
+  const current = wrongWayRoomsStore.get(cleanId);
+  if (current) {
+    res.write(`data: ${JSON.stringify(current)}\n\n`);
+  }
+
+  const keepAlive = setInterval(() => {
+    try {
+      res.write(': ping\n\n');
+    } catch {
+      clearInterval(keepAlive);
+    }
+  }, 20000);
+
+  req.on('close', () => {
+    clearInterval(keepAlive);
+    set?.delete(res);
+  });
+});
+
 async function startServer() {
   const PORT = Number(process.env.PORT) || 3000;
   const distPath = path.join(__dirname, 'dist');

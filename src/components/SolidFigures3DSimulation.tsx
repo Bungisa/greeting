@@ -28,6 +28,32 @@ import {
   PlanePlaneCase,
   PlanePlaneParams,
 } from './geometry3dIntersections';
+import { MathFormula } from './MathFormula';
+import { naturalMathToLatex } from './mathFormulaParser';
+
+function solidFormulaToLatex(str: string): string {
+  return (str || '')
+    .replace(/TSA/g, '\\text{TSA}')
+    .replace(/CSA/g, '\\text{CSA}')
+    .replace(/A_base/g, 'A_{\\text{base}}')
+    .replace(/⅓/g, '\\frac{1}{3}')
+    .replace(/\(√3\/4\)/g, '\\frac{\\sqrt{3}}{4}')
+    .replace(/\(√3\/12\)/g, '\\frac{\\sqrt{3}}{12}')
+    .replace(/\(√3\/2\)/g, '\\frac{\\sqrt{3}}{2}')
+    .replace(/\(3√3\/2\)/g, '\\frac{3\\sqrt{3}}{2}')
+    .replace(/\(√2\/12\)/g, '\\frac{\\sqrt{2}}{12}')
+    .replace(/\(5\/2\)/g, '\\frac{5}{2}')
+    .replace(/\(3\/2\)/g, '\\frac{3}{2}')
+    .replace(/\(4\/3\)/g, '\\frac{4}{3}')
+    .replace(/\(2\/3\)/g, '\\frac{2}{3}')
+    .replace(/√3/g, '\\sqrt{3}')
+    .replace(/√2/g, '\\sqrt{2}')
+    .replace(/π/g, '\\pi ')
+    .replace(/²/g, '^2')
+    .replace(/³/g, '^3')
+    .replace(/−/g, '-')
+    .replace(/·/g, '\\cdot ');
+}
 
 export interface SolidFigures3DSimulationProps {
   darkMode?: boolean;
@@ -2328,6 +2354,45 @@ export const SolidFigures3DSimulation: React.FC<SolidFigures3DSimulationProps> =
     };
   }, [figureId, dims]);
 
+  const [custom3DFormula, setCustom3DFormula] = useState<string>('2*pi*r^2 + 2*pi*r*h');
+
+  const evaluatedCustom3D = useMemo(() => {
+    const raw = custom3DFormula.trim();
+    if (!raw) return { latex: '', value: null as number | null };
+
+    // Allow setting dimensions like "a=2.5" or evaluating a formula in a, b, w, h, r, l, s
+    const b = dims.a;
+    const l = Math.hypot(dims.r, dims.h);
+    const s = Math.hypot(dims.a / 2, dims.h);
+    const latex = naturalMathToLatex(raw, '');
+
+    try {
+      const clean = raw
+        .replace(/^[a-zA-Z_]+\s*=\s*/, '')
+        .replace(/²/g, '**2')
+        .replace(/³/g, '**3')
+        .replace(/π/g, 'Math.PI')
+        .replace(/\bpi\b/gi, 'Math.PI')
+        .replace(/\bsqrt\s*\(/gi, 'Math.sqrt(')
+        .replace(/(\d(?:\.\d+)?)\s*(?=[abwhrlsM(])/g, '$1*')
+        .replace(/\^/g, '**');
+
+      const fn = new Function('a', 'b', 'w', 'h', 'r', 'l', 's', `"use strict"; return (${clean});`) as (
+        a: number,
+        b: number,
+        w: number,
+        h: number,
+        r: number,
+        l: number,
+        s: number
+      ) => number;
+      const val = fn(dims.a, b, dims.w, dims.h, dims.r, l, s);
+      return { latex, value: typeof val === 'number' && Number.isFinite(val) ? val : null };
+    } catch {
+      return { latex, value: null };
+    }
+  }, [custom3DFormula, dims]);
+
   const handleSelectFigure = (id: SolidFigureId) => {
     const spec = FIGURE_SPECS.find((s) => s.id === id) || FIGURE_SPECS[0];
     setFigureId(id);
@@ -3545,13 +3610,17 @@ export const SolidFigures3DSimulation: React.FC<SolidFigures3DSimulationProps> =
                   darkMode ? 'bg-[#121a2d] border-white/[0.08]' : 'bg-slate-50 border-slate-200'
                 }`}
               >
-                <div className="flex items-center justify-between text-xs font-black uppercase tracking-wider">
+                <div className="flex flex-wrap items-center justify-between gap-1 text-xs font-black uppercase tracking-wider">
                   <span className="inline-flex items-center gap-1.5">
                     <Box className="w-3.5 h-3.5 text-emerald-500" />
                     Geometry &amp; Formulas
                   </span>
-                  <span className={`text-[11px] font-semibold normal-case ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                    {activeSpec.eulerNote}
+                  <span className={`text-[11px] font-semibold normal-case ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+                    {activeSpec.eulerNote.includes('F + V') ? (
+                      <MathFormula tex={solidFormulaToLatex(activeSpec.eulerNote)} />
+                    ) : (
+                      activeSpec.eulerNote
+                    )}
                   </span>
                 </div>
 
@@ -3578,16 +3647,18 @@ export const SolidFigures3DSimulation: React.FC<SolidFigures3DSimulationProps> =
 
                 <div className="space-y-1.5 text-xs pt-1 border-t border-slate-200/80 dark:border-white/[0.07]">
                   <div className="flex items-center justify-between gap-2">
-                    <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>
-                      Surface Area ({activeSpec.areaFormula})
+                    <span className={`flex items-center gap-1.5 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                      <span>Surface Area:</span>
+                      <MathFormula tex={solidFormulaToLatex(activeSpec.areaFormula)} />
                     </span>
-                    <span className="font-black tabular-nums text-amber-500">{metrics.tsa.toFixed(2)} u²</span>
+                    <span className="font-black tabular-nums text-amber-500 shrink-0">{metrics.tsa.toFixed(2)} u²</span>
                   </div>
                   <div className="flex items-center justify-between gap-2">
-                    <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>
-                      Volume ({activeSpec.volumeFormula})
+                    <span className={`flex items-center gap-1.5 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                      <span>Volume:</span>
+                      <MathFormula tex={solidFormulaToLatex(activeSpec.volumeFormula)} />
                     </span>
-                    <span className="font-black tabular-nums text-emerald-500">{metrics.volume.toFixed(2)} u³</span>
+                    <span className="font-black tabular-nums text-emerald-500 shrink-0">{metrics.volume.toFixed(2)} u³</span>
                   </div>
                   <div className="flex items-center justify-between gap-2">
                     <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>{metrics.extraLabel}</span>
@@ -3595,6 +3666,39 @@ export const SolidFigures3DSimulation: React.FC<SolidFigures3DSimulationProps> =
                       {metrics.extraValue}
                     </span>
                   </div>
+                </div>
+
+                {/* Direct Option for Writing & Evaluating a 3D Formula with MathJax */}
+                <div className="space-y-1.5 text-xs pt-2 border-t border-slate-200/80 dark:border-white/[0.07]">
+                  <div className="flex items-center justify-between">
+                    <span className="font-extrabold text-sky-500 uppercase tracking-wider text-[11px]">
+                      Write Formula (using a, w, h, r, l, s)
+                    </span>
+                    {evaluatedCustom3D.value !== null && (
+                      <span className="font-mono font-black text-emerald-500">
+                        = {evaluatedCustom3D.value.toFixed(2)}
+                      </span>
+                    )}
+                  </div>
+                  <input
+                    type="text"
+                    value={custom3DFormula}
+                    onChange={(e) => setCustom3DFormula(e.target.value)}
+                    placeholder="Write formula e.g. 6*a^2, pi*r^2*h, (1/3)*b^2*h"
+                    className={`w-full px-2.5 py-1.5 rounded-xl border text-xs font-mono font-bold focus:outline-none focus:ring-2 focus:ring-sky-500/40 ${
+                      darkMode
+                        ? 'bg-[#0b1220] border-white/[0.14] text-white'
+                        : 'bg-white border-slate-300 text-slate-900'
+                    }`}
+                  />
+                  {evaluatedCustom3D.latex && (
+                    <div className="flex items-center justify-between gap-2 pt-0.5">
+                      <span className={`text-[11px] font-semibold ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                        MathJax Preview:
+                      </span>
+                      <MathFormula tex={evaluatedCustom3D.latex} className="text-sky-400 font-bold" />
+                    </div>
+                  )}
                 </div>
 
                 {/* Characteristics, Construction & Net Sketching Guide */}
