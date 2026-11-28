@@ -890,7 +890,11 @@ export const WrongWayGame: React.FC<WrongWayGameProps> = ({ onBackToHub }) => {
   const [showInviteModal, setShowInviteModal] = useState<boolean>(false);
   const [joinCodeInput, setJoinCodeInput] = useState<string>('');
   const [copiedInviteLink, setCopiedInviteLink] = useState<boolean>(false);
-  const lastAppliedRoomTimestampRef = useRef<number>(0);
+
+  // Race Finish Format:
+  // - true ('Same Finish' / WallRush style): Both orbs start at the BOTTOM row and race to the SAME TOP FINISH line!
+  // - false ('Opposite Sides'): P1 starts at bottom, P2 starts at top (and in Live Friend mode, each player's own device screen rotates 180° so every player starts at the bottom of their own screen!)
+  const [sameSideFinish, setSameSideFinish] = useState<boolean>(true);
 
   // Board State
   const [boardSize, setBoardSize] = useState<number>(9);
@@ -1054,7 +1058,7 @@ export const WrongWayGame: React.FC<WrongWayGameProps> = ({ onBackToHub }) => {
             name: 'You (Cyan)',
             isAI: false,
             r: size - 1,
-            c: mid,
+            c: sameSideFinish ? 2 : mid,
             wallsLeft: p1Walls,
             colorHex: '#22d3ee',
             glowHex: 'rgba(34,211,238,0.8)',
@@ -1066,13 +1070,13 @@ export const WrongWayGame: React.FC<WrongWayGameProps> = ({ onBackToHub }) => {
             id: 1,
             name: lvlCfg.isBoss ? lvlCfg.title : `Zone ${lvlCfg.zone} AI`,
             isAI: true,
-            r: 0,
-            c: mid,
+            r: sameSideFinish ? size - 1 : 0,
+            c: sameSideFinish ? size - 3 : mid,
             wallsLeft: p2Walls,
             colorHex: '#f43f5e',
             glowHex: 'rgba(244,63,94,0.8)',
             badgeBg: 'bg-rose-500/20 border-rose-400 text-rose-200',
-            goalType: 'ROW_BOTTOM',
+            goalType: sameSideFinish ? 'ROW_TOP' : 'ROW_BOTTOM',
             frozenTurns: 0,
           },
         ];
@@ -1119,7 +1123,7 @@ export const WrongWayGame: React.FC<WrongWayGameProps> = ({ onBackToHub }) => {
             : 'Player 1 (Cyan)',
           isAI: false,
           r: size - 1,
-          c: mid,
+          c: sameSideFinish ? 2 : mid,
           wallsLeft: startIdx === 0 ? 10 : 11,
           colorHex: '#22d3ee',
           glowHex: 'rgba(34,211,238,0.8)',
@@ -1137,24 +1141,24 @@ export const WrongWayGame: React.FC<WrongWayGameProps> = ({ onBackToHub }) => {
             ? `Neon AI (${targetDiff.toUpperCase()})`
             : 'Player 2 (Pink)',
           isAI: isVsAi,
-          r: 0,
-          c: mid,
+          r: sameSideFinish ? size - 1 : 0,
+          c: sameSideFinish ? size - 3 : mid,
           wallsLeft: startIdx === 1 ? 10 : 11,
           colorHex: '#f43f5e',
           glowHex: 'rgba(244,63,94,0.8)',
           badgeBg: 'bg-rose-500/20 border-rose-400 text-rose-200',
-          goalType: 'ROW_BOTTOM',
+          goalType: sameSideFinish ? 'ROW_TOP' : 'ROW_BOTTOM',
           frozenTurns: 0,
         },
       ]);
     },
-    [mode, activeLevelNum, aiDifficulty, starterPreference, myLiveSeat]
+    [mode, activeLevelNum, aiDifficulty, starterPreference, myLiveSeat, sameSideFinish]
   );
 
   useEffect(() => {
     if (mode === 'online_friend') return;
     initMatch(mode, activeLevelNum, aiDifficulty);
-  }, [mode, activeLevelNum, aiDifficulty, initMatch]);
+  }, [mode, activeLevelNum, aiDifficulty, sameSideFinish, initMatch]);
 
   // Publish a live room state to both Firestore and Express SSE/REST
   const publishLiveRoomState = useCallback(async (docToSave: WrongWayLiveRoomDoc) => {
@@ -1170,6 +1174,29 @@ export const WrongWayGame: React.FC<WrongWayGameProps> = ({ onBackToHub }) => {
     }
     await saveWrongWayLiveRoomToCloud(docToSave);
   }, []);
+
+  // Serialize/deserialize walls + sameSideFinish flag inside wallsJson so Firestore & SSE sync the finish mode seamlessly
+  const encodeLiveWallsJson = useCallback((wallsList: PlacedWall[], isSameSide: boolean): string => {
+    return JSON.stringify({ sameSide: isSameSide, walls: wallsList });
+  }, []);
+
+  const decodeLiveWallsJson = useCallback(
+    (rawJson: string | undefined, fallbackSameSide: boolean): { walls: PlacedWall[]; sameSide: boolean } => {
+      try {
+        const parsed = JSON.parse(rawJson || '[]');
+        if (Array.isArray(parsed)) {
+          return { walls: parsed, sameSide: fallbackSameSide };
+        }
+        if (parsed && Array.isArray(parsed.walls)) {
+          return { walls: parsed.walls, sameSide: Boolean(parsed.sameSide) };
+        }
+      } catch {
+        // Ignore parse error
+      }
+      return { walls: [], sameSide: fallbackSameSide };
+    },
+    []
+  );
 
   // Reconstruct local board state from a WrongWayLiveRoomDoc snapshot
   const applyLiveRoomSnapshot = useCallback(
@@ -1195,20 +1222,18 @@ export const WrongWayGame: React.FC<WrongWayGameProps> = ({ onBackToHub }) => {
         };
         setMyLiveSeat(1);
         publishLiveRoomState(effectiveDoc);
-        showToast('🟢 Connected live! You are Pink Orb (Top → Bottom).');
+        showToast('🟢 Connected live! You start at the bottom as Pink Orb ↑');
       }
 
       setMyLiveSeat(seat);
       setLiveRoomDoc(effectiveDoc);
       setBoardSize(9);
 
-      let parsedWalls: PlacedWall[] = [];
-      try {
-        const raw = JSON.parse(effectiveDoc.wallsJson || '[]');
-        if (Array.isArray(raw)) parsedWalls = raw;
-      } catch {
-        parsedWalls = [];
-      }
+      const { walls: parsedWalls, sameSide: roomSameSide } = decodeLiveWallsJson(
+        effectiveDoc.wallsJson,
+        sameSideFinish
+      );
+      setSameSideFinish(roomSameSide);
 
       const nextPlayers: PlayerState[] = [
         {
@@ -1239,7 +1264,7 @@ export const WrongWayGame: React.FC<WrongWayGameProps> = ({ onBackToHub }) => {
           colorHex: '#f43f5e',
           glowHex: 'rgba(244,63,94,0.8)',
           badgeBg: 'bg-rose-500/20 border-rose-400 text-rose-200',
-          goalType: 'ROW_BOTTOM',
+          goalType: roomSameSide ? 'ROW_TOP' : 'ROW_BOTTOM',
           frozenTurns: 0,
         },
       ];
@@ -1270,12 +1295,12 @@ export const WrongWayGame: React.FC<WrongWayGameProps> = ({ onBackToHub }) => {
         setWinner(null);
       }
     },
-    [myLivePlayerId, myLiveSeat, publishLiveRoomState, showToast]
+    [myLivePlayerId, myLiveSeat, publishLiveRoomState, showToast, decodeLiveWallsJson, sameSideFinish]
   );
 
   // Create a brand new Live Friend room & open shareable invite link modal
   const createLiveFriendRoom = useCallback(
-    async (openModal = true) => {
+    async (openModal = true, targetSameSide: boolean = sameSideFinish) => {
       const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
       let code = '';
       for (let i = 0; i < 6; i++) {
@@ -1291,12 +1316,12 @@ export const WrongWayGame: React.FC<WrongWayGameProps> = ({ onBackToHub }) => {
         turnIndex: 0,
         starterIndex: 0,
         p0R: 8,
-        p0C: 4,
+        p0C: targetSameSide ? 2 : 4,
         p0Walls: 10,
-        p1R: 0,
-        p1C: 4,
+        p1R: targetSameSide ? 8 : 0,
+        p1C: targetSameSide ? 6 : 4,
         p1Walls: 11,
-        wallsJson: '[]',
+        wallsJson: encodeLiveWallsJson([], targetSameSide),
         winnerIndex: -1,
         equalizerPendingIndex: -1,
         moveCount: 0,
@@ -1319,7 +1344,7 @@ export const WrongWayGame: React.FC<WrongWayGameProps> = ({ onBackToHub }) => {
 
       await publishLiveRoomState(initialDoc);
     },
-    [myLivePlayerId, applyLiveRoomSnapshot, publishLiveRoomState]
+    [myLivePlayerId, sameSideFinish, encodeLiveWallsJson, applyLiveRoomSnapshot, publishLiveRoomState]
   );
 
   // Join an existing Live Friend room by 6-char code or URL parameter
@@ -1373,12 +1398,12 @@ export const WrongWayGame: React.FC<WrongWayGameProps> = ({ onBackToHub }) => {
           turnIndex: 0,
           starterIndex: 0,
           p0R: 8,
-          p0C: 4,
+          p0C: sameSideFinish ? 2 : 4,
           p0Walls: 10,
-          p1R: 0,
-          p1C: 4,
+          p1R: sameSideFinish ? 8 : 0,
+          p1C: sameSideFinish ? 6 : 4,
           p1Walls: 11,
-          wallsJson: '[]',
+          wallsJson: encodeLiveWallsJson([], sameSideFinish),
           winnerIndex: -1,
           equalizerPendingIndex: -1,
           moveCount: 0,
@@ -1389,7 +1414,7 @@ export const WrongWayGame: React.FC<WrongWayGameProps> = ({ onBackToHub }) => {
         await publishLiveRoomState(newDoc);
       }
     },
-    [myLivePlayerId, applyLiveRoomSnapshot, publishLiveRoomState, showToast]
+    [myLivePlayerId, sameSideFinish, encodeLiveWallsJson, applyLiveRoomSnapshot, publishLiveRoomState, showToast]
   );
 
   // Auto-join room on mount if URL contains ?wrongWayRoom=CODE
@@ -1701,7 +1726,7 @@ export const WrongWayGame: React.FC<WrongWayGameProps> = ({ onBackToHub }) => {
         p1R: p1.r,
         p1C: p1.c,
         p1Walls: p1.wallsLeft,
-        wallsJson: JSON.stringify(nextWalls),
+        wallsJson: encodeLiveWallsJson(nextWalls, sameSideFinish),
         winnerIndex: nextWinnerIdx,
         equalizerPendingIndex: nextEqualizerIdx,
         moveCount: nextMoveCount,
@@ -1709,7 +1734,7 @@ export const WrongWayGame: React.FC<WrongWayGameProps> = ({ onBackToHub }) => {
       };
       publishLiveRoomState(updatedDoc);
     },
-    [mode, liveRoomDoc, publishLiveRoomState]
+    [mode, liveRoomDoc, sameSideFinish, encodeLiveWallsJson, publishLiveRoomState]
   );
 
   // Execute a Pawn Move
@@ -1957,34 +1982,51 @@ export const WrongWayGame: React.FC<WrongWayGameProps> = ({ onBackToHub }) => {
     ]
   );
 
-  // Rematch handler that also syncs live friend rooms
-  const handleRestartOrRematch = useCallback(() => {
-    setTutorialStep(null);
-    if (mode === 'online_friend' && liveRoomDoc) {
-      const nextStarter = (liveRoomDoc.starterIndex + 1) % 2;
-      const rematchDoc: WrongWayLiveRoomDoc = {
-        ...liveRoomDoc,
-        status: liveRoomDoc.guestId ? 'playing' : 'waiting',
-        turnIndex: nextStarter,
-        starterIndex: nextStarter,
-        p0R: 8,
-        p0C: 4,
-        p0Walls: nextStarter === 0 ? 10 : 11,
-        p1R: 0,
-        p1C: 4,
-        p1Walls: nextStarter === 1 ? 10 : 11,
-        wallsJson: '[]',
-        winnerIndex: -1,
-        equalizerPendingIndex: -1,
-        moveCount: 0,
-        updatedAt: new Date().toISOString(),
-      };
-      applyLiveRoomSnapshot(rematchDoc);
-      publishLiveRoomState(rematchDoc);
-      return;
-    }
-    initMatch(mode, activeLevelNum, aiDifficulty);
-  }, [mode, liveRoomDoc, applyLiveRoomSnapshot, publishLiveRoomState, initMatch, activeLevelNum, aiDifficulty]);
+  // Rematch handler that also syncs live friend rooms (and optional finish mode switch)
+  const handleRestartOrRematch = useCallback(
+    (overrideSameSide?: boolean) => {
+      setTutorialStep(null);
+      const effSameSide = typeof overrideSameSide === 'boolean' ? overrideSameSide : sameSideFinish;
+      if (typeof overrideSameSide === 'boolean') {
+        setSameSideFinish(overrideSameSide);
+      }
+      if (mode === 'online_friend' && liveRoomDoc) {
+        const nextStarter = (liveRoomDoc.starterIndex + 1) % 2;
+        const rematchDoc: WrongWayLiveRoomDoc = {
+          ...liveRoomDoc,
+          status: liveRoomDoc.guestId ? 'playing' : 'waiting',
+          turnIndex: nextStarter,
+          starterIndex: nextStarter,
+          p0R: 8,
+          p0C: effSameSide ? 2 : 4,
+          p0Walls: nextStarter === 0 ? 10 : 11,
+          p1R: effSameSide ? 8 : 0,
+          p1C: effSameSide ? 6 : 4,
+          p1Walls: nextStarter === 1 ? 10 : 11,
+          wallsJson: encodeLiveWallsJson([], effSameSide),
+          winnerIndex: -1,
+          equalizerPendingIndex: -1,
+          moveCount: 0,
+          updatedAt: new Date().toISOString(),
+        };
+        applyLiveRoomSnapshot(rematchDoc);
+        publishLiveRoomState(rematchDoc);
+        return;
+      }
+      initMatch(mode, activeLevelNum, aiDifficulty);
+    },
+    [
+      mode,
+      liveRoomDoc,
+      sameSideFinish,
+      encodeLiveWallsJson,
+      applyLiveRoomSnapshot,
+      publishLiveRoomState,
+      initMatch,
+      activeLevelNum,
+      aiDifficulty,
+    ]
+  );
 
   // AI Turn Execution Effect
   useEffect(() => {
@@ -2033,6 +2075,10 @@ export const WrongWayGame: React.FC<WrongWayGameProps> = ({ onBackToHub }) => {
     executePawnMove,
   ]);
 
+  // In Live Friend mode when playing Opposite Sides, Device 2 (myLiveSeat === 1) sees the board flipped 180°
+  // so that on EVERY device screen, the local player starts at the BOTTOM of their own screen and races UPWARD!
+  const isBoardFlipped = mode === 'online_friend' && myLiveSeat === 1 && !sameSideFinish;
+
   // --- POINTER DRAG-FROM-DOCK & DIRECT BOARD GROOVE / INTERSECTION CALCULATION ---
   const computeIntersectionFromClientXY = useCallback(
     (clientX: number, clientY: number): { r: number; c: number } | null => {
@@ -2053,11 +2099,13 @@ export const WrongWayGame: React.FC<WrongWayGameProps> = ({ onBackToHub }) => {
       // Intersections sit at internal grid corners (1 .. boardSize - 1) / boardSize
       const rawC = Math.round(relX * boardSize) - 1;
       const rawR = Math.round(relY * boardSize) - 1;
-      const c = Math.max(0, Math.min(boardSize - 2, rawC));
-      const r = Math.max(0, Math.min(boardSize - 2, rawR));
+      const visC = Math.max(0, Math.min(boardSize - 2, rawC));
+      const visR = Math.max(0, Math.min(boardSize - 2, rawR));
+      const r = isBoardFlipped ? boardSize - 2 - visR : visR;
+      const c = isBoardFlipped ? boardSize - 2 - visC : visC;
       return { r, c };
     },
-    [boardSize]
+    [boardSize, isBoardFlipped]
   );
 
   // Detects direct hover/tap on horizontal or vertical grooves between grid cells even without pressing the wall dock first
@@ -2090,8 +2138,10 @@ export const WrongWayGame: React.FC<WrongWayGameProps> = ({ onBackToHub }) => {
 
       // If placingWallMode is explicitly active (user tapped +Horizontal or +Vertical button), lock to trayOrientation
       if (placingWallMode || isDraggingWallFromTray || tutorialStep === 2) {
-        const c = Math.max(0, Math.min(boardSize - 2, nearestIntX - 1));
-        const r = Math.max(0, Math.min(boardSize - 2, nearestIntY - 1));
+        const visC = Math.max(0, Math.min(boardSize - 2, nearestIntX - 1));
+        const visR = Math.max(0, Math.min(boardSize - 2, nearestIntY - 1));
+        const r = isBoardFlipped ? boardSize - 2 - visR : visR;
+        const c = isBoardFlipped ? boardSize - 2 - visC : visC;
         return { r, c, orientation: trayOrientation };
       }
 
@@ -2106,16 +2156,20 @@ export const WrongWayGame: React.FC<WrongWayGameProps> = ({ onBackToHub }) => {
       }
 
       if (isInternalHorizGroove && (!isInternalVertGroove || distY <= distX)) {
-        const r = Math.max(0, Math.min(boardSize - 2, nearestIntY - 1));
-        const c = Math.max(0, Math.min(boardSize - 2, Math.floor(gx)));
+        const visR = Math.max(0, Math.min(boardSize - 2, nearestIntY - 1));
+        const visC = Math.max(0, Math.min(boardSize - 2, Math.floor(gx)));
+        const r = isBoardFlipped ? boardSize - 2 - visR : visR;
+        const c = isBoardFlipped ? boardSize - 2 - visC : visC;
         return { r, c, orientation: 'H' };
       } else {
-        const c = Math.max(0, Math.min(boardSize - 2, nearestIntX - 1));
-        const r = Math.max(0, Math.min(boardSize - 2, Math.floor(gy)));
+        const visC = Math.max(0, Math.min(boardSize - 2, nearestIntX - 1));
+        const visR = Math.max(0, Math.min(boardSize - 2, Math.floor(gy)));
+        const r = isBoardFlipped ? boardSize - 2 - visR : visR;
+        const c = isBoardFlipped ? boardSize - 2 - visC : visC;
         return { r, c, orientation: 'V' };
       }
     },
-    [boardSize, placingWallMode, isDraggingWallFromTray, tutorialStep, trayOrientation]
+    [boardSize, placingWallMode, isDraggingWallFromTray, tutorialStep, trayOrientation, isBoardFlipped]
   );
 
   useEffect(() => {
@@ -2502,16 +2556,35 @@ export const WrongWayGame: React.FC<WrongWayGameProps> = ({ onBackToHub }) => {
             </div>
           </div>
 
-          {/* Right: Level/AI/Invite Settings, Fullscreen, Rules, Sound, Restart */}
+          {/* Right: Finish Direction Toggle, Level/AI/Invite Settings, Fullscreen, Rules, Sound, Restart */}
           <div className="flex items-center gap-1">
+            {mode !== 'pass_4p' && (
+              <button
+                type="button"
+                onClick={() => {
+                  soundEngine.playClick();
+                  const nextSameSide = !sameSideFinish;
+                  handleRestartOrRematch(nextSameSide);
+                }}
+                title="Switch between Same-Side Finish (both start at bottom & race to top) and Opposite Sides"
+                className={`px-2 py-1 rounded-lg border text-[11px] font-black flex items-center gap-1 cursor-pointer transition ${
+                  sameSideFinish
+                    ? 'bg-emerald-500/20 border-emerald-400/50 text-emerald-200'
+                    : 'bg-purple-950/70 border-purple-500/30 text-purple-200'
+                }`}
+              >
+                <span>{sameSideFinish ? '🏁 Same Finish' : '⇅ Opposite'}</span>
+              </button>
+            )}
+
             {mode === 'online_friend' && (
               <button
                 type="button"
                 onClick={() => setShowInviteModal(true)}
-                className="px-2 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/50 text-emerald-200 text-[11px] font-black flex items-center gap-1 cursor-pointer"
+                className="px-2 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400/50 text-cyan-200 text-[11px] font-black flex items-center gap-1 cursor-pointer"
               >
-                <Link2 className="w-3 h-3 text-emerald-300" />
-                <span>{liveRoomId ? `Invite (${liveRoomId})` : 'Invite Friend'}</span>
+                <Link2 className="w-3 h-3 text-cyan-300" />
+                <span>{liveRoomId ? `Invite (${liveRoomId})` : 'Invite'}</span>
               </button>
             )}
 
@@ -2582,7 +2655,7 @@ export const WrongWayGame: React.FC<WrongWayGameProps> = ({ onBackToHub }) => {
 
             <button
               type="button"
-              onClick={handleRestartOrRematch}
+              onClick={() => handleRestartOrRematch()}
               aria-label="Restart Match"
               className="p-1.5 rounded-lg bg-purple-950/70 hover:bg-purple-900 border border-purple-500/30 text-purple-200 cursor-pointer"
             >
@@ -2592,8 +2665,20 @@ export const WrongWayGame: React.FC<WrongWayGameProps> = ({ onBackToHub }) => {
         </div>
       </header>
 
-      {/* CENTER: LARGE, PLAIN & CLEAN NEON ROOM BOARD (No Dots or Clutter) */}
-      <main className="relative z-10 flex-1 min-h-0 w-full flex items-center justify-center p-2">
+      {/* CENTER: LARGE, PLAIN & CLEAN NEON ROOM BOARD (With Top 🏁 FINISH Line & Bottom Start for Every Device!) */}
+      <main className="relative z-10 flex-1 min-h-0 w-full flex flex-col items-center justify-center px-2 py-1">
+        {/* Clean WallRush-Style 🏁 FINISH Header Line directly above the board */}
+        {mode !== 'pass_4p' && (
+          <div className="w-[min(71dvh,94vw)] sm:w-[min(73dvh,660px)] flex items-center gap-3 mb-1">
+            <div className="flex-1 h-[2px] bg-gradient-to-r from-transparent via-emerald-400/70 to-emerald-400" />
+            <div className="flex items-center gap-1.5 text-[11px] sm:text-xs font-black tracking-[0.2em] uppercase text-emerald-300">
+              <span>🏁</span>
+              <span>FINISH</span>
+            </div>
+            <div className="flex-1 h-[2px] bg-gradient-to-l from-transparent via-emerald-400/70 to-emerald-400" />
+          </div>
+        )}
+
         <div
           ref={boardRef}
           onPointerMove={(e) => {
@@ -2616,9 +2701,9 @@ export const WrongWayGame: React.FC<WrongWayGameProps> = ({ onBackToHub }) => {
               executeWallDrop(slot.r, slot.c, slot.orientation);
             }
           }}
-          className="relative aspect-square h-[min(73dvh,94vw)] w-[min(73dvh,94vw)] sm:h-[min(75dvh,680px)] sm:w-[min(75dvh,680px)] bg-[#130627] rounded-2xl p-2.5 sm:p-3 border-2 border-purple-500/45 shadow-[0_0_45px_rgba(139,92,246,0.28)] select-none touch-none"
+          className="relative aspect-square h-[min(70dvh,94vw)] w-[min(70dvh,94vw)] sm:h-[min(72dvh,660px)] sm:w-[min(72dvh,660px)] bg-[#130627] rounded-2xl p-2.5 sm:p-3 border-2 border-purple-500/45 shadow-[0_0_45px_rgba(139,92,246,0.28)] select-none touch-none"
         >
-          {/* Grid Cells Layer */}
+          {/* Grid Cells Layer (Rendered from each device's bottom-up perspective when isBoardFlipped is active!) */}
           <div
             className="w-full h-full grid relative"
             style={{
@@ -2628,12 +2713,14 @@ export const WrongWayGame: React.FC<WrongWayGameProps> = ({ onBackToHub }) => {
             }}
           >
             {Array.from({ length: boardSize * boardSize }).map((_, idx) => {
-              const r = Math.floor(idx / boardSize);
-              const c = idx % boardSize;
+              const visR = Math.floor(idx / boardSize);
+              const visC = idx % boardSize;
+              const r = isBoardFlipped ? boardSize - 1 - visR : visR;
+              const c = isBoardFlipped ? boardSize - 1 - visC : visC;
               const center = Math.floor(boardSize / 2);
               const isCenterStar = mode === 'pass_4p' && r === center && c === center;
-              const isTopGoalRow = mode !== 'pass_4p' && r === 0;
-              const isBottomGoalRow = mode !== 'pass_4p' && r === boardSize - 1;
+              const isTopVisualFinishRow = mode !== 'pass_4p' && visR === 0;
+              const isBottomVisualRow = mode !== 'pass_4p' && visR === boardSize - 1;
 
               const legalMove = legalMovesForTurn.find((m) => m.r === r && m.c === c);
               const isHintMove =
@@ -2658,9 +2745,9 @@ export const WrongWayGame: React.FC<WrongWayGameProps> = ({ onBackToHub }) => {
                       ? 'bg-cyan-500/20 hover:bg-cyan-400/35 border-cyan-400/75 cursor-pointer'
                       : isCenterStar
                       ? 'bg-amber-500/15 border-amber-400/50'
-                      : isTopGoalRow
-                      ? 'bg-cyan-950/35 border-cyan-500/25'
-                      : isBottomGoalRow
+                      : isTopVisualFinishRow
+                      ? 'bg-emerald-500/20 border-emerald-400/45'
+                      : isBottomVisualRow && !sameSideFinish
                       ? 'bg-rose-950/35 border-rose-500/25'
                       : 'bg-[#1c0b38]/90 border-purple-500/20'
                   }`}
@@ -2690,10 +2777,12 @@ export const WrongWayGame: React.FC<WrongWayGameProps> = ({ onBackToHub }) => {
               );
             })}
 
-            {/* PLACED NEON WALLS LAYER */}
+            {/* PLACED NEON WALLS LAYER (Perspective-adjusted for Device 2 when isBoardFlipped is active) */}
             {walls.map((w) => {
-              const centerPctX = ((w.c + 1) / boardSize) * 100;
-              const centerPctY = ((w.r + 1) / boardSize) * 100;
+              const visWallR = isBoardFlipped ? boardSize - 2 - w.r : w.r;
+              const visWallC = isBoardFlipped ? boardSize - 2 - w.c : w.c;
+              const centerPctX = ((visWallC + 1) / boardSize) * 100;
+              const centerPctY = ((visWallR + 1) / boardSize) * 100;
               const spanPct = (2 / boardSize) * 100 - 1.2;
 
               const wallColor =
@@ -2734,12 +2823,12 @@ export const WrongWayGame: React.FC<WrongWayGameProps> = ({ onBackToHub }) => {
               );
             })}
 
-            {/* CLEAN GHOST WALL PREVIEW (No Dots or Text Popups) */}
+            {/* CLEAN GHOST WALL PREVIEW (Perspective-adjusted for Device 2 when isBoardFlipped is active) */}
             {hoverWallSlot && !winner && (
               <div
                 style={{
-                  left: `${((hoverWallSlot.c + 1) / boardSize) * 100}%`,
-                  top: `${((hoverWallSlot.r + 1) / boardSize) * 100}%`,
+                  left: `${(((isBoardFlipped ? boardSize - 2 - hoverWallSlot.c : hoverWallSlot.c) + 1) / boardSize) * 100}%`,
+                  top: `${(((isBoardFlipped ? boardSize - 2 - hoverWallSlot.r : hoverWallSlot.r) + 1) / boardSize) * 100}%`,
                   width:
                     hoverWallSlot.orientation === 'H'
                       ? `${(2 / boardSize) * 100 - 1.2}%`
@@ -2960,8 +3049,8 @@ export const WrongWayGame: React.FC<WrongWayGameProps> = ({ onBackToHub }) => {
                 {!liveRoomDoc?.guestId
                   ? 'Waiting for friend to open link...'
                   : turnIndex === myLiveSeat
-                  ? `🟢 Your Turn (${myLiveSeat === 0 ? 'Cyan Orb ↑' : 'Pink Orb ↓'})`
-                  : `⏳ Friend's Turn (${myLiveSeat === 0 ? 'Pink Orb ↓' : 'Cyan Orb ↑'})`}
+                  ? `🟢 Your Turn (${myLiveSeat === 0 ? 'Cyan Orb ↑' : 'Pink Orb ↑'})`
+                  : `⏳ Friend's Turn (${myLiveSeat === 0 ? 'Pink Orb' : 'Cyan Orb'})`}
               </span>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
@@ -3053,10 +3142,41 @@ export const WrongWayGame: React.FC<WrongWayGameProps> = ({ onBackToHub }) => {
                     </button>
                   </div>
 
+                  <div className="grid grid-cols-2 gap-1.5 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => handleRestartOrRematch(true)}
+                      className={`py-1.5 px-2 rounded-xl border text-[11px] font-black cursor-pointer transition ${
+                        sameSideFinish
+                          ? 'bg-emerald-500/25 border-emerald-400 text-emerald-200'
+                          : 'bg-purple-950/60 border-purple-500/30 text-purple-300'
+                      }`}
+                    >
+                      🏁 Same Finish (Top)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleRestartOrRematch(false)}
+                      className={`py-1.5 px-2 rounded-xl border text-[11px] font-black cursor-pointer transition ${
+                        !sameSideFinish
+                          ? 'bg-cyan-500/25 border-cyan-400 text-cyan-200'
+                          : 'bg-purple-950/60 border-purple-500/30 text-purple-300'
+                      }`}
+                    >
+                      ⇅ Opposite (Auto-Flip)
+                    </button>
+                  </div>
+
                   <p className="text-[11px] text-purple-200/90 leading-relaxed">
-                    Send this link to your friend. As soon as they open it, they join directly as{' '}
-                    <strong className="text-rose-300">Pink Orb</strong> while you play as{' '}
-                    <strong className="text-cyan-300">Cyan Orb</strong>!
+                    {sameSideFinish ? (
+                      <>
+                        <strong>Same-Side Finish:</strong> Both you (<strong className="text-cyan-300">Cyan Orb</strong>) and your friend (<strong className="text-rose-300">Pink Orb</strong>) start at the bottom and race to the top <strong>🏁 FINISH</strong> line!
+                      </>
+                    ) : (
+                      <>
+                        <strong>Opposite Sides (Bottom-View on Both Screens):</strong> You start at the bottom on your screen, and your friend’s screen automatically rotates 180° so they also start at the bottom on their device!
+                      </>
+                    )}
                   </p>
 
                   <div className="flex items-center gap-1.5 bg-[#1b0b36] p-1.5 rounded-xl border border-purple-500/30">
@@ -3306,7 +3426,7 @@ export const WrongWayGame: React.FC<WrongWayGameProps> = ({ onBackToHub }) => {
             <div className="flex items-center justify-center gap-3 pt-2">
               <button
                 type="button"
-                onClick={handleRestartOrRematch}
+                onClick={() => handleRestartOrRematch()}
                 className="px-4 py-2.5 rounded-xl bg-purple-900/80 hover:bg-purple-800 border border-purple-400/40 text-xs font-black text-white cursor-pointer"
               >
                 {mode === 'online_friend' ? 'Live Rematch' : 'Replay'}
